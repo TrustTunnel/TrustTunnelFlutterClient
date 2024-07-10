@@ -5,6 +5,7 @@ import 'package:vpn/di/common/initialization_helper.dart';
 import 'package:vpn/di/dependency_scope.dart';
 import 'package:vpn/feature/initialization/initialization_bloc.dart';
 import 'package:vpn/feature/navigation/view/navigation_screen.dart';
+import 'package:vpn/test_widget.dart';
 
 void main() {
   final initializationBloc = InitializationBloc(initializationHelper: InitializationHelperIo())
@@ -36,7 +37,7 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: context.dependencyFactory.lightThemeData,
-      home: const NavigationScreen(),
+      home: const TestWidget(),
     );
   }
 }
