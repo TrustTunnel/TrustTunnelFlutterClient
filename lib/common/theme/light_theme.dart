@@ -47,6 +47,7 @@ class LightTheme {
           _customOutlinedButtonTheme,
           _customTextButtonTheme,
           _customDropdownMenuTheme,
+          _customFilledIconButtonTheme,
         ],
 
         // COLOR
@@ -1006,6 +1007,21 @@ class LightTheme {
     childrenPadding: const EdgeInsets.symmetric(
       horizontal: 16,
       vertical: 8,
+    ),
+  );
+
+  final _customFilledIconButtonTheme = CustomFilledIconButtonTheme(
+    iconButton: IconButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) {
+            if (states.contains(WidgetState.selected)) {
+              return _primary1;
+            }
+            return _gray1;
+          },
+        ),
+      ),
     ),
   );
 }

@@ -3,5 +3,6 @@
   "appTitle": "Vpn",
   "servers": "Servers",
   "routing": "Routing",
-  "settings": "Settings"
+  "settings": "Settings",
+  "addServer": "Add server"
 }

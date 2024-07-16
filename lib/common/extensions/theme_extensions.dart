@@ -356,3 +356,34 @@ class CustomDropdownMenuTheme extends ThemeExtension<CustomDropdownMenuTheme> {
     );
   }
 }
+
+class CustomFilledIconButtonTheme
+    extends ThemeExtension<CustomFilledIconButtonTheme> {
+  final IconButtonThemeData iconButton;
+
+  const CustomFilledIconButtonTheme({
+    required this.iconButton,
+  });
+
+  @override
+  ThemeExtension<CustomFilledIconButtonTheme> copyWith({
+    IconButtonThemeData? iconButton,
+  }) =>
+      CustomFilledIconButtonTheme(
+        iconButton: iconButton ?? this.iconButton,
+      );
+
+  @override
+  ThemeExtension<CustomFilledIconButtonTheme> lerp(
+    covariant ThemeExtension<CustomFilledIconButtonTheme>? other,
+    double t,
+  ) {
+    if (other is! CustomFilledIconButtonTheme) {
+      return this;
+    }
+
+    return CustomFilledIconButtonTheme(
+      iconButton: IconButtonThemeData.lerp(iconButton, other.iconButton, t)!,
+    );
+  }
+}
