@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:vpn/data/model/server.dart';
+import 'package:vpn/data/model/vpn_protocol.dart';
 
 part 'servers_bloc.freezed.dart';
 part 'servers_event.dart';
@@ -18,9 +20,19 @@ class ServersBloc extends Bloc<ServersEvent, ServersState> {
   ) =>
       emit(
         state.copyWith(
-          serverList: List.filled(
-            0,
-            Object(),
+          serverList: List.generate(
+            10,
+            (i) => Server(
+              id: i,
+              name: 'Server $i',
+              ipAddress: '$i.$i.$i.$i',
+              domain: '$i.$i.$i.$i',
+              login: 'login-$i',
+              password: 'password-$i',
+              vpnProtocol: VpnProtocol.http2,
+              routingProfileId: 0,
+              dnsServers: [],
+            ),
           ),
         ),
       );

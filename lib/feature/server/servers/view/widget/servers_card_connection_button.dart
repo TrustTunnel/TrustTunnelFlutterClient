@@ -3,12 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vpn/common/assets/asset_icons.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/extensions/theme_extensions.dart';
+import 'package:vpn/data/model/server.dart';
 import 'package:vpn/feature/server/servers/bloc/servers_bloc.dart';
 import 'package:vpn/view/buttons/icon_button_svg.dart';
 
 class ServersCardConnectionButton extends StatefulWidget {
   final bool isActive;
-  final Object server;
+  final Server server;
 
   const ServersCardConnectionButton({
     super.key,

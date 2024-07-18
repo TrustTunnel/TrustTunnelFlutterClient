@@ -5,6 +5,6 @@ class ServersState with _$ServersState {
   const ServersState._();
 
   const factory ServersState({
-    @Default([]) List<Object> serverList,
+    @Default([]) List<Server> serverList,
   }) = _ServersState;
 }

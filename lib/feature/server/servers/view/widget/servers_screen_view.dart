@@ -3,11 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vpn/common/assets/asset_icons.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/server/server_details/server_details_screen.dart';
+import 'package:vpn/feature/server/server_details/view/server_details_screen.dart';
 import 'package:vpn/feature/server/servers/bloc/servers_bloc.dart';
 import 'package:vpn/feature/server/servers/view/widget/servers_card.dart';
 import 'package:vpn/feature/server/servers/view/widget/servers_empty_placeholder.dart';
 import 'package:vpn/view/buttons/floating_action_button_svg.dart';
+import 'package:vpn/view/custom_app_bar.dart';
 import 'package:vpn/view/scaffold_wrapper.dart';
 
 class ServersScreenView extends StatelessWidget {
@@ -18,8 +19,8 @@ class ServersScreenView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ScaffoldWrapper(
         child: Scaffold(
-          appBar: AppBar(
-            title: Text(context.ln.servers),
+          appBar: CustomAppBar(
+            title: context.ln.servers,
           ),
           body: BlocBuilder<ServersBloc, ServersState>(
             builder: (context, state) => state.serverList.isEmpty

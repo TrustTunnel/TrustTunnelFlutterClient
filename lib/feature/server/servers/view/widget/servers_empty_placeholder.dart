@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vpn/common/assets/assets_vectors.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/server/server_details/server_details_screen.dart';
+import 'package:vpn/feature/server/server_details/view/server_details_screen.dart';
 import 'package:vpn/view/default_page.dart';
 
 class ServersEmptyPlaceholder extends StatelessWidget {
