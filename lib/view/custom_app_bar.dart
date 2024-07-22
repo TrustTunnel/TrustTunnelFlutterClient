@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 
-const _toolbarHeight = 48.0;
+const _toolbarHeight = 64.0;
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -73,17 +73,19 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
     );
 
-    return (context.isMobileBreakpoint || !showDivider)
-        ? body
-        : Stack(
-            children: [
-              body,
-              const Align(
-                alignment: Alignment.bottomCenter,
-                child: Divider(),
-              ),
-            ],
-          );
+    return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: (context.isMobileBreakpoint || !showDivider)
+            ? body
+            : Stack(
+                children: [
+                  body,
+                  const Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Divider(),
+                  ),
+                ],
+              ));
   }
 
   @override

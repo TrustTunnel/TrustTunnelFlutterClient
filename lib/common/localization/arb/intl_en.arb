@@ -23,5 +23,8 @@
   "serversEmptyTitle": "Create your first server",
   "serversEmptyDescription": "Create a server for secure and anonymous data transfer",
   "create": "Create",
-  "save": "Save"
+  "save": "Save",
+  "editProfile": "Edit profile",
+  "deleteProfile": "Delete profile",
+  "addProfile": "Add profile"
 }

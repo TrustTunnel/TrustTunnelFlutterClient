@@ -5,7 +5,6 @@ import 'package:vpn/feature/server/server_details/bloc/server_details_bloc.dart'
 import 'package:vpn/feature/server/server_details/view/widget/server_details_form.dart';
 import 'package:vpn/feature/server/server_details/view/widget/server_details_submit_button_section.dart';
 import 'package:vpn/view/custom_app_bar.dart';
-import 'package:vpn/view/progress_wrapper.dart';
 import 'package:vpn/view/scaffold_wrapper.dart';
 
 class ServerDetailsScreenView extends StatefulWidget {

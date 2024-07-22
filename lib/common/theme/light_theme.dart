@@ -356,8 +356,7 @@ class LightTheme {
     fillColor: WidgetStateProperty.resolveWith(
       (states) {
         if (states.contains(WidgetState.disabled)) return _contrast4;
-        if (!states.contains(WidgetState.disabled) && !states.contains(WidgetState.selected)) return _contrast1;
-        return _primary1;
+        return _contrast1;
       },
     ),
     overlayColor: WidgetStateProperty.resolveWith(
