@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/localization/localization.dart';
+import 'package:vpn/feature/settings/settings_query_log/view/settings_query_log_screen.dart';
 import 'package:vpn/view/common/custom_arrow_list_tile.dart';
 import 'package:vpn/view/custom_app_bar.dart';
 import 'package:vpn/view/scaffold_wrapper.dart';
@@ -17,7 +19,7 @@ class SettingsScreen extends StatelessWidget {
             children: [
               CustomArrowListTile(
                 title: context.ln.queryLog,
-                onTap: _pushQueryLogScreen,
+                onTap: () => _pushQueryLogScreen(context),
               ),
               const Divider(),
               CustomArrowListTile(
@@ -39,8 +41,9 @@ class SettingsScreen extends StatelessWidget {
         ),
       );
 
-  // TODO: Implement method to push query log screen
-  void _pushQueryLogScreen() {}
+  void _pushQueryLogScreen(BuildContext context) => context.push(
+        const SettingsQueryLogScreen(),
+      );
 
   // TODO: Implement method to push excluded routes screen
   void _pushExcludedRoutesScreen() {}

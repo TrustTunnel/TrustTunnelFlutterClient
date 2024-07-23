@@ -37,7 +37,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: centerTitle ?? !showBackButton,
       surfaceTintColor:
           context.isMobileBreakpoint ? context.colors.gray1 : null,
-      title: Text(title),
+      title: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(title),
+      ),
       backgroundColor: context.colors.background1,
       bottom: bottom != null
           ? PreferredSize(
@@ -73,19 +76,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
     );
 
-    return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: (context.isMobileBreakpoint || !showDivider)
-            ? body
-            : Stack(
-                children: [
-                  body,
-                  const Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Divider(),
-                  ),
-                ],
-              ));
+    return (context.isMobileBreakpoint || !showDivider)
+        ? body
+        : Stack(
+            children: [
+              body,
+              const Align(
+                alignment: Alignment.bottomCenter,
+                child: Divider(),
+              ),
+            ],
+          );
   }
 
   @override

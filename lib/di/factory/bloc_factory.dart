@@ -4,12 +4,14 @@ import 'package:vpn/feature/routing/routing/bloc/routing_bloc.dart';
 import 'package:vpn/feature/routing/routing_details/bloc/routing_details_bloc.dart';
 import 'package:vpn/feature/server/server_details/bloc/server_details_bloc.dart';
 import 'package:vpn/feature/server/servers/bloc/servers_bloc.dart';
+import 'package:vpn/feature/settings/settings_query_log/bloc/settings_query_log_bloc.dart';
 
 abstract class BlocFactory {
   RoutingBloc routingBloc();
   ServersBloc serversBloc();
   ServerDetailsBloc serverDetailsBloc({int? serverId});
   RoutingDetailsBloc routingDetailsBloc({int? routingId});
+  SettingsQueryLogBloc settingsQueryLogBloc();
 }
 
 class BlocFactoryImpl implements BlocFactory {
@@ -47,4 +49,7 @@ class BlocFactoryImpl implements BlocFactory {
       RoutingDetailsBloc(
         routingId: routingId,
       );
+
+  @override
+  SettingsQueryLogBloc settingsQueryLogBloc() => SettingsQueryLogBloc();
 }
