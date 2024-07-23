@@ -9,11 +9,4 @@ make init
 из папки плагина plugins/vpn_plugin:
 
 flutter pub get
-
-flutter pub run pigeon \
---input pigeons/api.dart \
---swift_out macos/Classes/PlatformApi.g.swift
-
-flutter pub run pigeon \
---input pigeons/api.dart \
---swift_out ios/Classes/PlatformApi.g.swift
+make gen
