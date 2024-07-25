@@ -4,16 +4,16 @@ import 'package:vpn/feature/routing/routing/bloc/routing_bloc.dart';
 import 'package:vpn/feature/routing/routing_details/bloc/routing_details_bloc.dart';
 import 'package:vpn/feature/server/server_details/bloc/server_details_bloc.dart';
 import 'package:vpn/feature/server/servers/bloc/servers_bloc.dart';
-import 'package:vpn/feature/settings/settings_excluded_routes/bloc/settings_excluded_routes_bloc.dart';
-import 'package:vpn/feature/settings/settings_query_log/bloc/settings_query_log_bloc.dart';
+import 'package:vpn/feature/settings/excluded_routes/bloc/excluded_routes_bloc.dart';
+import 'package:vpn/feature/settings/query_log/bloc/query_log_bloc.dart';
 
 abstract class BlocFactory {
   RoutingBloc routingBloc();
   ServersBloc serversBloc();
   ServerDetailsBloc serverDetailsBloc({int? serverId});
   RoutingDetailsBloc routingDetailsBloc({int? routingId});
-  SettingsExcludedRoutesBloc settingsExcludedRoutesBloc();
-  SettingsQueryLogBloc settingsQueryLogBloc();
+  ExcludedRoutesBloc excludedRoutesBloc();
+  QueryLogBloc queryLogBloc();
 }
 
 class BlocFactoryImpl implements BlocFactory {
@@ -53,9 +53,12 @@ class BlocFactoryImpl implements BlocFactory {
       );
 
   @override
-  SettingsExcludedRoutesBloc settingsExcludedRoutesBloc() =>
-      SettingsExcludedRoutesBloc();
+  ExcludedRoutesBloc excludedRoutesBloc() => ExcludedRoutesBloc(
+        settingsRepository: _repositoryFactory.settingsRepository,
+      );
 
   @override
-  SettingsQueryLogBloc settingsQueryLogBloc() => SettingsQueryLogBloc();
+  QueryLogBloc queryLogBloc() => QueryLogBloc(
+        settingsRepository: _repositoryFactory.settingsRepository,
+      );
 }

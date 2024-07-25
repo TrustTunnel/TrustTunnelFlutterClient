@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/settings/settings_excluded_routes/bloc/settings_excluded_routes_bloc.dart';
+import 'package:vpn/feature/settings/excluded_routes/bloc/excluded_routes_bloc.dart';
 import 'package:vpn/view/inputs/custom_text_field.dart';
 
-class SettingsExcludedRoutesForm extends StatelessWidget {
-  const SettingsExcludedRoutesForm({super.key});
+class ExcludedRoutesForm extends StatelessWidget {
+  const ExcludedRoutesForm({super.key});
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.all(16),
-        child: BlocBuilder<SettingsExcludedRoutesBloc,
-            SettingsExcludedRoutesState>(
+        child: BlocBuilder<ExcludedRoutesBloc, ExcludedRoutesState>(
+          buildWhen: (previous, current) => previous.action == current.action && previous.data != current.data,
           builder: (context, state) {
             return CustomTextField(
               value: state.data,
@@ -32,8 +32,8 @@ class SettingsExcludedRoutesForm extends StatelessWidget {
     BuildContext context, {
     required String excludedRoutes,
   }) =>
-      context.read<SettingsExcludedRoutesBloc>().add(
-            SettingsExcludedRoutesEvent.dataChanged(
+      context.read<ExcludedRoutesBloc>().add(
+            ExcludedRoutesEvent.dataChanged(
               excludedRoutes: excludedRoutes,
             ),
           );

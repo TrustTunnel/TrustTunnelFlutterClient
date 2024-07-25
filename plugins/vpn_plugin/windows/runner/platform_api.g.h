@@ -196,7 +196,7 @@ class VpnRequest {
   // Constructs an object setting all non-nullable fields.
   explicit VpnRequest(
     const std::string& time,
-    const std::string& protocol,
+    const VpnProtocol& protocol,
     const RoutingMode& decision,
     const std::string& source_ip_address,
     const std::string& destination_ip_address);
@@ -204,7 +204,7 @@ class VpnRequest {
   // Constructs an object setting all fields.
   explicit VpnRequest(
     const std::string& time,
-    const std::string& protocol,
+    const VpnProtocol& protocol,
     const RoutingMode& decision,
     const std::string& source_ip_address,
     const std::string& destination_ip_address,
@@ -215,8 +215,8 @@ class VpnRequest {
   const std::string& time() const;
   void set_time(std::string_view value_arg);
 
-  const std::string& protocol() const;
-  void set_protocol(std::string_view value_arg);
+  const VpnProtocol& protocol() const;
+  void set_protocol(const VpnProtocol& value_arg);
 
   const RoutingMode& decision() const;
   void set_decision(const RoutingMode& value_arg);
@@ -246,7 +246,7 @@ class VpnRequest {
   friend class PlatformApi;
   friend class PigeonCodecSerializer;
   std::string time_;
-  std::string protocol_;
+  VpnProtocol protocol_;
   RoutingMode decision_;
   std::string source_ip_address_;
   std::string destination_ip_address_;
@@ -546,6 +546,8 @@ class PlatformApi {
   virtual std::optional<FlutterError> SetRoutingProfileName(const std::string& name) = 0;
   virtual std::optional<FlutterError> RemoveRoutingProfile(int64_t id) = 0;
   virtual ErrorOr<flutter::EncodableList> GetAllRequests() = 0;
+  virtual std::optional<FlutterError> SetExcludedRoutes(const std::string& routes) = 0;
+  virtual ErrorOr<std::string> GetExcludedRoutes() = 0;
   virtual std::optional<FlutterError> Start() = 0;
   virtual std::optional<FlutterError> Stop() = 0;
   virtual ErrorOr<VpnManagerState> GetCurrentState() = 0;

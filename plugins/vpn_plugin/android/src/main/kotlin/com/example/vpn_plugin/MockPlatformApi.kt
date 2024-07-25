@@ -12,14 +12,17 @@ import java.io.Closeable
 class MockPlatformApi: PlatformApi, EventChannel.StreamHandler, Closeable {
     private val scope = CoroutineScope(Dispatchers.Main)
     private var job: Job? = null
+    private var eventSink: EventChannel.EventSink? = null
     private var servers: MutableList<Server> = mutableListOf()
+    private var requests = mutableListOf<VpnRequest>()
     private var selectedServerId: Long? = null
     private var state: VpnManagerState = VpnManagerState.DISCONNECTED
-    private var eventSink: EventChannel.EventSink? = null
+    private var excludedRoutes = ""
+
 
     init {
         for (i in 1..3) {
-            servers += Server(
+            servers.add(Server(
                 id = i.toLong(),
                 name = "Server $i",
                 ipAddress = "192.168.1.$i",
@@ -29,7 +32,19 @@ class MockPlatformApi: PlatformApi, EventChannel.StreamHandler, Closeable {
                 protocol = VpnProtocol.HTTP2,
                 routingProfileId = 0,
                 dnsServers = listOf(),
-            )
+            ))
+        }
+        for (i in 1..20) {
+            requests.add(VpnRequest(
+                time = "01.07.2024 18.48.11",
+                protocol = VpnProtocol.HTTP2,
+                decision = RoutingMode.BYPASS,
+                sourceIpAddress = "192.168.1.$i",
+                destinationIpAddress = "192.168.1.$i",
+                sourcePort = "80",
+                destinationPort = "80",
+                domain = "server$i.com",
+            ))
         }
     }
 
@@ -157,7 +172,15 @@ class MockPlatformApi: PlatformApi, EventChannel.StreamHandler, Closeable {
     }
 
     override fun getAllRequests(): List<VpnRequest> {
-        TODO("Not yet implemented")
+        return requests
+    }
+
+    override fun setExcludedRoutes(routes: String) {
+        excludedRoutes = routes
+    }
+
+    override fun getExcludedRoutes(): String {
+        return excludedRoutes
     }
 
     override fun start() {

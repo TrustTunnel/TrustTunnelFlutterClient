@@ -4,8 +4,7 @@ import 'package:vpn/feature/navigation/view/common/navigation_screen_utils.dart'
 import 'package:vpn/feature/navigation/view/widgets/custom_navigation_rail.dart';
 import 'package:vpn/feature/routing/routing/view/routing_screen.dart';
 import 'package:vpn/feature/server/servers/view/servers_screen.dart';
-import 'package:vpn/feature/settings/settings_list/settings_screen.dart';
-import 'package:vpn/feature/test/test_screen.dart';
+import 'package:vpn/feature/settings/settings/settings_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
@@ -80,7 +79,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
         0 => const ServersScreen(),
         1 => const RoutingScreen(),
         2 => const SettingsScreen(),
-        3 => const TestScreen(),
         _ => throw Exception('Invalid index: $selectedIndex'),
       };
 }

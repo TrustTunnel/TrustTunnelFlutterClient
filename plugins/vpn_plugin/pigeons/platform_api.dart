@@ -1,21 +1,13 @@
 import 'package:pigeon/pigeon.dart';
 
 enum VpnProtocol {
-  quiq(1),
-  http2(2);
-
-  final int value;
-
-  const VpnProtocol(this.value);
+  quiq,
+  http2,
 }
 
 enum RoutingMode {
-  bypass(1),
-  vpn(2);
-
-  final int value;
-
-  const RoutingMode(this.value);
+  bypass,
+  vpn,
 }
 
 enum VpnManagerState {
@@ -82,7 +74,7 @@ class RoutingProfile {
 
 class VpnRequest {
   final String time;
-  final String protocol;
+  final VpnProtocol protocol;
   final RoutingMode decision;
   final String sourceIpAddress;
   final String destinationIpAddress;
@@ -240,6 +232,10 @@ abstract class PlatformApi {
   void removeRoutingProfile({required int id});
 
   List<VpnRequest> getAllRequests();
+
+  void setExcludedRoutes(String routes);
+
+  String getExcludedRoutes();
 
   // VPN manager
   void start();

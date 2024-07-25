@@ -6,8 +6,8 @@ import 'package:vpn/view/custom_app_bar.dart';
 import 'package:vpn/view/default_page.dart';
 import 'package:vpn/view/scaffold_wrapper.dart';
 
-class SettingsAboutScreen extends StatelessWidget {
-  const SettingsAboutScreen({super.key});
+class AboutScreen extends StatelessWidget {
+  const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) => ScaffoldWrapper(

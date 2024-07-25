@@ -244,7 +244,7 @@ RoutingProfile RoutingProfile::FromEncodableList(const EncodableList& list) {
 
 VpnRequest::VpnRequest(
   const std::string& time,
-  const std::string& protocol,
+  const VpnProtocol& protocol,
   const RoutingMode& decision,
   const std::string& source_ip_address,
   const std::string& destination_ip_address)
@@ -256,7 +256,7 @@ VpnRequest::VpnRequest(
 
 VpnRequest::VpnRequest(
   const std::string& time,
-  const std::string& protocol,
+  const VpnProtocol& protocol,
   const RoutingMode& decision,
   const std::string& source_ip_address,
   const std::string& destination_ip_address,
@@ -281,11 +281,11 @@ void VpnRequest::set_time(std::string_view value_arg) {
 }
 
 
-const std::string& VpnRequest::protocol() const {
+const VpnProtocol& VpnRequest::protocol() const {
   return protocol_;
 }
 
-void VpnRequest::set_protocol(std::string_view value_arg) {
+void VpnRequest::set_protocol(const VpnProtocol& value_arg) {
   protocol_ = value_arg;
 }
 
@@ -360,7 +360,7 @@ EncodableList VpnRequest::ToEncodableList() const {
   EncodableList list;
   list.reserve(8);
   list.push_back(EncodableValue(time_));
-  list.push_back(EncodableValue(protocol_));
+  list.push_back(CustomEncodableValue(protocol_));
   list.push_back(CustomEncodableValue(decision_));
   list.push_back(EncodableValue(source_ip_address_));
   list.push_back(EncodableValue(destination_ip_address_));
@@ -373,7 +373,7 @@ EncodableList VpnRequest::ToEncodableList() const {
 VpnRequest VpnRequest::FromEncodableList(const EncodableList& list) {
   VpnRequest decoded(
     std::get<std::string>(list[0]),
-    std::get<std::string>(list[1]),
+    std::any_cast<const VpnProtocol&>(std::get<CustomEncodableValue>(list[1])),
     std::any_cast<const RoutingMode&>(std::get<CustomEncodableValue>(list[2])),
     std::get<std::string>(list[3]),
     std::get<std::string>(list[4]));
@@ -1408,6 +1408,55 @@ void PlatformApi::SetUp(
       channel.SetMessageHandler([api](const EncodableValue& message, const flutter::MessageReply<EncodableValue>& reply) {
         try {
           ErrorOr<EncodableList> output = api->GetAllRequests();
+          if (output.has_error()) {
+            reply(WrapError(output.error()));
+            return;
+          }
+          EncodableList wrapped;
+          wrapped.push_back(EncodableValue(std::move(output).TakeValue()));
+          reply(EncodableValue(std::move(wrapped)));
+        } catch (const std::exception& exception) {
+          reply(WrapError(exception.what()));
+        }
+      });
+    } else {
+      channel.SetMessageHandler(nullptr);
+    }
+  }
+  {
+    BasicMessageChannel<> channel(binary_messenger, "dev.flutter.pigeon.vpn_plugin.PlatformApi.setExcludedRoutes" + prepended_suffix, &GetCodec());
+    if (api != nullptr) {
+      channel.SetMessageHandler([api](const EncodableValue& message, const flutter::MessageReply<EncodableValue>& reply) {
+        try {
+          const auto& args = std::get<EncodableList>(message);
+          const auto& encodable_routes_arg = args.at(0);
+          if (encodable_routes_arg.IsNull()) {
+            reply(WrapError("routes_arg unexpectedly null."));
+            return;
+          }
+          const auto& routes_arg = std::get<std::string>(encodable_routes_arg);
+          std::optional<FlutterError> output = api->SetExcludedRoutes(routes_arg);
+          if (output.has_value()) {
+            reply(WrapError(output.value()));
+            return;
+          }
+          EncodableList wrapped;
+          wrapped.push_back(EncodableValue());
+          reply(EncodableValue(std::move(wrapped)));
+        } catch (const std::exception& exception) {
+          reply(WrapError(exception.what()));
+        }
+      });
+    } else {
+      channel.SetMessageHandler(nullptr);
+    }
+  }
+  {
+    BasicMessageChannel<> channel(binary_messenger, "dev.flutter.pigeon.vpn_plugin.PlatformApi.getExcludedRoutes" + prepended_suffix, &GetCodec());
+    if (api != nullptr) {
+      channel.SetMessageHandler([api](const EncodableValue& message, const flutter::MessageReply<EncodableValue>& reply) {
+        try {
+          ErrorOr<std::string> output = api->GetExcludedRoutes();
           if (output.has_error()) {
             reply(WrapError(output.error()));
             return;

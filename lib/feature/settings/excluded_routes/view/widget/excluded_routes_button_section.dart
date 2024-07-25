@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/settings/settings_excluded_routes/bloc/settings_excluded_routes_bloc.dart';
+import 'package:vpn/feature/settings/excluded_routes/bloc/excluded_routes_bloc.dart';
 
-class SettingsExcludedRoutesButtonSection extends StatelessWidget {
-  const SettingsExcludedRoutesButtonSection({
+class ExcludedRoutesButtonSection extends StatelessWidget {
+  const ExcludedRoutesButtonSection({
     super.key,
   });
 
@@ -18,8 +18,8 @@ class SettingsExcludedRoutesButtonSection extends StatelessWidget {
           const Divider(),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: BlocBuilder<SettingsExcludedRoutesBloc,
-                SettingsExcludedRoutesState>(
+            child: BlocBuilder<ExcludedRoutesBloc,
+                ExcludedRoutesState>(
               builder: (context, state) {
                 return FilledButton(
                   onPressed: state.wasChanged
@@ -34,7 +34,7 @@ class SettingsExcludedRoutesButtonSection extends StatelessWidget {
       );
 
   void _saveExcludedRoutes(BuildContext context) =>
-      context.read<SettingsExcludedRoutesBloc>().add(
-            const SettingsExcludedRoutesEvent.saveExcludedRoutes(),
+      context.read<ExcludedRoutesBloc>().add(
+            const ExcludedRoutesEvent.saveExcludedRoutes(),
           );
 }

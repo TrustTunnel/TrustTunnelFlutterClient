@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:vpn/common/assets/asset_icons.dart';
 import 'package:vpn/common/extensions/common_extensions.dart';
@@ -20,11 +19,6 @@ abstract class NavigationScreenUtils {
           'icon': AssetIcons.settings,
           'label': context.ln.settings,
         },
-        if (kDebugMode)
-          {
-            'icon': AssetIcons.arrowBack,
-            'label': 'Test',
-          },
       ];
 
   static List<NavigationRailDestination> getNavigationRailDestinations(
