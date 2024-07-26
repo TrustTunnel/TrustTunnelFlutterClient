@@ -37,7 +37,7 @@ Server::Server(
   const std::string& domain,
   const std::string& login,
   const std::string& password,
-  const VpnProtocol& protocol,
+  const VpnProtocol& vpn_protocol,
   int64_t routing_profile_id,
   const EncodableList& dns_servers)
  : id_(id),
@@ -46,7 +46,7 @@ Server::Server(
     domain_(domain),
     login_(login),
     password_(password),
-    protocol_(protocol),
+    vpn_protocol_(vpn_protocol),
     routing_profile_id_(routing_profile_id),
     dns_servers_(dns_servers) {}
 
@@ -104,12 +104,12 @@ void Server::set_password(std::string_view value_arg) {
 }
 
 
-const VpnProtocol& Server::protocol() const {
-  return protocol_;
+const VpnProtocol& Server::vpn_protocol() const {
+  return vpn_protocol_;
 }
 
-void Server::set_protocol(const VpnProtocol& value_arg) {
-  protocol_ = value_arg;
+void Server::set_vpn_protocol(const VpnProtocol& value_arg) {
+  vpn_protocol_ = value_arg;
 }
 
 
@@ -140,7 +140,7 @@ EncodableList Server::ToEncodableList() const {
   list.push_back(EncodableValue(domain_));
   list.push_back(EncodableValue(login_));
   list.push_back(EncodableValue(password_));
-  list.push_back(CustomEncodableValue(protocol_));
+  list.push_back(CustomEncodableValue(vpn_protocol_));
   list.push_back(EncodableValue(routing_profile_id_));
   list.push_back(EncodableValue(dns_servers_));
   return list;
@@ -244,19 +244,19 @@ RoutingProfile RoutingProfile::FromEncodableList(const EncodableList& list) {
 
 VpnRequest::VpnRequest(
   const std::string& time,
-  const VpnProtocol& protocol,
+  const VpnProtocol& vpn_protocol,
   const RoutingMode& decision,
   const std::string& source_ip_address,
   const std::string& destination_ip_address)
  : time_(time),
-    protocol_(protocol),
+    vpn_protocol_(vpn_protocol),
     decision_(decision),
     source_ip_address_(source_ip_address),
     destination_ip_address_(destination_ip_address) {}
 
 VpnRequest::VpnRequest(
   const std::string& time,
-  const VpnProtocol& protocol,
+  const VpnProtocol& vpn_protocol,
   const RoutingMode& decision,
   const std::string& source_ip_address,
   const std::string& destination_ip_address,
@@ -264,7 +264,7 @@ VpnRequest::VpnRequest(
   const std::string* destination_port,
   const std::string* domain)
  : time_(time),
-    protocol_(protocol),
+    vpn_protocol_(vpn_protocol),
     decision_(decision),
     source_ip_address_(source_ip_address),
     destination_ip_address_(destination_ip_address),
@@ -281,12 +281,12 @@ void VpnRequest::set_time(std::string_view value_arg) {
 }
 
 
-const VpnProtocol& VpnRequest::protocol() const {
-  return protocol_;
+const VpnProtocol& VpnRequest::vpn_protocol() const {
+  return vpn_protocol_;
 }
 
-void VpnRequest::set_protocol(const VpnProtocol& value_arg) {
-  protocol_ = value_arg;
+void VpnRequest::set_vpn_protocol(const VpnProtocol& value_arg) {
+  vpn_protocol_ = value_arg;
 }
 
 
@@ -360,7 +360,7 @@ EncodableList VpnRequest::ToEncodableList() const {
   EncodableList list;
   list.reserve(8);
   list.push_back(EncodableValue(time_));
-  list.push_back(CustomEncodableValue(protocol_));
+  list.push_back(CustomEncodableValue(vpn_protocol_));
   list.push_back(CustomEncodableValue(decision_));
   list.push_back(EncodableValue(source_ip_address_));
   list.push_back(EncodableValue(destination_ip_address_));
@@ -400,7 +400,7 @@ AddServerRequest::AddServerRequest(
   const std::string& domain,
   const std::string& login,
   const std::string& password,
-  const VpnProtocol& protocol,
+  const VpnProtocol& vpn_protocol,
   int64_t routing_profile_id,
   const EncodableList& dns_servers)
  : name_(name),
@@ -408,7 +408,7 @@ AddServerRequest::AddServerRequest(
     domain_(domain),
     login_(login),
     password_(password),
-    protocol_(protocol),
+    vpn_protocol_(vpn_protocol),
     routing_profile_id_(routing_profile_id),
     dns_servers_(dns_servers) {}
 
@@ -457,12 +457,12 @@ void AddServerRequest::set_password(std::string_view value_arg) {
 }
 
 
-const VpnProtocol& AddServerRequest::protocol() const {
-  return protocol_;
+const VpnProtocol& AddServerRequest::vpn_protocol() const {
+  return vpn_protocol_;
 }
 
-void AddServerRequest::set_protocol(const VpnProtocol& value_arg) {
-  protocol_ = value_arg;
+void AddServerRequest::set_vpn_protocol(const VpnProtocol& value_arg) {
+  vpn_protocol_ = value_arg;
 }
 
 
@@ -492,7 +492,7 @@ EncodableList AddServerRequest::ToEncodableList() const {
   list.push_back(EncodableValue(domain_));
   list.push_back(EncodableValue(login_));
   list.push_back(EncodableValue(password_));
-  list.push_back(CustomEncodableValue(protocol_));
+  list.push_back(CustomEncodableValue(vpn_protocol_));
   list.push_back(EncodableValue(routing_profile_id_));
   list.push_back(EncodableValue(dns_servers_));
   return list;
@@ -520,7 +520,7 @@ UpdateServerRequest::UpdateServerRequest(
   const std::string& domain,
   const std::string& login,
   const std::string& password,
-  const VpnProtocol& protocol,
+  const VpnProtocol& vpn_protocol,
   int64_t routing_profile_id,
   const EncodableList& dns_servers)
  : id_(id),
@@ -529,7 +529,7 @@ UpdateServerRequest::UpdateServerRequest(
     domain_(domain),
     login_(login),
     password_(password),
-    protocol_(protocol),
+    vpn_protocol_(vpn_protocol),
     routing_profile_id_(routing_profile_id),
     dns_servers_(dns_servers) {}
 
@@ -587,12 +587,12 @@ void UpdateServerRequest::set_password(std::string_view value_arg) {
 }
 
 
-const VpnProtocol& UpdateServerRequest::protocol() const {
-  return protocol_;
+const VpnProtocol& UpdateServerRequest::vpn_protocol() const {
+  return vpn_protocol_;
 }
 
-void UpdateServerRequest::set_protocol(const VpnProtocol& value_arg) {
-  protocol_ = value_arg;
+void UpdateServerRequest::set_vpn_protocol(const VpnProtocol& value_arg) {
+  vpn_protocol_ = value_arg;
 }
 
 
@@ -623,7 +623,7 @@ EncodableList UpdateServerRequest::ToEncodableList() const {
   list.push_back(EncodableValue(domain_));
   list.push_back(EncodableValue(login_));
   list.push_back(EncodableValue(password_));
-  list.push_back(CustomEncodableValue(protocol_));
+  list.push_back(CustomEncodableValue(vpn_protocol_));
   list.push_back(EncodableValue(routing_profile_id_));
   list.push_back(EncodableValue(dns_servers_));
   return list;

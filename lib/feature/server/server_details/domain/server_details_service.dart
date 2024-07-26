@@ -57,7 +57,7 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
         domain: data.domain,
         login: data.username,
         password: data.password,
-        protocol: data.protocol,
+        vpnProtocol: data.protocol,
         dnsServers: data.dnsServers,
         // TODO uncomment when routingProfile will be added to ServerDetailsData
         //routingProfileId: data.routingProfile!.id,
@@ -76,7 +76,7 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
         domain: data.domain,
         login: data.username,
         password: data.password,
-        protocol: data.protocol,
+        vpnProtocol: data.protocol,
         dnsServers: data.dnsServers,
         // TODO uncomment when routingProfile will be added to ServerDetailsData
         //routingProfileId: data.routingProfile!.id,
@@ -90,7 +90,7 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
         domain: server.domain,
         username: server.login,
         password: server.password,
-        protocol: server.protocol,
+        protocol: server.vpnProtocol,
         // TODO add routingProfile from serverRepository by id
         routingProfile: null,
         dnsServers: server.dnsServers.cast<String>(),

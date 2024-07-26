@@ -29,7 +29,7 @@ class MockPlatformApi: PlatformApi, EventChannel.StreamHandler, Closeable {
                 domain = "server$i.com",
                 login = "login$i",
                 password = "password$i",
-                protocol = VpnProtocol.HTTP2,
+                vpnProtocol = VpnProtocol.HTTP2,
                 routingProfileId = 0,
                 dnsServers = listOf(),
             ))
@@ -37,7 +37,7 @@ class MockPlatformApi: PlatformApi, EventChannel.StreamHandler, Closeable {
         for (i in 1..20) {
             requests.add(VpnRequest(
                 time = "01.07.2024 18.48.11",
-                protocol = VpnProtocol.HTTP2,
+                vpnProtocol = VpnProtocol.HTTP2,
                 decision = RoutingMode.BYPASS,
                 sourceIpAddress = "192.168.1.$i",
                 destinationIpAddress = "192.168.1.$i",
@@ -105,7 +105,7 @@ class MockPlatformApi: PlatformApi, EventChannel.StreamHandler, Closeable {
             domain = request.domain,
             login = request.login,
             password = request.password,
-            protocol = request.protocol,
+            vpnProtocol = request.vpnProtocol,
             routingProfileId = request.routingProfileId,
             dnsServers = request.dnsServers,
         )
@@ -122,7 +122,7 @@ class MockPlatformApi: PlatformApi, EventChannel.StreamHandler, Closeable {
             domain = request.domain,
             login = request.login,
             password = request.password,
-            protocol = request.protocol,
+            vpnProtocol = request.vpnProtocol,
             routingProfileId = request.routingProfileId,
             dnsServers = request.dnsServers,
         )

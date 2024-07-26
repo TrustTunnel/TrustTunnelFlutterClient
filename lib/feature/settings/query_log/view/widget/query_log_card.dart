@@ -39,7 +39,7 @@ class QueryLogCard extends StatelessWidget {
         ),
       );
 
-  String _titleLine() => '${log.time}    ${log.protocol.stringValue} -> ${log.decision.stringValue}';
+  String _titleLine() => '${log.time}    ${log.vpnProtocol.stringValue} -> ${log.decision.stringValue}';
 
   String _ipAddressLine() {
     String source = log.sourceIpAddress;

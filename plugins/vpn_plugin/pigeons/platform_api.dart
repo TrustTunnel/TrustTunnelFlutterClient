@@ -39,7 +39,7 @@ class Server {
   final String domain;
   final String login;
   final String password;
-  final VpnProtocol protocol;
+  final VpnProtocol vpnProtocol;
   final int routingProfileId;
   final List<String?> dnsServers;
 
@@ -50,7 +50,7 @@ class Server {
     required this.domain,
     required this.login,
     required this.password,
-    required this.protocol,
+    required this.vpnProtocol,
     required this.routingProfileId,
     required this.dnsServers,
   });
@@ -74,7 +74,7 @@ class RoutingProfile {
 
 class VpnRequest {
   final String time;
-  final VpnProtocol protocol;
+  final VpnProtocol vpnProtocol;
   final RoutingMode decision;
   final String sourceIpAddress;
   final String destinationIpAddress;
@@ -84,7 +84,7 @@ class VpnRequest {
 
   const VpnRequest({
     required this.time,
-    required this.protocol,
+    required this.vpnProtocol,
     required this.decision,
     required this.sourceIpAddress,
     required this.destinationIpAddress,
@@ -100,7 +100,7 @@ class AddServerRequest {
   final String domain;
   final String login;
   final String password;
-  final VpnProtocol protocol;
+  final VpnProtocol vpnProtocol;
   final int routingProfileId;
   final List<String?> dnsServers;
 
@@ -110,7 +110,7 @@ class AddServerRequest {
     required this.domain,
     required this.login,
     required this.password,
-    required this.protocol,
+    required this.vpnProtocol,
     required this.routingProfileId,
     required this.dnsServers,
   });
@@ -123,7 +123,7 @@ class UpdateServerRequest {
   final String domain;
   final String login;
   final String password;
-  final VpnProtocol protocol;
+  final VpnProtocol vpnProtocol;
   final int routingProfileId;
   final List<String?> dnsServers;
 
@@ -134,7 +134,7 @@ class UpdateServerRequest {
     required this.domain,
     required this.login,
     required this.password,
-    required this.protocol,
+    required this.vpnProtocol,
     required this.routingProfileId,
     required this.dnsServers,
   });
