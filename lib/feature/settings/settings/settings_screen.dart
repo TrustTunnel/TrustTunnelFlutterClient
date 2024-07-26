@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/localization/localization.dart';
+import 'package:vpn/common/utils/url_utils.dart';
 import 'package:vpn/feature/settings/excluded_routes/view/excluded_routes_screen.dart';
 import 'package:vpn/feature/settings/query_log/view/query_log_screen.dart';
 import 'package:vpn/feature/settings/settings_about/about_screen.dart';
@@ -51,8 +52,7 @@ class SettingsScreen extends StatelessWidget {
         const ExcludedRoutesScreen(),
       );
 
-  // TODO: Implement method to open GitHub organization
-  void _openGithubOrganization() {}
+  void _openGithubOrganization() => UrlUtils.openWebPage(UrlUtils.githubAdguardTeam);
 
   void _pushAboutScreen(BuildContext context) => context.push(
         const AboutScreen(),
