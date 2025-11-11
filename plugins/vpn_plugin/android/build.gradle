@@ -19,7 +19,7 @@ allprojects {
         google()
         mavenCentral()
         maven {
-            url = uri("https://maven.pkg.github.com/AdguardTeam/VpnLibs")
+            url = uri("https://maven.pkg.github.com/TrustTunnel/TrustTunnelClient")
             credentials {
                 username = ""
                 password = project.getProperty("gpr.key")
@@ -56,5 +56,5 @@ android {
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
-    implementation("com.adguard.trusttunnel:trusttunnel-android:0.99.19")
+    implementation("com.adguard.trusttunnel:trusttunnel-client-android:0.99.22")
 }
