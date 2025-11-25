@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'fastlane', '2.229.0'
+gem 'fastlane', '2.229.1'
 gem 'cocoapods', '1.16.1'
 gem 'nokogiri', '1.15.3'
 gem 'json', '2.7.1'
