@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: 'none'
 
-version: 1.0.0+501
+version: 1.0.0+601
 
 version_titles:
   versionTitleReleaseNumber: 0
