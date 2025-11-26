@@ -18,19 +18,23 @@ fi
 
 
 
-# Configure files for "pod install"
+# Configure build_channel in pubspec.yaml
+normalized_build_channel="Release"
 if [ "$build_channel" == "prenightly" ]; then
-    echo "parameters.buildChannel = BuildChannel::PreNightly" > custom.local
+    normalized_build_channel="PreNightly"
 elif [ "$build_channel" == "nightly" ]; then
-    echo "parameters.buildChannel = BuildChannel::Nightly" > custom.local
+    normalized_build_channel="Nightly"
 elif [ "$build_channel" == "beta" ]; then
-    echo "parameters.buildChannel = BuildChannel::Beta" > custom.local
+    normalized_build_channel="Beta"
 elif [ "$build_channel" == "rc" ]; then
-    echo "parameters.buildChannel = BuildChannel::Rc" > custom.local
-else
-    echo "parameters.buildChannel = BuildChannel::Release" > custom.local
+    normalized_build_channel="Rc"
 fi
-echo "parameters.backendType = BackendType::Prod" >> custom.local
+
+if grep -q '^build_channel:' pubspec.yaml; then
+    sed -i '' "s/^build_channel:.*/build_channel: ${normalized_build_channel}/" pubspec.yaml
+else
+    echo "build_channel: ${normalized_build_channel}" >> pubspec.yaml
+fi
 
 # Remove the GPR_KEY secret when native lib will be published
 export GPR_KEY="${bamboo_githubPublicRepoPassword}"

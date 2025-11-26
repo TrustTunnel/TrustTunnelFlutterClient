@@ -12,6 +12,17 @@ version_titles:
   versionTitleNightlyNumber: 0
   versionTitlePreNightlyNumber: 0
 
+# build_channel defines the current CI build track.
+# Input value from bamboo managed in bamboo-specs/scripts/configure_before_build.sh script
+# resulting value updates this variable before building the app
+# Possible values:
+#   - Release (default)
+#   - Rc
+#   - Beta
+#   - Nightly
+#   - PreNightly
+build_channel: Release
+
 environment:
   flutter: 3.35.4
   sdk: '>=3.8.0 <4.0.0'

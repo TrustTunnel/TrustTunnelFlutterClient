@@ -1,3 +1,5 @@
+require 'yaml'
+
 ensure_bundle_exec
 
 
@@ -46,13 +48,13 @@ end
 
 
 lane :build_simulator_app_and_zip do |options|
-    load_podfile_resolved_parameters()
+    load_pubspec_resolved_parameters()
     print_additional_options({
         "Build type"                => "#{options[:type]}",
-        "Version title"             => "#{ENV['PODFILE_RESOLVED_VERSION_TITLE']}",
-        "Project version"           => "#{ENV['PODFILE_RESOLVED_PROJECT_VERSION']}",
-        "Build number"              => "#{ENV['PODFILE_RESOLVED_BUILD_NUMBER']}",
-        "Build channel"             => "#{ENV['PODFILE_RESOLVED_BUILD_CHANNEL']}",
+        "Version title"             => "#{ENV['PUBSPEC_RESOLVED_VERSION_TITLE']}",
+        "Project version"           => "#{ENV['PUBSPEC_RESOLVED_PROJECT_VERSION']}",
+        "Build number"              => "#{ENV['PUBSPEC_RESOLVED_BUILD_NUMBER']}",
+        "Build channel"             => "#{ENV['PUBSPEC_RESOLVED_BUILD_CHANNEL']}",
     })
 
     clean()
@@ -81,13 +83,13 @@ lane :build_ipa do |options|
 
     upload_symbols = options[:upload_symbols] == true
 
-    load_podfile_resolved_parameters()
+    load_pubspec_resolved_parameters()
     print_additional_options({
         "Build type"                => "#{options[:type]}",
-        "Version title"             => "#{ENV['PODFILE_RESOLVED_VERSION_TITLE']}",
-        "Project version"           => "#{ENV['PODFILE_RESOLVED_PROJECT_VERSION']}",
-        "Build number"              => "#{ENV['PODFILE_RESOLVED_BUILD_NUMBER']}",
-        "Build channel"             => "#{ENV['PODFILE_RESOLVED_BUILD_CHANNEL']}",
+        "Version title"             => "#{ENV['PUBSPEC_RESOLVED_VERSION_TITLE']}",
+        "Project version"           => "#{ENV['PUBSPEC_RESOLVED_PROJECT_VERSION']}",
+        "Build number"              => "#{ENV['PUBSPEC_RESOLVED_BUILD_NUMBER']}",
+        "Build channel"             => "#{ENV['PUBSPEC_RESOLVED_BUILD_CHANNEL']}",
         "Upload symbols to Sentry"  => "#{upload_symbols}"
     })
 
@@ -248,9 +250,8 @@ end
 
 def print_additional_options(hashes)
     puts("")
-    puts("===========================================================")
+    puts("==================================================================")
     puts("## Additional options")
-    puts("")
     puts("")
 
     hashes.each do |key, value|
@@ -269,11 +270,38 @@ def print_additional_options(hashes)
     puts("")
 end
 
-def load_podfile_resolved_parameters()
-    puts("Loading the .podfile.resolved file...")
-    load "#{ENV['PWD']}/.podfile.resolved"
-    puts("The .podfile.resolved file is loaded")
-end
+def load_pubspec_resolved_parameters()
+    puts("Loading version info from pubspec.yaml...")
+  
+    pubspec_path = File.join(ENV['PWD'], '..', 'pubspec.yaml')
+    unless File.exist?(pubspec_path)
+      UI.user_error!("pubspec.yaml not found at #{pubspec_path}")
+    end
+  
+    pubspec = YAML.load_file(pubspec_path)
+  
+    version_line = pubspec['version']
+    if version_line.nil? || version_line.empty?
+      UI.user_error!("No 'version' field found in pubspec.yaml")
+    end
+  
+    version, build_number = version_line.split('+', 2)
+    version = version.to_s.strip
+    build_number = build_number.to_s.strip
+  
+    if version.empty? || build_number.empty?
+      UI.user_error!("Cannot parse version+build_number from pubspec.yaml: '#{version_line}'")
+    end
+  
+    version_with_build_number = "#{version}.#{build_number}"
+
+    build_channel = pubspec['build_channel']
+  
+    ENV['PUBSPEC_RESOLVED_PROJECT_VERSION'] = version
+    ENV['PUBSPEC_RESOLVED_BUILD_NUMBER']    = build_number
+    ENV['PUBSPEC_RESOLVED_VERSION_TITLE']   = version_with_build_number
+    ENV['PUBSPEC_RESOLVED_BUILD_CHANNEL']   = build_channel
+  end
 
 def create_local_keychain(keychain_path)
     create_keychain(
