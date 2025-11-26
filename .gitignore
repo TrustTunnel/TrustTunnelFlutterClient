@@ -69,14 +69,14 @@ lib/common/localization/generated/
 !lib/data/api/swagger/*.g.dart
 
 # Fastlane and Ruby related
-**/fastlane/report.xml
-**/fastlane/Preview.html
-**/fastlane/screenshots
-**/fastlane/test_output
-**/fastlane/.env
-**/fastlane/.env.default
-**/fastlane/AppStoreApiInfo.json
-**/Gemfile.lock
-**/Podfile.lock
-**/.bundle
+*/fastlane/report.xml
+*/fastlane/Preview.html
+*/fastlane/screenshots
+*/fastlane/test_output
+*/fastlane/.env
+*/fastlane/.env.default
+*/fastlane/AppStoreApiInfo.json
+*/Gemfile.lock
+*/Podfile.lock
+*/.bundle
 
