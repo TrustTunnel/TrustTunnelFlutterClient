@@ -59,7 +59,7 @@ lane :build_simulator_app_and_zip do |options|
 
     clean()
     build_app(
-        scheme: "App",
+        scheme: "Runner",
         clean: true,
         configuration: "Debug",
         destination: "generic/platform=iOS Simulator",
@@ -96,7 +96,7 @@ lane :build_ipa do |options|
     clean()
     sync_certs_and_profiles(type: options[:type], readonly: true)
     build_app(
-        scheme: "App",
+        scheme: "Runner",
         output_directory: FASTLANE_BUILD_DIRECTORY,
         output_name: "#{FASTLANE_BUILD_NAME}.ipa",
         clean: true,

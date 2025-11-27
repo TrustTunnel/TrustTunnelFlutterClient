@@ -25,7 +25,12 @@ if [ "$build_type" != "appstore" ]; then
     bundle exec fastlane sync_certs_and_profiles type:appstore readonly:true
 fi
 cd ..
+
+# Remove the GPR_KEY secret when native lib will be published
+export GPR_KEY="${bamboo_githubPublicRepoPassword}"
+
 make .dart_tool/build/entrypoint/build.dart
 
 cd ios
+bundle exec pod install # Let's install again to synchronize built files
 bundle exec fastlane build_ipa type:"$build_type" upload_symbols:"$upload_symbols"

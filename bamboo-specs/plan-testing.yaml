@@ -2,7 +2,7 @@
 version: 2
 
 plan:
-  name: iOS • TrustTunnel — testing
+  name: TrustTunnel — Testing • iOS
   key: IOSTESTING
   project-key: TT
 
@@ -55,10 +55,10 @@ Build IPA:
     - script: bamboo-specs/scripts/configure_before_build.sh "nightly" "$PWD"
     - script: bamboo-specs/scripts/build_ipa.sh "adhoc" "false"
   final-tasks:
-    - script: find . -mindepth 1 \( -path "./build/TrustTunnel.ipa" \) -o -delete; exit 0
+    - script: find . -mindepth 1 \( -path "./ios/build/TrustTunnel.ipa" \) -o -delete; exit 0
   artifacts:
     - name: TrustTunnel.ipa
-      location: build
+      location: ios/build
       pattern: 'TrustTunnel.ipa'
       shared: true
       required: true

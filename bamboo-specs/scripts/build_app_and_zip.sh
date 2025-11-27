@@ -15,6 +15,9 @@ else
     exit 0
 fi
 
+# Remove the GPR_KEY secret when native lib will be published
+export GPR_KEY="${bamboo_githubPublicRepoPassword}"
+
 make .dart_tool/build/entrypoint/build.dart
 
 cd ios
