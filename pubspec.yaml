@@ -9,7 +9,7 @@ version_titles:
   versionTitleReleaseNumber: 0
   versionTitleRcNumber: 0
   versionTitleBetaNumber: 0
-  versionTitleNightlyNumber: 0
+  versionTitleNightlyNumber: 1
   versionTitlePreNightlyNumber: 0
 
 # build_channel defines the current CI build track.
