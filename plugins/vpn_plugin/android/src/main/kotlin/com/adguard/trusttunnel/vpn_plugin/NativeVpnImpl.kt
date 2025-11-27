@@ -5,20 +5,23 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import com.adguard.trusttunnel.StateNotifier
+import java.util.ArrayDeque
+import java.util.Queue
+import com.adguard.trusttunnel.AppNotifier
 import com.adguard.trusttunnel.VpnService
 import io.flutter.plugin.common.EventChannel
 
 class NativeVpnImpl(
     private val appContext: Context
-) : EventChannel.StreamHandler, StateNotifier {
-
+) : EventChannel.StreamHandler, AppNotifier {
     private var events: EventChannel.EventSink? = null
     private var currentState = VpnManagerState.DISCONNECTED
     private val main = Handler(Looper.getMainLooper())
+    private val queryLogHandler = QueryLogStreamHandler()
 
     init {
         VpnService.startNetworkManager(appContext)
+        VpnService.setAppNotifier(this)
     }
 
     fun startPrepared(ctx: Context, config: String) {
@@ -36,12 +39,6 @@ class NativeVpnImpl(
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         Log.i("VPN_PLUGIN", "onListen() -> subscribe state notifier")
         this.events = events
-        try {
-            VpnService.setStateNotifier(this) 
-        } catch (t: Throwable) {
-            Log.w("VPN_PLUGIN", "setStateNotifier failed", t)
-        }
-
         postEvent(currentState.ordinal)
     }
 
@@ -61,11 +58,59 @@ class NativeVpnImpl(
         postEvent(state)
     }
 
+    override fun onConnectionInfo(info: String) {
+        Log.i("VPN_PLUGIN", "onConnectionInfo")
+        queryLogHandler.onQueryLog(info)
+    }
+
     private fun postEvent(value: Any) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             events?.success(value)
         } else {
             main.post { events?.success(value) }
+        }
+    }
+}
+
+class QueryLogStreamHandler : EventChannel.StreamHandler {
+    private var events: EventChannel.EventSink? = null
+    private val main = Handler(Looper.getMainLooper())
+    private val queue: Queue<String> = ArrayDeque()
+
+    override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+        Log.i("VPN_PLUGIN", "QueryLog#onListen() -> subscribe state notifier")
+        this.events = events
+        for (log in queue) {
+            postEvent(log)
+        }
+        queue.clear()
+    }
+
+    override fun onCancel(arguments: Any?) {
+        Log.i("VPN_PLUGIN", "QueryLog#onCancel() -> unsubscribe")
+        try {
+            events = null
+        } catch (t: Throwable) {
+            Log.w("VPN_PLUGIN", "clearNotifier failed for QueryLog", t)
+        }
+        events = null
+    }
+
+    private fun postEvent(value: Any) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            events?.success(value)
+        } else {
+            main.post { events?.success(value) }
+        }
+    }
+
+    fun onQueryLog(log: String) {
+        main.post {
+            if (events == null) {
+                queue.offer(log)
+            } else {
+                postEvent(log)
+            }
         }
     }
 }

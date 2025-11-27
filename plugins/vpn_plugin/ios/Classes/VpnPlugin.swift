@@ -10,12 +10,17 @@ public class VpnPlugin: NSObject, FlutterPlugin {
         // TODO: Made separated plugin initialization
         // Konstantin Gorynin <k.gorynin@adguard.com>, 25 August 2025
         // Setup all platform managers
-        let vpnImpl = IVpnManagerImpl(bundleIdentifier: "com.adguard.TrustTunnel.Extension")
+        let vpnImpl = IVpnManagerImpl(bundleIdentifier: "com.adguard.TrustTunnel.Extension",
+                                              appGroup: "group.com.adguard.TrustTunnel")
         IVpnManagerSetup.setUp(binaryMessenger: messenger, api: vpnImpl)
 
         let events = FlutterEventChannel(
             name: "vpn_plugin_event_channel", binaryMessenger: messenger)
         events.setStreamHandler(vpnImpl)
+
+        let events_querylog = FlutterEventChannel(
+            name: "vpn_plugin_event_channel_query_log", binaryMessenger: messenger)
+        events_querylog.setStreamHandler(vpnImpl.queryLogHandler)
 
         self.vpnApi = vpnImpl
     }
@@ -24,11 +29,17 @@ public class VpnPlugin: NSObject, FlutterPlugin {
 final class IVpnManagerImpl: NSObject, IVpnManager, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     private var vpnManager: VpnManager?
+    var queryLogHandler = QueryLogStreamHandler()
     
-    init(bundleIdentifier: String) {
+    init(bundleIdentifier: String, appGroup: String) {
         super.init()
-        self.vpnManager = VpnManager(bundleIdentifier: bundleIdentifier, stateChangeCallback: { [weak self] newState in
+        self.vpnManager = VpnManager(bundleIdentifier: bundleIdentifier, appGroup: appGroup, stateChangeCallback: { [weak self] newState in
             self?.state = VpnManagerState(rawValue: newState)!
+        },
+        connectionInfoCallback: { [weak self] info in
+            DispatchQueue.main.async {
+                self?.queryLogHandler.emitQueryLog(info)
+            }
         })
     }
 
@@ -71,5 +82,38 @@ final class IVpnManagerImpl: NSObject, IVpnManager, FlutterStreamHandler {
 
     private func emitState(_ s: VpnManagerState) {
         eventSink?(s.rawValue)
+    }
+}
+
+final class QueryLogStreamHandler : NSObject, FlutterStreamHandler {
+    private var eventSink: FlutterEventSink?
+    private var queue: [String] = []
+
+    override init() {
+        super.init()
+    }
+
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink)
+        -> FlutterError?
+    {
+        self.eventSink = events
+        for log in queue {
+            self.eventSink!(log)
+        }
+        queue = []
+        return nil
+    }
+
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        self.eventSink = nil
+        return nil
+    }
+
+    func emitQueryLog(_ s: String) {
+        if self.eventSink == nil {
+            queue.append(s)
+        } else {
+            self.eventSink!(s)
+        }
     }
 }

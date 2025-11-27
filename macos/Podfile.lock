@@ -30,7 +30,7 @@ PODS:
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
     - sqlite3/session
-  - TrustTunnelClient (0.99.36)
+  - TrustTunnelClient (0.99.37)
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
   - vpn_plugin (0.0.1):
@@ -42,7 +42,7 @@ DEPENDENCIES:
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/darwin`)
-  - TrustTunnelClient (from `../spec/TrustTunnelClient.podspec`)
+  - TrustTunnelClient (from `../specs/TrustTunnelClient.podspec`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
   - vpn_plugin (from `Flutter/ephemeral/.symlinks/plugins/vpn_plugin/macos`)
 
@@ -60,7 +60,7 @@ EXTERNAL SOURCES:
   sqlite3_flutter_libs:
     :path: Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/darwin
   TrustTunnelClient:
-    :podspec: "../spec/TrustTunnelClient.podspec"
+    :podspec: "../specs/TrustTunnelClient.podspec"
   url_launcher_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
   vpn_plugin:
@@ -72,10 +72,10 @@ SPEC CHECKSUMS:
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   sqlite3: 73513155ec6979715d3904ef53a8d68892d4032b
   sqlite3_flutter_libs: 83f8e9f5b6554077f1d93119fe20ebaa5f3a9ef1
-  TrustTunnelClient: 8a1419406856c35ad1298c79de5c7928ef686682
+  TrustTunnelClient: 284475b3caff476c3ea132a1740ba70590593369
   url_launcher_macos: 0fba8ddabfc33ce0a9afe7c5fef5aab3d8d2d673
   vpn_plugin: ccaa85a537811ebf689b91d10f8fc34db1adc471
 
-PODFILE CHECKSUM: 14f8fb97fae12d21a00159abfae7e879c852d4ff
+PODFILE CHECKSUM: 8208ff5892e592702dfcf31ac6e950b0cf06b057
 
 COCOAPODS: 1.16.2
