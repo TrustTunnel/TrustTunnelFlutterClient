@@ -16,11 +16,11 @@ make .dart_tool/package_config.json
 
 # Export Bamboo variables
 export GPR_KEY="${bamboo_githubPublicRepoPassword}"
-echo "gpr.key=${bamboo_githubPublicRepoPassword}" | base64 --decode >> "${android_root_dir}/gradle.properties"
+echo "gpr.key=${bamboo_githubPublicRepoPassword}" >> "${android_root_dir}/gradle.properties"
 
-echo "${bamboo_adguardVpnKeyStoreSecret}" | base64 --decode > "${android_root_dir}/trusttunnel.keystore"
+echo "${bamboo_keyStoreSecret}" | base64 --decode > "${android_root_dir}/trusttunnel.keystore"
 
-echo "signingConfigKeyAlias=${bamboo_adguardVpnKeyAliasSecret}" >> "${android_root_dir}/gradle.properties"
-echo "signingConfigKeyPassword=${bamboo_adguardVpnKeyPassword}" >> "${android_root_dir}/gradle.properties"
-echo "signingConfigKeyStorePath=${root_dir_to_put_keystore}/vpn.keystore" >> "${android_root_dir}/gradle.properties"
-echo "signingConfigKeyStorePassword=${bamboo_adguardVpnStorePassword}" >> "${android_root_dir}/gradle.properties"
+echo "signingConfigKeyAlias=${bamboo_keyAliasSecret}" >> "${android_root_dir}/gradle.properties"
+echo "signingConfigKeyPassword=${bamboo_keyPassword}" >> "${android_root_dir}/gradle.properties"
+echo "signingConfigKeyStorePath=${android_root_dir}/trusttunnel.keystore" >> "${android_root_dir}/gradle.properties"
+echo "signingConfigKeyStorePassword=${bamboo_storePassword}" >> "${android_root_dir}/gradle.properties"

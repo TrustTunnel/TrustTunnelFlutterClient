@@ -1,0 +1,6 @@
+// TrustTunnel Core project configuration
+includeBuild('/path-to-own/vpn-libs/platform/android') {
+    dependencySubstitution {
+        substitute module('com.adguard.trusttunnel:trusttunnel-client-android') using project(':lib')
+    }
+}

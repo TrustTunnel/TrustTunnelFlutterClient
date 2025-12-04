@@ -62,7 +62,7 @@ Preparing:
         repository: bamboo-scripts
         path: bamboo-scripts
         force-clean-build: true
-    - script: python3 trusttunnel/bamboo-scripts/bamboo-kit.py addLabelToPlan --project-key TT --plan-key BUILDINGTODEPLOY --build-number "${bamboo.buildNumber}" --label "${bamboo_build_channel}"
+    - script: python3 bamboo-scripts/bamboo-kit.py addLabelToPlan --project-key TT --plan-key BUILDINGTODEPLOY --build-number "${bamboo.buildNumber}" --label "${bamboo_build_channel}"
     - script: trusttunnel/bamboo-specs/scripts/collect_changelog_retag_collect_variables.sh "${bamboo_working_directory}/git-scripts/git_kit.sh"
     - inject-variables:
         file: trusttunnel/variables.txt

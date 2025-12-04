@@ -36,7 +36,6 @@ devtools_options.yaml
 .pub-cache/
 .pub/
 /build/
-/ios/build/
 
 # Symbolication related
 app.*.symbols
@@ -48,6 +47,7 @@ app.*.map.json
 .gradle/
 android/app/.cxx
 android/trusttunnel.keystore
+android/build
 
 # Android Studio will place build artifacts here
 /android/app/debug
@@ -69,7 +69,8 @@ lib/common/localization/generated/
 .fvmrc
 !lib/data/api/swagger/*.g.dart
 
-# Fastlane and Ruby related
+# iOS related
+/ios/build/
 */fastlane/report.xml
 */fastlane/Preview.html
 */fastlane/screenshots
