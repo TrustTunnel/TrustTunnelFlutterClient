@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vpn/common/error/model/enum/presentation_field_name.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/localization/extensions/locale_enum_extension.dart';
 import 'package:vpn/common/localization/localization.dart';
 import 'package:vpn/common/utils/validation_utils.dart';
@@ -20,15 +19,13 @@ class ServerDetailsForm extends StatefulWidget {
 
 class _ServerDetailsFormState extends State<ServerDetailsForm> {
   @override
-  Widget build(BuildContext context) {
-    const separator32 = SizedBox(height: 32);
-
-    return BlocBuilder<ServerDetailsBloc, ServerDetailsState>(
-      buildWhen: (prev, current) => prev.action == current.action,
-      builder: (context, state) => ListView(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        shrinkWrap: true,
+  Widget build(BuildContext context) => BlocBuilder<ServerDetailsBloc, ServerDetailsState>(
+    buildWhen: (prev, current) => prev.action == current.action,
+    builder: (context, state) => Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 32,
         children: [
           CustomTextField(
             value: state.data.serverName,
@@ -44,7 +41,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               PresentationFieldName.serverName,
             ),
           ),
-          separator32,
           CustomTextField(
             value: state.data.ipAddress,
             label: context.ln.enterIpAddressLabel,
@@ -59,7 +55,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               PresentationFieldName.ipAddress,
             ),
           ),
-          separator32,
           CustomTextField(
             value: state.data.domain,
             label: context.ln.enterDomainLabel,
@@ -74,7 +69,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               PresentationFieldName.domain,
             ),
           ),
-          separator32,
           CustomTextField(
             value: state.data.username,
             label: context.ln.username,
@@ -89,7 +83,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               PresentationFieldName.userName,
             ),
           ),
-          separator32,
           CustomTextField(
             value: state.data.password,
             label: context.ln.password,
@@ -104,7 +97,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               PresentationFieldName.password,
             ),
           ),
-          separator32,
           CustomDropdownMenu<VpnProtocol>.expanded(
             value: state.data.protocol,
             values: VpnProtocol.values,
@@ -115,7 +107,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               protocol: protocol,
             ),
           ),
-          separator32,
           CustomDropdownMenu<RoutingProfile>.expanded(
             value: state.selectedRoutingProfile,
             values: state.availableRoutingProfiles,
@@ -125,16 +116,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               context,
               routingProfileId: profile?.id,
             ),
-          ),
-          const SizedBox(
-            height: 27,
-          ),
-          Text(
-            context.ln.dnsServers,
-            style: context.textTheme.bodyLarge,
-          ),
-          const SizedBox(
-            height: 11,
           ),
           CustomTextField(
             value: state.data.dnsServers.join('\n'),
@@ -154,8 +135,8 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
 
   void _onDataChanged(
     BuildContext context, {

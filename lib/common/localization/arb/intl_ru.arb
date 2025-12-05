@@ -20,7 +20,6 @@
   "enterIpAddressHint": "IPv4 or IPv6",
   "enterDomainLabel": "Domain name from server certificate",
   "enterDomainHint": "Domain or IP address",
-  "dnsServers": "DNS servers",
   "defaultProfile": "Default profile",
   "serversEmptyTitle": "Create your first server",
   "serversEmptyDescription": "Create a server for secure and anonymous data transfer",

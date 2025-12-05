@@ -43,10 +43,9 @@ class _ServerDetailsViewState extends State<ServerDetailsView> {
       buildWhen: (previous, current) => previous.loadingStatus != current.loadingStatus,
       builder: (context, state) {
         if (state.isLoading) return const SizedBox.shrink();
-        final body = const ServerDetailsForm();
 
         return ServerDetailsFullScreenView(
-          body: body,
+          body: const ServerDetailsForm(),
           onDiscardChanges: (hasChanges) => hasChanges ? _showNotSavedChangesWarning(context) : context.pop(),
         );
       },
