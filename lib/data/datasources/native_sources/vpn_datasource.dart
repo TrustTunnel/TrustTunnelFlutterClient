@@ -1,9 +1,11 @@
 import 'dart:async';
-
+import 'package:collection/collection.dart';
 import 'package:vpn/common/extensions/model_extensions.dart';
 import 'package:vpn/common/utils/upstream_protocol_encoder.dart';
+import 'package:vpn/common/utils/validation_utils.dart';
 import 'package:vpn/common/utils/vpn_mode_encoder.dart';
 import 'package:vpn/data/datasources/vpn_datasource.dart';
+import 'package:vpn/data/model/routing_mode.dart';
 import 'package:vpn/data/model/routing_profile.dart';
 import 'package:vpn/data/model/server.dart';
 import 'package:vpn/data/model/vpn_log.dart';
@@ -54,15 +56,23 @@ class VpnDataSourceImpl implements VpnDataSource {
   Future<void> start({
     required Server server,
     required RoutingProfile routingProfile,
+    required List<String> excludedRoutes,
   }) {
+    final routingProfile = server.routingProfile;
+
+    final exclusions = _getExclusionsByMode(routingProfile);
+
     final endPoint = Endpoint(
       hostName: server.domain,
-      hasIpv6: true,
+      hasIpv6: false,
       username: server.username,
       password: server.password,
       addresses: [
         server.ipAddress,
       ],
+      exclusions: exclusions,
+      dnsUpStreams: server.dnsServers,
+
       upStreamProtocol: UpStreamProtocolEncoder().convert(
         server.vpnProtocol,
       ),
@@ -74,7 +84,9 @@ class VpnDataSourceImpl implements VpnDataSource {
           routingProfile.defaultMode,
         ),
         endpoint: endPoint,
-        tun: Tun(),
+        tun: Tun(
+          excludedRoutes: excludedRoutes,
+        ),
         socks: Socks(),
       ),
     );
@@ -88,5 +100,25 @@ class VpnDataSourceImpl implements VpnDataSource {
     final state = await _platformApi.getCurrentState();
 
     return VpnStateFromApi.parse(state);
+  }
+
+  List<String> _getExclusionsByMode(RoutingProfile profile) {
+    final List<String> exclusions;
+
+    switch (profile.defaultMode) {
+      case RoutingMode.bypass:
+        exclusions = profile.vpnRules;
+
+      case RoutingMode.vpn:
+        exclusions = profile.bypassRules;
+    }
+
+    final parsedExclusions = exclusions.map(ValidationUtils.tryParseDomain).nonNulls.toList();
+    final wildCard = '*.';
+
+    return {
+      ...parsedExclusions,
+      ...parsedExclusions.whereNot((e) => e.startsWith(wildCard)).map((e) => '$wildCard$e'),
+    }.toList();
   }
 }

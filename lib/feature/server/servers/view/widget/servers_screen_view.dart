@@ -19,7 +19,6 @@ class ServersScreenView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ScaffoldWrapper(
     child: ScaffoldMessenger(
-      key: ValueKey('SERVERMESSENGER'),
       child: Scaffold(
         appBar: CustomAppBar(
           title: context.ln.servers,
@@ -60,13 +59,15 @@ class ServersScreenView extends StatelessWidget {
     ),
   );
 
-  void _pushServerDetailsScreen(BuildContext context) => context
-      .push(
-        const ServerDetailsPopUp(),
-      )
-      .then(
-        (_) => context.read<ServersBloc>().add(
-          const ServersEvent.fetch(),
-        ),
-      );
+  void _pushServerDetailsScreen(BuildContext context) async {
+    final bloc = context.read<ServersBloc>();
+
+    await context.push(
+      const ServerDetailsPopUp(),
+    );
+
+    bloc.add(
+      const ServersEvent.fetch(),
+    );
+  }
 }

@@ -11,7 +11,12 @@ import 'package:vpn/feature/vpn/domain/entity/log_controller.dart';
 import 'package:vpn/feature/vpn/domain/entity/vpn_aspect.dart';
 import 'package:vpn/feature/vpn/domain/entity/vpn_controller.dart';
 
-typedef OnStartVpnCallback = Future<void> Function({required Server server, required RoutingProfile routingProfile});
+typedef OnStartVpnCallback =
+    Future<void> Function({
+      required Server server,
+      required RoutingProfile routingProfile,
+      required List<String> excludedRoutes,
+    });
 
 class VpnScope extends StatefulWidget {
   final VpnRepository vpnRepository;
@@ -91,12 +96,14 @@ class _VpnScopeState extends State<VpnScope> {
   Future<void> _start({
     required Server server,
     required RoutingProfile routingProfile,
+    required List<String> excludedRoutes,
   }) async {
     await _stop();
 
     final newServerStream = await widget.vpnRepository.startListenToStates(
       server: server,
       routingProfile: routingProfile,
+      excludedRoutes: excludedRoutes,
     );
 
     _vpnStreamSub = newServerStream.listen(_onVpnStateChanged);
@@ -105,10 +112,13 @@ class _VpnScopeState extends State<VpnScope> {
   Future<void> _stop() async {
     await widget.vpnRepository.stop();
     await _vpnStreamSub?.cancel();
+    _stateNotifier.value = VpnState.disconnected;
     _vpnStreamSub = null;
   }
 
-  void _onVpnStateChanged(VpnState state) => _stateNotifier.value = state;
+  void _onVpnStateChanged(VpnState state) {
+    _stateNotifier.value = state;
+  }
 
   void _onLogCollected(VpnLog log) {
     final limit = _logLimit;
@@ -149,8 +159,15 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnControl
        _onStop = onStop;
 
   @override
-  Future<void> start({required Server server, required RoutingProfile routingProfile}) =>
-      _onStart(server: server, routingProfile: routingProfile);
+  Future<void> start({
+    required Server server,
+    required RoutingProfile routingProfile,
+    required List<String> excludedRoutes,
+  }) => _onStart(
+    server: server,
+    routingProfile: routingProfile,
+    excludedRoutes: excludedRoutes,
+  );
 
   @override
   Future<void> stop() => _onStop();

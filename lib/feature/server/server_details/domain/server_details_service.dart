@@ -97,16 +97,9 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
   }
 
   PresentationField? _validateIpAddress(String ipAddress) {
-    final fieldName = PresentationFieldName.ipAddress;
-    if (ipAddress.isEmpty) {
-      return _getRequiredField(fieldName);
-    }
-    final ipAddressRegexp = RegExp(ValidationUtils.plainRawRegex);
-    if (!ipAddressRegexp.hasMatch(ipAddress)) {
-      return _getFieldWrongValue(fieldName);
-    }
+    final validationResult = ValidationUtils.validateIpAddress(ipAddress);
 
-    return null;
+    return validationResult ? null : _getFieldWrongValue(PresentationFieldName.ipAddress);
   }
 
   PresentationField? _validateDomain(String domain) {
@@ -148,7 +141,6 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
       return _getRequiredField(fieldName);
     }
     final resultRegex = [
-      ValidationUtils.plainRawRegex,
       ValidationUtils.dotRawRegex,
       ValidationUtils.dohRawRegex,
       ValidationUtils.quicRawRegex,
@@ -156,7 +148,7 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     ].map((e) => RegExp(e));
 
     for (final dnsServer in dnsServers) {
-      if (!resultRegex.any((element) => element.hasMatch(dnsServer))) {
+      if (!resultRegex.any((element) => element.hasMatch(dnsServer)) && !ValidationUtils.validateIpAddress(dnsServer)) {
         return _getFieldWrongValue(fieldName);
       }
     }

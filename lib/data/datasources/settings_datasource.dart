@@ -1,5 +1,5 @@
 abstract class SettingsDataSource {
-  Future<void> setExcludedRoutes(String routes);
+  Future<void> setExcludedRoutes(List<String> routes);
 
-  Future<String> getExcludedRoutes();
+  Future<List<String>> getExcludedRoutes();
 }

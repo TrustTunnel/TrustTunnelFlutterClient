@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/data/model/server.dart';
 import 'package:vpn/data/model/vpn_state.dart';
+import 'package:vpn/feature/server/server_details/data/server_details_modification_result.dart';
 import 'package:vpn/feature/server/server_details/view/server_details_popup.dart';
 import 'package:vpn/feature/server/servers/bloc/servers_bloc.dart';
 import 'package:vpn/feature/server/servers/view/widget/servers_card_connection_button.dart';
+import 'package:vpn/feature/settings/excluded_routes/bloc/excluded_routes_bloc.dart';
 import 'package:vpn/feature/vpn/widgets/vpn_scope.dart';
 import 'package:vpn/view/common/custom_list_tile_separated.dart';
 
@@ -84,26 +86,40 @@ class _ServersCardState extends State<ServersCard> {
     await controller.start(
       server: server,
       routingProfile: server.routingProfile,
+      excludedRoutes: context.read<ExcludedRoutesBloc>().state.excludedRoutes,
     );
   }
 
   void _pushServerDetailsScreen(
     BuildContext context, {
     required Server server,
-  }) {
+  }) async {
     final serversBloc = context.read<ServersBloc>();
-    context
-        .push(
-          ServerDetailsPopUp(
-            serverId: server.id,
-          ),
-        )
-        .then(
-          (_) {
-            serversBloc.add(
-              const ServersEvent.fetch(),
-            );
-          },
+    final excludedRoutes = context.read<ExcludedRoutesBloc>().state.excludedRoutes;
+
+    final result = await context.push(
+      ServerDetailsPopUp(
+        serverId: server.id,
+      ),
+    );
+    final vpnScope = mounted ? VpnScope.vpnControllerOf(context) : null;
+    final connected = (vpnScope?.state ?? VpnState.disconnected) != VpnState.disconnected;
+    final picked = serversBloc.state.selectedServerId == server.id;
+
+    if (picked && connected) {
+      if (result == ServerDetailsModificationResult.saved) {
+        vpnScope!.start(
+          server: server,
+          routingProfile: server.routingProfile,
+          excludedRoutes: excludedRoutes,
         );
+      } else if (result == ServerDetailsModificationResult.deleted) {
+        vpnScope!.stop();
+      }
+    }
+
+    serversBloc.add(
+      const ServersEvent.fetch(),
+    );
   }
 }

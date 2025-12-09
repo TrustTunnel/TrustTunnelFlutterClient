@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:vpn/data/datasources/settings_datasource.dart';
 
 abstract class SettingsRepository {
-  Future<void> setExcludedRoutes(String routes);
+  Future<void> setExcludedRoutes(List<String> routes);
 
-  Future<String> getExcludedRoutes();
+  Future<List<String>> getExcludedRoutes();
 }
 
 class SettingsRepositoryImpl implements SettingsRepository {
@@ -17,8 +17,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
 
   @override
-  Future<String> getExcludedRoutes() => _settingsDataSource.getExcludedRoutes();
+  Future<List<String>> getExcludedRoutes() => _settingsDataSource.getExcludedRoutes();
 
   @override
-  Future<void> setExcludedRoutes(String routes) => _settingsDataSource.setExcludedRoutes(routes);
+  Future<void> setExcludedRoutes(List<String> routes) => _settingsDataSource.setExcludedRoutes(routes);
 }

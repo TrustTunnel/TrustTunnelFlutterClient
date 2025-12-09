@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:vpn/data/repository/settings_repository.dart';
@@ -60,9 +61,11 @@ class ExcludedRoutesBloc extends Bloc<ExcludedRoutesEvent, ExcludedRoutesState> 
     _DataChanged event,
     Emitter<ExcludedRoutesState> emit,
   ) async {
+    print(event.excludedRoutes);
     emit(
       state.copyWith(
-        excludedRoutes: event.excludedRoutes,
+        excludedRoutes: event.excludedRoutes ?? state.excludedRoutes,
+        hasInvalidRoutes: event.hasInvalidRoutes ?? state.hasInvalidRoutes,
       ),
     );
   }

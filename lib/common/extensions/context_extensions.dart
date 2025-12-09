@@ -64,7 +64,7 @@ extension SnackBarExtension on BuildContext {
 }
 
 extension NavigatorExtension on BuildContext {
-  void pop() => Navigator.of(this).pop();
+  void pop<T>({T? result}) => Navigator.of(this).pop(result);
 
   WidgetBuilder _getWidgetBuilder(BuildContext context, Widget widget) {
     final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);

@@ -55,9 +55,7 @@ class ServerDataSourceImpl implements ServerDataSource {
 
     final serverIds = serversRows.map((s) => s.id).toList();
 
-    final dnsRows = await (database.select(
-      database.dnsServers,
-    )..where((d) => d.serverId.isIn(serverIds))).get();
+    final dnsRows = await _loadDnsAddresses({...serverIds});
 
     final dnsByServer = <int, List<String>>{};
     for (final d in dnsRows) {
@@ -97,6 +95,17 @@ class ServerDataSourceImpl implements ServerDataSource {
   @override
   Future<void> setNewServer({required int id, required AddServerRequest request}) async {
     final update = database.servers.update()..where((e) => e.id.equals(id));
+
+    await database.dnsServers.deleteWhere((e) => e.serverId.equals(id));
+    await database.dnsServers.insertAll(
+      request.dnsServers.map(
+        (s) => db.DnsServersCompanion.insert(
+          serverId: id,
+          data: s,
+        ),
+      ),
+    );
+
     await update.write(
       db.ServersCompanion(
         name: Value(request.name),
@@ -116,7 +125,7 @@ class ServerDataSourceImpl implements ServerDataSource {
     if (server == null) {
       throw Exception('Server not found');
     }
-    final dnsServers = await (database.select(database.dnsServers)..where((e) => e.serverId.equals(id))).get();
+    final dnsServers = await _loadDnsAddresses({id});
 
     return RawServer(
       id: server.id,
@@ -129,5 +138,19 @@ class ServerDataSourceImpl implements ServerDataSource {
       dnsServers: dnsServers.map((e) => e.data).toList(),
       routingProfileId: server.routingProfileId,
     );
+  }
+
+  Future<List<db.DnsServer>> _loadDnsAddresses(Set<int> serversIds) async {
+    final select = database.select(database.dnsServers)
+      ..where((r) => r.serverId.isIn(serversIds))
+      ..orderBy(
+        [
+          (r) => OrderingTerm.asc(
+            r.rowId,
+          ),
+        ],
+      );
+
+    return select.get();
   }
 }

@@ -8,6 +8,7 @@ mixin VpnController {
   Future<void> start({
     required Server server,
     required RoutingProfile routingProfile,
+    required List<String> excludedRoutes,
   });
 
   Future<void> stop();

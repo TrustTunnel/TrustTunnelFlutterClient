@@ -1,0 +1,4 @@
+enum ServerDetailsModificationResult {
+  saved,
+  deleted,
+}

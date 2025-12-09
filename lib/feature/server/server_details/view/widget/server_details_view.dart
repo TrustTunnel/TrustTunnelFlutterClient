@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/localization/localization.dart';
 import 'package:vpn/feature/server/server_details/bloc/server_details_bloc.dart';
+import 'package:vpn/feature/server/server_details/data/server_details_modification_result.dart';
 import 'package:vpn/feature/server/server_details/view/widget/server_details_discard_changes_dialog.dart';
 import 'package:vpn/feature/server/server_details/view/widget/server_details_form.dart';
 import 'package:vpn/feature/server/server_details/view/widget/server_details_full_screen_view.dart';
@@ -29,11 +30,11 @@ class _ServerDetailsViewState extends State<ServerDetailsView> {
           context.showInfoSnackBar(message: context.ln.serverCreatedSnackbar(name));
           break;
         case ServerDetailsSaved():
-          if (Navigator.canPop(context)) context.pop();
+          if (Navigator.canPop(context)) context.pop(result: ServerDetailsModificationResult.saved);
           context.showInfoSnackBar(message: context.ln.changesSavedSnackbar);
           break;
         case ServerDetailsDeleted(:final name):
-          if (Navigator.canPop(context)) context.pop();
+          if (Navigator.canPop(context)) context.pop(result: ServerDetailsModificationResult.deleted);
           context.showInfoSnackBar(message: context.ln.serverDeletedSnackbar(name));
         default:
           break;

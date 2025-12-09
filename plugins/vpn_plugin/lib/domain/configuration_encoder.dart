@@ -11,15 +11,12 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     final bool postQuantumGroupEnabled = configuration.postQuantumGroupEnabled;
 
     final String exclusions = _parseToConfigList(configuration.endpoint.exclusions);
-    final String dnsUpStreams = _parseDnsUpStream(configuration.endpoint.dnsUpStreams);
+    final String dnsUpStreams = _parseToConfigList(configuration.endpoint.dnsUpStreams);
     final String hostName = _parseToConfigString(configuration.endpoint.hostName);
 
     final bool hasIpv6 = false;
 
-    final String addresses = _parseHostAddresses(
-      configuration.endpoint.addresses,
-      hasIpv6,
-    );
+    final String addresses = _parseHostAddresses(configuration.endpoint.addresses);
 
     final String userName = _parseToConfigString(configuration.endpoint.username);
     final String password = _parseToConfigString(configuration.endpoint.password);
@@ -73,20 +70,24 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     );
   }
 
-  String _parseHostAddresses(List<String> addresses, bool hasIpv6, {int port = 443}) {
-    final resultList = addresses.map(
-      (e) => hasIpv6 ? '[{$e}]:$port' : '[$e]:$port',
-    );
+  String _parseHostAddresses(List<String> addresses) {
+    final resultList = addresses.map(_parseAddress);
 
     return _parseToConfigList(resultList);
   }
 
-  String _parseDnsUpStream(
-    List<String> dnsUpStreams, {
-    int port = 53,
-  }) {
-    final dnsUpStreamsValue = dnsUpStreams.map((e) => '"$e:$port"').toList();
-    return _parseToConfigList(dnsUpStreamsValue);
+  String _parseAddress(String address, {int fallbackPort = 443}) {
+    bool isIpv6 = RegExp(':').allMatches(address).length > 1;
+    final portDivider = isIpv6 ? ']:' : ':';
+    final divided = address.split(portDivider);
+    if (divided.length == 1) {
+      if (isIpv6) {
+        address = '[$address]';
+      }
+
+      address = '$address:$fallbackPort';
+    }
+    return address;
   }
 
   String _parseToConfigList(Iterable<Object?> list) {

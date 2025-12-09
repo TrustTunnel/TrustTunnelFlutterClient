@@ -18,7 +18,7 @@ class ExcludedRoutesButtonSection extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: BlocBuilder<ExcludedRoutesBloc, ExcludedRoutesState>(
           builder: (context, state) => FilledButton(
-            onPressed: state.hasChanges ? () => _saveExcludedRoutes(context) : null,
+            onPressed: state.hasChanges && state.isValid ? () => _saveExcludedRoutes(context) : null,
             child: Text(context.ln.save),
           ),
         ),

@@ -1,10 +1,10 @@
 import 'package:flutter/services.dart';
 import 'package:vpn/common/utils/validation_utils.dart';
 
-class RoutingSpellCheckService implements SpellCheckService {
+class ExcludedRoutesSpellCheckService implements SpellCheckService {
   final ValueChanged<bool> onChecked;
 
-  RoutingSpellCheckService({required this.onChecked});
+  ExcludedRoutesSpellCheckService({required this.onChecked});
 
   final _tokenizer = r'\S+';
 
@@ -30,22 +30,20 @@ class RoutingSpellCheckService implements SpellCheckService {
     return invalidSpans;
   }
 
-  bool validateIp(String ipAddress, {bool includeCIDR = false}) {
+  bool validateIp(
+    String ipAddress,
+  ) {
     String? modifiedAddress = ipAddress;
+    final cidrValidation = ValidationUtils.validateCidr(ipAddress);
 
-    if (includeCIDR) {
-      final cidrValidation = ValidationUtils.validateCidr(ipAddress);
-      if (!cidrValidation) {
-        return false;
-      }
-
-      modifiedAddress = ipAddress.split('/').firstOrNull;
+    if (!cidrValidation) {
+      return false;
     }
 
-    return ValidationUtils.validateIpAddress(modifiedAddress!, allowPort: !includeCIDR);
+    modifiedAddress = ipAddress.split('/').firstOrNull;
+
+    return ValidationUtils.validateIpAddress(modifiedAddress!, allowPort: false);
   }
 
-  bool validateDomain(String domain) => ValidationUtils.tryParseDomain(domain) != null;
-
-  bool _isValidToken(String s) => validateIp(s, includeCIDR: s.contains('/')) || validateDomain(s);
+  bool _isValidToken(String s) => validateIp(s);
 }

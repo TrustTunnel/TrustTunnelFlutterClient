@@ -40,6 +40,7 @@ dependencies:
   url_launcher: ^6.3.0
   drift: ^2.28.2
   path_provider: ^2.1.5
+  punycoder: ^0.2.2
   vpn_plugin:
     path: plugins/vpn_plugin
   sqlite3_flutter_libs: ^0.5.39
