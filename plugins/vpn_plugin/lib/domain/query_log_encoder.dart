@@ -57,7 +57,7 @@ class QueryLogEncoder extends Converter<Map<String, Object?>, QueryLogRow> {
   }
 
   String _parseRequiredString(Map<String, Object?> input, String key) {
-    final rawSource = input[_sourceKey];
+    final rawSource = input[key];
 
     if (rawSource == null) {
       throw FormatException('Cannot pase $input into source. Expected $_sourceKey to be not null');
