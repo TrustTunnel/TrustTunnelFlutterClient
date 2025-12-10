@@ -19,7 +19,7 @@ class ExcludedRoutesSpellCheckService implements SpellCheckService {
 
       invalidSpans.add(
         SuggestionSpan(
-          TextRange(start: m.start, end: (m.end - 1).clamp(0, m.end)),
+          TextRange(start: m.start, end: (m.end).clamp(0, m.end)),
           const [],
         ),
       );
