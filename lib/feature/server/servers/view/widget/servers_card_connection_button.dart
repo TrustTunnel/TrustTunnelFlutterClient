@@ -32,7 +32,6 @@ class ServersCardConnectionButton extends StatelessWidget {
               icon: AssetIcons.update,
               onPressed: onPressed,
               size: 24,
-              color: context.colors.staticWhite,
               selected: true,
             ),
           )
@@ -40,7 +39,6 @@ class ServersCardConnectionButton extends StatelessWidget {
             icon: AssetIcons.powerSettingsNew,
             onPressed: onPressed,
             size: 24,
-            color: context.colors.staticWhite,
             selected: vpnManagerState == VpnState.connected,
           ),
   );

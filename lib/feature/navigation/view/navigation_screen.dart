@@ -19,24 +19,26 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: context.colors.background2,
+    backgroundColor: context.colors.backgroundSystem,
     body: context.isMobileBreakpoint
         ? _getContent()
-        : Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ValueListenableBuilder(
-                valueListenable: _selectedTabNotifier,
-                builder: (context, index, _) => CustomNavigationRail(
-                  selectedIndex: index,
-                  onDestinationSelected: _onDestinationSelected,
-                  destinations: NavigationScreenUtils.getNavigationRailDestinations(context),
+        : SafeArea(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ValueListenableBuilder(
+                  valueListenable: _selectedTabNotifier,
+                  builder: (context, index, _) => CustomNavigationRail(
+                    selectedIndex: index,
+                    onDestinationSelected: _onDestinationSelected,
+                    destinations: NavigationScreenUtils.getNavigationRailDestinations(context),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _getContent(),
-              ),
-            ],
+                Expanded(
+                  child: _getContent(),
+                ),
+              ],
+            ),
           ),
     bottomNavigationBar: context.isMobileBreakpoint
         ? ValueListenableBuilder(

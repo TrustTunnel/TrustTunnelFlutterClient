@@ -70,7 +70,7 @@
   "typeSomething": "Type something",
   "deleteServer": "Delete server",
   "deleteServerDialogTitle": "Delete server?",
-  "deleteServerDescription": "{serverName} will be deleted",
+  "deleteServerDescription": "Server <b>{serverName}</b> will be deleted",
   "@deleteServerDescription": {
     "placeholders": {
       "serverName": {

@@ -27,7 +27,6 @@ class CustomElevatedButton extends StatelessWidget {
         label: Text(label),
         icon: CustomIcon.medium(
           icon: icon,
-          color: context.theme.elevatedButtonTheme.style?.foregroundColor?.resolve({}) ?? context.colors.staticWhite,
         ),
       ),
     ),

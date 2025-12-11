@@ -119,7 +119,7 @@ class CustomAlertDialog extends StatelessWidget {
                       onTap: onClose ?? Navigator.of(context).pop,
                       child: CustomIcon.medium(
                         icon: AssetIcons.close,
-                        color: context.colors.contrast1,
+                        color: context.colors.neutralDark,
                       ),
                     ),
                   if (closeIconVariant != null) closeIconVariant!,

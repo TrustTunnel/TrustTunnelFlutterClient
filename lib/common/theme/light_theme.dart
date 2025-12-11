@@ -5,95 +5,115 @@ import 'package:vpn/common/extensions/theme_extensions.dart';
 import 'package:vpn/view/custom_icon.dart';
 
 class LightTheme {
-  static const _primary1 = Color(0xFF67B279);
-  static const _primary2 = Color(0xFF5B9F6B);
-  static const _primary3 = Color(0xFF4E8C5D);
-  static const _primary4 = Color(0xFFA2D0AD);
-  static const _blend1 = Color(0xFFD9ECDE);
-  static const _blend2 = Color(0xFFBEDFC6);
-  static const _blend3 = Color(0xFFA2D0AD);
-  static const _orange1 = Color(0xFFD58500);
-  static const _orange2 = Color(0xFFC77901);
-  static const _orange3 = Color(0xFFB76C01);
-  static const _orange4 = Color(0xFFE5B460);
-  static const _red1 = Color(0xFFE9653A);
-  static const _red2 = Color(0xFFE75727);
-  static const _red3 = Color(0xFFDC4918);
-  static const _red4 = Color(0xFFEF9071);
-  static const _background1 = Color(0xFFFFFFFF);
-  static const _background2 = Color(0xFFF6F6F6);
-  static const _background3 = Color(0xFFE4E4E4);
-  static const _gray1 = Color(0xFFA4A4A4);
-  static const _gray2 = Color(0xFF7F7F7F);
-  static const _gray3 = Color(0xFF5B5B5B);
-  static const _gray4 = Color(0xFFE4E4E4);
-  static const _contrast1 = Color(0xFF3D3D3D);
-  static const _contrast2 = Color(0xFF5B5B5B);
-  static const _contrast3 = Color(0xFF7F7F7F);
-  static const _contrast4 = Color(0xFFA4A4A4);
-  static const _staticBlack1 = Color(0xFF0A0A0A);
-  static const _staticBlack2 = Color(0xFF1F1F1F);
-  static const _staticBlack3 = Color(0xFF3D3D3D);
-  static const _staticWhite = Color(0xFFF6F6F6);
+  static const _accent = Color(0xFF3972AA);
+  static const _accentHover = Color(0xFF336699);
+  static const _accentPressed = Color(0xFF2D5986);
+  static const _accentDisabled = Color(0x664F8AC4);
+
+  static const _accentAdditional = Color(0xFF4F8AC4);
+
+  static const _blend = Color(0x334F8AC4);
+  static const _blendHover = Color(0x4D4F8AC4);
+  static const _blendPressed = Color(0x664F8AC4);
+  static const _attention = Color(0xFFF08400);
+  static const _attentionHover = Color(0xFFE07400);
+  static const _attentionPressed = Color(0xFFC76300);
+  static const _attentionDisabled = Color(0x80FFA424);
+  static const _error = Color(0xFFF44725);
+  static const _errorHover = Color(0xFFE7320D);
+  static const _errorPressed = Color(0xFFD02C0B);
+  static const _errorDisabled = Color(0x80F56447);
+  static const _background = Color(0xFFFFFFFF);
+  static const _backgroundHover = Color(0xFFF6F7F9);
+  static const _backgroundPressed = Color(0xFFE6EAEF);
+
+  static const _neutralBlend = Color(0x1A30353B);
+
+  static const _backgroundAdditional = Color(0xFFF6F7F9);
+  static const _backgroundElevated = Color(0xFFFFFFFF);
+  static const _backgroundSystem = Color(0xFFE6EAEF);
+  static const _backgroundSystemHover = Color(0xFFD1D8E0);
+  static const _backgroundSystemPressed = Color(0xFFBFC8D4);
+  static const _neutralLight = Color(0xFF9AA8B8);
+  static const _neutralLightHover = Color(0xFF8997A9);
+  static const _neutralLightPressed = Color(0xFF74869C);
+  static const _neutralLightDisabled = Color(0x3330353B);
+  static const _neutralDark = Color(0xFF74869C);
+  static const _neutralDarkHover = Color(0xFF5C6E84);
+  static const _neutralDarkPressed = Color(0xFF465567);
+  static const _neutralDarkDisabled = Color(0x4D30353B);
+  static const _neutralBlack = Color(0xFF333E4C);
+  static const _neutralBlackHover = Color(0xFF242D38);
+  static const _neutralBlackPressed = Color(0xFF1A2028);
+  static const _neutralBlackDisabled = Color(0x6630353B);
+  static const _specialStaticWhite = Color(0xFFFFFFFF);
+  static const _specialStaticWhiteHover = Color(0xFFF6F7F9);
+  static const _specialStaticWhitePressed = Color(0xFFE6EAEF);
+  static const _specialStaticWhiteDisabled = Color(0x80FFFFFF);
   static const _staticTransparent = Colors.transparent;
 
   late final _customColors = const CustomColors(
-    primary1: _primary1,
-    primary2: _primary2,
-    primary3: _primary3,
-    primary4: _primary4,
-    blend1: _blend1,
-    blend2: _blend2,
-    blend3: _blend3,
-    orange1: _orange1,
-    orange2: _orange2,
-    orange3: _orange3,
-    orange4: _orange4,
-    red1: _red1,
-    red2: _red2,
-    red3: _red3,
-    red4: _red4,
-    background1: _background1,
-    background2: _background2,
-    background3: _background3,
-    gray1: _gray1,
-    gray2: _gray2,
-    gray3: _gray3,
-    gray4: _gray4,
-    contrast1: _contrast1,
-    contrast2: _contrast2,
-    contrast3: _contrast3,
-    contrast4: _contrast4,
-    staticBlack1: _staticBlack1,
-    staticBlack2: _staticBlack2,
-    staticBlack3: _staticBlack3,
-    staticWhite: _staticWhite,
+    accent: _accent,
+    accentHover: _accentHover,
+    accentPressed: _accentPressed,
+    accentDisabled: _accentDisabled,
+    blend: _blend,
+    blendHover: _blendHover,
+    blendPressed: _blendPressed,
+    attention: _attention,
+    attentionHover: _attentionHover,
+    attentionPressed: _attentionPressed,
+    attentionDisabled: _attentionDisabled,
+    error: _error,
+    errorHover: _errorHover,
+    errorPressed: _errorPressed,
+    errorDisabled: _errorDisabled,
+    background: _background,
+    backgroundAdditional: _backgroundAdditional,
+    backgroundElevated: _backgroundElevated,
+    backgroundSystem: _backgroundSystem,
+    backgroundSystemHover: _backgroundSystemHover,
+    backgroundSystemPressed: _backgroundSystemPressed,
+    neutralLight: _neutralLight,
+    neutralLightHover: _neutralLightHover,
+    neutralLightPressed: _neutralLightPressed,
+    neutralLightDisabled: _neutralLightDisabled,
+    neutralBlack: _neutralBlack,
+    neutralBlackHover: _neutralBlackHover,
+    neutralBlackPressed: _neutralBlackPressed,
+    neutralBlackDisabled: _neutralBlackDisabled,
+    neutralDark: _neutralDark,
+    neutralDarkHover: _neutralDarkHover,
+    neutralDarkPressed: _neutralDarkPressed,
+    neutralDarkDisabled: _neutralDarkDisabled,
+    specialStaticWhite: _specialStaticWhite,
+    specialStaticWhiteHover: _specialStaticWhiteHover,
+    specialStaticWhitePressed: _specialStaticWhitePressed,
+    specialStaticWhiteDisabled: _specialStaticWhiteDisabled,
     staticTransparent: _staticTransparent,
   );
 
   late final _colorScheme = ColorScheme.fromSeed(
-    seedColor: _primary1,
+    seedColor: _accent,
   );
 
   late final _checkboxThemeData = CheckboxThemeData(
     fillColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (states.contains(WidgetState.selected) && !states.contains(WidgetState.disabled)) return _primary1;
-        if (states.contains(WidgetState.selected) && states.contains(WidgetState.disabled)) return _primary4;
+        if (states.contains(WidgetState.selected) && !states.contains(WidgetState.disabled)) return _accent;
+        if (states.contains(WidgetState.selected) && states.contains(WidgetState.disabled)) return _accentDisabled;
 
         return null;
       },
     ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(2.0),
-    ),
+    checkColor: WidgetStateProperty.all(_specialStaticWhite),
     side: WidgetStateBorderSide.resolveWith(
       (states) {
         if (!states.contains(WidgetState.selected) && !states.contains(WidgetState.disabled)) {
-          return const BorderSide(width: 2, color: _gray1);
+          return const BorderSide(width: 2, color: _neutralLight);
         }
         if (!states.contains(WidgetState.selected) && states.contains(WidgetState.disabled)) {
-          return const BorderSide(width: 2, color: _gray4);
+          return const BorderSide(width: 2, color: _neutralLightDisabled);
         }
 
         return null;
@@ -101,32 +121,30 @@ class LightTheme {
     ),
     overlayColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _background2;
+        if (states.contains(WidgetState.pressed)) return _accentPressed.withValues(alpha: 0.2);
 
-        return null;
+        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _backgroundSystem;
+
+        return _staticTransparent;
       },
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(2.0),
     ),
   );
 
   late final _iconButtonThemeData = IconButtonThemeData(
     style: ButtonStyle(
-      shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(100),
-        ),
+      shape: const WidgetStatePropertyAll(
+        CircleBorder(),
       ),
-      foregroundColor: WidgetStateProperty.resolveWith(
-        (states) {
-          if (states.contains(WidgetState.disabled)) return _contrast4;
-
-          return _contrast1;
-        },
+      foregroundColor: const WidgetStatePropertyAll(
+        _specialStaticWhite,
       ),
       overlayColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.disabled)) return _staticTransparent;
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _background2;
-          if (states.contains(WidgetState.pressed)) return _background3;
+          if (states.contains(WidgetState.pressed) || states.contains(WidgetState.focused)) return _backgroundHover;
+          if (states.contains(WidgetState.hovered)) return _backgroundPressed;
 
           return null;
         },
@@ -138,8 +156,7 @@ class LightTheme {
           return null;
         },
       ),
-      textStyle: WidgetStatePropertyAll(_textTheme.labelLarge),
-      padding: const WidgetStatePropertyAll(EdgeInsets.all(10)),
+      padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
       iconSize: const WidgetStatePropertyAll(24),
     ),
   );
@@ -147,32 +164,41 @@ class LightTheme {
   late final _radioThemeData = RadioThemeData(
     fillColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (states.contains(WidgetState.disabled)) return _contrast4;
+        if (states.contains(WidgetState.disabled)) return _neutralBlack.withValues(alpha: 0.38);
+        if (states.contains(WidgetState.selected)) return _accent;
 
-        return _contrast1;
+        return _neutralBlack;
       },
     ),
     overlayColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _background2;
-        if (states.contains(WidgetState.pressed)) return _background3;
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused) ||
+            states.contains(WidgetState.pressed))
+          return _backgroundSystem;
 
-        return null;
+        return _staticTransparent;
       },
     ),
   );
 
   late final _floatingActionButtonThemeData = FloatingActionButtonThemeData(
-    backgroundColor: _primary1,
-    extendedTextStyle: _textTheme.labelLarge?.copyWith(color: _staticWhite),
-    foregroundColor: _staticWhite,
+    backgroundColor: _accent,
+    extendedTextStyle: _textTheme.labelLarge?.copyWith(color: _specialStaticWhite),
+    foregroundColor: _specialStaticWhite,
     iconSize: 24,
     extendedSizeConstraints: const BoxConstraints(minHeight: 56),
     smallSizeConstraints: const BoxConstraints(minHeight: 40, minWidth: 40),
     sizeConstraints: const BoxConstraints(minHeight: 56, minWidth: 56),
     largeSizeConstraints: const BoxConstraints(minHeight: 96, minWidth: 96),
-    focusColor: _primary2,
-    hoverColor: _primary2,
+    focusColor: _accentHover,
+    hoverColor: _accentHover,
+    splashColor: _accentPressed,
+    hoverElevation: 4,
+    elevation: 3,
+    focusElevation: 3,
+    disabledElevation: 3,
+    highlightElevation: 3,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
     ),
@@ -181,21 +207,20 @@ class LightTheme {
   late final _switchThemeData = SwitchThemeData(
     trackColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (states.contains(WidgetState.disabled) && states.contains(WidgetState.selected)) return _primary4;
-        if (states.contains(WidgetState.disabled) && !states.contains(WidgetState.selected)) return _background2;
-        if (!states.contains(WidgetState.selected)) return _background2;
+        if (!states.contains(WidgetState.disabled) && states.contains(WidgetState.pressed)) return _accentPressed;
+        if (!states.contains(WidgetState.selected)) return _backgroundSystem;
 
-        return _primary1;
+        return _accent;
       },
     ),
     thumbColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (states.contains(WidgetState.selected)) return _staticWhite;
-        if (states.contains(WidgetState.disabled)) return _contrast4;
-        if (states.contains(WidgetState.focused) || states.contains(WidgetState.focused)) return _contrast2;
-        if (states.contains(WidgetState.pressed)) return _contrast3;
+        if (states.contains(WidgetState.selected)) return _specialStaticWhite;
+        if (states.contains(WidgetState.disabled)) return _neutralDarkDisabled.withValues(alpha: 0.3);
+        if (states.contains(WidgetState.pressed)) return _neutralDarkPressed;
+        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _neutralDark;
 
-        return _contrast1;
+        return _neutralBlack;
       },
     ),
     overlayColor: const WidgetStatePropertyAll(_staticTransparent),
@@ -208,46 +233,35 @@ class LightTheme {
     ),
     trackOutlineColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (!states.contains(WidgetState.selected)) {
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _contrast2;
-          if (states.contains(WidgetState.disabled)) return _contrast4;
+        if (states.contains(WidgetState.selected)) return null;
 
-          return _contrast1;
-        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused) ||
+            states.contains(WidgetState.disabled))
+          return _neutralDark;
 
-        return null;
+        return _neutralBlack;
       },
     ),
   );
 
   late final _snackBarThemeData = SnackBarThemeData(
-    backgroundColor: _staticBlack1,
+    backgroundColor: _neutralBlack,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(4),
     ),
     behavior: SnackBarBehavior.floating,
-    contentTextStyle: _textTheme.bodyMedium?.copyWith(color: _staticWhite),
-    actionTextColor: _primary1,
-    closeIconColor: _staticWhite,
-  );
+    elevation: 3,
+    contentTextStyle: _textTheme.bodyMedium?.copyWith(color: _specialStaticWhite),
+    actionTextColor: _accentAdditional,
 
-  late final _bottomSheetTheme = const BottomSheetThemeData(
-    backgroundColor: _background1,
-    modalBackgroundColor: _background1,
-    surfaceTintColor: _background1,
-    showDragHandle: true,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(28),
-        topRight: Radius.circular(28),
-      ),
-    ),
+    closeIconColor: _specialStaticWhite,
   );
 
   late final _badgeThemeData = BadgeThemeData(
-    textColor: _staticWhite,
+    textColor: _specialStaticWhite,
     textStyle: _textTheme.labelSmall,
-    backgroundColor: _red1,
+    backgroundColor: _error,
     smallSize: 6,
     largeSize: 16,
     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -258,15 +272,15 @@ class LightTheme {
       style: _filledButtonTheme.style?.copyWith(
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) {
-            if (states.contains(WidgetState.disabled)) return _red4;
+            if (states.contains(WidgetState.disabled)) return _error.withValues(alpha: 0.5);
 
-            return _red1;
+            return _error;
           },
         ),
         overlayColor: WidgetStateProperty.resolveWith(
           (states) {
-            if (states.contains(WidgetState.pressed)) return _red3;
-            if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _red2;
+            if (states.contains(WidgetState.pressed)) return _errorPressed;
+            if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _errorHover;
 
             return null;
           },
@@ -277,15 +291,15 @@ class LightTheme {
       style: _filledButtonTheme.style?.copyWith(
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) {
-            if (states.contains(WidgetState.disabled)) return _orange4;
+            if (states.contains(WidgetState.disabled)) return _attention.withValues(alpha: 0.5);
 
-            return _orange1;
+            return _attention;
           },
         ),
         overlayColor: WidgetStateProperty.resolveWith(
           (states) {
-            if (states.contains(WidgetState.pressed)) return _orange3;
-            if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _orange2;
+            if (states.contains(WidgetState.pressed)) return _attentionPressed;
+            if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _attentionHover;
 
             return null;
           },
@@ -326,9 +340,9 @@ class LightTheme {
       style: _textButtonThemeData.style?.copyWith(
         foregroundColor: WidgetStateProperty.resolveWith(
           (states) {
-            if (states.contains(WidgetState.disabled)) return _red4;
+            if (states.contains(WidgetState.disabled)) return _errorDisabled.withValues(alpha: 0.5);
 
-            return _red1;
+            return _error;
           },
         ),
       ),
@@ -337,9 +351,9 @@ class LightTheme {
       style: _textButtonThemeData.style?.copyWith(
         foregroundColor: WidgetStateProperty.resolveWith(
           (states) {
-            if (states.contains(WidgetState.disabled)) return _primary4;
+            if (states.contains(WidgetState.disabled)) return _attentionDisabled.withValues(alpha: 0.5);
 
-            return _primary1;
+            return _attention;
           },
         ),
       ),
@@ -348,36 +362,9 @@ class LightTheme {
       style: _textButtonThemeData.style?.copyWith(
         foregroundColor: WidgetStateProperty.resolveWith(
           (states) {
-            if (states.contains(WidgetState.disabled)) return _primary4;
+            if (states.contains(WidgetState.disabled)) return _accentDisabled.withValues(alpha: 0.5);
 
-            return _primary1;
-          },
-        ),
-      ),
-    ),
-    inlineButton: TextButtonThemeData(
-      style: _textButtonThemeData.style?.copyWith(
-        padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        minimumSize: const WidgetStatePropertyAll(Size.zero),
-        shape: const WidgetStatePropertyAll(RoundedRectangleBorder()),
-        side: const WidgetStatePropertyAll(BorderSide.none),
-        textStyle: WidgetStateProperty.resolveWith(
-          (states) {
-            final decorationColor = states.contains(WidgetState.disabled) ? _primary4 : _primary1;
-
-            return _textTheme.bodyMedium!.copyWith(
-              decoration: TextDecoration.underline,
-              decorationColor: decorationColor,
-            );
-          },
-        ),
-        foregroundColor: WidgetStateProperty.resolveWith(
-          (states) {
-            if (states.contains(WidgetState.disabled)) return _primary4;
-
-            return _primary1;
+            return _accent;
           },
         ),
       ),
@@ -385,7 +372,9 @@ class LightTheme {
     iconButton: _textButtonThemeData,
   );
 
-  late final _elevatedButtonTheme = ElevatedButtonThemeData(style: _filledButtonTheme.style);
+  late final _elevatedButtonTheme = ElevatedButtonThemeData(
+    style: _filledButtonTheme.style,
+  );
 
   late final _filledButtonTheme = FilledButtonThemeData(
     style: ButtonStyle(
@@ -396,16 +385,16 @@ class LightTheme {
       ),
       backgroundColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.disabled)) return _primary4;
+          if (states.contains(WidgetState.disabled)) return _accentDisabled.withValues(alpha: 0.4);
 
-          return _primary1;
+          return _accent;
         },
       ),
-      foregroundColor: const WidgetStatePropertyAll(_staticWhite),
+      foregroundColor: const WidgetStatePropertyAll(_specialStaticWhite),
       overlayColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.pressed)) return _primary3;
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _primary2;
+          if (states.contains(WidgetState.pressed)) return _accentPressed;
+          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _accentHover;
 
           return null;
         },
@@ -427,15 +416,32 @@ class LightTheme {
       backgroundColor: const WidgetStatePropertyAll(_staticTransparent),
       foregroundColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.disabled)) return _contrast4;
+          if (states.contains(WidgetState.disabled)) return _neutralLight;
 
-          return _contrast1;
+          return _neutralBlack;
+        },
+      ),
+      shape: WidgetStateProperty.resolveWith(
+        (states) {
+          final Color borderColor;
+
+          if (states.contains(WidgetState.disabled)) {
+            borderColor = _neutralLight;
+          } else {
+            borderColor = _neutralBlack;
+          }
+
+          return StadiumBorder(
+            side: BorderSide(
+              color: borderColor,
+            ),
+          );
         },
       ),
       overlayColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.pressed)) return _background3;
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _background2;
+          if (states.contains(WidgetState.pressed)) return _backgroundPressed;
+          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _backgroundHover;
 
           return null;
         },
@@ -448,15 +454,15 @@ class LightTheme {
       backgroundColor: const WidgetStatePropertyAll(_staticTransparent),
       foregroundColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.disabled)) return _contrast4;
+          if (states.contains(WidgetState.disabled)) return _neutralLight;
 
-          return _contrast1;
+          return _neutralBlack;
         },
       ),
       overlayColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.pressed)) return _background3;
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _background2;
+          if (states.contains(WidgetState.pressed)) return _backgroundPressed;
+          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _backgroundHover;
 
           return _staticTransparent;
         },
@@ -470,160 +476,33 @@ class LightTheme {
     ),
   );
 
-  late final _chipThemeData = ChipThemeData(
-    labelStyle: _textTheme.labelLarge,
-    padding: const EdgeInsets.symmetric(
-      vertical: 8,
-      horizontal: 16,
-    ),
-    surfaceTintColor: _background1,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    color: WidgetStateProperty.resolveWith(
-      (states) {
-        if (states.contains(WidgetState.selected)) {
-          if (states.contains(WidgetState.pressed)) return _blend3;
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _blend2;
-          if (states.contains(WidgetState.disabled)) return _blend2;
-
-          return _blend1;
-        } else {
-          if (states.contains(WidgetState.pressed)) return _background3;
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _background2;
-          if (states.contains(WidgetState.disabled)) return _background2;
-
-          return _background1;
-        }
-      },
-    ),
-    backgroundColor: _background1,
-    disabledColor: _background2,
-    selectedColor: _blend1,
-    checkmarkColor: _contrast1,
-    elevation: 0,
-  );
-
   late final _appBarTheme = AppBarTheme(
     backgroundColor: _staticTransparent,
     surfaceTintColor: _staticTransparent,
     shadowColor: _staticTransparent,
-    elevation: 0.11,
+    elevation: 0,
     scrolledUnderElevation: 0,
     titleTextStyle: _textTheme.titleLarge,
     centerTitle: true,
+    foregroundColor: _neutralBlack,
   );
 
   late final _navigationBarThemeData = const NavigationBarThemeData(
-    backgroundColor: _background2,
-    indicatorColor: _blend2,
+    backgroundColor: _backgroundSystem,
+    indicatorColor: _blendHover,
   );
 
   late final _popupMenuThemeData = PopupMenuThemeData(
-    color: _background1,
+    color: _background,
     position: PopupMenuPosition.under,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(4.0),
     ),
-    surfaceTintColor: _background1,
-  );
+    surfaceTintColor: _background,
 
-  late final _datePickerThemeData = DatePickerThemeData(
-    backgroundColor: _background2,
-    headerBackgroundColor: _background2,
-    headerForegroundColor: _contrast1,
-    surfaceTintColor: _staticTransparent,
-    rangePickerSurfaceTintColor: _staticTransparent,
-    headerHeadlineStyle: _textTheme.headlineLarge,
-    headerHelpStyle: _textTheme.labelLarge,
-    weekdayStyle: _textTheme.bodyLarge,
-    dayStyle: _textTheme.bodyLarge,
-    dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _primary1;
-
-      return _staticTransparent;
-    }),
-    todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _primary1;
-
-      return _staticTransparent;
-    }),
-    dayForegroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _staticWhite;
-      if (states.contains(WidgetState.disabled)) return _contrast4;
-
-      return _contrast1;
-    }),
-    todayForegroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _staticWhite;
-      if (states.contains(WidgetState.disabled)) return _contrast4;
-
-      return _contrast1;
-    }),
-    yearStyle: _textTheme.labelLarge,
-    yearForegroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _staticWhite;
-      if (states.contains(WidgetState.disabled)) return _contrast4;
-
-      return _contrast1;
-    }),
-    yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _primary1;
-
-      return _staticTransparent;
-    }),
-    inputDecorationTheme: _inputDecorationTheme.copyWith(errorMaxLines: 2),
-    rangePickerBackgroundColor: _background2,
-    rangePickerHeaderBackgroundColor: _background2,
-    rangePickerHeaderForegroundColor: _contrast1,
-    rangePickerHeaderHeadlineStyle: _textTheme.titleLarge,
-    rangePickerHeaderHelpStyle: _textTheme.labelLarge,
-    rangeSelectionBackgroundColor: _blend1,
-    dividerColor: _gray1,
-    cancelButtonStyle: _textButtonThemeData.style?.copyWith(
-      textStyle: WidgetStatePropertyAll(_textTheme.labelLarge),
-    ),
-    confirmButtonStyle: _textButtonThemeData.style?.copyWith(
-      textStyle: WidgetStatePropertyAll(_textTheme.labelLarge),
-    ),
-    dayOverlayColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _primary2;
-
-      return _background2;
-    }),
-    yearOverlayColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) return _primary2;
-
-      return _background2;
-    }),
-  );
-
-  late final _timePickerThemeData = TimePickerThemeData(
-    backgroundColor: _background2,
-    cancelButtonStyle: _textButtonThemeData.style?.copyWith(
-      textStyle: WidgetStatePropertyAll(_textTheme.labelLarge),
-    ),
-    confirmButtonStyle: _textButtonThemeData.style?.copyWith(
-      textStyle: WidgetStatePropertyAll(_textTheme.labelLarge),
-    ),
-    hourMinuteColor: _background3,
-    entryModeIconColor: _contrast1,
-    dialHandColor: _primary1,
-    dialTextColor: _contrast1,
-    dialBackgroundColor: _background3,
-    dayPeriodBorderSide: const BorderSide(color: _blend1),
-    helpTextStyle: _textTheme.labelLarge,
-    inputDecorationTheme: _inputDecorationTheme,
-  );
-
-  late final _dialogTheme = DialogThemeData(
-    backgroundColor: _background1,
-    surfaceTintColor: _staticTransparent,
-    titleTextStyle: _textTheme.headlineSmall,
-    contentTextStyle: _textTheme.bodyMedium,
-    iconColor: _contrast1,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(
-        Radius.circular(28.0),
-      ),
+    elevation: 2,
+    textStyle: _textTheme.bodyLarge?.copyWith(
+      color: _neutralBlack,
     ),
   );
 
@@ -636,8 +515,11 @@ class LightTheme {
       overlayColor: WidgetStateProperty.resolveWith(
         (states) {
           if (states.contains(WidgetState.disabled)) return _staticTransparent;
-          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _background2;
-          if (states.contains(WidgetState.pressed)) return _background3;
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused) ||
+              states.contains(WidgetState.selected))
+            return _backgroundSystemHover;
+          if (states.contains(WidgetState.pressed)) return _backgroundSystemPressed;
 
           return null;
         },
@@ -647,7 +529,7 @@ class LightTheme {
 
   late final _menuBarThemeData = const MenuBarThemeData(
     style: MenuStyle(
-      backgroundColor: WidgetStatePropertyAll(_background1),
+      backgroundColor: WidgetStatePropertyAll(_background),
       surfaceTintColor: WidgetStatePropertyAll(_staticTransparent),
     ),
   );
@@ -656,7 +538,7 @@ class LightTheme {
     textStyle: _textTheme.bodyLarge,
     inputDecorationTheme: _inputDecorationTheme,
     menuStyle: const MenuStyle(
-      backgroundColor: WidgetStatePropertyAll(_background1),
+      backgroundColor: WidgetStatePropertyAll(_background),
       surfaceTintColor: WidgetStatePropertyAll(_staticTransparent),
       visualDensity: VisualDensity.standard,
       padding: WidgetStatePropertyAll(
@@ -667,44 +549,48 @@ class LightTheme {
 
   late final _menuThemeData = const MenuThemeData(
     style: MenuStyle(
-      backgroundColor: WidgetStatePropertyAll(_background1),
+      backgroundColor: WidgetStatePropertyAll(_background),
       surfaceTintColor: WidgetStatePropertyAll(_staticTransparent),
     ),
   );
 
-  late final _progressIndicatorThemeData = const ProgressIndicatorThemeData(
-    color: _primary1,
-    circularTrackColor: _blend1,
-    linearTrackColor: _blend1,
+  late final _progressIndicatorThemeData = ProgressIndicatorThemeData(
+    color: _accent,
+    circularTrackColor: _blend.withValues(alpha: 0.2),
+    linearTrackColor: _blend.withValues(alpha: 0.2),
     linearMinHeight: 4,
   );
 
   late final _inputDecorationTheme = InputDecorationTheme(
     filled: true,
-    disabledBorder: const OutlineInputBorder(
-      borderSide: BorderSide(color: _contrast4),
+    disabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(
+        color: _neutralDarkDisabled.withValues(
+          alpha: 0.3,
+        ),
+      ),
     ),
     errorBorder: const OutlineInputBorder(
-      borderSide: BorderSide(color: _red1),
+      borderSide: BorderSide(color: _error),
     ),
     focusedBorder: const OutlineInputBorder(
-      borderSide: BorderSide(color: _contrast1, width: 3),
+      borderSide: BorderSide(color: _neutralBlack, width: 3),
     ),
     focusedErrorBorder: const OutlineInputBorder(
-      borderSide: BorderSide(color: _red1, width: 3),
+      borderSide: BorderSide(color: _error, width: 3),
     ),
-    outlineBorder: const BorderSide(color: _contrast1),
+    outlineBorder: const BorderSide(color: _neutralBlack),
     border: const OutlineInputBorder(
-      borderSide: BorderSide(color: _contrast1),
+      borderSide: BorderSide(color: _neutralBlack),
     ),
     floatingLabelStyle: WidgetStateTextStyle.resolveWith(
       (states) {
         if (states.contains(WidgetState.disabled)) {
-          return _textTheme.bodySmall!.copyWith(color: _contrast4);
+          return _textTheme.bodySmall!.copyWith(color: _neutralBlackDisabled.withValues(alpha: 0.4));
         }
 
         if (states.contains(WidgetState.error)) {
-          return _textTheme.bodySmall!.copyWith(color: _red1);
+          return _textTheme.bodySmall!.copyWith(color: _error);
         }
 
         return _textTheme.bodySmall!;
@@ -713,40 +599,63 @@ class LightTheme {
     labelStyle: WidgetStateTextStyle.resolveWith(
       (states) {
         if (states.contains(WidgetState.disabled)) {
-          return _textTheme.bodySmall!.copyWith(color: _contrast4);
+          return _textTheme.bodySmall!.copyWith(color: _neutralBlackDisabled.withValues(alpha: 0.3));
         }
 
         if (states.contains(WidgetState.error)) {
-          return _textTheme.bodySmall!.copyWith(color: _red1);
+          return _textTheme.bodySmall!.copyWith(color: _error);
         }
 
         return _textTheme.bodySmall!;
       },
     ),
     alignLabelWithHint: true,
-    hoverColor: _background2,
+    hoverColor: _backgroundSystem,
     fillColor: _staticTransparent,
-    iconColor: _contrast1,
-    prefixIconColor: _contrast1,
+    iconColor: _neutralBlack,
+    prefixIconColor: WidgetStateColor.resolveWith(
+      (states) {
+        if (states.contains(WidgetState.disabled)) {
+          return _neutralBlackDisabled;
+        }
+
+        return _neutralBlack;
+      },
+    ),
     suffixIconColor: WidgetStateColor.resolveWith(
       (states) {
         if (states.contains(WidgetState.disabled)) {
-          return _contrast4;
+          return _neutralBlackDisabled;
         }
 
         if (states.contains(WidgetState.error)) {
-          return _red1;
+          return _error;
         }
 
-        return _contrast1;
+        return _neutralBlack;
       },
     ),
-    errorStyle: _textTheme.bodySmall?.copyWith(color: _red1),
-    hintStyle: _textTheme.bodyLarge?.copyWith(color: _contrast4),
+    errorStyle: _textTheme.bodySmall?.copyWith(color: _error),
+    hintStyle: WidgetStateTextStyle.resolveWith(
+      (states) {
+        final Color textColor;
+        if (states.contains(WidgetState.disabled)) {
+          textColor = _neutralDarkDisabled.withValues(alpha: 0.4);
+        } else {
+          textColor = _neutralDark;
+        }
+
+        return _textTheme.bodyLarge!.copyWith(color: textColor);
+      },
+    ),
     helperStyle: WidgetStateTextStyle.resolveWith(
       (states) {
         if (states.contains(WidgetState.disabled)) {
-          return _textTheme.bodySmall!.copyWith(color: _contrast4);
+          return _textTheme.bodySmall!.copyWith(color: _neutralBlackDisabled.withValues(alpha: 0.3));
+        }
+
+        if (states.contains(WidgetState.error)) {
+          return _textTheme.bodySmall!.copyWith(color: _error);
         }
 
         return _textTheme.bodySmall!;
@@ -755,60 +664,70 @@ class LightTheme {
     counterStyle: WidgetStateTextStyle.resolveWith((states) => _textTheme.bodySmall!),
     contentPadding: const EdgeInsets.only(top: 16, bottom: 16, left: 16),
     floatingLabelBehavior: FloatingLabelBehavior.always,
-    focusColor: _background2,
+    focusColor: _staticTransparent,
   );
 
-  late final _textSelectionTheme = const TextSelectionThemeData(
-    cursorColor: _contrast1,
-    selectionColor: _blend1,
-    selectionHandleColor: _primary1,
+  late final _textSelectionTheme = TextSelectionThemeData(
+    cursorColor: WidgetStateColor.resolveWith(
+      (states) {
+        if (states.contains(WidgetState.error)) {
+          return _error;
+        }
+
+        return _neutralBlack;
+      },
+    ),
+    selectionColor: _blend,
+    selectionHandleColor: _accent,
   );
 
   late final _dividerThemeData = const DividerThemeData(
-    color: _gray4,
+    color: _neutralBlend,
     space: 1,
   );
 
   late final _iconThemeData = const IconThemeData(
     size: 24,
-    color: _contrast1,
+    color: _neutralBlack,
   );
 
   late final _navigationRailThemeData = NavigationRailThemeData(
-    indicatorColor: _blend2,
+    indicatorColor: _blend.withValues(alpha: 0.2),
     unselectedLabelTextStyle: _textTheme.labelMedium,
     selectedLabelTextStyle: _textTheme.labelMedium,
-    backgroundColor: _background2,
+    backgroundColor: _backgroundSystem,
   );
 
   late final _actionIconThemeData = ActionIconThemeData(
     closeButtonIconBuilder: (context) => CustomIcon.medium(
       icon: AssetIcons.close,
-      color: _contrast1,
+      color: _neutralBlack,
     ),
     backButtonIconBuilder: (context) => CustomIcon.medium(
       icon: AssetIcons.arrowBack,
-      color: _contrast1,
+      color: _neutralBlack,
     ),
   );
 
   late final _listTileThemeData = ListTileThemeData(
     contentPadding: const EdgeInsets.all(16),
     titleTextStyle: _textTheme.titleSmall,
-    subtitleTextStyle: _textTheme.bodyMedium?.copyWith(color: _gray1),
+    subtitleTextStyle: _textTheme.bodyMedium?.copyWith(color: _neutralLight),
   );
 
   late final _customDropdownMenuTheme = CustomDropdownMenuTheme(
     enabled: _dropdownMenuThemeData,
     disabled: _dropdownMenuThemeData.copyWith(
-      textStyle: _dropdownMenuThemeData.textStyle?.copyWith(color: _contrast4),
+      textStyle: _dropdownMenuThemeData.textStyle?.copyWith(
+        color: _neutralBlackDisabled.withValues(alpha: 0.4),
+      ),
     ),
   );
 
   late final _tabBarTheme = TabBarThemeData(
-    labelColor: _primary1,
-    unselectedLabelColor: _contrast1,
-    indicatorColor: _primary1,
+    labelColor: _accent,
+    unselectedLabelColor: _neutralBlack,
+    indicatorColor: _accent,
     labelPadding: const EdgeInsets.symmetric(
       vertical: 12,
       horizontal: 16,
@@ -816,11 +735,24 @@ class LightTheme {
     labelStyle: _textTheme.titleSmall,
   );
 
+  late final _dialogTheme = DialogThemeData(
+    backgroundColor: _background,
+    surfaceTintColor: _staticTransparent,
+    titleTextStyle: _textTheme.headlineSmall,
+    contentTextStyle: _textTheme.bodyMedium,
+    iconColor: _accent,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(
+        Radius.circular(28.0),
+      ),
+    ),
+  );
+
   final _textTheme = const TextTheme(
     displayLarge: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 57,
       letterSpacing: -0.25,
       height: 1.12,
@@ -830,7 +762,7 @@ class LightTheme {
     displayMedium: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 45,
       height: 1.15,
       fontFamily: FontFamilies.roboto,
@@ -839,7 +771,7 @@ class LightTheme {
     displaySmall: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 36,
       height: 1.22,
       fontFamily: FontFamilies.roboto,
@@ -848,7 +780,7 @@ class LightTheme {
     headlineLarge: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 32,
       height: 1.25,
       fontFamily: FontFamilies.roboto,
@@ -857,7 +789,7 @@ class LightTheme {
     headlineMedium: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 28,
       height: 1.28,
       fontFamily: FontFamilies.roboto,
@@ -866,7 +798,7 @@ class LightTheme {
     headlineSmall: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 24,
       height: 1.33,
       fontFamily: FontFamilies.roboto,
@@ -875,7 +807,7 @@ class LightTheme {
     titleLarge: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 22,
       height: 1.27,
       fontFamily: FontFamilies.roboto,
@@ -884,7 +816,7 @@ class LightTheme {
     titleMedium: TextStyle(
       fontWeight: FontWeight.w500,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 16,
       letterSpacing: 0.15,
       height: 1.5,
@@ -894,7 +826,7 @@ class LightTheme {
     titleSmall: TextStyle(
       fontWeight: FontWeight.w500,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 14,
       letterSpacing: 0.1,
       height: 1.42,
@@ -904,7 +836,7 @@ class LightTheme {
     labelLarge: TextStyle(
       fontWeight: FontWeight.w500,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 14,
       letterSpacing: 0.1,
       height: 1.42,
@@ -914,7 +846,7 @@ class LightTheme {
     labelMedium: TextStyle(
       fontWeight: FontWeight.w500,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 12,
       letterSpacing: 0.5,
       height: 1.33,
@@ -924,7 +856,7 @@ class LightTheme {
     labelSmall: TextStyle(
       fontWeight: FontWeight.w500,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 11,
       letterSpacing: 0.5,
       height: 1.45,
@@ -934,7 +866,7 @@ class LightTheme {
     bodyLarge: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 16,
       letterSpacing: 0.5,
       height: 1.5,
@@ -944,7 +876,7 @@ class LightTheme {
     bodyMedium: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 14,
       letterSpacing: 0.25,
       height: 1.42,
@@ -954,7 +886,7 @@ class LightTheme {
     bodySmall: TextStyle(
       fontWeight: FontWeight.w400,
       fontStyle: FontStyle.normal,
-      color: _contrast1,
+      color: _neutralBlack,
       fontSize: 12,
       letterSpacing: 0.4,
       height: 1.33,
@@ -968,62 +900,31 @@ class LightTheme {
     height: 40,
   );
 
-  final _cardTheme = CardThemeData(
-    color: _background2,
-    elevation: 0,
-    margin: EdgeInsets.zero,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12.0),
-    ),
-    surfaceTintColor: _background1,
-  );
-
-  final _expansionTileTheme = ExpansionTileThemeData(
-    backgroundColor: _background2,
-    iconColor: _contrast1,
-    textColor: _contrast1,
-    collapsedIconColor: _contrast1,
-    collapsedTextColor: _contrast1,
-    collapsedBackgroundColor: _background2,
-    collapsedShape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(4),
-    ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(4),
-    ),
-    tilePadding: const EdgeInsets.symmetric(
-      horizontal: 16,
-      vertical: 4,
-    ),
-    childrenPadding: const EdgeInsets.symmetric(
-      horizontal: 16,
-      vertical: 8,
-    ),
-  );
-
   final _customFilledIconButtonTheme = CustomFilledIconButtonTheme(
     iconButton: IconButtonThemeData(
       style: ButtonStyle(
+        foregroundColor: const WidgetStatePropertyAll(_specialStaticWhite),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) {
             if (states.contains(WidgetState.selected)) {
-              return _primary1;
+              return _accent;
             }
 
-            return _gray1;
+            return _neutralDark;
           },
         ),
       ),
     ),
     iconButtonInProgress: IconButtonThemeData(
       style: ButtonStyle(
+        foregroundColor: const WidgetStatePropertyAll(_specialStaticWhite),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) {
             if (states.contains(WidgetState.selected)) {
-              return _primary4;
+              return _accent;
             }
 
-            return _gray1;
+            return _neutralDark;
           },
         ),
       ),
@@ -1032,7 +933,7 @@ class LightTheme {
 
   final _customMissSpelledTextTheme = const CustomMissSpelledTextTheme(
     missSpelledStyle: TextStyle(
-      decorationColor: _red1,
+      decorationColor: _error,
       decoration: TextDecoration.underline,
       decorationStyle: TextDecorationStyle.wavy,
       decorationThickness: 2,
@@ -1054,9 +955,9 @@ class LightTheme {
     ],
 
     // COLOR
-    scaffoldBackgroundColor: _background1,
+    scaffoldBackgroundColor: _background,
     brightness: Brightness.light,
-    primaryColor: _primary1,
+    primaryColor: _accent,
     colorScheme: _colorScheme,
     hoverColor: _staticTransparent,
     focusColor: _staticTransparent,
@@ -1074,21 +975,17 @@ class LightTheme {
     floatingActionButtonTheme: _floatingActionButtonThemeData,
     switchTheme: _switchThemeData,
     snackBarTheme: _snackBarThemeData,
-    bottomSheetTheme: _bottomSheetTheme,
     badgeTheme: _badgeThemeData,
     elevatedButtonTheme: _elevatedButtonTheme,
     filledButtonTheme: _filledButtonTheme,
     outlinedButtonTheme: _outlinedButtonThemeData,
     textButtonTheme: _textButtonThemeData,
-    chipTheme: _chipThemeData,
-    timePickerTheme: _timePickerThemeData,
     dialogTheme: _dialogTheme,
     menuButtonTheme: _menuButtonThemeData,
     menuBarTheme: _menuBarThemeData,
     dropdownMenuTheme: _dropdownMenuThemeData,
     menuTheme: _menuThemeData,
     popupMenuTheme: _popupMenuThemeData,
-    datePickerTheme: _datePickerThemeData,
     navigationBarTheme: _navigationBarThemeData,
     appBarTheme: _appBarTheme,
     progressIndicatorTheme: _progressIndicatorThemeData,
@@ -1097,8 +994,6 @@ class LightTheme {
     navigationRailTheme: _navigationRailThemeData,
     actionIconTheme: _actionIconThemeData,
     listTileTheme: _listTileThemeData,
-    cardTheme: _cardTheme,
-    expansionTileTheme: _expansionTileTheme,
     buttonTheme: _buttonTheme,
     tabBarTheme: _tabBarTheme,
   );

@@ -37,9 +37,6 @@ class _ServersCardState extends State<ServersCard> {
     title: widget.server.name,
     titleStyle: context.textTheme.titleSmall,
     subtitle: widget.server.ipAddress,
-    subtitleStyle: context.textTheme.bodyMedium?.copyWith(
-      color: context.colors.gray1,
-    ),
     onTileTap: () => _pushServerDetailsScreen(
       context,
       server: widget.server,

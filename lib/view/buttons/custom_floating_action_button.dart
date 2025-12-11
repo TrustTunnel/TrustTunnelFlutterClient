@@ -49,7 +49,7 @@ class CustomFloatingActionButton extends StatelessWidget {
     final theme = Theme.of(context).floatingActionButtonTheme;
     final iconWidget = CustomIcon.medium(
       icon: icon,
-      color: theme.foregroundColor ?? context.colors.primary1,
+      color: theme.foregroundColor ?? context.colors.accent,
     );
 
     final Widget button = switch (type) {

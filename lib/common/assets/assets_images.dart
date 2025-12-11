@@ -1,6 +1,7 @@
 abstract class AssetImages {
-  static const dns = '${_path}dns.webp';
+  static const server = '${_path}server.png';
 
-  static const privacy = '${_path}privacy.webp';
+  static const about = '${_path}about.png';
+
   static const _path = 'assets/images/';
 }

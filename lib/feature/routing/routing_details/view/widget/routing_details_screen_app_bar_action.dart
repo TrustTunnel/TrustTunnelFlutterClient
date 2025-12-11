@@ -41,13 +41,13 @@ class RoutingDetailsScreenAppBarAction extends StatelessWidget {
           children: [
             CustomIcon.medium(
               icon: AssetIcons.delete,
-              color: context.colors.red1,
+              color: context.colors.error,
             ),
             const SizedBox(width: 12),
             Text(
               context.ln.deleteAllRules,
               style: context.textTheme.bodyLarge?.copyWith(
-                color: context.colors.red1,
+                color: context.colors.error,
               ),
             ),
           ],

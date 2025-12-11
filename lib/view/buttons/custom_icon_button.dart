@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/view/custom_icon.dart';
 
 class CustomIconButton extends StatefulWidget {
@@ -124,7 +123,7 @@ class _CustomIconButtonState extends State<CustomIconButton> {
 
     return CustomIcon.medium(
       icon: widget.icon!,
-      color: widget.onPressed == null ? context.colors.contrast4 : widget.color,
+      color: widget.color,
     );
   }
 
@@ -139,7 +138,7 @@ class _CustomIconButtonState extends State<CustomIconButton> {
     return CustomIcon(
       icon: widget.selectedIcon!,
       size: widget.width ?? widget.height,
-      color: widget.onPressed == null ? context.colors.contrast4 : widget.color,
+      color: widget.color,
     );
   }
 }

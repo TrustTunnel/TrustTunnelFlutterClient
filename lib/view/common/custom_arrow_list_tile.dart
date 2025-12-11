@@ -34,7 +34,7 @@ class CustomArrowListTile extends StatelessWidget {
               const SizedBox(width: 16),
               CustomIcon.medium(
                 icon: AssetIcons.navigateNext,
-                color: context.colors.gray1,
+                color: context.colors.neutralDark,
               ),
             ],
           ),

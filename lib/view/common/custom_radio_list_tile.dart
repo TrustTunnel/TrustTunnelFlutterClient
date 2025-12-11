@@ -48,10 +48,10 @@ class CustomRadioListTile<T> extends StatelessWidget {
     final gestureEnabled = onChanged != null && enabled;
 
     final titleTextStyle = context.textTheme.bodyLarge?.copyWith(
-      color: titleColor ?? (gestureEnabled ? null : context.colors.contrast4),
+      color: titleColor ?? (gestureEnabled ? null : context.colors.neutralLight),
     );
     final bodyTextStyle = context.textTheme.bodyMedium?.copyWith(
-      color: gestureEnabled ? null : context.colors.contrast4,
+      color: gestureEnabled ? null : context.colors.neutralLight,
     );
 
     return InkWell(
@@ -90,7 +90,7 @@ class CustomRadioListTile<T> extends StatelessWidget {
                       Text(
                         error!,
                         style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.colors.red1,
+                          color: context.colors.error,
                         ),
                       ),
                   ],

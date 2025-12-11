@@ -14,16 +14,18 @@ class ServersEmptyPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DefaultPage(
     title: context.ln.serversEmptyTitle,
     descriptionText: context.ln.serversEmptyDescription,
-    imagePath: AssetImages.dns,
+    imagePath: AssetImages.server,
     imageSize: const Size.square(248),
     buttonText: context.ln.create,
     onButtonPressed: () => _pushServerDetailsScreen(context),
     alignment: Alignment.center,
   );
 
-  void _pushServerDetailsScreen(BuildContext context) => context.push(
-    const ServerDetailsPopUp(),
-  ).then(
+  void _pushServerDetailsScreen(BuildContext context) => context
+      .push(
+        const ServerDetailsPopUp(),
+      )
+      .then(
         (_) => context.read<ServersBloc>().add(
           const ServersEvent.fetch(),
         ),

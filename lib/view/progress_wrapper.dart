@@ -24,7 +24,7 @@ class ProgressWrapper extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: ColoredBox(
-              color: color ?? context.colors.background1,
+              color: color ?? context.colors.background,
               child: LinearProgressIndicator(
                 borderRadius: BorderRadius.circular(4),
               ),

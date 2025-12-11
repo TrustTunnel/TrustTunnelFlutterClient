@@ -43,12 +43,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final backButton = showBackButton ? _getBackButtonByType(context, leadingIconType!) : null;
     final body = AppBar(
       centerTitle: centerTitle ?? !showBackButton,
-      surfaceTintColor: context.isMobileBreakpoint ? context.colors.gray1 : null,
       title: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Text(title),
       ),
-      backgroundColor: context.colors.background1,
+      backgroundColor: context.colors.background,
       bottom: bottom != null
           ? PreferredSize(
               preferredSize: Size.fromHeight(bottomHeight),

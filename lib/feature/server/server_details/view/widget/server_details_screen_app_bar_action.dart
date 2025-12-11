@@ -16,7 +16,7 @@ class ServerDetailsScreenAppBarAction extends StatelessWidget {
     builder: (context, state) => state.isEditing
         ? CustomIconButton.square(
             icon: AssetIcons.delete,
-            color: context.colors.red1,
+            color: context.colors.error,
             size: 24,
             onPressed: () => _showDeleteDialog(
               context,

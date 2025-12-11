@@ -27,7 +27,6 @@ class CustomFilledButton extends StatelessWidget {
         label: Text(label),
         icon: CustomIcon.medium(
           icon: icon,
-          color: context.theme.filledButtonTheme.style?.foregroundColor?.resolve({}) ?? context.colors.staticWhite,
         ),
       ),
     ),

@@ -27,7 +27,6 @@ abstract class NavigationScreenUtils {
         (e) => NavigationRailDestination(
           icon: CustomIcon.medium(
             icon: e['icon'] as IconData,
-            color: context.colors.contrast1,
           ),
           label: Text(
             e['label'].toString(),
@@ -45,7 +44,6 @@ abstract class NavigationScreenUtils {
         (e) => NavigationDestination(
           icon: CustomIcon.medium(
             icon: e['icon'] as IconData,
-            color: context.colors.contrast1,
           ),
           label: e['label'].toString(),
         ),

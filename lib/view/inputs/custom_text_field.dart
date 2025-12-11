@@ -160,7 +160,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                               ? CustomIconButton(
                                   color: widget.error == null
                                       ? context.theme.inputDecorationTheme.suffixIconColor
-                                      : context.colors.red1,
+                                      : context.colors.error,
                                   onPressed: widget.enabled
                                       ? () {
                                           _controller.clear();
@@ -174,7 +174,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                             padding: const EdgeInsets.all(8.0),
                             child: CustomIcon.medium(
                               icon: AssetIcons.error,
-                              color: context.colors.red1,
+                              color: context.colors.error,
                             ),
                           ),
                   ),

@@ -37,7 +37,6 @@ class _TextButtonSvgState extends State<CustomTextButton> {
           valueListenable: _statesController,
           builder: (context, value, child) => CustomIcon.small(
             icon: widget.icon,
-            color: context.theme.textButtonTheme.style?.foregroundColor?.resolve(value) ?? context.colors.staticWhite,
           ),
         ),
       ),

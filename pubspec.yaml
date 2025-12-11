@@ -46,6 +46,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.39
   html: 0.15.6
   bloc_concurrency: ^0.3.0
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:

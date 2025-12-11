@@ -3,176 +3,234 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class CustomColors extends ThemeExtension<CustomColors> {
-  final Color primary1;
-  final Color primary2;
-  final Color primary3;
-  final Color primary4;
-  final Color blend1;
-  final Color blend2;
-  final Color blend3;
-  final Color orange1;
-  final Color orange2;
-  final Color orange3;
-  final Color orange4;
-  final Color red1;
-  final Color red2;
-  final Color red3;
-  final Color red4;
-  final Color background1;
-  final Color background2;
-  final Color background3;
-  final Color gray1;
-  final Color gray2;
-  final Color gray3;
-  final Color gray4;
-  final Color contrast1;
-  final Color contrast2;
-  final Color contrast3;
-  final Color contrast4;
-  final Color staticBlack1;
-  final Color staticBlack2;
-  final Color staticBlack3;
-  final Color staticWhite;
+  final Color accent;
+  final Color accentHover;
+  final Color accentPressed;
+  final Color accentDisabled;
+
+  final Color blend;
+  final Color blendHover;
+  final Color blendPressed;
+
+  final Color attention;
+  final Color attentionHover;
+  final Color attentionPressed;
+  final Color attentionDisabled;
+
+  final Color error;
+  final Color errorHover;
+  final Color errorPressed;
+  final Color errorDisabled;
+
+  final Color background;
+  final Color backgroundAdditional;
+  final Color backgroundElevated;
+
+  final Color backgroundSystem;
+  final Color backgroundSystemHover;
+  final Color backgroundSystemPressed;
+
+  final Color neutralLight;
+  final Color neutralLightHover;
+  final Color neutralLightPressed;
+
+  final Color neutralLightDisabled;
+  final Color neutralDark;
+  final Color neutralDarkHover;
+  final Color neutralDarkPressed;
+
+  final Color neutralBlack;
+  final Color neutralDarkDisabled;
+  final Color neutralBlackHover;
+  final Color neutralBlackPressed;
+
+  final Color neutralBlackDisabled;
+  final Color specialStaticWhite;
+  final Color specialStaticWhiteHover;
+  final Color specialStaticWhitePressed;
+  final Color specialStaticWhiteDisabled;
+
   final Color staticTransparent;
 
   const CustomColors({
-    required this.primary1,
-    required this.primary2,
-    required this.primary3,
-    required this.primary4,
-    required this.blend1,
-    required this.blend2,
-    required this.blend3,
-    required this.orange1,
-    required this.orange2,
-    required this.orange3,
-    required this.orange4,
-    required this.red1,
-    required this.red2,
-    required this.red3,
-    required this.red4,
-    required this.background1,
-    required this.background2,
-    required this.background3,
-    required this.gray1,
-    required this.gray2,
-    required this.gray3,
-    required this.gray4,
-    required this.contrast1,
-    required this.contrast2,
-    required this.contrast3,
-    required this.contrast4,
-    required this.staticBlack1,
-    required this.staticBlack2,
-    required this.staticBlack3,
-    required this.staticWhite,
+    required this.accent,
+    required this.accentHover,
+    required this.accentPressed,
+    required this.accentDisabled,
+    required this.blend,
+    required this.blendHover,
+    required this.blendPressed,
+    required this.attention,
+    required this.attentionHover,
+    required this.attentionPressed,
+    required this.attentionDisabled,
+    required this.error,
+    required this.errorHover,
+    required this.errorPressed,
+    required this.errorDisabled,
+    required this.background,
+    required this.backgroundAdditional,
+    required this.backgroundElevated,
+    required this.backgroundSystem,
+    required this.backgroundSystemHover,
+    required this.backgroundSystemPressed,
+    required this.neutralLight,
+    required this.neutralLightHover,
+    required this.neutralLightPressed,
+    required this.neutralLightDisabled,
+    required this.neutralDark,
+    required this.neutralDarkHover,
+    required this.neutralDarkPressed,
+    required this.neutralDarkDisabled,
+    required this.neutralBlack,
+    required this.neutralBlackHover,
+    required this.neutralBlackPressed,
+    required this.neutralBlackDisabled,
+    required this.specialStaticWhite,
+    required this.specialStaticWhiteHover,
+    required this.specialStaticWhitePressed,
+    required this.specialStaticWhiteDisabled,
     required this.staticTransparent,
   });
 
   @override
   CustomColors copyWith({
-    Color? primary1,
-    Color? primary2,
-    Color? primary3,
-    Color? primary4,
-    Color? blend1,
-    Color? blend2,
-    Color? blend3,
-    Color? orange1,
-    Color? orange2,
-    Color? orange3,
-    Color? orange4,
-    Color? red1,
-    Color? red2,
-    Color? red3,
-    Color? red4,
-    Color? background1,
-    Color? background2,
-    Color? background3,
-    Color? gray1,
-    Color? gray2,
-    Color? gray3,
-    Color? gray4,
-    Color? contrast1,
-    Color? contrast2,
-    Color? contrast3,
-    Color? contrast4,
-    Color? staticBlack1,
-    Color? staticBlack2,
-    Color? staticBlack3,
-    Color? staticWhite,
+    Color? accent,
+    Color? accentHover,
+    Color? accentPressed,
+    Color? accentDisabled,
+    Color? blend,
+    Color? blendHover,
+    Color? blendPressed,
+    Color? attention,
+    Color? attentionHover,
+    Color? attentionPressed,
+    Color? attentionDisabled,
+    Color? error,
+    Color? errorHover,
+    Color? errorPressed,
+    Color? errorDisabled,
+    Color? background,
+    Color? backgroundAdditional,
+    Color? backgroundElevated,
+    Color? backgroundSystem,
+    Color? backgroundSystemHover,
+    Color? backgroundSystemPressed,
+    Color? neutralLight,
+    Color? neutralLightHover,
+    Color? neutralLightPressed,
+    Color? neutralLightDisabled,
+    Color? neutralDark,
+    Color? neutralDarkHover,
+    Color? neutralDarkPressed,
+    Color? neutralDarkDisabled,
+    Color? neutralBlack,
+    Color? neutralBlackHover,
+    Color? neutralBlackPressed,
+    Color? neutralBlackDisabled,
+    Color? specialStaticWhite,
+    Color? specialStaticWhiteHover,
+    Color? specialStaticWhitePressed,
+    Color? specialStaticWhiteDisabled,
     Color? staticTransparent,
   }) => CustomColors(
-    primary1: primary1 ?? this.primary1,
-    primary2: primary2 ?? this.primary2,
-    primary3: primary3 ?? this.primary3,
-    primary4: primary4 ?? this.primary4,
-    blend1: blend1 ?? this.blend1,
-    blend2: blend2 ?? this.blend2,
-    blend3: blend3 ?? this.blend3,
-    orange1: orange1 ?? this.orange1,
-    orange2: orange2 ?? this.orange2,
-    orange3: orange3 ?? this.orange3,
-    orange4: orange4 ?? this.orange4,
-    red1: red1 ?? this.red1,
-    red2: red2 ?? this.red2,
-    red3: red3 ?? this.red3,
-    red4: red4 ?? this.red4,
-    background1: background1 ?? this.background1,
-    background2: background2 ?? this.background2,
-    background3: background3 ?? this.background3,
-    gray1: gray1 ?? this.gray1,
-    gray2: gray2 ?? this.gray2,
-    gray3: gray3 ?? this.gray3,
-    gray4: gray4 ?? this.gray4,
-    contrast1: contrast1 ?? this.contrast1,
-    contrast2: contrast2 ?? this.contrast2,
-    contrast3: contrast3 ?? this.contrast3,
-    contrast4: contrast4 ?? this.contrast4,
-    staticBlack1: staticBlack1 ?? this.staticBlack1,
-    staticBlack2: staticBlack2 ?? this.staticBlack2,
-    staticBlack3: staticBlack3 ?? this.staticBlack3,
-    staticWhite: staticWhite ?? this.staticWhite,
+    accent: accent ?? this.accent,
+    accentHover: accentHover ?? this.accentHover,
+    accentPressed: accentPressed ?? this.accentPressed,
+    accentDisabled: accentDisabled ?? this.accentDisabled,
+    blend: blend ?? this.blend,
+    blendHover: blendHover ?? this.blendHover,
+    blendPressed: blendPressed ?? this.blendPressed,
+    attention: attention ?? this.attention,
+    attentionHover: attentionHover ?? this.attentionHover,
+    attentionPressed: attentionPressed ?? this.attentionPressed,
+    attentionDisabled: attentionDisabled ?? this.attentionDisabled,
+    error: error ?? this.error,
+    errorHover: errorHover ?? this.errorHover,
+    errorPressed: errorPressed ?? this.errorPressed,
+    errorDisabled: errorDisabled ?? this.errorDisabled,
+    background: background ?? this.background,
+    backgroundAdditional: backgroundAdditional ?? this.backgroundAdditional,
+    backgroundElevated: backgroundElevated ?? this.backgroundElevated,
+    backgroundSystem: backgroundSystem ?? this.backgroundSystem,
+    backgroundSystemHover: backgroundSystemHover ?? this.backgroundSystemHover,
+    backgroundSystemPressed: backgroundSystemPressed ?? this.backgroundSystemPressed,
+    neutralLight: neutralLight ?? this.neutralLight,
+    neutralLightHover: neutralLightHover ?? this.neutralLightHover,
+    neutralLightPressed: neutralLightPressed ?? this.neutralLightPressed,
+    neutralLightDisabled: neutralLightDisabled ?? this.neutralLightDisabled,
+    neutralDark: neutralDark ?? this.neutralDark,
+    neutralDarkHover: neutralDarkHover ?? this.neutralDarkHover,
+    neutralDarkPressed: neutralDarkPressed ?? this.neutralDarkPressed,
+    neutralDarkDisabled: neutralDarkDisabled ?? this.neutralDarkDisabled,
+    neutralBlack: neutralBlack ?? this.neutralBlack,
+    neutralBlackHover: neutralBlackHover ?? this.neutralBlackHover,
+    neutralBlackPressed: neutralBlackPressed ?? this.neutralBlackPressed,
+    neutralBlackDisabled: neutralBlackDisabled ?? this.neutralBlackDisabled,
+    specialStaticWhite: specialStaticWhite ?? this.specialStaticWhite,
+    specialStaticWhiteHover: specialStaticWhiteHover ?? this.specialStaticWhiteHover,
+    specialStaticWhitePressed: specialStaticWhitePressed ?? this.specialStaticWhitePressed,
+    specialStaticWhiteDisabled: specialStaticWhiteDisabled ?? this.specialStaticWhiteDisabled,
     staticTransparent: staticTransparent ?? this.staticTransparent,
   );
 
   @override
-  ThemeExtension<CustomColors> lerp(covariant ThemeExtension<CustomColors>? other, double t) {
-    if (other is! CustomColors) {
-      return this;
-    }
+  ThemeExtension<CustomColors> lerp(
+    covariant ThemeExtension<CustomColors>? other,
+    double t,
+  ) {
+    if (other is! CustomColors) return this;
 
     return CustomColors(
-      primary1: Color.lerp(primary1, other.primary1, t)!,
-      primary2: Color.lerp(primary2, other.primary2, t)!,
-      primary3: Color.lerp(primary3, other.primary3, t)!,
-      primary4: Color.lerp(primary4, other.primary4, t)!,
-      blend1: Color.lerp(blend1, other.blend1, t)!,
-      blend2: Color.lerp(blend2, other.blend2, t)!,
-      blend3: Color.lerp(blend3, other.blend3, t)!,
-      orange1: Color.lerp(orange1, other.orange1, t)!,
-      orange2: Color.lerp(orange2, other.orange2, t)!,
-      orange3: Color.lerp(orange3, other.orange3, t)!,
-      orange4: Color.lerp(orange4, other.orange4, t)!,
-      red1: Color.lerp(red1, other.red1, t)!,
-      red2: Color.lerp(red2, other.red2, t)!,
-      red3: Color.lerp(red3, other.red3, t)!,
-      red4: Color.lerp(red4, other.red4, t)!,
-      background1: Color.lerp(background1, other.background1, t)!,
-      background2: Color.lerp(background2, other.background2, t)!,
-      background3: Color.lerp(background3, other.background3, t)!,
-      gray1: Color.lerp(gray1, other.gray1, t)!,
-      gray2: Color.lerp(gray2, other.gray2, t)!,
-      gray3: Color.lerp(gray3, other.gray3, t)!,
-      gray4: Color.lerp(gray4, other.gray4, t)!,
-      contrast1: Color.lerp(contrast1, other.contrast1, t)!,
-      contrast2: Color.lerp(contrast2, other.contrast2, t)!,
-      contrast3: Color.lerp(contrast3, other.contrast3, t)!,
-      contrast4: Color.lerp(contrast4, other.contrast4, t)!,
-      staticBlack1: Color.lerp(staticBlack1, other.staticBlack1, t)!,
-      staticBlack2: Color.lerp(staticBlack2, other.staticBlack2, t)!,
-      staticBlack3: Color.lerp(staticBlack3, other.staticBlack3, t)!,
-      staticWhite: Color.lerp(staticWhite, other.staticWhite, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      accentHover: Color.lerp(accentHover, other.accentHover, t)!,
+      accentPressed: Color.lerp(accentPressed, other.accentPressed, t)!,
+      accentDisabled: Color.lerp(accentDisabled, other.accentDisabled, t)!,
+      blend: Color.lerp(blend, other.blend, t)!,
+      blendHover: Color.lerp(blendHover, other.blendHover, t)!,
+      blendPressed: Color.lerp(blendPressed, other.blendPressed, t)!,
+      attention: Color.lerp(attention, other.attention, t)!,
+      attentionHover: Color.lerp(attentionHover, other.attentionHover, t)!,
+      attentionPressed: Color.lerp(attentionPressed, other.attentionPressed, t)!,
+      attentionDisabled: Color.lerp(attentionDisabled, other.attentionDisabled, t)!,
+      error: Color.lerp(error, other.error, t)!,
+      errorHover: Color.lerp(errorHover, other.errorHover, t)!,
+      errorPressed: Color.lerp(errorPressed, other.errorPressed, t)!,
+      errorDisabled: Color.lerp(errorDisabled, other.errorDisabled, t)!,
+      background: Color.lerp(background, other.background, t)!,
+      backgroundAdditional: Color.lerp(backgroundAdditional, other.backgroundAdditional, t)!,
+      backgroundElevated: Color.lerp(backgroundElevated, other.backgroundElevated, t)!,
+      backgroundSystem: Color.lerp(backgroundSystem, other.backgroundSystem, t)!,
+      backgroundSystemHover: Color.lerp(backgroundSystemHover, other.backgroundSystemHover, t)!,
+      backgroundSystemPressed: Color.lerp(backgroundSystemPressed, other.backgroundSystemPressed, t)!,
+      neutralLight: Color.lerp(neutralLight, other.neutralLight, t)!,
+      neutralLightHover: Color.lerp(neutralLightHover, other.neutralLightHover, t)!,
+      neutralLightPressed: Color.lerp(neutralLightPressed, other.neutralLightPressed, t)!,
+      neutralLightDisabled: Color.lerp(neutralLightDisabled, other.neutralLightDisabled, t)!,
+      neutralDark: Color.lerp(neutralDark, other.neutralDark, t)!,
+      neutralDarkHover: Color.lerp(neutralDarkHover, other.neutralDarkHover, t)!,
+      neutralDarkPressed: Color.lerp(neutralDarkPressed, other.neutralDarkPressed, t)!,
+      neutralDarkDisabled: Color.lerp(neutralDarkDisabled, other.neutralDarkDisabled, t)!,
+      neutralBlack: Color.lerp(neutralBlack, other.neutralBlack, t)!,
+      neutralBlackHover: Color.lerp(neutralBlackHover, other.neutralBlackHover, t)!,
+      neutralBlackPressed: Color.lerp(neutralBlackPressed, other.neutralBlackPressed, t)!,
+      neutralBlackDisabled: Color.lerp(neutralBlackDisabled, other.neutralBlackDisabled, t)!,
+      specialStaticWhite: Color.lerp(specialStaticWhite, other.specialStaticWhite, t)!,
+      specialStaticWhiteHover: Color.lerp(
+        specialStaticWhiteHover,
+        other.specialStaticWhiteHover,
+        t,
+      )!,
+      specialStaticWhitePressed: Color.lerp(
+        specialStaticWhitePressed,
+        other.specialStaticWhitePressed,
+        t,
+      )!,
+      specialStaticWhiteDisabled: Color.lerp(
+        specialStaticWhiteDisabled,
+        other.specialStaticWhiteDisabled,
+        t,
+      )!,
       staticTransparent: Color.lerp(staticTransparent, other.staticTransparent, t)!,
     );
   }
@@ -276,14 +334,12 @@ class CustomTextButtonTheme extends ThemeExtension<CustomTextButtonTheme> {
   final TextButtonThemeData attention;
   final TextButtonThemeData success;
   final TextButtonThemeData iconButton;
-  final TextButtonThemeData inlineButton;
 
   const CustomTextButtonTheme({
     required this.danger,
     required this.attention,
     required this.success,
     required this.iconButton,
-    required this.inlineButton,
   });
 
   @override
@@ -292,13 +348,11 @@ class CustomTextButtonTheme extends ThemeExtension<CustomTextButtonTheme> {
     TextButtonThemeData? attention,
     TextButtonThemeData? success,
     TextButtonThemeData? iconButton,
-    TextButtonThemeData? inlineButton,
   }) => CustomTextButtonTheme(
     danger: danger ?? this.danger,
     attention: attention ?? this.attention,
     success: success ?? this.success,
     iconButton: iconButton ?? this.iconButton,
-    inlineButton: inlineButton ?? this.inlineButton,
   );
 
   @override
@@ -315,7 +369,6 @@ class CustomTextButtonTheme extends ThemeExtension<CustomTextButtonTheme> {
       attention: TextButtonThemeData.lerp(attention, other.attention, t)!,
       success: TextButtonThemeData.lerp(success, other.success, t)!,
       iconButton: TextButtonThemeData.lerp(iconButton, other.iconButton, t)!,
-      inlineButton: TextButtonThemeData.lerp(inlineButton, other.inlineButton, t)!,
     );
   }
 }

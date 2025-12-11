@@ -37,9 +37,7 @@ class _OutlinedButtonSvgState extends State<CustomOutlinedButton> {
           valueListenable: _statesController,
           builder: (context, value, child) => CustomIcon.medium(
             icon: widget.icon,
-            color:
-                context.theme.outlinedButtonTheme.style?.foregroundColor?.resolve(value) ?? context.colors.staticWhite,
-          ),
+                ),
         ),
       ),
     ),

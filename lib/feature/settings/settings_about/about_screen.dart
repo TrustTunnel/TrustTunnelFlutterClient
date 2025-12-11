@@ -20,7 +20,7 @@ class AboutScreen extends StatelessWidget {
         builder: (context, snapshot) => DefaultPage(
           title: context.ln.vpnOss,
           descriptionText: snapshot.data,
-          imagePath: AssetImages.privacy,
+          imagePath: AssetImages.about,
           imageSize: const Size.square(248),
           alignment: Alignment.center,
         ),
