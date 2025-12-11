@@ -107,9 +107,10 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     if (domain.isEmpty) {
       return _getRequiredField(fieldName);
     }
+    final valid =
+        ValidationUtils.validateIpAddress(domain, allowPort: false) || ValidationUtils.tryParseDomain(domain) != null;
 
-    final domainRegexp = RegExp(ValidationUtils.domainRawRegex);
-    if (!domainRegexp.hasMatch(domain)) {
+    if (!valid) {
       return _getFieldWrongValue(fieldName);
     }
 
@@ -140,15 +141,39 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     if (dnsServers.isEmpty) {
       return _getRequiredField(fieldName);
     }
-    final resultRegex = [
-      ValidationUtils.dotRawRegex,
-      ValidationUtils.dohRawRegex,
-      ValidationUtils.quicRawRegex,
-      ValidationUtils.h3RawRegex,
-    ].map((e) => RegExp(e));
+    final allowableRegex = RegExp(ValidationUtils.allowableStartRegex);
 
-    for (final dnsServer in dnsServers) {
-      if (!resultRegex.any((element) => element.hasMatch(dnsServer)) && !ValidationUtils.validateIpAddress(dnsServer)) {
+    for (var dnsServer in dnsServers) {
+      if (allowableRegex.hasMatch(dnsServer)) {
+        dnsServer = dnsServer.replaceFirst(allowableRegex, '');
+      }
+
+      String? port;
+      final divided = dnsServer.split(':');
+
+      if (dnsServer.startsWith('[')) {
+        port = divided.removeLast();
+        dnsServer = divided.join(':').replaceAll(RegExp(r'[\[\]]'), '');
+      } else if (divided.length == 2) {
+        port = divided.last;
+        dnsServer = divided.first;
+      }
+
+      final parsedPort = int.tryParse(port ?? '');
+
+      final invalidPort = port != null && parsedPort == null;
+
+      if (invalidPort) {
+        return _getFieldWrongValue(fieldName);
+      }
+
+      if (parsedPort != null)
+        if (parsedPort < 1 || parsedPort > 65535) {
+          return _getFieldWrongValue(fieldName);
+        }
+
+      if (!ValidationUtils.validateIpAddress(dnsServer, allowPort: false) &&
+          ValidationUtils.tryParseDomain(dnsServer) == null) {
         return _getFieldWrongValue(fieldName);
       }
     }
