@@ -8,6 +8,16 @@ part 'app_database.g.dart';
   include: {'tables/index.drift'},
 )
 class AppDatabase extends _$AppDatabase {
+  static const _defaultExcludedRoutes = [
+    '10.0.0.0/8',
+    '100.64.0.0/10',
+    '169.254.0.0/16',
+    '172.16.0.0/12',
+    '192.0.0.0/24',
+    '192.168.0.0/16',
+    '255.255.255.255/32',
+  ];
+
   AppDatabase() : super(impl.connect());
   AppDatabase.inMemory(super.e);
 
@@ -90,6 +100,14 @@ class AppDatabase extends _$AppDatabase {
             name: 'Default profile',
             defaultMode: 2,
             id: const Value(RoutingProfileUtils.defaultRoutingProfileId),
+          ),
+        );
+
+        await excludedRoutes.insertAll(
+          _defaultExcludedRoutes.map(
+            (e) => ExcludedRoutesCompanion.insert(
+              value: e,
+            ),
           ),
         );
       }

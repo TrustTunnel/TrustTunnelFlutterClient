@@ -8,9 +8,7 @@ final class Tun {
       '0.0.0.0/0',
       '2000::/3',
     ],
-    this.excludedRoutes = const [
-     
-    ],
+    this.excludedRoutes = const [],
     this.mtuSize = 1500,
   }) : assert(mtuSize > 0, 'mtuSize must be greater than 0');
 }
