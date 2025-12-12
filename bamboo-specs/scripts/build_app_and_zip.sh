@@ -7,7 +7,9 @@ cd $(dirname $0)
 cd ../..
 
 build_channel="$1"
-if [[ "$build_channel" == "beta" ]] || [[ "$build_channel" == "rc" ]] || [[ "$build_channel" == "release" ]]; then
+# Temporary removed from release and rc builds [[ "$build_channel" == "rc" ]] || [[ "$build_channel" == "release" ]]
+
+if [[ "$build_channel" == "beta" ]]; then
     echo "The build channel is correct, the posting to slack is allowed"
 else
     echo "Unknown build channel: ${build_channel}. The building for simulator is not allowed"

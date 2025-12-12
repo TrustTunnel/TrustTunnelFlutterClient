@@ -61,7 +61,7 @@ lane :build_simulator_app_and_zip do |options|
     build_app(
         scheme: "Runner",
         clean: true,
-        configuration: "Release",
+        configuration: "Debug",
         destination: "generic/platform=iOS Simulator",
         skip_package_ipa: true,
         output_directory: FASTLANE_BUILD_DIRECTORY,
