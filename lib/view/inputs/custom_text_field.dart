@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:vpn/common/assets/asset_icons.dart';
 import 'package:vpn/common/extensions/context_extensions.dart';
 import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/view/buttons/custom_icon_button.dart';
 import 'package:vpn/view/custom_icon.dart';
 
 class CustomTextField extends StatefulWidget {
@@ -26,6 +25,7 @@ class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
   final SpellCheckService? spellCheckService;
+
   const CustomTextField({
     super.key,
     this.value,
@@ -152,41 +152,21 @@ class _CustomTextFieldState extends State<CustomTextField> {
               padding: const EdgeInsets.all(4),
               child:
                   widget.suffixIcon ??
-                  Visibility(
-                    visible: showSuffix(_focusNode.hasFocus),
-                    replacement: const SizedBox(height: 40),
-                    child: _focusNode.hasFocus
-                        ? _controller.text.isNotEmpty
-                              ? CustomIconButton(
-                                  color: widget.error == null
-                                      ? context.theme.inputDecorationTheme.suffixIconColor
-                                      : context.colors.error,
-                                  onPressed: widget.enabled
-                                      ? () {
-                                          _controller.clear();
-                                          widget.onChanged?.call('');
-                                        }
-                                      : null,
-                                  icon: AssetIcons.cancel,
-                                )
-                              : const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: CustomIcon.medium(
-                              icon: AssetIcons.error,
-                              color: context.colors.error,
-                            ),
+                  (widget.error != null
+                      ? Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: CustomIcon.medium(
+                            icon: AssetIcons.error,
+                            color: context.colors.error,
                           ),
-                  ),
+                        )
+                      : const SizedBox.shrink()),
             ),
           ),
         ),
       ),
     );
   }
-
-  bool showSuffix(bool hasFocus) =>
-      (hasFocus && widget.showClearButton && _controller.text.isNotEmpty) || widget.error != null;
 
   void _scrollToStartOnFocusLost(bool hasFocus) {
     if (!hasFocus) {
