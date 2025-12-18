@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:vpn/data/model/vpn_log.dart';
-import 'package:vpn/data/model/vpn_log_action.dart';
-import 'package:vpn/data/model/vpn_log_protocol.dart';
+import 'package:trusttunnel/data/model/vpn_log.dart';
+import 'package:trusttunnel/data/model/vpn_log_action.dart';
+import 'package:trusttunnel/data/model/vpn_log_protocol.dart';
 import 'package:vpn_plugin/models/connection_protocol.dart';
 import 'package:vpn_plugin/models/query_log_action.dart';
 import 'package:vpn_plugin/models/query_log_row.dart';

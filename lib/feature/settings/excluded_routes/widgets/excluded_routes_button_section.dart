@@ -1,17 +1,17 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/vpn_state.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope_controller.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope_controller.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_aspect.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope_controller.dart';
-import 'package:vpn/feature/vpn/models/vpn_controller.dart';
-import 'package:vpn/feature/vpn/widgets/vpn_scope.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_controller.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_aspect.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope_controller.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 
 class ExcludedRoutesButtonSection extends StatefulWidget {
   const ExcludedRoutesButtonSection({

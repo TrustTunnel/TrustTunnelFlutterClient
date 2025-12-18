@@ -1,10 +1,10 @@
-import 'package:vpn/common/error/model/enum/presentation_field_error_code.dart';
-import 'package:vpn/common/error/model/enum/presentation_field_name.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/common/utils/validation_utils.dart';
-import 'package:vpn/data/model/raw/add_server_request.dart';
-import 'package:vpn/data/model/server.dart';
-import 'package:vpn/feature/server/server_details/model/server_details_data.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_error_code.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/utils/validation_utils.dart';
+import 'package:trusttunnel/data/model/raw/add_server_request.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/feature/server/server_details/model/server_details_data.dart';
 
 abstract class ServerDetailsService {
   List<PresentationField> validateData({
@@ -175,7 +175,7 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
         }
 
       final isValidURI = Uri.tryParse(rawServer)?.hasAbsolutePath ?? false;
-      
+
       if (!isValidURI &&
           !ValidationUtils.validateIpAddress(dnsServer, allowPort: false) &&
           ValidationUtils.tryParseDomain(dnsServer) == null) {

@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:vpn/data/datasources/vpn_datasource.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/data/model/server.dart';
-import 'package:vpn/data/model/vpn_log.dart';
-import 'package:vpn/data/model/vpn_state.dart';
+import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_log.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
 
 abstract class VpnRepository {
   Future<Stream<VpnState>> startListenToStates({

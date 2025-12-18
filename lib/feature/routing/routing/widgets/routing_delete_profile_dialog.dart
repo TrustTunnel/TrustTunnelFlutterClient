@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/routing/routing/model/routing_profile_modification_result.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope.dart';
-import 'package:vpn/widgets/custom_alert_dialog.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/feature/routing/routing/model/routing_profile_modification_result.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/widgets/custom_alert_dialog.dart';
 
 class RoutingDeleteProfileDialog extends StatelessWidget {
   final String profileName;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/feature/server/server_details/widgets/scope/server_details_scope.dart';
-import 'package:vpn/feature/server/server_details/widgets/server_details_discard_changes_dialog.dart';
-import 'package:vpn/feature/server/server_details/widgets/server_details_form.dart';
-import 'package:vpn/feature/server/server_details/widgets/server_details_full_screen_view.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/server_details_discard_changes_dialog.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/server_details_form.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/server_details_full_screen_view.dart';
 
 class ServerDetailsView extends StatefulWidget {
   const ServerDetailsView({

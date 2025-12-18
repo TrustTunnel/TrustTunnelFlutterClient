@@ -1,8 +1,8 @@
-import 'package:vpn/data/repository/routing_repository.dart';
-import 'package:vpn/data/repository/server_repository.dart';
-import 'package:vpn/data/repository/settings_repository.dart';
-import 'package:vpn/data/repository/vpn_repository.dart';
-import 'package:vpn/di/model/dependency_factory.dart';
+import 'package:trusttunnel/data/repository/routing_repository.dart';
+import 'package:trusttunnel/data/repository/server_repository.dart';
+import 'package:trusttunnel/data/repository/settings_repository.dart';
+import 'package:trusttunnel/data/repository/vpn_repository.dart';
+import 'package:trusttunnel/di/model/dependency_factory.dart';
 
 abstract class RepositoryFactory {
   ServerRepository get serverRepository;

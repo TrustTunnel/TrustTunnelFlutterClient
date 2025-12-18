@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/assets/assets_images.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/server/server_details/widgets/server_details_popup.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope.dart';
-import 'package:vpn/widgets/default_page.dart';
+import 'package:trusttunnel/common/assets/assets_images.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/widgets/default_page.dart';
 
 class ServersEmptyPlaceholder extends StatelessWidget {
   const ServersEmptyPlaceholder({super.key});

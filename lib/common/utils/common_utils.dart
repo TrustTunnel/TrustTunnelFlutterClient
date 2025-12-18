@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/data/model/breakpoint.dart';
+import 'package:trusttunnel/data/model/breakpoint.dart';
 
 class CommonUtils {
   static const widthBreakpointXS = 600;

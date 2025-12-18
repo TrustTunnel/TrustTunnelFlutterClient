@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
-import 'package:vpn/data/database/app_database.dart' as db;
-import 'package:vpn/data/datasources/server_datasource.dart';
-import 'package:vpn/data/model/raw/add_server_request.dart';
-import 'package:vpn/data/model/raw/raw_server.dart';
-import 'package:vpn/data/model/vpn_protocol.dart';
+import 'package:trusttunnel/data/database/app_database.dart' as db;
+import 'package:trusttunnel/data/datasources/server_datasource.dart';
+import 'package:trusttunnel/data/model/raw/add_server_request.dart';
+import 'package:trusttunnel/data/model/raw/raw_server.dart';
+import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 /// {@template server_data_source_impl}
 /// Drift-backed implementation of [ServerDataSource].

@@ -1,14 +1,14 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:vpn/common/error/model/enum/presentation_field_name.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope_aspect.dart';
-import 'package:vpn/widgets/custom_alert_dialog.dart';
-import 'package:vpn/widgets/inputs/custom_text_field.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_aspect.dart';
+import 'package:trusttunnel/widgets/custom_alert_dialog.dart';
+import 'package:trusttunnel/widgets/inputs/custom_text_field.dart';
 
 class RoutingEditNameDialog extends StatefulWidget {
   final String currentRoutingName;

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/data/model/server.dart';
-import 'package:vpn/data/model/vpn_state.dart';
-import 'package:vpn/feature/server/server_details/widgets/server_details_popup.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope.dart';
-import 'package:vpn/feature/server/servers/widget/servers_card_connection_button.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
-import 'package:vpn/feature/vpn/widgets/vpn_scope.dart';
-import 'package:vpn/widgets/common/custom_list_tile_separated.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/servers_card_connection_button.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
+import 'package:trusttunnel/widgets/common/custom_list_tile_separated.dart';
 
 class ServersCard extends StatefulWidget {
   final Server server;

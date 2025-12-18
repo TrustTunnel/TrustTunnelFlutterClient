@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/widgets/arb_parser/arb_parser.dart';
-import 'package:vpn/widgets/custom_alert_dialog.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/widgets/arb_parser/arb_parser.dart';
+import 'package:trusttunnel/widgets/custom_alert_dialog.dart';
 
 class ServerDetailsDeleteDialog extends StatelessWidget {
   final String serverName;

@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/feature/settings/excluded_routes/domain/service/excluded_routes_spell_check_service.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_aspect.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
-import 'package:vpn/widgets/inputs/custom_text_field.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/domain/service/excluded_routes_spell_check_service.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_aspect.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/widgets/inputs/custom_text_field.dart';
 
 final String _divider = Platform.lineTerminator;
 

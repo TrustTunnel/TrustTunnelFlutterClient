@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/widgets/custom_icon.dart';
-import 'package:vpn/widgets/hover_theme_provider.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/widgets/custom_icon.dart';
+import 'package:trusttunnel/widgets/hover_theme_provider.dart';
 
 class CustomFilledButton extends StatelessWidget {
   final IconData icon;

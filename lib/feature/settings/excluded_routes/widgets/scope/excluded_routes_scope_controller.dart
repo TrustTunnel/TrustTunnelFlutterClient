@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:vpn/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
 
 typedef ExcludedRoutesDataChangedCallback =
     void Function({

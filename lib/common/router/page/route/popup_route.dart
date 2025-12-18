@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/router/page/custom_page.dart';
-import 'package:vpn/common/utils/common_utils.dart';
-import 'package:vpn/data/model/breakpoint.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/router/page/custom_page.dart';
+import 'package:trusttunnel/common/utils/common_utils.dart';
+import 'package:trusttunnel/data/model/breakpoint.dart';
 
 class PopUpRoute<T> extends CustomPageRoute<T> {
   @override

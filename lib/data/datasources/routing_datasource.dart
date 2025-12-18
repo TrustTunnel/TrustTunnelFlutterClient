@@ -1,6 +1,6 @@
-import 'package:vpn/data/model/raw/add_routing_profile_request.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/raw/add_routing_profile_request.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 
 /// {@template routing_data_source}
 /// Persistence interface for routing profiles and their rules.

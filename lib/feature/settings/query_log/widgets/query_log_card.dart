@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/data/model/vpn_log.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/data/model/vpn_log.dart';
 
 class QueryLogCard extends StatelessWidget {
   final VpnLog log;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/feature/routing/routing/widgets/routing_screen_view.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/routing_screen_view.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 
 class RoutingScreen extends StatefulWidget {
   const RoutingScreen({super.key});

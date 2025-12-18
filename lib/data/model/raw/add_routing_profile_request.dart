@@ -1,4 +1,4 @@
-import 'package:vpn/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
 
 /// {@template add_routing_profile_request}
 /// Input payload for creating a routing profile.

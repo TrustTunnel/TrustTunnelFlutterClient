@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
-import 'package:vpn/data/model/vpn_state.dart';
-import 'package:vpn/di/model/dependency_factory.dart';
-import 'package:vpn/di/model/repository_factory.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/di/model/dependency_factory.dart';
+import 'package:trusttunnel/di/model/repository_factory.dart';
 
 /// Result of the application initialization phase.
 ///

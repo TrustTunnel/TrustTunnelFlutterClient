@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/assets/asset_icons.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/feature/routing/routing/widgets/routing_card.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope_aspect.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/routing_details_screen.dart';
-import 'package:vpn/widgets/buttons/custom_floating_action_button.dart';
-import 'package:vpn/widgets/custom_app_bar.dart';
-import 'package:vpn/widgets/scaffold_wrapper.dart';
+import 'package:trusttunnel/common/assets/asset_icons.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/routing_card.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_aspect.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_screen.dart';
+import 'package:trusttunnel/widgets/buttons/custom_floating_action_button.dart';
+import 'package:trusttunnel/widgets/custom_app_bar.dart';
+import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
 class RoutingScreenView extends StatefulWidget {
   const RoutingScreenView({super.key});

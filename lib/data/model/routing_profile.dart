@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
-import 'package:vpn/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
 
 /// {@template routing_profile}
 /// A named set of routing rules and a default routing mode.

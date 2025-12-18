@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/assets/asset_icons.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/server.dart';
-import 'package:vpn/feature/server/server_details/widgets/server_details_popup.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope_aspect.dart';
-import 'package:vpn/feature/server/servers/widget/servers_card.dart';
-import 'package:vpn/feature/server/servers/widget/servers_empty_placeholder.dart';
-import 'package:vpn/widgets/buttons/custom_floating_action_button.dart';
-import 'package:vpn/widgets/custom_app_bar.dart';
-import 'package:vpn/widgets/scaffold_wrapper.dart';
+import 'package:trusttunnel/common/assets/asset_icons.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
+import 'package:trusttunnel/feature/server/servers/widget/servers_card.dart';
+import 'package:trusttunnel/feature/server/servers/widget/servers_empty_placeholder.dart';
+import 'package:trusttunnel/widgets/buttons/custom_floating_action_button.dart';
+import 'package:trusttunnel/widgets/custom_app_bar.dart';
+import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
 class ServersScreenView extends StatefulWidget {
   const ServersScreenView({

@@ -1,16 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:vpn/common/controller/widget/state_consumer.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/data/model/routing_mode.dart';
+import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
 
-import 'package:vpn/feature/routing/routing_details/controller/routing_details_controller.dart';
-import 'package:vpn/feature/routing/routing_details/controller/routing_details_states.dart';
-import 'package:vpn/feature/routing/routing_details/model/routing_details_data.dart';
-import 'package:vpn/feature/routing/routing_details/domain/service/routing_details_service.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/scope/routing_details_aspect.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/scope/routing_details_controller.dart';
+import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_controller.dart';
+import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_states.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
+import 'package:trusttunnel/feature/routing/routing_details/domain/service/routing_details_service.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_aspect.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_controller.dart';
 
 class RoutingDetailsScope extends StatefulWidget {
   final Widget child;

@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:vpn/common/utils/validation_utils.dart';
+import 'package:trusttunnel/common/utils/validation_utils.dart';
 
 class ExcludedRoutesSpellCheckService implements SpellCheckService {
   final ValueChanged<bool> onChecked;

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/common/localization/extensions/locale_enum_extension.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/widgets/custom_alert_dialog.dart';
-import 'package:vpn/widgets/menu/custom_dropdown_menu.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/common/localization/extensions/locale_enum_extension.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/widgets/custom_alert_dialog.dart';
+import 'package:trusttunnel/widgets/menu/custom_dropdown_menu.dart';
 
 class RoutingDetailsChangeRoutingDialog extends StatefulWidget {
   final ValueChanged<RoutingMode> onSavePressed;

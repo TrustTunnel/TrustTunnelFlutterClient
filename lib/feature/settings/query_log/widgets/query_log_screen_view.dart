@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/vpn_log.dart';
-import 'package:vpn/feature/settings/query_log/widgets/query_log_card.dart';
-import 'package:vpn/feature/vpn/widgets/vpn_scope.dart';
-import 'package:vpn/widgets/custom_app_bar.dart';
-import 'package:vpn/widgets/scaffold_wrapper.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/vpn_log.dart';
+import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_card.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
+import 'package:trusttunnel/widgets/custom_app_bar.dart';
+import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
 class QueryLogScreenView extends StatefulWidget {
   const QueryLogScreenView({super.key});

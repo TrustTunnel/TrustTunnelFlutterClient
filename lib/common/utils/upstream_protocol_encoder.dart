@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:vpn/data/model/vpn_protocol.dart';
+import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:vpn_plugin/models/upstream_protocol.dart';
 
 class UpStreamProtocolEncoder extends Converter<VpnProtocol, UpStreamProtocol> {

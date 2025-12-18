@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
-import 'package:vpn/data/database/app_database.dart' as db;
-import 'package:vpn/data/datasources/routing_datasource.dart';
-import 'package:vpn/data/model/raw/add_routing_profile_request.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/database/app_database.dart' as db;
+import 'package:trusttunnel/data/datasources/routing_datasource.dart';
+import 'package:trusttunnel/data/model/raw/add_routing_profile_request.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 
 /// {@template routing_data_source_impl}
 /// Drift-backed implementation of [RoutingDataSource].

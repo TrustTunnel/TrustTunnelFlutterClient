@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/widgets/buttons/custom_icon_button.dart';
-import 'package:vpn/widgets/custom_icon.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/widgets/buttons/custom_icon_button.dart';
+import 'package:trusttunnel/widgets/custom_icon.dart';
 
 const _toolbarHeight = 64.0;
 

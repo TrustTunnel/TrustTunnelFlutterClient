@@ -1,5 +1,4 @@
-
-import 'package:vpn/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 
 abstract class RoutingProfileUtils {
   static const defaultRoutingProfileId = 0;

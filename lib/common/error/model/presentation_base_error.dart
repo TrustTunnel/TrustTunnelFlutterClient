@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/error/error_utils.dart';
-import 'package:vpn/common/error/model/enum/presentation_error_code.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/localization/localization.dart';
+import 'package:trusttunnel/common/error/error_utils.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_error_code.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 
 base class PresentationBaseError implements PresentationError {
   final PresentationErrorCode code;

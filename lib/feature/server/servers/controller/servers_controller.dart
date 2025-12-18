@@ -1,9 +1,9 @@
-import 'package:vpn/common/controller/concurrency/sequential_controller_handler.dart';
-import 'package:vpn/common/controller/controller/state_controller.dart';
-import 'package:vpn/common/error/error_utils.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/data/repository/server_repository.dart';
-import 'package:vpn/feature/server/servers/controller/servers_states.dart';
+import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
+import 'package:trusttunnel/common/controller/controller/state_controller.dart';
+import 'package:trusttunnel/common/error/error_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/data/repository/server_repository.dart';
+import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
 
 class CustomDropdownMenu<T> extends StatelessWidget {
   final bool expanded;
@@ -46,10 +46,9 @@ class CustomDropdownMenu<T> extends StatelessWidget {
     padding: padding,
     child: Theme(
       data: context.theme.copyWith(
-        dropdownMenuTheme:
-            enabled
-                ? context.theme.extension<CustomDropdownMenuTheme>()!.enabled
-                : context.theme.extension<CustomDropdownMenuTheme>()!.disabled,
+        dropdownMenuTheme: enabled
+            ? context.theme.extension<CustomDropdownMenuTheme>()!.enabled
+            : context.theme.extension<CustomDropdownMenuTheme>()!.disabled,
       ),
       child: DropdownMenu<T>(
         initialSelection: value,
@@ -60,16 +59,15 @@ class CustomDropdownMenu<T> extends StatelessWidget {
         errorText: errorText,
         hintText: labelText,
         requestFocusOnTap: false,
-        dropdownMenuEntries:
-            values
-                .map(
-                  (e) => DropdownMenuEntry<T>(
-                    value: e,
-                    label: toText(e),
-                    labelWidget: toWidget?.call(e),
-                  ),
-                )
-                .toList(),
+        dropdownMenuEntries: values
+            .map(
+              (e) => DropdownMenuEntry<T>(
+                value: e,
+                label: toText(e),
+                labelWidget: toWidget?.call(e),
+              ),
+            )
+            .toList(),
       ),
     ),
   );

@@ -1,22 +1,22 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:vpn/common/assets/asset_icons.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/data/model/vpn_state.dart';
-import 'package:vpn/common/utils/routing_profile_utils.dart';
-import 'package:vpn/feature/routing/routing/model/routing_profile_modification_result.dart';
-import 'package:vpn/feature/routing/routing/widgets/routing_delete_profile_dialog.dart';
-import 'package:vpn/feature/routing/routing/widgets/routing_edit_name_dialog.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/common/assets/asset_icons.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
+import 'package:trusttunnel/feature/routing/routing/model/routing_profile_modification_result.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/routing_delete_profile_dialog.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/routing_edit_name_dialog.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 
-import 'package:vpn/feature/routing/routing_details/widgets/routing_details_screen.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
-import 'package:vpn/feature/vpn/widgets/vpn_scope.dart';
-import 'package:vpn/widgets/common/custom_list_tile_separated.dart';
-import 'package:vpn/widgets/custom_icon.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_screen.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
+import 'package:trusttunnel/widgets/common/custom_list_tile_separated.dart';
+import 'package:trusttunnel/widgets/custom_icon.dart';
 
 class RoutingCard extends StatelessWidget {
   final RoutingProfile routingProfile;
@@ -81,8 +81,8 @@ class RoutingCard extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (_) => RoutingScopeValue(
-        controller: RoutingScope.controllerOf(context),
+      builder: (_) => RoutingScopeValue.fromContext(
+        context: context,
         child: RoutingEditNameDialog(
           currentRoutingName: routingProfile.name,
           id: routingProfile.id,
@@ -97,8 +97,8 @@ class RoutingCard extends StatelessWidget {
     final controller = RoutingScope.controllerOf(context, listen: false);
     final result = await showDialog(
       context: context,
-      builder: (_) => RoutingScopeValue(
-        controller: RoutingScope.controllerOf(context),
+      builder: (_) => RoutingScopeValue.fromContext(
+        context: context,
         child: RoutingDeleteProfileDialog(
           profileName: routingProfile.name,
           profileId: routingProfile.id,

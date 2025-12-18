@@ -1,15 +1,15 @@
 import 'dart:ui';
 
-import 'package:vpn/common/controller/concurrency/sequential_controller_handler.dart';
-import 'package:vpn/common/controller/controller/state_controller.dart';
-import 'package:vpn/common/error/error_utils.dart';
-import 'package:vpn/common/error/model/presentation_base_error.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/data/repository/routing_repository.dart';
-import 'package:vpn/feature/routing/routing_details/controller/routing_details_states.dart';
-import 'package:vpn/feature/routing/routing_details/model/routing_details_data.dart';
-import 'package:vpn/feature/routing/routing_details/domain/service/routing_details_service.dart';
+import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
+import 'package:trusttunnel/common/controller/controller/state_controller.dart';
+import 'package:trusttunnel/common/error/error_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_base_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/repository/routing_repository.dart';
+import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_states.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
+import 'package:trusttunnel/feature/routing/routing_details/domain/service/routing_details_service.dart';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.

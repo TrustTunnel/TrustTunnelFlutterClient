@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/assets/asset_icons.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/routing_details_change_routing_dialog.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/routing_details_delete_rules_dialog.dart';
+import 'package:trusttunnel/common/assets/asset_icons.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_change_routing_dialog.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_delete_rules_dialog.dart';
 
-import 'package:vpn/widgets/custom_icon.dart';
+import 'package:trusttunnel/widgets/custom_icon.dart';
 
 class RoutingDetailsScreenAppBarAction extends StatelessWidget {
   final void Function(BuildContext context) onClearRulesPressed;

@@ -1,5 +1,5 @@
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/feature/routing/routing_details/model/routing_details_data.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
 
 /// {@template Routings_state}
 /// State representation for Routings-related operations.

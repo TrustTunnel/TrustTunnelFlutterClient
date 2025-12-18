@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/utils/navigation_utils.dart';
-import 'package:vpn/feature/navigation/widgets/custom_navigation_rail.dart';
-import 'package:vpn/feature/routing/routing/widgets/routing_screen.dart';
-import 'package:vpn/feature/server/servers/widget/servers_screen.dart';
-import 'package:vpn/feature/settings/settings/settings_screen.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/utils/navigation_utils.dart';
+import 'package:trusttunnel/feature/navigation/widgets/custom_navigation_rail.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/routing_screen.dart';
+import 'package:trusttunnel/feature/server/servers/widget/servers_screen.dart';
+import 'package:trusttunnel/feature/settings/settings/settings_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});

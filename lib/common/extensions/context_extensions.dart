@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/common/router/page/route/popup_route.dart';
-import 'package:vpn/common/utils/common_utils.dart';
-import 'package:vpn/data/model/breakpoint.dart';
-import 'package:vpn/di/widgets/dependency_scope.dart';
-import 'package:vpn/di/model/dependency_factory.dart';
-import 'package:vpn/di/model/repository_factory.dart';
-import 'package:vpn/widgets/arb_parser/arb_parser.dart';
-import 'package:vpn/widgets/common/scaffold_messenger_provider.dart';
-import 'package:vpn/widgets/custom_snack_bar.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/common/router/page/route/popup_route.dart';
+import 'package:trusttunnel/common/utils/common_utils.dart';
+import 'package:trusttunnel/data/model/breakpoint.dart';
+import 'package:trusttunnel/di/widgets/dependency_scope.dart';
+import 'package:trusttunnel/di/model/dependency_factory.dart';
+import 'package:trusttunnel/di/model/repository_factory.dart';
+import 'package:trusttunnel/widgets/arb_parser/arb_parser.dart';
+import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
+import 'package:trusttunnel/widgets/custom_snack_bar.dart';
 
 extension ScreenTypeExtension on BuildContext {
   Breakpoint get breakpoint => CommonUtils.getBreakpointByWidth(MediaQuery.of(this).size.width);

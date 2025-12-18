@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:vpn/data/datasources/settings_datasource.dart';
+import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 
 abstract class SettingsRepository {
   Future<void> setExcludedRoutes(List<String> routes);
@@ -14,7 +14,6 @@ class SettingsRepositoryImpl implements SettingsRepository {
   SettingsRepositoryImpl({
     required SettingsDataSource settingsDataSource,
   }) : _settingsDataSource = settingsDataSource;
-
 
   @override
   Future<List<String>> getExcludedRoutes() => _settingsDataSource.getExcludedRoutes();

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/feature/routing/routing_details/model/routing_details_data.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
 
 typedef RoutingDataChangedCallback =
     void Function({

@@ -3,9 +3,9 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:vpn/di/model/initialization_result.dart';
-import 'package:vpn/di/model/dependency_factory.dart';
-import 'package:vpn/di/model/repository_factory.dart';
+import 'package:trusttunnel/di/model/initialization_result.dart';
+import 'package:trusttunnel/di/model/dependency_factory.dart';
+import 'package:trusttunnel/di/model/repository_factory.dart';
 
 abstract class InitializationHelper {
   Future<InitializationResult> init();

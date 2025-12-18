@@ -1,11 +1,11 @@
 import 'dart:ui';
 
-import 'package:vpn/common/controller/concurrency/sequential_controller_handler.dart';
-import 'package:vpn/common/controller/controller/state_controller.dart';
-import 'package:vpn/common/error/error_utils.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/data/repository/settings_repository.dart';
-import 'package:vpn/feature/settings/excluded_routes/controller/excluded_routes_states.dart';
+import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
+import 'package:trusttunnel/common/controller/controller/state_controller.dart';
+import 'package:trusttunnel/common/error/error_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/data/repository/settings_repository.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/controller/excluded_routes_states.dart';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.

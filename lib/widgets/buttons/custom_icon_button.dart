@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/widgets/custom_icon.dart';
+import 'package:trusttunnel/widgets/custom_icon.dart';
 
 class CustomIconButton extends StatefulWidget {
   final IconData? icon;

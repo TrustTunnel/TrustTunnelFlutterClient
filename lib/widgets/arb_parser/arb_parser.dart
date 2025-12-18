@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/widgets/arb_parser/arb_item.dart';
-import 'package:vpn/widgets/arb_parser/arb_parser_base.dart';
+import 'package:trusttunnel/widgets/arb_parser/arb_item.dart';
+import 'package:trusttunnel/widgets/arb_parser/arb_parser_base.dart';
 
 class ArbParser extends StatelessWidget {
   final String data;

@@ -1,7 +1,7 @@
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/feature/server/server_details/model/server_details_data.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/feature/server/server_details/model/server_details_data.dart';
 
 /// {@template Servers_state}
 /// State representation for Servers-related operations.

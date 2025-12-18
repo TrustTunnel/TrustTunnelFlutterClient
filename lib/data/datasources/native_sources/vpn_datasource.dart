@@ -1,16 +1,16 @@
 import 'dart:async';
 
-import 'package:vpn/common/extensions/model_extensions.dart';
-import 'package:vpn/common/utils/upstream_protocol_encoder.dart';
-import 'package:vpn/common/utils/validation_utils.dart';
-import 'package:vpn/common/utils/vpn_mode_encoder.dart';
-import 'package:vpn/data/datasources/vpn_datasource.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/data/model/server.dart';
-import 'package:vpn/data/model/vpn_log.dart';
-import 'package:vpn/data/model/vpn_state.dart';
-import 'package:vpn/feature/vpn/domain/services/vpn_log_converter.dart';
+import 'package:trusttunnel/common/extensions/model_extensions.dart';
+import 'package:trusttunnel/common/utils/upstream_protocol_encoder.dart';
+import 'package:trusttunnel/common/utils/validation_utils.dart';
+import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
+import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_log.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/feature/vpn/domain/services/vpn_log_converter.dart';
 import 'package:vpn_plugin/models/configuration.dart';
 import 'package:vpn_plugin/models/endpoint.dart';
 import 'package:vpn_plugin/models/query_log_row.dart';

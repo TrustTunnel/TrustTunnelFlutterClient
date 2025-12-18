@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:punycoder/punycoder.dart';
-import 'package:vpn/common/error/model/enum/presentation_field_name.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
 
 abstract class ValidationUtils {
   static const plainRawRegex = r'^(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$';

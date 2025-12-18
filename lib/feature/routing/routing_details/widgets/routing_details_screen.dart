@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/routing_details_screen_view.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/scope/routing_details_scope.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_screen_view.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_scope.dart';
 
 class RoutingDetailsScreen extends StatelessWidget {
   final int? routingId;

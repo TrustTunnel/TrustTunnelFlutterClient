@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
-import 'package:vpn/data/model/vpn_protocol.dart';
+import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 /// {@template raw_server}
 /// Database-oriented representation of a VPN server record.

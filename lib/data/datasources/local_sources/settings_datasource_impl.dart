@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:vpn/data/database/app_database.dart' as db;
-import 'package:vpn/data/datasources/settings_datasource.dart';
+import 'package:trusttunnel/data/database/app_database.dart' as db;
+import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 
 /// {@template settings_data_source_impl}
 /// Drift-backed implementation of [SettingsDataSource].

@@ -1,4 +1,4 @@
-import 'package:vpn/data/model/vpn_protocol.dart';
+import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 /// {@template add_server_request}
 /// Input payload for creating or updating a server record.

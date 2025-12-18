@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
-import 'package:vpn/data/model/vpn_protocol.dart';
-import 'package:vpn/common/utils/routing_profile_utils.dart';
+import 'package:trusttunnel/data/model/vpn_protocol.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 
 /// {@template server_details_data}
 /// Editable representation of VPN server connection details.

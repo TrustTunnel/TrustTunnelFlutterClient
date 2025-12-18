@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/extensions/locale_enum_extension.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/feature/routing/routing_details/domain/service/routing_spell_check_service.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/scope/routing_details_aspect.dart';
-import 'package:vpn/feature/routing/routing_details/widgets/scope/routing_details_scope.dart';
-import 'package:vpn/widgets/inputs/custom_text_field.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/extensions/locale_enum_extension.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/feature/routing/routing_details/domain/service/routing_spell_check_service.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_aspect.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_scope.dart';
+import 'package:trusttunnel/widgets/inputs/custom_text_field.dart';
 
 class RoutingDetailsForm extends StatefulWidget {
   const RoutingDetailsForm({super.key});

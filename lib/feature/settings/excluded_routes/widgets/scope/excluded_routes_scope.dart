@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:vpn/common/controller/widget/state_consumer.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/feature/settings/excluded_routes/controller/excluded_routes_controller.dart';
-import 'package:vpn/feature/settings/excluded_routes/controller/excluded_routes_states.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_aspect.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope_controller.dart';
+import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/controller/excluded_routes_controller.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/controller/excluded_routes_states.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_aspect.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope_controller.dart';
 
 class ExcludedRoutesScope extends StatefulWidget {
   final Widget child;

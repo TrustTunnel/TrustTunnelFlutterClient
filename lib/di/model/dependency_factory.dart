@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/theme/light_theme.dart';
-import 'package:vpn/data/database/app_database.dart' as db;
-import 'package:vpn/data/datasources/local_sources/routing_datasource_impl.dart';
-import 'package:vpn/data/datasources/local_sources/server_datasource_impl.dart';
-import 'package:vpn/data/datasources/local_sources/settings_datasource_impl.dart';
-import 'package:vpn/data/datasources/native_sources/vpn_datasource.dart';
-import 'package:vpn/data/datasources/routing_datasource.dart';
-import 'package:vpn/data/datasources/server_datasource.dart';
-import 'package:vpn/data/datasources/settings_datasource.dart';
-import 'package:vpn/data/datasources/vpn_datasource.dart';
+import 'package:trusttunnel/common/theme/light_theme.dart';
+import 'package:trusttunnel/data/database/app_database.dart' as db;
+import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource.dart';
+import 'package:trusttunnel/data/datasources/routing_datasource.dart';
+import 'package:trusttunnel/data/datasources/server_datasource.dart';
+import 'package:trusttunnel/data/datasources/settings_datasource.dart';
+import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:vpn_plugin/vpn_plugin.dart';
 
 abstract class DependencyFactory {
-
   ThemeData get lightThemeData;
 
   VpnPlugin get vpnPlugin;

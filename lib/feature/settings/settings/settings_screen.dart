@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
-import 'package:vpn/common/utils/url_utils.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/excluded_routes_screen.dart';
-import 'package:vpn/feature/settings/query_log/widgets/query_log_screen.dart';
-import 'package:vpn/feature/settings/settings_about/about_screen.dart';
-import 'package:vpn/widgets/common/custom_arrow_list_tile.dart';
-import 'package:vpn/widgets/custom_app_bar.dart';
-import 'package:vpn/widgets/scaffold_wrapper.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/common/utils/url_utils.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/excluded_routes_screen.dart';
+import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
+import 'package:trusttunnel/feature/settings/settings_about/about_screen.dart';
+import 'package:trusttunnel/widgets/common/custom_arrow_list_tile.dart';
+import 'package:trusttunnel/widgets/custom_app_bar.dart';
+import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -52,7 +52,7 @@ class SettingsScreen extends StatelessWidget {
     const ExcludedRoutesScreen(),
   );
 
-  void _openGithubOrganization() => UrlUtils.openWebPage(UrlUtils.githubAdguardTeam);
+  void _openGithubOrganization() => UrlUtils.openWebPage(UrlUtils.githubTrustTunnelTeam);
 
   void _pushAboutScreen(BuildContext context) => context.push(
     const AboutScreen(),

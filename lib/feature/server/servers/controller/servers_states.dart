@@ -1,5 +1,5 @@
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/data/model/server.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/data/model/server.dart';
 
 /// {@template Servers_state}
 /// State representation for Servers-related operations.

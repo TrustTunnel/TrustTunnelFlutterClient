@@ -1,7 +1,7 @@
-import 'package:vpn/common/error/model/enum/presentation_field_error_code.dart';
-import 'package:vpn/common/error/model/enum/presentation_field_name.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/data/model/routing_profile.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_error_code.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 
 abstract class RoutingService {
   static List<PresentationField> validateRoutingProfileName(Set<RoutingProfile> profiles, String name) {

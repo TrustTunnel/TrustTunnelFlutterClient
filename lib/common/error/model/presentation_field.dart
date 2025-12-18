@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/error/error_utils.dart';
-import 'package:vpn/common/error/model/enum/presentation_field_error_code.dart';
-import 'package:vpn/common/error/model/enum/presentation_field_name.dart';
-import 'package:vpn/common/localization/localization.dart';
+import 'package:trusttunnel/common/error/error_utils.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_error_code.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 
 class PresentationField {
   final PresentationFieldErrorCode code;

@@ -1,19 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:vpn/common/controller/widget/state_consumer.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/feature/routing/routing/controller/routing_controller.dart';
-import 'package:vpn/feature/routing/routing/controller/routing_states.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope_aspect.dart';
-import 'package:vpn/feature/routing/routing/widgets/scope/routing_scope_controller.dart';
+import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/feature/routing/routing/controller/routing_controller.dart';
+import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_aspect.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_controller.dart';
 
 /// {@template routing_scope_template}
 /// Provides Routing controller to the widget tree
 /// {@endtemplate}
-@Deprecated('Need to fix field errors in change name dialog')
 class RoutingScope extends StatefulWidget {
   final Widget child;
 
@@ -32,6 +31,9 @@ class RoutingScope extends StatefulWidget {
 
   @override
   State<RoutingScope> createState() => _RoutingScopeState();
+
+  static RoutingController _rawControllerOf(BuildContext context) =>
+      _InheritedRoutingScope.controllerOf(context, listen: false)._rawController;
 }
 
 class _RoutingScopeState extends State<RoutingScope> {
@@ -47,21 +49,9 @@ class _RoutingScopeState extends State<RoutingScope> {
   }
 
   @override
-  Widget build(BuildContext context) => StateConsumer<RoutingController, RoutingState>(
+  Widget build(BuildContext context) => RoutingScopeValue(
     controller: _controller,
-    builder: (context, state, _) => _InheritedRoutingScope(
-      fetchProfiles: _controller.fetchRoutingProfiles,
-      changeName: _controller.editName,
-      deleteProfile: _controller.deleteProfile,
-      error: state.error,
-      loading: state.loading,
-      fieldErrors: [...state.fieldErrors],
-      routingList: [...state.routingList],
-      pickProfileToChangeName: () => _controller.dataChanged(
-        fieldErrors: [],
-      ),
-      child: widget.child,
-    ),
+    child: widget.child,
   );
 
   @override
@@ -89,6 +79,8 @@ class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implemen
   @override
   final void Function() pickProfileToChangeName;
 
+  final RoutingController _rawController;
+
   const _InheritedRoutingScope({
     required this.fetchProfiles,
     required this.changeName,
@@ -98,8 +90,9 @@ class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implemen
     required this.fieldErrors,
     required this.loading,
     required this.routingList,
+    required RoutingController rawController,
     required super.child,
-  });
+  }) : _rawController = rawController;
 
   // Controller API
 
@@ -171,27 +164,38 @@ class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implemen
 }
 
 class RoutingScopeValue extends StatelessWidget {
-  final RoutingScopeController controller;
   final Widget child;
+  final RoutingController _controller;
 
-  /// {@macro routing_scope_value_template}
   const RoutingScopeValue({
-    required this.controller,
+    required RoutingController controller,
     required this.child,
     super.key,
-  });
+  }) : _controller = controller;
+
+  RoutingScopeValue.fromContext({
+    required BuildContext context,
+
+    required this.child,
+    super.key,
+  }) : _controller = RoutingScope._rawControllerOf(context);
 
   @override
-  Widget build(BuildContext context) => _InheritedRoutingScope(
-    fetchProfiles: controller.fetchProfiles,
-    changeName: controller.changeName,
-    deleteProfile: controller.deleteProfile,
-    pickProfileToChangeName: controller.pickProfileToChangeName,
-    error: controller.error,
-    fieldErrors: controller.fieldErrors,
-    loading: controller.loading,
-    routingList: controller.routingList,
-
-    child: child,
+  Widget build(BuildContext context) => StateConsumer<RoutingController, RoutingState>(
+    controller: _controller,
+    builder: (context, state, _) => _InheritedRoutingScope(
+      fetchProfiles: _controller.fetchRoutingProfiles,
+      changeName: _controller.editName,
+      deleteProfile: _controller.deleteProfile,
+      error: state.error,
+      loading: state.loading,
+      fieldErrors: [...state.fieldErrors],
+      routingList: [...state.routingList],
+      pickProfileToChangeName: () => _controller.dataChanged(
+        fieldErrors: [],
+      ),
+      rawController: _controller,
+      child: child,
+    ),
   );
 }

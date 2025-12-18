@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/feature/routing/routing_details/model/routing_details_data.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
 
 abstract class RoutingDetailsService {
   RoutingDetailsData toRoutingDetailsData({required RoutingProfile routingProfile});

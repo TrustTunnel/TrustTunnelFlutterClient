@@ -1,8 +1,7 @@
 import 'dart:convert';
 
-import 'package:vpn/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:vpn_plugin/models/vpn_mode.dart';
-
 
 class VpnModeEncoder extends Converter<RoutingMode, VpnMode> {
   @override

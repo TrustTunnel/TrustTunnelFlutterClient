@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:vpn/data/datasources/routing_datasource.dart';
-import 'package:vpn/data/datasources/server_datasource.dart';
-import 'package:vpn/data/model/raw/add_server_request.dart';
-import 'package:vpn/data/model/server.dart';
+import 'package:trusttunnel/data/datasources/routing_datasource.dart';
+import 'package:trusttunnel/data/datasources/server_datasource.dart';
+import 'package:trusttunnel/data/model/raw/add_server_request.dart';
+import 'package:trusttunnel/data/model/server.dart';
 
 abstract class ServerRepository {
   Future<Server> addNewServer({required AddServerRequest request});

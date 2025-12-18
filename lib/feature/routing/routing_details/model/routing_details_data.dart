@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:vpn/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
 
 /// {@template routing_details_data}
 /// Editable representation of routing profile details.

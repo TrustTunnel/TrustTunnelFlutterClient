@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/assets/asset_icons.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/extensions/theme_extensions.dart';
-import 'package:vpn/data/model/vpn_state.dart';
-import 'package:vpn/widgets/buttons/custom_icon_button.dart';
-import 'package:vpn/widgets/rotating_wrapper.dart';
+import 'package:trusttunnel/common/assets/asset_icons.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/widgets/buttons/custom_icon_button.dart';
+import 'package:trusttunnel/widgets/rotating_wrapper.dart';
 
 class ServersCardConnectionButton extends StatelessWidget {
   final VpnState vpnManagerState;

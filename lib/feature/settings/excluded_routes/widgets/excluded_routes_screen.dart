@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/excluded_routes_screen_view.dart';
-import 'package:vpn/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/excluded_routes_screen_view.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 
 class ExcludedRoutesScreen extends StatefulWidget {
   const ExcludedRoutesScreen({super.key});

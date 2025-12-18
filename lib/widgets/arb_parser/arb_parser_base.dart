@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
-import 'package:vpn/widgets/arb_parser/arb_item.dart';
+import 'package:trusttunnel/widgets/arb_parser/arb_item.dart';
 
 typedef ArbWidgetBuilder = Widget Function(List<ArbItem> items);
 

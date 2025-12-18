@@ -1,4 +1,4 @@
-import 'package:vpn/data/model/vpn_state.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:vpn_plugin/platform_api.g.dart' as api;
 
 extension VpnStateFromApi on api.VpnManagerState {

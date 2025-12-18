@@ -1,6 +1,6 @@
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/data/model/server.dart';
-import 'package:vpn/data/model/vpn_state.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
 
 mixin VpnController {
   abstract final VpnState state;

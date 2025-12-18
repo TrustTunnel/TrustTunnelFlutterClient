@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:vpn/common/localization/generated/l10n.dart';
-import 'package:vpn/common/localization/locale_type.dart';
+import 'package:trusttunnel/common/localization/generated/l10n.dart';
+import 'package:trusttunnel/common/localization/locale_type.dart';
 
 final class Localization {
   static const _delegate = AppLocalizations.delegate;

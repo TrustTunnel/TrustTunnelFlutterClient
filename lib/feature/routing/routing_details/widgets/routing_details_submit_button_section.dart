@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/common/localization/localization.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 
 class RoutingDetailsSubmitButtonSection extends StatelessWidget {
   final VoidCallback? onPressed;

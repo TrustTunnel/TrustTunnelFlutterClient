@@ -1,16 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:vpn/common/controller/widget/state_consumer.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/common/extensions/context_extensions.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/feature/server/server_details/controller/servers_details_controller.dart';
-import 'package:vpn/feature/server/server_details/controller/servers_details_states.dart';
-import 'package:vpn/feature/server/server_details/model/server_details_data.dart';
-import 'package:vpn/feature/server/server_details/domain/service/server_details_service.dart';
-import 'package:vpn/feature/server/server_details/widgets/scope/server_details_scope_aspect.dart';
-import 'package:vpn/feature/server/server_details/widgets/scope/server_details_scope_controller.dart';
+import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/feature/server/server_details/controller/servers_details_controller.dart';
+import 'package:trusttunnel/feature/server/server_details/controller/servers_details_states.dart';
+import 'package:trusttunnel/feature/server/server_details/model/server_details_data.dart';
+import 'package:trusttunnel/feature/server/server_details/domain/service/server_details_service.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope_aspect.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope_controller.dart';
 
 /// {@template products_scope_template}
 /// Provides Products controller to the widget tree

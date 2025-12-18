@@ -2,15 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:vpn/data/model/routing_profile.dart';
-import 'package:vpn/data/model/server.dart';
-import 'package:vpn/data/model/vpn_log.dart';
-import 'package:vpn/data/model/vpn_state.dart';
-import 'package:vpn/data/repository/vpn_repository.dart';
-import 'package:vpn/feature/vpn/models/log_controller.dart';
-import 'package:vpn/feature/vpn/models/vpn_aspect.dart';
-import 'package:vpn/feature/vpn/models/vpn_controller.dart';
-
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_log.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/data/repository/vpn_repository.dart';
+import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_aspect.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 
 /// {@template vpn_scope_on_start_callback}
 /// Signature of the "start VPN" operation used by [VpnScope].

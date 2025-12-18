@@ -1,6 +1,6 @@
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/data/model/routing_profile.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 
 /// {@template Routing_state}
 /// State representation for Routing-related operations.
@@ -35,8 +35,7 @@ sealed class RoutingState {
     required PresentationError exception,
   }) = _ErrorRoutingState;
 
-  PresentationError? get error =>
-      this is _ErrorRoutingState ? (this as _ErrorRoutingState).exception : null;
+  PresentationError? get error => this is _ErrorRoutingState ? (this as _ErrorRoutingState).exception : null;
 
   bool get loading => this is _LoadingRoutingState;
 }
@@ -50,10 +49,10 @@ final class _IdleRoutingState extends RoutingState {
 
 final class _InitialRoutingState extends _IdleRoutingState {
   const _InitialRoutingState()
-      : super(
-          routingList: const [],
-          fieldErrors: const [],
-        );
+    : super(
+        routingList: const [],
+        fieldErrors: const [],
+      );
 }
 
 final class _LoadingRoutingState extends RoutingState {

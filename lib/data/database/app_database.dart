@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:vpn/common/utils/routing_profile_utils.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'connection.dart' as impl;
 
 part 'app_database.g.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/feature/server/servers/widget/scope/servers_scope.dart';
-import 'package:vpn/feature/server/servers/widget/servers_screen_view.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/servers_screen_view.dart';
 
 class ServersScreen extends StatefulWidget {
   const ServersScreen({super.key});

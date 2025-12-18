@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vpn/common/error/model/presentation_error.dart';
-import 'package:vpn/common/error/model/presentation_field.dart';
-import 'package:vpn/data/model/routing_profile.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 
 abstract class RoutingScopeController {
   abstract final List<RoutingProfile> routingList;

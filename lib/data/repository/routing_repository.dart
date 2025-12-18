@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:vpn/data/datasources/routing_datasource.dart';
-import 'package:vpn/data/model/raw/add_routing_profile_request.dart';
-import 'package:vpn/data/model/routing_mode.dart';
-import 'package:vpn/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/datasources/routing_datasource.dart';
+import 'package:trusttunnel/data/model/raw/add_routing_profile_request.dart';
+import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 
 abstract class RoutingRepository {
   Future<RoutingProfile> addNewProfile(AddRoutingProfileRequest request);

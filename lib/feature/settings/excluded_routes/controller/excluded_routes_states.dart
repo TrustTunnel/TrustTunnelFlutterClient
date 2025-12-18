@@ -1,4 +1,4 @@
-import 'package:vpn/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_error.dart';
 
 /// {@template ExcludedRoutes_state}
 /// State representation for ExcludedRoutes-related operations.
