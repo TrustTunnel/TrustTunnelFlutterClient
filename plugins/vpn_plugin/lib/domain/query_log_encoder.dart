@@ -27,7 +27,7 @@ final class QueryLogEncoder extends Converter<Map<String, Object?>, QueryLogRow>
     final action = _parseAction(input);
     final protocol = _parseProtocol(input);
     final source = _parseRequiredString(input, _sourceKey);
-    final destination = _parseRequiredString(input, _destinationKey);
+    final destination = _parseNullableString(input, _destinationKey);
     final domain = _parseNullableString(input, _domainKey);
     final timeStamp = _parseTimeStamp(input, _timeStampKey);
 

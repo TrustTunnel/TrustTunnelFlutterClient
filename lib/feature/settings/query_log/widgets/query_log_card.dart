@@ -35,15 +35,19 @@ class QueryLogCard extends StatelessWidget {
   String _titleLine(BuildContext context) {
     final dateTimeFormat = DateFormat.yMd('ru').add_Hms();
 
-    return '${dateTimeFormat.format(log.timeStamp)} ${log.protocol.name} -> ${log.action.name}';
+    return '${dateTimeFormat.format(log.timeStamp)} ${log.protocol.name.toUpperCase()} -> ${log.action.name}';
   }
 
-  String _ipAddressLine() {
-    var flow = '${log.source} -> ${log.destination}';
-    if (log.domain != null) {
-      flow += ' (${log.domain})'.replaceAll('-', '‑');
+  String _ipAddressLine() => '${log.source} -> ${_dstLine()}';
+
+  String _dstLine() {
+    final destination = log.destination;
+    final domain = log.domain?.replaceAll('-', '‑');
+
+    if (domain != null && destination != null) {
+      return '$destination ($domain)';
     }
 
-    return flow;
+    return destination ?? domain ?? '(unknown)';
   }
 }

@@ -37,7 +37,7 @@ class VpnLog {
   final String source;
 
   /// Destination endpoint identifier (e.g. `ip:port`).
-  final String destination;
+  final String? destination;
 
   /// Optional domain name associated with the destination.
   final String? domain;

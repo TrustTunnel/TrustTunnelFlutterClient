@@ -30,8 +30,10 @@ class QueryLogRow {
 
   /// {@template query_log_row_destination}
   /// Destination address of the connection as reported by the backend.
+  /// 
+  /// May be `null` if the backend did not provide a destination.
   /// {@endtemplate}
-  final String destination;
+  final String? destination;
 
   /// {@template query_log_row_domain}
   /// Optional domain name associated with the destination.
