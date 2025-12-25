@@ -65,10 +65,12 @@ class _ServersScreenViewState extends State<ServersScreenView> {
               ),
         floatingActionButton: _servers.isEmpty
             ? const SizedBox.shrink()
-            : CustomFloatingActionButton.extended(
-                icon: AssetIcons.add,
-                onPressed: () => _pushServerDetailsScreen(context),
-                label: context.ln.addServer,
+            : Builder(
+                builder: (context) => CustomFloatingActionButton.extended(
+                  icon: AssetIcons.add,
+                  onPressed: () => _pushServerDetailsScreen(context),
+                  label: context.ln.addServer,
+                ),
               ),
       ),
     ),

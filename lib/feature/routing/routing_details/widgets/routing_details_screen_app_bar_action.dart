@@ -5,6 +5,7 @@ import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_change_routing_dialog.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_delete_rules_dialog.dart';
+import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 
 import 'package:trusttunnel/widgets/custom_icon.dart';
 
@@ -66,20 +67,32 @@ class RoutingDetailsScreenAppBarAction extends StatelessWidget {
   );
 
   void _onClearRulesPressed(BuildContext context) {
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
     showDialog(
       context: context,
-      builder: (_) => RoutingDetailsDeleteRulesDialog(
-        onDeletePressed: () => onClearRulesPressed(context),
-        profileName: profileName,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: RoutingDetailsDeleteRulesDialog(
+          onDeletePressed: () => onClearRulesPressed(context),
+          profileName: profileName,
+        ),
       ),
     );
   }
 
-  void _onChangeDefaultRoutingMode(BuildContext context) => showDialog(
-    context: context,
-    builder: (_) => RoutingDetailsChangeRoutingDialog(
-      onSavePressed: (mode) => onDefaultModePicked(context, mode),
-      currentRoutingMode: pickedRoutingMode,
-    ),
-  );
+  void _onChangeDefaultRoutingMode(BuildContext context) {
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
+    showDialog(
+      context: context,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: RoutingDetailsChangeRoutingDialog(
+          onSavePressed: (mode) => onDefaultModePicked(context, mode),
+          currentRoutingMode: pickedRoutingMode,
+        ),
+      ),
+    );
+  }
 }

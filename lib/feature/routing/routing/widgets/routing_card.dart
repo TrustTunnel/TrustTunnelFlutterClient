@@ -16,6 +16,7 @@ import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.da
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/widgets/common/custom_list_tile_separated.dart';
+import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_icon.dart';
 
 class RoutingCard extends StatelessWidget {
@@ -79,13 +80,18 @@ class RoutingCard extends StatelessWidget {
     final controller = RoutingScope.controllerOf(context, listen: false);
     controller.pickProfileToChangeName();
 
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
     showDialog(
       context: context,
-      builder: (_) => RoutingScopeValue.fromContext(
-        context: context,
-        child: RoutingEditNameDialog(
-          currentRoutingName: routingProfile.name,
-          id: routingProfile.id,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: RoutingScopeValue.fromContext(
+          context: context,
+          child: RoutingEditNameDialog(
+            currentRoutingName: routingProfile.name,
+            id: routingProfile.id,
+          ),
         ),
       ),
     );
@@ -95,13 +101,19 @@ class RoutingCard extends StatelessWidget {
     final serversController = ServersScope.controllerOf(context, listen: false);
     final excludedRoutes = ExcludedRoutesScope.controllerOf(context, listen: false).excludedRoutes;
     final controller = RoutingScope.controllerOf(context, listen: false);
+
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
     final result = await showDialog(
       context: context,
-      builder: (_) => RoutingScopeValue.fromContext(
-        context: context,
-        child: RoutingDeleteProfileDialog(
-          profileName: routingProfile.name,
-          profileId: routingProfile.id,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: RoutingScopeValue.fromContext(
+          context: context,
+          child: RoutingDeleteProfileDialog(
+            profileName: routingProfile.name,
+            profileId: routingProfile.id,
+          ),
         ),
       ),
     );
@@ -131,9 +143,15 @@ class RoutingCard extends StatelessWidget {
     }
   }
 
-  void _pushDetailsScreen(BuildContext context) => context.push(
-    RoutingDetailsScreen(
-      routingId: routingProfile.id,
-    ),
-  );
+  void _pushDetailsScreen(BuildContext context) async {
+    await context.push(
+      RoutingDetailsScreen(
+        routingId: routingProfile.id,
+      ),
+    );
+
+    if (context.mounted) {
+      RoutingScope.controllerOf(context, listen: false).fetchProfiles();
+    }
+  }
 }

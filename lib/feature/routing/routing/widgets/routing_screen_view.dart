@@ -54,10 +54,12 @@ class _RoutingScreenViewState extends State<RoutingScreenView> {
           ),
           itemCount: _routingProfiles.length,
         ),
-        floatingActionButton: CustomFloatingActionButton.extended(
-          icon: AssetIcons.add,
-          onPressed: () => _pushRoutingProfileDetailsScreen(context),
-          label: context.ln.addProfile,
+        floatingActionButton: Builder(
+          builder: (context) => CustomFloatingActionButton.extended(
+            icon: AssetIcons.add,
+            onPressed: () => _pushRoutingProfileDetailsScreen(context),
+            label: context.ln.addProfile,
+          ),
         ),
       ),
     ),

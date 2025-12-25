@@ -10,6 +10,7 @@ import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_
 import 'package:trusttunnel/feature/server/server_details/model/server_details_data.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope_aspect.dart';
+import 'package:trusttunnel/feature/server/server_details/widgets/server_details_delete_dialog.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
@@ -17,6 +18,7 @@ import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/exclu
 import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/widgets/buttons/custom_icon_button.dart';
+import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
 
 class ServerDetailsFullScreenView extends StatefulWidget {
@@ -80,12 +82,13 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
           SliverToBoxAdapter(
             child: CustomAppBar(
               actions: [
-                CustomIconButton.square(
-                  icon: AssetIcons.delete,
-                  color: context.colors.error,
-                  size: 24,
-                  onPressed: () => _onDelete(context),
-                ),
+                if (_editing)
+                  CustomIconButton.square(
+                    icon: AssetIcons.delete,
+                    color: context.colors.error,
+                    size: 24,
+                    onPressed: () => _onDelete(context),
+                  ),
               ],
               leadingIconType: AppBarLeadingIconType.back,
               centerTitle: true,
@@ -123,7 +126,20 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
 
   void _submit(BuildContext context) => ServerDetailsScope.controllerOf(context, listen: false).submit(_onSubmitted);
 
-  void _onDelete(BuildContext context) => ServerDetailsScope.controllerOf(context, listen: false).delete(_onDeleted);
+  void _onDelete(BuildContext context) {
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
+    showDialog(
+      context: context,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: ServerDetailsDeleteDialog(
+          serverName: _data.serverName,
+          onDeletePressed: () => ServerDetailsScope.controllerOf(context, listen: false).delete(_onDeleted),
+        ),
+      ),
+    );
+  }
 
   void _onDeleted(String name) {
     if (!mounted) {

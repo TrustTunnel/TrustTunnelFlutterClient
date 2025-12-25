@@ -20,6 +20,7 @@ import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/exclu
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
+import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
 import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
@@ -248,10 +249,17 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
     );
   }
 
-  void _showNotSavedChangesWarning(BuildContext context) => showDialog(
-    context: context,
-    builder: (_) => RoutingDetailsDiscardChangesDialog(
-      onDiscardPressed: () => context.pop(),
-    ),
-  );
+  void _showNotSavedChangesWarning(BuildContext context) {
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
+    showDialog(
+      context: context,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: RoutingDetailsDiscardChangesDialog(
+          onDiscardPressed: () => context.pop(),
+        ),
+      ),
+    );
+  }
 }

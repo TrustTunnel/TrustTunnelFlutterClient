@@ -4,6 +4,7 @@ import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_d
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_discard_changes_dialog.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_form.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_full_screen_view.dart';
+import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 
 class ServerDetailsView extends StatefulWidget {
   const ServerDetailsView({
@@ -27,10 +28,17 @@ class _ServerDetailsViewState extends State<ServerDetailsView> {
     onDiscardChanges: (hasChanges) => hasChanges ? _showNotSavedChangesWarning(context) : context.pop(),
   );
 
-  void _showNotSavedChangesWarning(BuildContext context) => showDialog(
-    context: context,
-    builder: (_) => ServerDetailsDiscardChangesDialog(
-      onDiscardPressed: context.pop,
-    ),
-  );
+  void _showNotSavedChangesWarning(BuildContext context) {
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+    
+    showDialog(
+      context: context,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: ServerDetailsDiscardChangesDialog(
+          onDiscardPressed: context.pop,
+        ),
+      ),
+    );
+  }
 }

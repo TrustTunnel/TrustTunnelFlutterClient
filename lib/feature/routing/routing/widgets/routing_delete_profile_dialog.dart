@@ -49,7 +49,7 @@ class RoutingDeleteProfileDialog extends StatelessWidget {
     }
 
     if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop(RoutingProfileModificationResult.deleted);
+      context.pop(result: RoutingProfileModificationResult.deleted);
     }
 
     context.showInfoSnackBar(message: context.ln.profileDeletedSnackbar(profileName));
