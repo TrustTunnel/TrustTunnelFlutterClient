@@ -103,6 +103,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     );
 
     return _platformApi.start(
+      serverName: server.name,
       configuration: Configuration(
         vpnMode: VpnModeEncoder().convert(
           routingProfile.defaultMode,

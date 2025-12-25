@@ -89,7 +89,7 @@ class VpnPlugin :
         return false
     }
 
-    override fun start(config: String) {
+    override fun start(serverName: String, config: String) {
         val act = activity
         if (act != null) {
             val prepare = AndroidVpnService.prepare(act)

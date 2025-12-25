@@ -72,7 +72,7 @@ abstract class IVpnManager {
   /// the platform UI thread.
   /// {@endtemplate}
   @TaskQueue(type: TaskQueueType.serialBackgroundThread)
-  void start({required String config});
+  void start({required String serverName, required String config});
 
   /// {@template i_vpn_manager_stop}
   /// Stops the VPN engine.

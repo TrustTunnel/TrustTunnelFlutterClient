@@ -21,7 +21,7 @@ abstract class VpnPlugin {
   ///
   /// Throws a [PlatformException] if the VPN service fails to start.
   /// {@endtemplate}
-  Future<void> start({required Configuration configuration});
+  Future<void> start({required String serverName, required Configuration configuration});
 
   /// {@template vpn_plugin_stop}
   /// Stops the active VPN connection.
@@ -88,9 +88,9 @@ class VpnPluginImpl implements VpnPlugin {
 
   /// {@macro vpn_plugin_start}
   @override
-  Future<void> start({required Configuration configuration}) {
+  Future<void> start({required String serverName, required Configuration configuration}) {
     final config = const ConfigurationEncoder().convert(configuration);
-    return _api.start(config: config);
+    return _api.start(serverName: serverName, config: config);
   }
 
   /// {@macro vpn_plugin_stop}
