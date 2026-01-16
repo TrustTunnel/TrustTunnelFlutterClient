@@ -235,7 +235,7 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
       password: data.password,
       vpnProtocol: data.protocol,
       dnsServers: data.dnsServers,
-      routingProfile: selectedServer.routingProfile,
+      routingProfile: profileController.routingList.firstWhere((p) => p.id == data.routingProfileId),
       selected: selectedServer.selected,
     );
 
