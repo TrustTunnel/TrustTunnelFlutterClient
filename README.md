@@ -43,6 +43,12 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Building](#building)
+      - [1. Clone repository](#1-clone-repository)
+      - [2. Use make to initialize project](#2-use-make-to-initialize-project)
+      - [3. Configure GitHub Packages access](#3-configure-github-packages-access)
+      - [4. Android: configure signing](#4-android-configure-signing)
+      - [5. iOS: install pods and configure signing](#5-ios-install-pods-and-configure-signing)
+      - [6. Build or run the application](#6-build-or-run-the-application)
   - [Usage](#usage)
     - [Quick Start](#quick-start)
     - [Server Configuration](#server-configuration)
@@ -69,47 +75,92 @@ https://docs.flutter.dev/get-started
 
 To build and run the application follow this steps:
 
-1. Clone repository
-   ```shell
-   git clone https://github.com/TrustTunnel/TrustTunnelFlutterClient.git
-   cd TrustTunnelFlutterClient
-   ```
+#### 1. Clone repository
+```shell
+git clone https://github.com/TrustTunnel/TrustTunnelFlutterClient.git
+cd TrustTunnelFlutterClient
+```
 
-2. Use make to initialize project
-   ```shell
-   make init
-   ```
+#### 2. Use make to initialize project
+```shell
+make init
+```
 
-3. If you building Android application, make sure that signing config provided
+#### 3. Configure GitHub Packages access
 
-   Run the following command once:
-   ```shell
-   make aux-setup-android-signing
-   ```
+Project depends on artifacts published in GitHub Packages.
+To download them, you must provide a **personal access token** via environment variables used by Maven.
 
-   During keystore generation, keytool will interactively ask for certificate details, so feel free to set any values
+**Create a personal access token**
 
-4. If you building iOS application, make sure that pods are installed
-   ```shell
-   cd ios
-   pod install --repo-update
-   ```
-    Also make sure that project uses correct signing configuration
+Create a token here:
+https://github.com/settings/tokens
 
-    To do so, configure signing in Xcode:
-     - Open the workspace: `ios/Runner.xcworkspace` via Xcode
-     - Select the Runner target
-     - Open the Signing & Capabilities tab
-     - Select your Apple Developer Team
-     - Enable “Automatically manage signing” (recommended),
-    or disable it and select the required certificate and provisioning profile manually
+Required permissions:
+- `read:packages`
+- `public_repo`
 
-5. After initialization, the application can be built or launched using standard Flutter tooling.
-   ```shell
-   flutter build
-   ```
+**Export token to environment**
+```shell
+export GPR_KEY=<your_personal_access_token>
+```
 
-This initialization step is required only once, before the first launch.
+As an alternative to exporting the variable in your shell, you can pass the token inline when running Flutter:
+
+```shell
+GPR_KEY=<your_personal_access_token> flutter run
+```
+
+Without this variable, builds will fail when resolving GitHub Packages dependencies.
+
+---
+
+#### 4. Android: configure signing
+
+If you are building Android application, make sure that signing config is provided.
+
+Run the following command once:
+```shell
+make aux-setup-android-signing
+```
+
+During keystore generation, `keytool` will interactively ask for certificate details.
+You may set any values.
+
+---
+
+#### 5. iOS: install pods and configure signing
+
+If you are building iOS application, make sure that pods are installed:
+```shell
+cd ios
+pod install --repo-update
+```
+
+Also make sure that project uses correct signing configuration.
+
+Configure signing in Xcode:
+- Open the workspace: `ios/Runner.xcworkspace`
+- Select the **Runner** target
+- Open **Signing & Capabilities**
+- Select your Apple Developer Team
+- Enable **Automatically manage signing** (recommended)
+
+Alternatively, disable automatic signing and select the required certificate and provisioning profile manually.
+
+---
+
+#### 6. Build or run the application
+
+After initialization, the application can be built or launched using standard Flutter tooling:
+```shell
+flutter build
+```
+
+or:
+```shell
+flutter run
+```
 
 > [!NOTE]
 > TrustTunnel Flutter Client requires a TrustTunnel VPN server.

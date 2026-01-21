@@ -1,6 +1,18 @@
 group = "com.adguard.trusttunnel.vpn_plugin"
 version = "1.0-SNAPSHOT"
 
+def getGprProp = { String name ->
+    def v = project.findProperty(name)
+    if (v != null) return v.toString()
+
+    // fallback to env
+    def envName = name.replace('.', '_').toUpperCase()   // gpr.key -> GPR_KEY
+    v = System.getenv(envName)
+    if (v != null && !v.toString().trim().isEmpty()) return v.toString()
+
+    return null
+}
+
 buildscript {
     ext.kotlin_version = "2.2.10"
     repositories {
@@ -22,7 +34,7 @@ allprojects {
             url = uri("https://maven.pkg.github.com/TrustTunnel/TrustTunnelClient")
             credentials {
                 username = ""
-                password = project.getProperty("gpr.key")
+                password = getGprProp("gpr.key")
             }
         }
     }
