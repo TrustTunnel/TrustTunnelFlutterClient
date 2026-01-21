@@ -58,6 +58,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
   - [How TrustTunnel Works](#how-trusttunnel-works)
     - [Flutter App and VPN Plugin](#flutter-app-and-vpn-plugin)
     - [Running \& Development](#running--development)
+  - [License](#license)
 
 ## Getting Started
 ### Prerequisites
@@ -305,3 +306,7 @@ Emulators and simulators do not fully replicate system VPN behavior and may intr
 
 For reliable results and correct VPN lifecycle handling, always validate functionality on real hardware.
 Connection state changes and errors displayed in the UI directly reflect real network and system conditions.
+
+## License
+Apache 2.0
+

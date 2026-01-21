@@ -94,7 +94,7 @@ class _StateConsumerState<C extends StateController<S>, S extends Object> extend
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) => super.debugFillProperties(
     properties
-      ..add(DiagnosticsProperty<StateController<S>>('сontroller', _controller))
+      ..add(DiagnosticsProperty<StateController<S>>('stateController', _controller))
       ..add(DiagnosticsProperty<S>('state', _controller.state))
       ..add(DiagnosticsProperty<bool>('isProcessing', _controller.isProcessing)),
   );
