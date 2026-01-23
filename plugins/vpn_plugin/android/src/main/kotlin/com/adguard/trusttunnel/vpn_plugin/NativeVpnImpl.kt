@@ -29,7 +29,7 @@ class NativeVpnImpl(
     }
 
     fun startPrepared(ctx: Context, config: String) {
-        Log.i("VPN_PLUGIN", "startPrepared()")
+        Log.i("VPN_PLUGIN", "startPrepared() config=$config")
         VpnService.start(ctx, config)
     }
 
