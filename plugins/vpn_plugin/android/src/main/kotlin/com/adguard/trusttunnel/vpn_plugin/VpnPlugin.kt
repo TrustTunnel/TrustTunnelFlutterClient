@@ -83,6 +83,8 @@ class VpnPlugin :
             if (cfg != null && resultCode == Activity.RESULT_OK) {
                 val ctx = activity ?: appContext
                 vpnImpl.startPrepared(ctx, cfg)
+            } else {
+                vpnImpl.onStateChanged(0) // VpnManagerState.DISCONNECTED
             }
             return true
         }
