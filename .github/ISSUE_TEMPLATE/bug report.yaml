@@ -1,0 +1,172 @@
+name: 🐞 Bug report
+description: Report a bug related to Flutter app or plugin behavior
+title: "[Bug]: "
+labels: ["Bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+
+        ⚠️ Please note:
+        - This template is intended for **bugs only**
+        - Questions and usage issues should go to Discussions
+        - Issues that do not follow this template may be closed
+
+  - type: checkboxes
+    attributes:
+      label: Before submitting, please confirm
+      options:
+        - label: I read the README and followed all setup steps in order
+          required: true
+        - label: I verified that my GPR key is valid and correctly passed to the environment
+          required: true
+        - label: I searched existing issues and found no duplicates
+          required: true
+        - label: I am using the latest version of the app
+          required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Flutter Doctor output
+      render: shell
+      description: Paste the output of `flutter doctor -v`.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - Android
+        - iOS
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build_mode
+    attributes:
+      label: Build mode
+      multiple: false
+      options:
+        - Debug
+        - Profile
+        - Release
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: |
+        Please provide relevant environment details.
+        Examples:
+          - **OS**: Android 14 / iOS 17
+          - **Device**: Pixel 7 / iPhone 14
+          - **Architecture**: arm64
+      value: |
+        - OS:
+        - Device:
+        - Architecture:
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: Version where the issue occurs (see `pubspec.yaml`)
+      placeholder: ex. 1.0.1+3971
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Provide clear and minimal steps to reproduce the issue.
+        If possible, include a minimal reproducible example.
+      placeholder: |
+        1. Run the app
+        2. Click on the toggle button
+        3. Observe crash / incorrect behavior
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reproducibility
+    attributes:
+      label: Reproducibility
+      multiple: false
+      options:
+        - Always
+        - Often
+        - Sometimes
+        - Rarely
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: Describe what you expected to happen.
+    validations:
+      required: false
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: Describe what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screens
+    attributes:
+      label: Screenshots
+      description: |
+        If applicable add screenshots explaining your problem.
+        You can drag and drop images or paste them from clipboard.
+        Use `<details> </details>` tag to hide screenshots under the spoiler.
+      placeholder: If applicable add screenshots explaining your problem.
+      value: |
+          <details><summary>Screenshot 1</summary>
+
+          <!-- paste screenshot here -->
+
+          </details>
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      render: shell
+      description: |
+        Paste relevant logs here.
+        Prefer output from:
+        - `flutter run --verbose`
+        - platform-specific logs (Logcat / console.app)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      placeholder: Add any other context about the problem here.
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        Upvote [important issues](https://github.com/TrustTunnel/TrustTunnelFlutterClient/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+) with a :+1:
