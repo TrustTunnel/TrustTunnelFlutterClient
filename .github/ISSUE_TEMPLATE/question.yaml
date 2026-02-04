@@ -14,8 +14,8 @@ body:
           required: true
         - label: I checked to make sure that this issue has not already been filed
           required: true
-          - label: I have searched for similar questions in both open and closed issues
-        required: true
+        - label: I have searched for similar questions in both open and closed issues
+          required: true
 
   - type: textarea
     id: question
