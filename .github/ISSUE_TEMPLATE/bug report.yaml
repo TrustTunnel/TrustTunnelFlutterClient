@@ -146,19 +146,6 @@ body:
       required: false
 
   - type: textarea
-    id: logs
-    attributes:
-      label: Logs
-      render: shell
-      description: |
-        Paste relevant logs here.
-        Prefer output from:
-        - `flutter run --verbose`
-        - platform-specific logs (Logcat / console.app)
-    validations:
-      required: true
-
-  - type: textarea
     id: additional
     attributes:
       label: Additional Information
