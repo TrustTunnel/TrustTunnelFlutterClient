@@ -4,6 +4,7 @@ package com.adguard.trusttunnel.vpn_plugin
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.content.SharedPreferences
 import android.util.Log
 import java.util.ArrayDeque
 import java.util.Queue
@@ -16,6 +17,13 @@ class NativeVpnImpl(
     private val appContext: Context
 ) : EventChannel.StreamHandler, AppNotifier {
 
+    companion object {
+        const val PREFS_NAME = "vpn_plugin_prefs"
+        const val KEY_CONFIG = "last_config"
+        const val KEY_STATE = "last_state"
+        var isRunning = false
+    }
+
     private var events: EventChannel.EventSink? = null
     private var currentState = VpnManagerState.DISCONNECTED
     private val main = Handler(Looper.getMainLooper())
@@ -23,6 +31,7 @@ class NativeVpnImpl(
     val queryLogHandler: QueryLogStreamHandler = QueryLogStreamHandler()
 
     init {
+        isRunning = true
         VpnService.startNetworkManager(appContext)
         val queryLogFile = File(appContext.filesDir, "query_log.dat")
         VpnService.setAppNotifier(queryLogFile, this)
@@ -30,12 +39,18 @@ class NativeVpnImpl(
 
     fun startPrepared(ctx: Context, config: String) {
         Log.i("VPN_PLUGIN", "startPrepared()")
+        val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_CONFIG, config).apply()
         VpnService.start(ctx, config)
     }
 
     fun stop() {
         Log.i("VPN_PLUGIN", "stop()")
         VpnService.stop(appContext)
+    }
+
+    fun dispose() {
+        isRunning = false
     }
 
     fun getCurrentState(): VpnManagerState = currentState
@@ -58,6 +73,8 @@ class NativeVpnImpl(
     override fun onStateChanged(state: Int) {
         Log.i("VPN_PLUGIN", "onStateChanged($state)")
         currentState = VpnManagerState.entries[state]
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_STATE, state).apply()
         postEvent(state)
     }
 
