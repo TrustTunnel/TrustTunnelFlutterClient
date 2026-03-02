@@ -28,30 +28,31 @@ environment:
   sdk: 3.10.1
 
 dependencies:
+  app_links: 7.0.0
+  drift: 2.30.0
   flutter:
     sdk: flutter
-  intl: 0.20.2
   flutter_localizations:
     sdk: flutter
+  flutter_native_splash: 2.4.7
+  html: 0.15.6
+  intl: 0.20.2
   intl_utils: 2.8.13
-  rxdart: 0.28.0
   package_info_plus: 9.0.0
-  url_launcher: 6.3.2
-  drift: 2.30.0
   path_provider: 2.1.5
   punycoder: 0.2.2
+  rxdart: 0.28.0
+  sqlite3_flutter_libs: 0.5.41
+  url_launcher: 6.3.2
   vpn_plugin:
     path: plugins/vpn_plugin
-  sqlite3_flutter_libs: 0.5.41
-  html: 0.15.6
-  flutter_native_splash: 2.4.7
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
+  build_runner: 2.10.4
   drift_dev: 2.30.0
   flutter_lints: 6.0.0
-  build_runner: 2.10.4
+  flutter_test:
+    sdk: flutter
 
 flutter:
   generate: true

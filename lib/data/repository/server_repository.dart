@@ -11,6 +11,11 @@ abstract class ServerRepository {
 
   Future<Server?> getServerById({required int id});
 
+  Future<Server> getServerByBase64({
+    required String base64,
+    required String name,
+  });
+
   Future<void> setSelectedServerId({required int id});
 
   Future<void> setNewServer({required int id, required AddServerRequest request});
@@ -102,5 +107,11 @@ class ServerRepositoryImpl implements ServerRepository {
       routingProfile: profile,
       selected: server.selected,
     );
+  }
+
+  @override
+  Future<Server> getServerByBase64({required String base64, required String name}) {
+    // TODO: implement getServerByBase64
+    throw UnimplementedError();
   }
 }

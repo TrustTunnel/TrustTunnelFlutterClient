@@ -8,12 +8,14 @@ import 'package:trusttunnel/data/model/breakpoint.dart';
 class PopUpRoute<T> extends CustomPageRoute<T> {
   @override
   final bool maintainState;
+
   @override
   final bool opaque;
   final bool _fullScreenDialog;
   final BuildContext _context;
   final Duration? _transitionDuration;
   final Duration? _reverseTransitionDuration;
+
   PopUpRoute({
     required WidgetBuilder builder,
     required BuildContext context,
@@ -30,6 +32,7 @@ class PopUpRoute<T> extends CustomPageRoute<T> {
        super(traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop) {
     _initSub();
   }
+
   late final WidgetBuilder _builder;
 
   late final ValueNotifier<Breakpoint> _breakpointListenable;
