@@ -110,8 +110,8 @@ class ServerRepositoryImpl implements ServerRepository {
   }
 
   @override
-  Future<Server> getServerByBase64({required String base64, required String name}) {
-    // TODO: implement getServerByBase64
+  Future<Server> getServerByBase64({required String base64, required String name}) async {
+    await _serverDataSource.getServerByBase64(base64: base64, name: name);
     throw UnimplementedError();
   }
 }

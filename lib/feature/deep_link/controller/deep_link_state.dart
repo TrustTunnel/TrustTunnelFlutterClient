@@ -6,7 +6,7 @@ sealed class DeepLinkState {
   const factory DeepLinkState.initial() = _DeepLinkInitialState;
   const factory DeepLinkState.idle() = _DeepLinkLoadingState;
   const factory DeepLinkState.loading() = _DeepLinkLoadingState;
-  const factory DeepLinkState.error({
+  const factory DeepLinkState.exception({
     required PresentationError exception,
   }) = _DeepLinkErroredState;
 }

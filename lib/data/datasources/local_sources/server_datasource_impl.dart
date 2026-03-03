@@ -4,6 +4,7 @@ import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/model/raw/add_server_request.dart';
 import 'package:trusttunnel/data/model/raw/raw_server.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
+import 'package:vpn_plugin/deep_link_manager.dart';
 
 /// {@template server_data_source_impl}
 /// Drift-backed implementation of [ServerDataSource].
@@ -20,9 +21,12 @@ class ServerDataSourceImpl implements ServerDataSource {
   /// Drift database used for persistence.
   final db.AppDatabase database;
 
+  final DeepLinkManager deepLinkManager;
+
   /// {@macro server_data_source_impl}
   ServerDataSourceImpl({
     required this.database,
+    required this.deepLinkManager,
   });
 
   /// {@macro server_data_source_add_new_server}
@@ -166,6 +170,12 @@ class ServerDataSourceImpl implements ServerDataSource {
       routingProfileId: server.routingProfileId,
       selected: server.selected,
     );
+  }
+
+  @override
+  Future<RawServer> getServerByBase64({required String base64, required String name}) async {
+    await deepLinkManager.getConfigurationByBase64(base64: base64);
+    throw UnimplementedError();
   }
 
   /// Loads DNS server rows for the given server ids.

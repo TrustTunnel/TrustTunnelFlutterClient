@@ -225,7 +225,7 @@ class PlatformFieldError {
   });
 }
 
-@HostApi
+@HostApi()
 abstract class IDeepLink {
   String decode({required String uri});
 }

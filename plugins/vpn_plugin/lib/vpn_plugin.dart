@@ -94,7 +94,7 @@ class VpnPluginImpl implements VpnPlugin {
   final IVpnManager _api;
   final EventChannel _vpnChannel;
   final EventChannel _queryLogChannel;
-
+  
   @override
   Future<VpnManagerState> getCurrentState() => _api.getCurrentState();
 

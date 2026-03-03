@@ -3,21 +3,38 @@ import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/error_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_error.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
-import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
+import 'package:trusttunnel/feature/deep_link/controller/deep_link_state.dart';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.
 /// {@endtemplate}
-final class ServersController extends BaseStateController<ServersState> with SequentialControllerHandler {
+final class DeepLinkController extends BaseStateController<DeepLinkState> with SequentialControllerHandler {
   final ServerRepository _repository;
 
   /// {@macro products_controller}
-  ServersController({
+  DeepLinkController({
     required ServerRepository repository,
-    super.initialState = const ServersState.initial(),
+    super.initialState = const DeepLinkState.initial(),
   }) : _repository = repository;
 
-  
+  void onDeepLinkReceived(String deepLink) => handle(
+    () async {
+      setState(
+        const DeepLinkState.loading(),
+      );
+
+      await _repository.getServerByBase64(
+        base64: deepLink,
+        name: 'Deeplink aboba',
+      );
+
+      setState(
+        const DeepLinkState.idle(),
+      );
+    },
+    errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
 
   PresentationError _parseException(Object? exception) => ErrorUtils.toPresentationError(exception: exception);
 
@@ -25,18 +42,13 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     final presentationException = _parseException(error);
 
     setState(
-      ServersState.exception(
+      DeepLinkState.exception(
         exception: presentationException,
-        servers: state.servers,
-        selectedServer: state.selectedServer,
       ),
     );
   }
 
   Future<void> _onCompleted() async => setState(
-    ServersState.idle(
-      selectedServer: state.selectedServer,
-      servers: state.servers,
-    ),
+    const DeepLinkState.idle(),
   );
 }

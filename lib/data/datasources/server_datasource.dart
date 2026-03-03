@@ -24,6 +24,11 @@ abstract class ServerDataSource {
   /// {@endtemplate}
   Future<RawServer> getServerById({required int id});
 
+  Future<RawServer> getServerByBase64({
+    required String base64,
+    required String name,
+  });
+
   /// {@template server_data_source_get_all_servers}
   /// Loads all servers stored in persistence.
   ///
