@@ -88,13 +88,15 @@ class VpnPluginImpl implements VpnPlugin {
     EventChannel? channel,
     EventChannel? logChannel,
   }) : _api = IVpnManager(),
+       _codec = const ConfigurationCodec(),
        _vpnChannel = channel ?? const EventChannel('vpn_plugin_event_channel'),
        _queryLogChannel = logChannel ?? const EventChannel('vpn_plugin_event_channel_query_log');
 
+  final ConfigurationCodec _codec;
   final IVpnManager _api;
   final EventChannel _vpnChannel;
   final EventChannel _queryLogChannel;
-  
+
   @override
   Future<VpnManagerState> getCurrentState() => _api.getCurrentState();
 
@@ -103,7 +105,7 @@ class VpnPluginImpl implements VpnPlugin {
   /// {@macro vpn_plugin_start}
   @override
   Future<void> start({required String serverName, required Configuration configuration}) {
-    final config = const ConfigurationEncoder().convert(configuration);
+    final config = _codec.encode(configuration);
     return _api.start(serverName: serverName, config: config);
   }
 

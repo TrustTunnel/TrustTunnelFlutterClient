@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// {@template tun}
 /// TUN configuration .
 ///
@@ -39,4 +41,23 @@ final class Tun {
     this.excludedRoutes = const [],
     this.mtuSize = 1500,
   }) : assert(mtuSize > 0, 'mtuSize must be greater than 0');
+
+  @override
+  String toString() => 'Tun(includedRoutes: $includedRoutes, excludedRoutes: $excludedRoutes, mtuSize: $mtuSize)';
+
+  @override
+  bool operator ==(covariant Tun other) {
+    if (identical(this, other)) return true;
+
+    return listEquals(other.includedRoutes, includedRoutes) &&
+        listEquals(other.excludedRoutes, excludedRoutes) &&
+        other.mtuSize == mtuSize;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    includedRoutes.hashCode,
+    excludedRoutes.hashCode,
+    mtuSize.hashCode,
+  ]);
 }

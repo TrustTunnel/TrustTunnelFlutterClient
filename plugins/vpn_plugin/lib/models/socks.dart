@@ -33,4 +33,21 @@ final class Socks {
     this.username = '',
     this.password = '',
   });
+
+  @override
+  String toString() => 'Socks(address: $address, username: $username, password: $password)';
+
+  @override
+  bool operator ==(covariant Socks other) {
+    if (identical(this, other)) return true;
+
+    return other.address == address && other.username == username && other.password == password;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    address.hashCode,
+    username.hashCode,
+    password.hashCode,
+  ]);
 }

@@ -93,4 +93,32 @@ final class Configuration {
     required this.tun,
     required this.socks,
   });
+
+  @override
+  String toString() =>
+      'Configuration(logLevel: $logLevel, vpnMode: $vpnMode, endpoint: $endpoint, tun: $tun, socks: $socks, killSwitchEnabled: $killSwitchEnabled, postQuantumGroupEnabled: $postQuantumGroupEnabled)';
+
+  @override
+  bool operator ==(covariant Configuration other) {
+    if (identical(this, other)) return true;
+
+    return other.logLevel == logLevel &&
+        other.vpnMode == vpnMode &&
+        other.endpoint == endpoint &&
+        other.tun == tun &&
+        other.socks == socks &&
+        other.killSwitchEnabled == killSwitchEnabled &&
+        other.postQuantumGroupEnabled == postQuantumGroupEnabled;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    logLevel.hashCode,
+    vpnMode.hashCode,
+    endpoint.hashCode,
+    tun.hashCode,
+    socks.hashCode,
+    killSwitchEnabled.hashCode,
+    postQuantumGroupEnabled.hashCode,
+  ]);
 }
