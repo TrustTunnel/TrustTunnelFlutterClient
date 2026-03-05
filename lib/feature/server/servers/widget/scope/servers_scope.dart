@@ -62,7 +62,7 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
   final ServersState _state;
 
   @override
-  final void Function(int? serverId) pickServer;
+  final void Function(String? serverId) pickServer;
 
   @override
   final void Function() fetchServers;

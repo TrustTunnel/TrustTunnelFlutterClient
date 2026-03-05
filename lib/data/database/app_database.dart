@@ -99,7 +99,11 @@ class AppDatabase extends _$AppDatabase {
           RoutingProfilesCompanion.insert(
             name: 'Default profile',
             defaultMode: 2,
-            id: const Value(RoutingProfileUtils.defaultRoutingProfileId),
+            id: Value(
+              int.parse(
+                RoutingProfileUtils.defaultRoutingProfileId,
+              ),
+            ),
           ),
         );
 

@@ -67,14 +67,14 @@ class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implemen
 
   @override
   final void Function({
-    required int id,
+    required String id,
     required String name,
     required VoidCallback onSaved,
   })
   changeName;
 
   @override
-  final void Function(int routingProfileId, VoidCallback) deleteProfile;
+  final void Function(String routingProfileId, VoidCallback) deleteProfile;
 
   @override
   final void Function() pickProfileToChangeName;

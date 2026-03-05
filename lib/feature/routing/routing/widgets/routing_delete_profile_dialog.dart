@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/extensions/theme_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
-import 'package:trusttunnel/feature/routing/routing/model/routing_profile_modification_result.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/widgets/custom_alert_dialog.dart';
 
 class RoutingDeleteProfileDialog extends StatelessWidget {
   final String profileName;
-  final int profileId;
+  final String profileId;
 
   const RoutingDeleteProfileDialog({
     super.key,
@@ -49,7 +48,7 @@ class RoutingDeleteProfileDialog extends StatelessWidget {
     }
 
     if (Navigator.of(context).canPop()) {
-      context.pop(result: RoutingProfileModificationResult.deleted);
+      context.pop();
     }
 
     context.showInfoSnackBar(message: context.ln.profileDeletedSnackbar(profileName));

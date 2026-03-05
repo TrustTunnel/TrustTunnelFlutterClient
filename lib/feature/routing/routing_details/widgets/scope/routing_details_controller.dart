@@ -1,19 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/error/model/presentation_error.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
-import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
+import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
 typedef RoutingDataChangedCallback =
     void Function({
-      RoutingDetailsData? data,
+      RoutingProfileData? data,
       bool? hasInvalidRules,
     });
 
 abstract class RoutingDetailsScopeController {
-  abstract final int? id;
-  abstract final RoutingDetailsData data;
+  abstract final String? id;
+  abstract final RoutingProfileData data;
 
-  abstract final RoutingDetailsData initialData;
+  abstract final RoutingProfileData initialData;
 
   abstract final bool loading;
   abstract final bool editing;

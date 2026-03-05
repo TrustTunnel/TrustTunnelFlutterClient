@@ -11,13 +11,13 @@ abstract class RoutingScopeController {
 
   abstract final void Function() fetchProfiles;
   abstract final void Function({
-    required int id,
+    required String id,
     required String name,
     required VoidCallback onSaved,
   })
   changeName;
 
-  abstract final void Function(int routingProfileId, VoidCallback onDeleted) deleteProfile;
+  abstract final void Function(String routingProfileId, VoidCallback onDeleted) deleteProfile;
 
   abstract final void Function() pickProfileToChangeName;
 }

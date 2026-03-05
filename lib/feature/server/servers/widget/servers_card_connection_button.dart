@@ -9,7 +9,7 @@ import 'package:trusttunnel/widgets/rotating_wrapper.dart';
 class ServersCardConnectionButton extends StatelessWidget {
   final VpnState vpnManagerState;
   final VoidCallback onPressed;
-  final int serverId;
+  final String serverId;
 
   const ServersCardConnectionButton({
     super.key,

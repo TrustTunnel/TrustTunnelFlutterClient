@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card_connection_button.dart';
@@ -45,9 +46,9 @@ class _ServersCardState extends State<ServersCard> {
     final vpnManagerState = _pickedServer?.id == widget.server.id ? _vpnStatus : VpnState.disconnected;
 
     return CustomListTileSeparated(
-      title: widget.server.name,
+      title: widget.server.serverData.name,
       titleStyle: context.textTheme.titleSmall,
-      subtitle: widget.server.ipAddress,
+      subtitle: widget.server.serverData.ipAddress,
       onTileTap: () => _pushServerDetailsScreen(
         context,
         server: widget.server,
@@ -68,7 +69,7 @@ class _ServersCardState extends State<ServersCard> {
     );
   }
 
-  void _changeServer(BuildContext context, int? serverId) =>
+  void _changeServer(BuildContext context, String? serverId) =>
       ServersScope.controllerOf(context, listen: false).pickServer(serverId);
 
   Future<void> _disconnectFromVpn(BuildContext context) {
@@ -83,10 +84,13 @@ class _ServersCardState extends State<ServersCard> {
   ) async {
     final controller = VpnScope.vpnControllerOf(context, listen: false);
     final excludedRoutes = ExcludedRoutesScope.controllerOf(context, listen: false).excludedRoutes;
+    final routingProfile = RoutingScope.controllerOf(context, listen: false).routingList.firstWhere(
+      (element) => element.id == server.serverData.routingProfileId,
+    );
 
     await controller.start(
       server: server,
-      routingProfile: server.routingProfile,
+      routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
     );
   }

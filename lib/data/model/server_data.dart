@@ -1,26 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
+import 'package:trusttunnel/data/database/app_database.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
-/// {@template raw_server}
-/// Database-oriented representation of a VPN server record.
+/// {@template server}
+/// A fully resolved VPN server configuration used by the app.
 ///
-/// `RawServer` is similar to `Server`, but it references a routing profile by
-/// its identifier ([routingProfileId]) rather than embedding the full
-/// routing profile object. This shape is typically used by persistence layers
-/// and DTO-style conversions.
+/// `Server` combines server connection credentials and transport parameters
+/// with the associated []. This is a convenient domain model for
+/// UI and business logic where you need both server details and routing rules
+/// in one place.
 ///
 /// Instances are immutable and use value-based equality.
 /// {@endtemplate}
 @immutable
-class RawServer {
-  /// Database identifier of the server record.
-  final int id;
-
+class ServerData {
   /// User-visible server name.
   final String name;
 
-  /// Server IP address (usually IPv4/IPv6 literal).
+  /// Server IP address (usually IPv4/IPv6 literal as stored by the app).
   final String ipAddress;
 
   /// Server host name used for TLS (SNI / certificate verification).
@@ -40,15 +39,14 @@ class RawServer {
   /// The list is expected to be treated as immutable by callers.
   final List<String> dnsServers;
 
-  /// Identifier of the routing profile associated with this server.
-  final int routingProfileId;
+  /// Routing profile applied when connecting to this server.
+  final String routingProfileId;
 
   /// Whether this server is marked as the currently selected one.
   final bool selected;
 
-  /// {@macro raw_server}
-  const RawServer({
-    required this.id,
+  /// {@macro server}
+  const ServerData({
     required this.name,
     required this.ipAddress,
     required this.domain,
@@ -60,9 +58,20 @@ class RawServer {
     this.selected = false,
   });
 
+  const ServerData.empty({
+    this.name = '',
+    this.ipAddress = '',
+    this.domain = '',
+    this.username = '',
+    this.password = '',
+    this.vpnProtocol = VpnProtocol.http2,
+    this.dnsServers = const [],
+    this.routingProfileId = '',
+    this.selected = false,
+  });
+
   @override
   int get hashCode => Object.hash(
-    id,
     name,
     ipAddress,
     domain,
@@ -76,15 +85,14 @@ class RawServer {
 
   @override
   String toString() =>
-      'RawServer('
-      'id: $id, '
+      'ServerData('
       'name: $name, '
       'ipAddress: $ipAddress, '
       'domain: $domain, '
       'username: $username, '
       'vpnProtocol: $vpnProtocol, '
       'dnsServers: $dnsServers, '
-      'routingProfileId: $routingProfileId, '
+      'routingProfile: $routingProfileId, '
       'selected: $selected'
       ')';
 
@@ -92,8 +100,7 @@ class RawServer {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is RawServer &&
-        other.id == id &&
+    return other is ServerData &&
         other.name == name &&
         other.ipAddress == ipAddress &&
         other.domain == domain &&
@@ -108,8 +115,7 @@ class RawServer {
   /// Creates a copy of this server with the given fields replaced.
   ///
   /// Fields that are not provided retain their original values.
-  RawServer copyWith({
-    int? id,
+  ServerData copyWith({
     String? name,
     String? ipAddress,
     String? domain,
@@ -117,10 +123,9 @@ class RawServer {
     String? password,
     VpnProtocol? vpnProtocol,
     List<String>? dnsServers,
-    int? routingProfileId,
+    String? routingProfileId,
     bool? selected,
-  }) => RawServer(
-    id: id ?? this.id,
+  }) => ServerData(
     name: name ?? this.name,
     ipAddress: ipAddress ?? this.ipAddress,
     domain: domain ?? this.domain,

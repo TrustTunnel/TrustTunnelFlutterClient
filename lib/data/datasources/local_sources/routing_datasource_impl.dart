@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
-import 'package:trusttunnel/data/model/raw/add_routing_profile_request.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
 /// {@template routing_data_source_impl}
 /// Drift-backed implementation of [RoutingDataSource].
@@ -27,7 +27,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
 
   /// {@macro routing_data_source_add_new_profile}
   @override
-  Future<RoutingProfile> addNewProfile(AddRoutingProfileRequest request) async {
+  Future<RoutingProfile> addNewProfile(RoutingProfileData request) async {
     final resultId = await database.routingProfiles.insertOnConflictUpdate(
       db.RoutingProfilesCompanion.insert(
         name: request.name,
@@ -59,11 +59,13 @@ class RoutingDataSourceImpl implements RoutingDataSource {
     );
 
     return RoutingProfile(
-      id: resultId,
-      name: request.name,
-      defaultMode: request.defaultMode,
-      bypassRules: request.bypassRules,
-      vpnRules: request.vpnRules,
+      id: resultId.toString(),
+      data: RoutingProfileData(
+        name: request.name,
+        defaultMode: request.defaultMode,
+        bypassRules: request.bypassRules,
+        vpnRules: request.vpnRules,
+      ),
     );
   }
 
@@ -94,32 +96,34 @@ class RoutingDataSourceImpl implements RoutingDataSource {
       final defaultMode = RoutingMode.values.firstWhere((m) => m.value == p.defaultMode);
 
       return RoutingProfile(
-        id: p.id,
-        name: p.name,
-        defaultMode: defaultMode,
-        bypassRules: bypassByProfile[p.id] ?? const [],
-        vpnRules: vpnByProfile[p.id] ?? const [],
+        id: p.id.toString(),
+        data: RoutingProfileData(
+          name: p.name,
+          defaultMode: defaultMode,
+          bypassRules: bypassByProfile[p.id] ?? const [],
+          vpnRules: vpnByProfile[p.id] ?? const [],
+        ),
       );
     }).toList();
   }
 
   /// {@macro routing_data_source_set_default_mode}
   @override
-  Future<void> setDefaultRoutingMode({required int id, required RoutingMode mode}) async {
+  Future<void> setDefaultRoutingMode({required String id, required RoutingMode mode}) async {
     final updateStatement = database.update(
       database.routingProfiles,
     );
-    updateStatement.where((p) => p.id.equals(id));
+    updateStatement.where((p) => p.id.equals(int.parse(id)));
     await updateStatement.write(db.RoutingProfilesCompanion(defaultMode: Value(mode.value)));
   }
 
   /// {@macro routing_data_source_set_profile_name}
   @override
-  Future<void> setProfileName({required int id, required String name}) async {
+  Future<void> setProfileName({required String id, required String name}) async {
     final updateStatement = database.update(
       database.routingProfiles,
     );
-    updateStatement.where((p) => p.id.equals(id));
+    updateStatement.where((p) => p.id.equals(int.parse(id)));
     await updateStatement.write(db.RoutingProfilesCompanion(name: Value(name)));
   }
 
@@ -128,15 +132,15 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// Existing rules for the `[profileId, mode]` pair are deleted first, then the
   /// new list is inserted in a batch.
   @override
-  Future<void> setRules({required int id, required RoutingMode mode, required List<String> rules}) async {
-    await database.profileRules.deleteWhere((p) => p.profileId.equals(id) & p.mode.equals(mode.value));
+  Future<void> setRules({required String id, required RoutingMode mode, required List<String> rules}) async {
+    await database.profileRules.deleteWhere((p) => p.profileId.equals(int.parse(id)) & p.mode.equals(mode.value));
 
     return database.batch((batch) {
       batch.insertAllOnConflictUpdate(
         database.profileRules,
         rules.map(
           (data) => db.ProfileRulesCompanion.insert(
-            profileId: id,
+            profileId: int.parse(id),
             mode: mode.value,
             data: data,
           ),
@@ -147,11 +151,11 @@ class RoutingDataSourceImpl implements RoutingDataSource {
 
   /// {@macro routing_data_source_remove_all_rules}
   @override
-  Future<void> removeAllRules({required int id}) async {
+  Future<void> removeAllRules({required String id}) async {
     final deleteStatement = database.delete(
       database.profileRules,
     );
-    deleteStatement.where((p) => p.profileId.equals(id));
+    deleteStatement.where((p) => p.profileId.equals(int.parse(id)));
     await deleteStatement.go();
   }
 
@@ -159,21 +163,24 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   ///
   /// Throws a generic [Exception] when the profile row does not exist.
   @override
-  Future<RoutingProfile> getProfileById({required int id}) async {
-    final profile = await (database.routingProfiles.select()..where((p) => p.id.equals(id))).getSingleOrNull();
+  Future<RoutingProfile> getProfileById({required String id}) async {
+    final profile = await (database.routingProfiles.select()..where((p) => p.id.equals(int.parse(id))))
+        .getSingleOrNull();
     if (profile == null) throw Exception('Profile not found');
 
-    final rules = await _loadRulesOfProfiles({id});
+    final rules = await _loadRulesOfProfiles({int.parse(id)});
 
     final bypassRules = rules.where((r) => r.mode == RoutingMode.bypass.value).map((r) => r.data).toList();
     final vpnRules = rules.where((r) => r.mode == RoutingMode.vpn.value).map((r) => r.data).toList();
 
     return RoutingProfile(
-      id: profile.id,
-      name: profile.name,
-      defaultMode: RoutingMode.values.firstWhere((m) => m.value == profile.defaultMode),
-      bypassRules: bypassRules,
-      vpnRules: vpnRules,
+      id: profile.id.toString(),
+      data: RoutingProfileData(
+        name: profile.name,
+        defaultMode: RoutingMode.values.firstWhere((m) => m.value == profile.defaultMode),
+        bypassRules: bypassRules,
+        vpnRules: vpnRules,
+      ),
     );
   }
 
@@ -183,12 +190,14 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// implementation reassigns them to another existing profile (the first one
   /// returned by the database query) before removing the profile row.
   @override
-  Future<void> deleteProfile({required int id}) async {
-    final servers = await (database.select(database.servers)..where((s) => s.routingProfileId.equals(id))).get();
+  Future<void> deleteProfile({required String id}) async {
+    final servers = await (database.select(
+      database.servers,
+    )..where((s) => s.routingProfileId.equals(int.parse(id)))).get();
     if (servers.isNotEmpty) {
       final replacedConfig =
           await (database.select(database.routingProfiles)
-                ..where((p) => p.id.isNotValue(id))
+                ..where((p) => p.id.isNotValue(int.parse(id)))
                 ..limit(1))
               .getSingle();
 
@@ -206,7 +215,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
     final deleteStatement = database.delete(
       database.routingProfiles,
     );
-    deleteStatement.where((p) => p.id.equals(id));
+    deleteStatement.where((p) => p.id.equals(int.parse(id)));
     await deleteStatement.go();
   }
 

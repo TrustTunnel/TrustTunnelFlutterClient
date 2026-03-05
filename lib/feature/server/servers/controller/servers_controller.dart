@@ -24,17 +24,14 @@ final class ServersController extends BaseStateController<ServersState> with Seq
         setState(
           ServersState.loading(
             servers: state.servers,
-            selectedServer: state.selectedServer,
           ),
         );
 
         final servers = await _repository.getAllServers();
-        final selectedServerId = servers.where((s) => s.selected).firstOrNull?.id;
 
         setState(
           ServersState.idle(
             servers: servers,
-            selectedServer: selectedServerId,
           ),
         );
       },
@@ -44,7 +41,7 @@ final class ServersController extends BaseStateController<ServersState> with Seq
   }
 
   /// Load available products
-  void selectServer(int? serverId) {
+  void selectServer(String? serverId) {
     handle(
       () async {
         if (serverId == null) {
@@ -56,20 +53,20 @@ final class ServersController extends BaseStateController<ServersState> with Seq
         setState(
           ServersState.loading(
             servers: operatingServers,
-            selectedServer: state.selectedServer,
           ),
         );
 
         await _repository.setSelectedServerId(id: serverId);
 
-        final selectedServerIndex = operatingServers.indexWhere((s) => s.id == serverId);
-
-        operatingServers[selectedServerIndex] = operatingServers[selectedServerIndex].copyWith(selected: true);
+        final servers = operatingServers
+            .map(
+              (e) => e.copyWith(serverData: e.serverData.copyWith(selected: e.id == serverId)),
+            )
+            .toList();
 
         setState(
           ServersState.idle(
-            servers: operatingServers,
-            selectedServer: operatingServers[selectedServerIndex].id,
+            servers: servers,
           ),
         );
       },
@@ -87,14 +84,12 @@ final class ServersController extends BaseStateController<ServersState> with Seq
       ServersState.exception(
         exception: presentationException,
         servers: state.servers,
-        selectedServer: state.selectedServer,
       ),
     );
   }
 
   Future<void> _onCompleted() async => setState(
     ServersState.idle(
-      selectedServer: state.selectedServer,
       servers: state.servers,
     ),
   );

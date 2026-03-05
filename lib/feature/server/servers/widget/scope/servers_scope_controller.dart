@@ -8,5 +8,5 @@ abstract class ServersScopeController {
   abstract final bool loading;
 
   abstract final void Function() fetchServers;
-  abstract final void Function(int? serverId) pickServer;
+  abstract final void Function(String? serverId) pickServer;
 }

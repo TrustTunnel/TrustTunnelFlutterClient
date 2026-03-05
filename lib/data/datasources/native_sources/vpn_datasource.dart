@@ -6,8 +6,8 @@ import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
-import 'package:trusttunnel/data/model/routing_profile.dart';
-import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/routing_profile_data.dart';
+import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/vpn/domain/services/vpn_log_converter.dart';
@@ -81,8 +81,8 @@ class VpnDataSourceImpl implements VpnDataSource {
   /// 3) invokes the platform `start` command.
   @override
   Future<void> start({
-    required Server server,
-    required RoutingProfile routingProfile,
+    required ServerData server,
+    required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
   }) {
     final exclusions = _getExclusionsByMode(routingProfile);
@@ -133,8 +133,8 @@ class VpnDataSourceImpl implements VpnDataSource {
 
   @override
   Future<void> updateConfiguration({
-    required Server server,
-    required RoutingProfile routingProfile,
+    required ServerData server,
+    required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
   }) {
     final exclusions = _getExclusionsByMode(routingProfile);
@@ -175,7 +175,7 @@ class VpnDataSourceImpl implements VpnDataSource {
   /// Computes the effective exclusion list based on routing mode.
   ///
   /// Domains are normalized to include wildcard variants when appropriate.
-  List<String> _getExclusionsByMode(RoutingProfile profile) {
+  List<String> _getExclusionsByMode(RoutingProfileData profile) {
     final List<String> exclusions;
 
     switch (profile.defaultMode) {

@@ -1,10 +1,10 @@
 import 'package:trusttunnel/common/error/model/enum/presentation_field_error_code.dart';
 import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
-import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
 abstract class RoutingService {
-  static List<PresentationField> validateRoutingProfileName(Set<RoutingProfile> profiles, String name) {
+  static List<PresentationField> validateRoutingProfileName(Set<RoutingProfileData> profiles, String name) {
     final profileName = _validateProfileName(name, profiles.map((e) => e.name).toSet());
     if (profileName != null) {
       return [profileName];

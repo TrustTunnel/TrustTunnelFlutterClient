@@ -42,8 +42,8 @@ class VpnRepositoryImpl implements VpnRepository {
     required RoutingProfile routingProfile,
   }) async {
     await _vpnDataSource.start(
-      server: server,
-      routingProfile: routingProfile,
+      server: server.serverData,
+      routingProfile: routingProfile.data,
       excludedRoutes: excludedRoutes,
     );
 
@@ -65,8 +65,8 @@ class VpnRepositoryImpl implements VpnRepository {
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
   }) => _vpnDataSource.updateConfiguration(
-    server: server,
-    routingProfile: routingProfile,
+    server: server.serverData,
+    routingProfile: routingProfile.data,
     excludedRoutes: excludedRoutes,
   );
 

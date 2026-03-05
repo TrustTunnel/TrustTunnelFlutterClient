@@ -4,7 +4,7 @@ import 'package:trusttunnel/feature/server/server_details/widgets/server_details
 import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
 class ServerDetailsPopUp extends StatelessWidget {
-  final int? serverId;
+  final String? serverId;
 
   const ServerDetailsPopUp({
     super.key,

@@ -1,4 +1,5 @@
 import 'package:app_links/app_links.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/router/deeplink/deep_link_source.dart';
@@ -58,7 +59,7 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   void _onDeepLinkReceived() {
     final link = _deepLinkSource.link;
     if (link != null) {
-      _controller.onDeepLinkReceived(link.toString());
+      _controller.onDeepLinkReceived(link.query);
     }
   }
 

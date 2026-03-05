@@ -86,7 +86,7 @@ class _ExcludedRoutesButtonSectionState extends State<ExcludedRoutesButtonSectio
       (server) => server.id == serverController.selectedServer?.id,
     );
     final profile = profileController.routingList.firstWhereOrNull(
-      (profile) => profile.id == selectedServer?.routingProfile.id,
+      (profile) => profile.id == selectedServer?.serverData.routingProfileId,
     );
 
     if (selectedServer != null && profile != null) {

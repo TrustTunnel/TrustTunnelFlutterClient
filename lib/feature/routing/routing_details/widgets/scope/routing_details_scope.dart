@@ -4,17 +4,17 @@ import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/error/model/presentation_error.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
 import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_controller.dart';
 import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_states.dart';
-import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
 import 'package:trusttunnel/feature/routing/routing_details/domain/service/routing_details_service.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_aspect.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_controller.dart';
 
 class RoutingDetailsScope extends StatefulWidget {
   final Widget child;
-  final int? profileId;
+  final String? profileId;
 
   const RoutingDetailsScope({
     required this.child,
@@ -60,7 +60,7 @@ class _RoutingDetailsScopeState extends State<RoutingDetailsScope> {
       state: state,
       changeData:
           ({
-            RoutingDetailsData? data,
+            RoutingProfileData? data,
             bool? hasInvalidRules,
           }) => _controller.dataChanged(
             data: data,
@@ -100,7 +100,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   }) : _state = state;
 
   @override
-  final int? id;
+  final String? id;
 
   @override
   final bool editing;
@@ -121,16 +121,16 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   final void Function(RoutingMode mode, VoidCallback onChanged) changeDefaultRoutingMode;
 
   @override
-  RoutingDetailsData get data => _state.data;
+  RoutingProfileData get data => _state.data;
 
   @override
-  RoutingDetailsData get initialData => _state.initialData;
+  RoutingProfileData get initialData => _state.initialData;
 
   @override
   bool get hasInvalidRules => _state.hasInvalidRules;
 
   @override
-  String get name => _state.name;
+  String get name => _state.data.name;
 
   @override
   PresentationError? get error => _state.error;

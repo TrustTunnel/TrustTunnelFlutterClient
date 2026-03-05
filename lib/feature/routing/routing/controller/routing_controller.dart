@@ -62,7 +62,7 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
   );
 
   Future<void> editName({
-    required int id,
+    required String id,
     required String name,
     required VoidCallback onSaved,
   }) => handle(
@@ -71,7 +71,10 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       if (routingProfile == null) {
         throw PresentationNotFoundError();
       }
-      final otherProfiles = state.routingList.where((element) => element.id != id).toSet();
+      final otherProfiles = state.routingList
+          .where((element) => element.id != id)
+          .map((element) => element.data)
+          .toSet();
 
       final fieldErrors = RoutingService.validateRoutingProfileName(otherProfiles, name);
 
@@ -92,7 +95,13 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       );
 
       final updatedRoutingList = state.routingList.map(
-        (element) => element.id == id ? element.copyWith(name: name) : element,
+        (element) => element.id == id
+            ? element.copyWith(
+                data: element.data.copyWith(
+                  name: name,
+                ),
+              )
+            : element,
       );
 
       setState(
@@ -108,7 +117,7 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
     completionHandler: _onCompleted,
   );
 
-  Future<void> deleteProfile(int profileId, VoidCallback onDeleted) => handle(() async {
+  Future<void> deleteProfile(String profileId, VoidCallback onDeleted) => handle(() async {
     await _repository.deleteProfile(id: profileId);
     final updatedRoutingList = state.routingList.where((element) => element.id != profileId).toList();
     setState(

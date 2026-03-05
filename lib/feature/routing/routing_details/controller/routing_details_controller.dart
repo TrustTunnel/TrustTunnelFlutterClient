@@ -6,9 +6,9 @@ import 'package:trusttunnel/common/error/error_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_base_error.dart';
 import 'package:trusttunnel/common/error/model/presentation_error.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_states.dart';
-import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
 import 'package:trusttunnel/feature/routing/routing_details/domain/service/routing_details_service.dart';
 
 /// {@template products_controller}
@@ -17,13 +17,13 @@ import 'package:trusttunnel/feature/routing/routing_details/domain/service/routi
 final class RoutingDetailsController extends BaseStateController<RoutingDetailsState> with SequentialControllerHandler {
   final RoutingRepository _repository;
   final RoutingDetailsService _detailsService;
-  final int? _profileId;
+  final String? _profileId;
 
   /// {@macro products_controller}
   RoutingDetailsController({
     required RoutingRepository repository,
     required RoutingDetailsServiceImpl detailsService,
-    required int? profileId,
+    required String? profileId,
     super.initialState = const RoutingDetailsState.initial(),
   }) : _repository = repository,
        _detailsService = detailsService,
@@ -38,7 +38,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
             data: state.data,
             initialData: state.initialData,
             hasInvalidRules: state.hasInvalidRules,
-            name: '',
           ),
         );
 
@@ -46,10 +45,11 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
           final profiles = await _repository.getAllProfiles();
           setState(
             RoutingDetailsState.idle(
-              data: state.data.copyWith(),
+              data: state.data.copyWith(
+                name: _detailsService.getNewProfileName(profiles.map((p) => p.data.name).toSet()),
+              ),
               initialData: state.initialData,
               hasInvalidRules: state.hasInvalidRules,
-              name: _detailsService.getNewProfileName(profiles.map((p) => p.name).toSet()),
             ),
           );
 
@@ -60,16 +60,12 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
         if (routingProfile == null) {
           throw PresentationNotFoundError();
         }
-        final initialData = _detailsService.toRoutingDetailsData(
-          routingProfile: routingProfile,
-        );
 
         setState(
           RoutingDetailsState.idle(
-            data: initialData,
-            initialData: initialData,
+            data: routingProfile.data,
+            initialData: routingProfile.data,
             hasInvalidRules: state.hasInvalidRules,
-            name: routingProfile.name,
           ),
         );
       },
@@ -79,8 +75,8 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
   }
 
   void dataChanged({
-    RoutingDetailsData? data,
-    RoutingDetailsData? initialData,
+    RoutingProfileData? data,
+    RoutingProfileData? initialData,
     bool? hasInvalidRules,
     String? name,
   }) => handle(() {
@@ -89,7 +85,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
         data: data ?? state.data,
         hasInvalidRules: hasInvalidRules ?? state.hasInvalidRules,
         initialData: initialData ?? state.initialData,
-        name: name ?? state.name,
       ),
     );
   });
@@ -99,12 +94,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       var profileId = _profileId;
       if (profileId == null) {
         profileId = (await _repository.addNewProfile(
-          (
-            name: state.name,
-            defaultMode: state.data.defaultMode,
-            bypassRules: state.data.bypassRules,
-            vpnRules: state.data.vpnRules,
-          ),
+          state.data,
         )).id;
       } else {
         Future.wait([
@@ -139,7 +129,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
           data: state.data,
           initialData: state.initialData,
           hasInvalidRules: state.hasInvalidRules,
-          name: state.name,
         ),
       );
 
@@ -167,7 +156,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
             bypassRules: [],
           ),
           hasInvalidRules: false,
-          name: state.name,
         ),
       );
 
@@ -184,7 +172,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
           data: state.data,
           initialData: state.initialData,
           hasInvalidRules: state.hasInvalidRules,
-          name: state.name,
         ),
       );
 
@@ -195,7 +182,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
           data: state.data.copyWith(defaultMode: mode),
           initialData: state.initialData.copyWith(defaultMode: mode),
           hasInvalidRules: state.hasInvalidRules,
-          name: state.name,
         ),
       );
 
@@ -216,7 +202,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
         data: state.data,
         initialData: state.initialData,
         hasInvalidRules: state.hasInvalidRules,
-        name: state.name,
       ),
     );
   }
@@ -226,7 +211,6 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       data: state.data,
       initialData: state.initialData,
       hasInvalidRules: state.hasInvalidRules,
-      name: state.name,
     ),
   );
 }

@@ -17,14 +17,14 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
   final ServerRepository _repository;
   final RoutingRepository _routingRepository;
   final ServerDetailsService _detailsService;
-  final int? _serverId;
+  final String? _serverId;
 
   /// {@macro products_controller}
   ServerDetailsController({
     required ServerRepository repository,
     required RoutingRepository routingRepository,
     required ServerDetailsService detailsService,
-    required int? serverId,
+    required String? serverId,
     super.initialState = const ServerDetailsState.initial(),
   }) : _repository = repository,
        _routingRepository = routingRepository,
@@ -65,12 +65,10 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
           throw PresentationNotFoundError();
         }
 
-        final data = _detailsService.toServerDetailsData(server: server);
-
         setState(
           ServerDetailsState.idle(
-            data: data,
-            initialData: data,
+            data: server.serverData,
+            initialData: server.serverData,
             fieldErrors: state.fieldErrors,
             routingProfiles: profiles,
           ),
@@ -88,7 +86,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     String? username,
     String? password,
     VpnProtocol? protocol,
-    int? routingProfileId,
+    String? routingProfileId,
     List<String>? dnsServers,
   }) => handle(() {
     setState(
@@ -96,14 +94,13 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
         fieldErrors: state.fieldErrors,
         initialData: state.initialData,
         routingProfiles: state.routingProfiles,
-
         data: state.data.copyWith(
-          serverName: serverName ?? state.data.serverName,
+          name: serverName ?? state.data.name,
           ipAddress: ipAddress ?? state.data.ipAddress,
           domain: domain ?? state.data.domain,
           username: username ?? state.data.username,
           password: password ?? state.data.password,
-          protocol: protocol ?? state.data.protocol,
+          vpnProtocol: protocol ?? state.data.vpnProtocol,
           routingProfileId: routingProfileId ?? state.data.routingProfileId,
           dnsServers: dnsServers ?? state.data.dnsServers,
         ),
@@ -126,54 +123,36 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
 
       final List<PresentationField> filedErrors = _detailsService.validateData(
         data: state.data,
-        otherServersNames: servers.map((server) => server.name).toSet()
+        otherServersNames: servers.map((server) => server.serverData.name).toSet()
           ..remove(
-            state.initialData.serverName,
+            state.initialData.name,
           ),
       );
 
-      if (filedErrors.isNotEmpty) {
-        setState(
-          ServerDetailsState.idle(
-            data: state.data,
-            initialData: state.initialData,
-            fieldErrors: filedErrors.toList(),
-            routingProfiles: state.routingProfiles,
-          ),
-        );
-
-        return;
-      }
-
-      if (_serverId != null) {
-        await _repository.setNewServer(
-          id: _serverId,
-          request: (
-            dnsServers: state.data.dnsServers,
-            name: state.data.serverName,
-            ipAddress: state.data.ipAddress,
-            domain: state.data.domain,
-            username: state.data.username,
-            password: state.data.password,
-            vpnProtocol: state.data.protocol,
-            routingProfileId: state.data.routingProfileId,
-          ),
-        );
-      } else {
-        await _repository.addNewServer(
-          request: (
-            dnsServers: state.data.dnsServers,
-            name: state.data.serverName,
-            ipAddress: state.data.ipAddress,
-            domain: state.data.domain,
-            username: state.data.username,
-            password: state.data.password,
-            vpnProtocol: state.data.protocol,
-            routingProfileId: state.data.routingProfileId,
-          ),
+      if (filedErrors.isEmpty) {
+        if (_serverId != null) {
+          await _repository.setNewServer(
+            id: _serverId,
+            request: state.data,
+          );
+        } else {
+          await _repository.addNewServer(
+            request: state.data,
+          );
+        }
+        onSaved(
+          state.data.name,
         );
       }
-      onSaved(state.data.serverName);
+
+      setState(
+        ServerDetailsState.idle(
+          data: state.data,
+          initialData: state.initialData,
+          fieldErrors: filedErrors,
+          routingProfiles: state.routingProfiles,
+        ),
+      );
     },
     errorHandler: _onError,
     completionHandler: _onCompleted,
@@ -194,7 +173,9 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
 
       await _repository.removeServer(serverId: _serverId!);
 
-      onDeleted(state.data.serverName);
+      onDeleted(
+        state.data.name,
+      );
     },
     errorHandler: _onError,
     completionHandler: _onCompleted,

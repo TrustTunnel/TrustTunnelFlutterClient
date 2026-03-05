@@ -1,5 +1,7 @@
 import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 
@@ -49,8 +51,8 @@ abstract class VpnDataSource {
   /// not necessarily when the VPN reaches a connected state.
   /// {@endtemplate}
   Future<void> start({
-    required Server server,
-    required RoutingProfile routingProfile,
+    required ServerData server,
+    required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
   });
 
@@ -70,8 +72,8 @@ abstract class VpnDataSource {
   /// - preserving platform-managed metadata where applicable.
   /// {@endtemplate}
   Future<void> updateConfiguration({
-    required Server server,
-    required RoutingProfile routingProfile,
+    required ServerData server,
+    required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
   });
 

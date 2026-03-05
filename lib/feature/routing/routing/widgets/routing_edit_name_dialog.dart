@@ -12,7 +12,7 @@ import 'package:trusttunnel/widgets/inputs/custom_text_field.dart';
 
 class RoutingEditNameDialog extends StatefulWidget {
   final String currentRoutingName;
-  final int id;
+  final String id;
 
   const RoutingEditNameDialog({
     super.key,

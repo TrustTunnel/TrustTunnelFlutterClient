@@ -32,7 +32,6 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   @override
   ServerRepository get serverRepository => _serverRepository ??= ServerRepositoryImpl(
     serverDataSource: _dependencyFactory.serverDataSource,
-    routingDataSource: _dependencyFactory.routingDataSource,
   );
 
   @override

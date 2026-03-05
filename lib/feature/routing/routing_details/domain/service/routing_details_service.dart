@@ -1,22 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:trusttunnel/data/model/routing_profile.dart';
-import 'package:trusttunnel/feature/routing/routing_details/model/routing_details_data.dart';
-
 abstract class RoutingDetailsService {
-  RoutingDetailsData toRoutingDetailsData({required RoutingProfile routingProfile});
-
   String getNewProfileName(Set<String> occupiedNames);
 }
 
 class RoutingDetailsServiceImpl implements RoutingDetailsService {
-  @override
-  RoutingDetailsData toRoutingDetailsData({required RoutingProfile routingProfile}) => RoutingDetailsData(
-    defaultMode: routingProfile.defaultMode,
-    bypassRules: routingProfile.bypassRules,
-    vpnRules: routingProfile.vpnRules,
-  );
-
   @override
   String getNewProfileName(Set<String> occupiedNames) {
     final profileNames = occupiedNames.where((name) => name.startsWith('Profile')).map((name) {

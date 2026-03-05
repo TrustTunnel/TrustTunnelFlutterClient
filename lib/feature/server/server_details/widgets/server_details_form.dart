@@ -4,11 +4,11 @@ import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/localization/extensions/locale_enum_extension.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
-import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
-import 'package:trusttunnel/feature/server/server_details/model/server_details_data.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope_aspect.dart';
 import 'package:trusttunnel/widgets/inputs/custom_text_field.dart';
@@ -22,7 +22,7 @@ class ServerDetailsForm extends StatefulWidget {
 }
 
 class _ServerDetailsFormState extends State<ServerDetailsForm> {
-  late ServerDetailsData _formData;
+  late ServerData _formData;
   late List<PresentationField> _fieldErrors;
   late List<RoutingProfile> _routingProfiles;
   late RoutingProfile _pickedRoutingProfile;
@@ -63,7 +63,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
       spacing: 32,
       children: [
         CustomTextField(
-          value: _formData.serverName,
+          value: _formData.name,
           label: context.ln.serverName,
           hint: context.ln.serverName,
           onChanged: (serverName) => _onDataChanged(
@@ -133,7 +133,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
           ),
         ),
         CustomDropdownMenu<VpnProtocol>.expanded(
-          value: _formData.protocol,
+          value: _formData.vpnProtocol,
           values: VpnProtocol.values,
           toText: (value) => value.localized(context),
           labelText: context.ln.protocol,
@@ -145,7 +145,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
         CustomDropdownMenu<RoutingProfile>.expanded(
           value: _pickedRoutingProfile,
           values: _routingProfiles,
-          toText: (value) => value.name,
+          toText: (value) => value.data.name,
           labelText: context.ln.routingProfile,
           onChanged: (profile) => _onDataChanged(
             context,
@@ -172,7 +172,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
     ),
   );
 
-  RoutingProfile _getSelectedRoutingProfile(List<RoutingProfile> availableRoutingProfiles, int routingProfileId) =>
+  RoutingProfile _getSelectedRoutingProfile(List<RoutingProfile> availableRoutingProfiles, String routingProfileId) =>
       availableRoutingProfiles.firstWhereOrNull((profile) => profile.id == routingProfileId) ??
       availableRoutingProfiles.firstWhere((profile) => profile.id == RoutingProfileUtils.defaultRoutingProfileId);
 
@@ -184,7 +184,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
     String? username,
     String? password,
     VpnProtocol? protocol,
-    int? routingProfileId,
+    String? routingProfileId,
     List<String>? dnsServers,
   }) =>
       ServerDetailsScope.controllerOf(
