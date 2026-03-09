@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
@@ -78,7 +77,7 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
   List<Server> get servers => [..._state.servers];
 
   @override
-  Server? get selectedServer => _state.servers.firstWhereOrNull((server) => server.id == _state.selectedServer);
+  Server? get selectedServer => _state.selectedServer;
 
   @override
   PresentationError? get error => _state.error;

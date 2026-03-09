@@ -227,8 +227,6 @@ class _VpnScopeState extends State<VpnScope> {
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
   }) async {
-    await _stop();
-
     final newServerStream = await widget.vpnRepository.startListenToStates(
       server: server,
       routingProfile: routingProfile,
@@ -242,15 +240,11 @@ class _VpnScopeState extends State<VpnScope> {
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
-  }) async {
-    await _stop();
-
-    return widget.vpnRepository.updateConfiguration(
-      server: server,
-      routingProfile: routingProfile,
-      excludedRoutes: excludedRoutes,
-    );
-  }
+  }) => widget.vpnRepository.updateConfiguration(
+    server: server,
+    routingProfile: routingProfile,
+    excludedRoutes: excludedRoutes,
+  );
 
   Future<void> _stop() async {
     await widget.vpnRepository.stop();

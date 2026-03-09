@@ -179,15 +179,17 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     );
     endpoint.setBool(ConfigurationCodecKeys.antiDpi, config.endpoint.antiDpi);
 
+    document.section(ConfigurationCodecKeys.listenerSection);
+
     final IniSection tun = document.section(ConfigurationCodecKeys.tunSection);
     tun.setStringList(ConfigurationCodecKeys.includedRoutes, config.tun.includedRoutes);
     tun.setStringList(ConfigurationCodecKeys.excludedRoutes, config.tun.excludedRoutes);
     tun.setInt(ConfigurationCodecKeys.mtuSize, config.tun.mtuSize);
 
-    final IniSection socks = document.section(ConfigurationCodecKeys.socksSection);
-    socks.setString(ConfigurationCodecKeys.socksAddress, config.socks.address);
-    socks.setString(ConfigurationCodecKeys.socksUsername, config.socks.username);
-    socks.setString(ConfigurationCodecKeys.socksPassword, config.socks.password);
+    // final IniSection socks = document.section(ConfigurationCodecKeys.socksSection);
+    // socks.setString(ConfigurationCodecKeys.socksAddress, config.socks.address);
+    // socks.setString(ConfigurationCodecKeys.socksUsername, config.socks.username);
+    // socks.setString(ConfigurationCodecKeys.socksPassword, config.socks.password);
 
     return document.toString();
   }

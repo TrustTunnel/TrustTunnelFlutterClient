@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
-import 'package:trusttunnel/data/database/app_database.dart';
-import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 /// {@template server}

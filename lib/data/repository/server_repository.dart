@@ -10,12 +10,7 @@ abstract class ServerRepository {
 
   Future<Server?> getServerById({required String id});
 
-  Future<Server> getServerByBase64({
-    required String base64,
-    required String name,
-  });
-
-  Future<void> setSelectedServerId({required String id});
+  Future<void> setSelectedServerId({required String? id});
 
   Future<void> setNewServer({required String id, required ServerData request});
 
@@ -50,17 +45,11 @@ class ServerRepositoryImpl implements ServerRepository {
       _serverDataSource.setNewServer(id: id, request: request);
 
   @override
-  Future<void> setSelectedServerId({required String id}) => _serverDataSource.setSelectedServerId(id: id);
+  Future<void> setSelectedServerId({required String? id}) => _serverDataSource.setSelectedServerId(id: id);
 
   @override
   Future<void> removeServer({required String serverId}) => _serverDataSource.removeServer(serverId: serverId);
 
   @override
   Future<Server?> getServerById({required String id}) => _serverDataSource.getServerById(id: id);
-
-  @override
-  Future<Server> getServerByBase64({required String base64, required String name}) async {
-    await _serverDataSource.getServerByBase64(base64: base64, name: name);
-    throw UnimplementedError();
-  }
 }

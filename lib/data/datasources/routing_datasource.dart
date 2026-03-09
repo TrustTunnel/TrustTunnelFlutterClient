@@ -73,4 +73,9 @@ abstract class RoutingDataSource {
   /// other entities refer to this profile (e.g. servers bound to a profile).
   /// {@endtemplate}
   Future<void> deleteProfile({required String id});
+
+  Future<RoutingProfileData> getProfileDataByBase64({
+    required String base64,
+    required String name,
+  });
 }

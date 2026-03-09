@@ -31,27 +31,19 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
   List<String>? _excludedRoutes;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
     final vpnController = VpnScope.vpnControllerOf(
       context,
       listen: false,
     );
+    vpnController.stop();
+  }
 
-    if (vpnController.state == VpnState.disconnected) {
-      return;
-    }
-
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     final updatedServer = ServersScope.controllerOf(context, aspect: ServersScopeAspect.selectedServer).selectedServer;
-
-    if (_selectedServer != updatedServer && updatedServer == null) {
-      vpnController.stop();
-      _selectedServer = null;
-      _selectedRoutingProfile = null;
-      _excludedRoutes = null;
-
-      return;
-    }
 
     final updatedRoutingProfileList = RoutingScope.controllerOf(
       context,
@@ -63,8 +55,26 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
       aspect: ExcludedRoutesAspect.data,
     ).excludedRoutes;
 
+    final vpnController = VpnScope.vpnControllerOf(
+      context,
+      listen: false,
+    );
+
+    if (vpnController.state == VpnState.disconnected) {
+      return;
+    }
+
+    if (updatedServer == null) {
+      vpnController.stop();
+      _selectedServer = null;
+      _selectedRoutingProfile = null;
+      _excludedRoutes = null;
+
+      return;
+    }
+
     final updatedRoutingProfile = updatedRoutingProfileList.firstWhere(
-      (element) => element.id == _selectedRoutingProfile?.id,
+      (element) => element.id == updatedServer.serverData.routingProfileId,
     );
 
     if (_selectedServer != updatedServer ||
@@ -72,7 +82,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
         !listEquals(_excludedRoutes, updatedExcludedRoutes)) {
       _runUpdatedInfo(
         controller: vpnController,
-        server: updatedServer!,
+        server: updatedServer,
         routingProfile: updatedRoutingProfile,
         excludedRoutes: updatedExcludedRoutes,
       );

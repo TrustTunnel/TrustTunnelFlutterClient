@@ -30,7 +30,9 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   void initState() {
     super.initState();
     _deepLinkSource = AppLinksSource(AppLinks());
-    _controller = DeepLinkController(repository: context.repositoryFactory.serverRepository);
+    _controller = DeepLinkController(
+      repository: context.repositoryFactory.deepLinkRepository,
+    );
     _deepLinkSource.addListener(_onDeepLinkReceived);
     _deepLinkSource.getInitialLink().then((_) => _onDeepLinkReceived());
   }

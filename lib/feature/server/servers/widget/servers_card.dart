@@ -5,6 +5,7 @@ import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card_connection_button.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
@@ -28,17 +29,13 @@ class _ServersCardState extends State<ServersCard> {
   late Server? _pickedServer;
 
   @override
-  void initState() {
-    super.initState();
-    _vpnStatus = VpnScope.vpnControllerOf(context, listen: false).state;
-    _pickedServer = ServersScope.controllerOf(context, listen: false).selectedServer;
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _vpnStatus = VpnScope.vpnControllerOf(context).state;
-    _pickedServer = ServersScope.controllerOf(context).selectedServer;
+    _pickedServer = ServersScope.controllerOf(
+      context,
+      aspect: ServersScopeAspect.selectedServer,
+    ).selectedServer;
   }
 
   @override

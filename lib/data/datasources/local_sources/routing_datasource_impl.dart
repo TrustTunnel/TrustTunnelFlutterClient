@@ -4,6 +4,8 @@ import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
+import 'package:vpn_plugin/deep_link_manager.dart';
+import 'package:vpn_plugin/models/vpn_mode.dart';
 
 /// {@template routing_data_source_impl}
 /// Drift-backed implementation of [RoutingDataSource].
@@ -19,16 +21,22 @@ import 'package:trusttunnel/data/model/routing_profile_data.dart';
 /// wrapping calls in a Drift transaction at a higher level.
 /// {@endtemplate}
 class RoutingDataSourceImpl implements RoutingDataSource {
-  /// Drift database used for persistence.
-  final db.AppDatabase database;
+  /// Drift _database used for persistence.
+  final db.AppDatabase _database;
+
+  final DeepLinkManager _deepLinkManager;
 
   /// {@macro routing_data_source_impl}
-  RoutingDataSourceImpl(this.database);
+  RoutingDataSourceImpl({
+    required db.AppDatabase database,
+    required DeepLinkManager deepLinkManager,
+  }) : _database = database,
+       _deepLinkManager = deepLinkManager;
 
   /// {@macro routing_data_source_add_new_profile}
   @override
   Future<RoutingProfile> addNewProfile(RoutingProfileData request) async {
-    final resultId = await database.routingProfiles.insertOnConflictUpdate(
+    final resultId = await _database.routingProfiles.insertOnConflictUpdate(
       db.RoutingProfilesCompanion.insert(
         name: request.name,
         defaultMode: request.defaultMode.value,
@@ -51,7 +59,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
       ),
     );
 
-    await database.profileRules.insertAll(
+    await _database.profileRules.insertAll(
       [
         ...bypassRules,
         ...vpnRules,
@@ -75,7 +83,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// profile ids, and finally assembles [RoutingProfile] instances.
   @override
   Future<List<RoutingProfile>> getAllProfiles() async {
-    final profiles = await database.select(database.routingProfiles).get();
+    final profiles = await _database.select(_database.routingProfiles).get();
     if (profiles.isEmpty) return [];
 
     final profileIds = profiles.map((p) => p.id).toSet();
@@ -110,8 +118,8 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// {@macro routing_data_source_set_default_mode}
   @override
   Future<void> setDefaultRoutingMode({required String id, required RoutingMode mode}) async {
-    final updateStatement = database.update(
-      database.routingProfiles,
+    final updateStatement = _database.update(
+      _database.routingProfiles,
     );
     updateStatement.where((p) => p.id.equals(int.parse(id)));
     await updateStatement.write(db.RoutingProfilesCompanion(defaultMode: Value(mode.value)));
@@ -120,8 +128,8 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// {@macro routing_data_source_set_profile_name}
   @override
   Future<void> setProfileName({required String id, required String name}) async {
-    final updateStatement = database.update(
-      database.routingProfiles,
+    final updateStatement = _database.update(
+      _database.routingProfiles,
     );
     updateStatement.where((p) => p.id.equals(int.parse(id)));
     await updateStatement.write(db.RoutingProfilesCompanion(name: Value(name)));
@@ -133,11 +141,11 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// new list is inserted in a batch.
   @override
   Future<void> setRules({required String id, required RoutingMode mode, required List<String> rules}) async {
-    await database.profileRules.deleteWhere((p) => p.profileId.equals(int.parse(id)) & p.mode.equals(mode.value));
+    await _database.profileRules.deleteWhere((p) => p.profileId.equals(int.parse(id)) & p.mode.equals(mode.value));
 
-    return database.batch((batch) {
+    return _database.batch((batch) {
       batch.insertAllOnConflictUpdate(
-        database.profileRules,
+        _database.profileRules,
         rules.map(
           (data) => db.ProfileRulesCompanion.insert(
             profileId: int.parse(id),
@@ -152,8 +160,8 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// {@macro routing_data_source_remove_all_rules}
   @override
   Future<void> removeAllRules({required String id}) async {
-    final deleteStatement = database.delete(
-      database.profileRules,
+    final deleteStatement = _database.delete(
+      _database.profileRules,
     );
     deleteStatement.where((p) => p.profileId.equals(int.parse(id)));
     await deleteStatement.go();
@@ -164,7 +172,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// Throws a generic [Exception] when the profile row does not exist.
   @override
   Future<RoutingProfile> getProfileById({required String id}) async {
-    final profile = await (database.routingProfiles.select()..where((p) => p.id.equals(int.parse(id))))
+    final profile = await (_database.routingProfiles.select()..where((p) => p.id.equals(int.parse(id))))
         .getSingleOrNull();
     if (profile == null) throw Exception('Profile not found');
 
@@ -188,22 +196,22 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   ///
   /// If there are servers referencing the profile being deleted, this
   /// implementation reassigns them to another existing profile (the first one
-  /// returned by the database query) before removing the profile row.
+  /// returned by the _database query) before removing the profile row.
   @override
   Future<void> deleteProfile({required String id}) async {
-    final servers = await (database.select(
-      database.servers,
+    final servers = await (_database.select(
+      _database.servers,
     )..where((s) => s.routingProfileId.equals(int.parse(id)))).get();
     if (servers.isNotEmpty) {
       final replacedConfig =
-          await (database.select(database.routingProfiles)
+          await (_database.select(_database.routingProfiles)
                 ..where((p) => p.id.isNotValue(int.parse(id)))
                 ..limit(1))
               .getSingle();
 
-      database.batch((batch) {
+      _database.batch((batch) {
         batch.update(
-          database.servers,
+          _database.servers,
           db.ServersCompanion(
             routingProfileId: Value(replacedConfig.id),
           ),
@@ -212,18 +220,35 @@ class RoutingDataSourceImpl implements RoutingDataSource {
       });
     }
 
-    final deleteStatement = database.delete(
-      database.routingProfiles,
+    final deleteStatement = _database.delete(
+      _database.routingProfiles,
     );
     deleteStatement.where((p) => p.id.equals(int.parse(id)));
     await deleteStatement.go();
+  }
+
+  @override
+  Future<RoutingProfileData> getProfileDataByBase64({
+    required String base64,
+    required String name,
+  }) async {
+    final config = await _deepLinkManager.getConfigurationByBase64(base64: base64);
+    final vpnRules = config.vpnMode == VpnMode.general ? config.tun.includedRoutes : config.tun.excludedRoutes;
+    final bypassRules = config.vpnMode == VpnMode.general ? config.tun.excludedRoutes : config.tun.includedRoutes;
+
+    return RoutingProfileData(
+      name: name,
+      defaultMode: config.vpnMode == VpnMode.general ? RoutingMode.vpn : RoutingMode.bypass,
+      bypassRules: bypassRules,
+      vpnRules: vpnRules,
+    );
   }
 
   /// Loads all rule rows for the given profile ids.
   ///
   /// Rules are returned in insertion order (ascending by row id).
   Future<List<db.ProfileRule>> _loadRulesOfProfiles(Set<int> profileIds) async {
-    final select = database.select(database.profileRules)
+    final select = _database.select(_database.profileRules)
       ..where((r) => r.profileId.isIn(profileIds))
       ..orderBy(
         [

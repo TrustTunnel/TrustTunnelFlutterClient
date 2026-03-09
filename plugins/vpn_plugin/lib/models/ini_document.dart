@@ -84,8 +84,6 @@ final class IniDocument {
       final String? sectionName = entry.key;
       final IniSection iniSection = entry.value;
 
-      if (iniSection.isEmpty) continue;
-
       if (!isFirstSection) out.writeln();
       isFirstSection = false;
 
@@ -237,9 +235,6 @@ final class IniSection {
   final String? name;
 
   final LinkedHashMap<String, IniValue> _kv = LinkedHashMap<String, IniValue>();
-
-  /// Whether this section has no entries.
-  bool get isEmpty => _kv.isEmpty;
 
   /// All key/value entries in insertion order.
   Iterable<MapEntry<String, IniValue>> get entries => _kv.entries;

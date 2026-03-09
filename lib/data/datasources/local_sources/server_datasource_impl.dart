@@ -5,6 +5,7 @@ import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
+import 'package:vpn_plugin/models/upstream_protocol.dart';
 
 /// {@template server_data_source_impl}
 /// Drift-backed implementation of [ServerDataSource].
@@ -114,12 +115,15 @@ class ServerDataSourceImpl implements ServerDataSource {
 
   /// {@macro server_data_source_set_selected_server_id}
   @override
-  Future<void> setSelectedServerId({required String id}) async {
+  Future<void> setSelectedServerId({required String? id}) async {
     final updatePrevious = database.servers.update()..where((e) => e.selected.equals(true));
-    final updateCurrent = database.servers.update()..where((e) => e.id.equals(int.parse(id)));
 
     await updatePrevious.write(const db.ServersCompanion(selected: Value(false)));
-    await updateCurrent.write(const db.ServersCompanion(selected: Value(true)));
+
+    if (id != null) {
+      final updateCurrent = database.servers.update()..where((e) => e.id.equals(int.parse(id)));
+      await updateCurrent.write(const db.ServersCompanion(selected: Value(true)));
+    }
   }
 
   /// {@macro server_data_source_remove_server}
@@ -197,20 +201,27 @@ class ServerDataSourceImpl implements ServerDataSource {
   }
 
   @override
-  Future<ServerData> getServerByBase64({required String base64, required String name}) async {
+  Future<ServerData> getServerByBase64({
+    required String base64,
+    required String routingProfileId,
+    required String name,
+  }) async {
     final configuration = await deepLinkManager.getConfigurationByBase64(base64: base64);
 
-    throw UnimplementedError();
-    // return ServerData(
-    //   name: name,
-    //   ipAddress: ipAddress,
-    //   domain: domain,
-    //   username: username,
-    //   password: password,
-    //   vpnProtocol: vpnProtocol,
-    //   dnsServers: dnsServers,
-    //   routingProfileId: routingProfileId,
-    // );
+    return ServerData(
+      name: name,
+      ipAddress: configuration.endpoint.addresses.first,
+      domain: configuration.endpoint.hostName,
+      username: configuration.endpoint.username,
+      password: configuration.endpoint.password,
+      // TODO: Create encoder
+      // Konstantin Gorynin <k.gorynin@adguard.com>, 09 March 2026
+      vpnProtocol: configuration.endpoint.upStreamProtocol == UpStreamProtocol.http2
+          ? VpnProtocol.http2
+          : VpnProtocol.quic,
+      dnsServers: configuration.endpoint.dnsUpStreams,
+      routingProfileId: routingProfileId,
+    );
   }
 
   /// Loads DNS server rows for the given server ids.

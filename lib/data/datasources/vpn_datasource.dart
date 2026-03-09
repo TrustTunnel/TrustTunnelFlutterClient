@@ -1,6 +1,4 @@
-import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
-import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';

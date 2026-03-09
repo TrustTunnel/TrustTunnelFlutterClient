@@ -44,10 +44,6 @@ final class ServersController extends BaseStateController<ServersState> with Seq
   void selectServer(String? serverId) {
     handle(
       () async {
-        if (serverId == null) {
-          return;
-        }
-
         final operatingServers = state.servers;
 
         setState(

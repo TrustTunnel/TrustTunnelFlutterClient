@@ -26,6 +26,7 @@ abstract class ServerDataSource {
 
   Future<ServerData> getServerByBase64({
     required String base64,
+    required String routingProfileId,
     required String name,
   });
 
@@ -41,7 +42,7 @@ abstract class ServerDataSource {
   ///
   /// Implementations should ensure that at most one server is selected at a time.
   /// {@endtemplate}
-  Future<void> setSelectedServerId({required String id});
+  Future<void> setSelectedServerId({required String? id});
 
   /// {@template server_data_source_remove_server}
   /// Removes a server record by its identifier.

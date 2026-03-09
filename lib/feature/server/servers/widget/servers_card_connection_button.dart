@@ -19,27 +19,33 @@ class ServersCardConnectionButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Theme(
-    data: context.theme.copyWith(
-      iconButtonTheme: vpnManagerState == VpnState.connecting
-          ? context.theme.extension<CustomFilledIconButtonTheme>()!.iconButtonInProgress
-          : context.theme.extension<CustomFilledIconButtonTheme>()!.iconButton,
-    ),
-    child: vpnManagerState == VpnState.connecting
-        ? RotatingWidget(
-            duration: const Duration(seconds: 1),
-            child: CustomIconButton.square(
-              icon: AssetIcons.update,
+  Widget build(BuildContext context) {
+    bool pending = isPendingResult(vpnManagerState);
+
+    return Theme(
+      data: context.theme.copyWith(
+        iconButtonTheme: pending
+            ? context.theme.extension<CustomFilledIconButtonTheme>()!.iconButtonInProgress
+            : context.theme.extension<CustomFilledIconButtonTheme>()!.iconButton,
+      ),
+      child: pending
+          ? RotatingWidget(
+              duration: const Duration(seconds: 1),
+              child: CustomIconButton.square(
+                icon: AssetIcons.update,
+                onPressed: onPressed,
+                size: 24,
+                selected: true,
+              ),
+            )
+          : CustomIconButton.square(
+              icon: AssetIcons.powerSettingsNew,
               onPressed: onPressed,
               size: 24,
-              selected: true,
+              selected: vpnManagerState == VpnState.connected,
             ),
-          )
-        : CustomIconButton.square(
-            icon: AssetIcons.powerSettingsNew,
-            onPressed: onPressed,
-            size: 24,
-            selected: vpnManagerState == VpnState.connected,
-          ),
-  );
+    );
+  }
+
+  bool isPendingResult(VpnState state) => state != VpnState.connected && state != VpnState.disconnected;
 }
