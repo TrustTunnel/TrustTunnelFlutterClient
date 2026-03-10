@@ -56,7 +56,6 @@ class RepositoryFactoryImpl implements RepositoryFactory {
 
   @override
   DeepLinkRepository get deepLinkRepository => _deepLinkRepository ??= DeepLinkRepositoryImpl(
-    routingDataSource: _dependencyFactory.routingDataSource,
     serverDataSource: _dependencyFactory.serverDataSource,
   );
 }

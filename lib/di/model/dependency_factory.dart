@@ -68,7 +68,6 @@ class DependencyFactoryImpl implements DependencyFactory {
   @override
   RoutingDataSource get routingDataSource => _routingDataSource ??= RoutingDataSourceImpl(
     database: database,
-    deepLinkManager: deepLinkManager,
   );
 
   @override

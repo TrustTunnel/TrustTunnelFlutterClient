@@ -27,7 +27,6 @@ abstract class ServerDataSource {
   Future<ServerData> getServerByBase64({
     required String base64,
     required String routingProfileId,
-    required String name,
   });
 
   /// {@template server_data_source_get_all_servers}

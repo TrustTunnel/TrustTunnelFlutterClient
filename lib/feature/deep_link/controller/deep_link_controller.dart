@@ -20,16 +20,17 @@ final class DeepLinkController extends BaseStateController<DeepLinkState> with S
   void onDeepLinkReceived(String deepLink) => handle(
     () async {
       setState(
-        const DeepLinkState.loading(),
+        DeepLinkState.loading(
+          state.parsedData,
+        ),
       );
 
-      await _repository.addDataFromDeepLink(
+      final parsedDeepLink = await _repository.parseDataFromLink(
         deepLink: deepLink,
-        profileName: 'Profile from deeplink',
-        serverName: 'Server from deeplink',
       );
+
       setState(
-        const DeepLinkState.idle(),
+        DeepLinkState.idle(parsedDeepLink),
       );
     },
     errorHandler: _onError,
@@ -43,12 +44,13 @@ final class DeepLinkController extends BaseStateController<DeepLinkState> with S
 
     setState(
       DeepLinkState.exception(
+        state.parsedData,
         exception: presentationException,
       ),
     );
   }
 
   Future<void> _onCompleted() async => setState(
-    const DeepLinkState.idle(),
+    DeepLinkState.idle(state.parsedData),
   );
 }

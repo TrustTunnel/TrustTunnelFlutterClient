@@ -4,8 +4,6 @@ import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
-import 'package:vpn_plugin/deep_link_manager.dart';
-import 'package:vpn_plugin/models/vpn_mode.dart';
 
 /// {@template routing_data_source_impl}
 /// Drift-backed implementation of [RoutingDataSource].
@@ -24,14 +22,10 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// Drift _database used for persistence.
   final db.AppDatabase _database;
 
-  final DeepLinkManager _deepLinkManager;
-
   /// {@macro routing_data_source_impl}
   RoutingDataSourceImpl({
     required db.AppDatabase database,
-    required DeepLinkManager deepLinkManager,
-  }) : _database = database,
-       _deepLinkManager = deepLinkManager;
+  }) : _database = database;
 
   /// {@macro routing_data_source_add_new_profile}
   @override
@@ -225,23 +219,6 @@ class RoutingDataSourceImpl implements RoutingDataSource {
     );
     deleteStatement.where((p) => p.id.equals(int.parse(id)));
     await deleteStatement.go();
-  }
-
-  @override
-  Future<RoutingProfileData> getProfileDataByBase64({
-    required String base64,
-    required String name,
-  }) async {
-    final config = await _deepLinkManager.getConfigurationByBase64(base64: base64);
-    final vpnRules = config.vpnMode == VpnMode.general ? config.tun.includedRoutes : config.tun.excludedRoutes;
-    final bypassRules = config.vpnMode == VpnMode.general ? config.tun.excludedRoutes : config.tun.includedRoutes;
-
-    return RoutingProfileData(
-      name: name,
-      defaultMode: config.vpnMode == VpnMode.general ? RoutingMode.vpn : RoutingMode.bypass,
-      bypassRules: bypassRules,
-      vpnRules: vpnRules,
-    );
   }
 
   /// Loads all rule rows for the given profile ids.

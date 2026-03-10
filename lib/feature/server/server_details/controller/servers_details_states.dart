@@ -21,7 +21,10 @@ sealed class ServerDetailsState {
     required this.routingProfiles,
   });
 
-  const factory ServerDetailsState.initial() = _InitialServerDetailsState;
+  const factory ServerDetailsState.initial({
+    ServerData data,
+    ServerData initialData,
+  }) = _InitialServerDetailsState;
 
   /// Initial / idle state
   const factory ServerDetailsState.idle({
@@ -86,13 +89,13 @@ final class _IdleServerDetailsState extends ServerDetailsState {
 }
 
 final class _InitialServerDetailsState extends _IdleServerDetailsState {
-  const _InitialServerDetailsState()
-    : super(
-        data: const ServerData.empty(routingProfileId: RoutingProfileUtils.defaultRoutingProfileId),
-        initialData: const ServerData.empty(),
-        fieldErrors: const [],
-        routingProfiles: const [],
-      );
+  const _InitialServerDetailsState({
+    super.data = const ServerData.empty(routingProfileId: RoutingProfileUtils.defaultRoutingProfileId),
+    super.initialData = const ServerData.empty(),
+  }) : super(
+         fieldErrors: const [],
+         routingProfiles: const [],
+       );
 }
 
 final class _LoadingServerDetailState extends ServerDetailsState {

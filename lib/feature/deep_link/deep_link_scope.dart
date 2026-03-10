@@ -1,9 +1,12 @@
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/router/deeplink/deep_link_source.dart';
+import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/controller/deep_link_controller.dart';
+import 'package:trusttunnel/feature/deep_link/controller/deep_link_state.dart';
 
 /// {@template deep_link_scope}
 /// DeepLinkScope widget.
@@ -19,6 +22,19 @@ class DeepLinkScope extends StatefulWidget {
 
   @override
   State<DeepLinkScope> createState() => _DeepLinkScopeState();
+
+  static _InheritedDeepLinkScope? maybeOf(BuildContext context, {bool listen = true}) => listen
+      ? context.dependOnInheritedWidgetOfExactType<_InheritedDeepLinkScope>()
+      : context.getElementForInheritedWidgetOfExactType<_InheritedDeepLinkScope>()?.widget as _InheritedDeepLinkScope?;
+
+  static _InheritedDeepLinkScope of(BuildContext context, {bool listen = true}) =>
+      maybeOf(context, listen: listen) ?? _notFoundInheritedWidgetOfExactType();
+
+  static Never _notFoundInheritedWidgetOfExactType() => throw ArgumentError(
+    'Out of scope, not found inherited widget '
+        'a _InheritedDeepLinkScope of the exact type',
+    'out_of_scope',
+  );
 }
 
 /// State for widget DeepLinkScope.
@@ -38,23 +54,13 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // The configuration of InheritedWidgets has changed
-    // Also called after initState but before build
-  }
-
-  @override
-  void didUpdateWidget(DeepLinkScope oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Widget configuration changed
-  }
-
-  /* #endregion */
-
-  @override
-  Widget build(BuildContext context) => _InheritedDeepLinkScope(
-    state: this,
+  Widget build(BuildContext context) => StateConsumer<DeepLinkController, DeepLinkState>(
+    controller: _controller,
+    buildWhen: (previous, current) => previous.parsedData != current.parsedData,
+    builder: (context, state, child) => _InheritedDeepLinkScope(
+      deepLinkData: _controller.state.parsedData,
+      child: child!,
+    ),
     child: widget.child,
   );
 
@@ -72,34 +78,14 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   }
 }
 
-/// Inherited widget for quick access in the element tree.
 class _InheritedDeepLinkScope extends InheritedWidget {
   const _InheritedDeepLinkScope({
-    required this.state,
+    required this.deepLinkData,
     required super.child,
   });
 
-  final _DeepLinkScopeState state;
-
-  /// The state from the closest instance of this class
-  /// that encloses the given context, if any.
-  /// For example: `DeepLinkScope.maybeOf(context)`.
-  static _InheritedDeepLinkScope? maybeOf(BuildContext context, {bool listen = true}) => listen
-      ? context.dependOnInheritedWidgetOfExactType<_InheritedDeepLinkScope>()
-      : context.getElementForInheritedWidgetOfExactType<_InheritedDeepLinkScope>()?.widget as _InheritedDeepLinkScope?;
-
-  /// The state from the closest instance of this class
-  /// that encloses the given context.
-  /// For example: `DeepLinkScope.of(context)`.
-  static _InheritedDeepLinkScope of(BuildContext context, {bool listen = true}) =>
-      maybeOf(context, listen: listen) ?? _notFoundInheritedWidgetOfExactType();
+  final ServerData? deepLinkData;
 
   @override
-  bool updateShouldNotify(covariant _InheritedDeepLinkScope oldWidget) => false;
-
-  static Never _notFoundInheritedWidgetOfExactType() => throw ArgumentError(
-    'Out of scope, not found inherited widget '
-        'a _InheritedDeepLinkScope of the exact type',
-    'out_of_scope',
-  );
+  bool updateShouldNotify(covariant _InheritedDeepLinkScope oldWidget) => deepLinkData != oldWidget.deepLinkData;
 }

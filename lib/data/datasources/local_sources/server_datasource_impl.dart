@@ -204,12 +204,10 @@ class ServerDataSourceImpl implements ServerDataSource {
   Future<ServerData> getServerByBase64({
     required String base64,
     required String routingProfileId,
-    required String name,
   }) async {
     final configuration = await deepLinkManager.getConfigurationByBase64(base64: base64);
 
-    return ServerData(
-      name: name,
+    return ServerData.empty(
       ipAddress: configuration.endpoint.addresses.first,
       domain: configuration.endpoint.hostName,
       username: configuration.endpoint.username,
