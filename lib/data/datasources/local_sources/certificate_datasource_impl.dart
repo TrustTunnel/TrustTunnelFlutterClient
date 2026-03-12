@@ -6,8 +6,7 @@ import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
 import 'package:trusttunnel/data/model/certificate.dart';
 
 class CertificateDataSourceImpl implements CertificateDataSource {
-  static const _certificateFileExtensions = ['pem', 'cer'];
-
+  static const _certificateFileExtensions = ['pem', 'cer', 'crt'];
 
   final FilePicker _filePicker;
 
