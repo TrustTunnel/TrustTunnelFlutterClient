@@ -8,7 +8,6 @@ import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_controller.dart';
-import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_discard_changes_dialog.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_form.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_screen_app_bar_action.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_submit_button_section.dart';
@@ -22,6 +21,7 @@ import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
+import 'package:trusttunnel/widgets/discard_changes_dialog.dart';
 import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
 class RoutingDetailsScreenView extends StatefulWidget {
@@ -65,52 +65,60 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
   }
 
   @override
-  Widget build(BuildContext context) => ScaffoldWrapper(
-    child: DefaultTabController(
-      length: RoutingMode.values.length,
-      child: ScaffoldMessenger(
-        child: Scaffold(
-          appBar: CustomAppBar(
-            leadingIconType: AppBarLeadingIconType.back,
-            centerTitle: true,
-            onBackPressed: _hasChanges ? () => _showNotSavedChangesWarning(context) : null,
-            title: _name,
-            actions: [
-              RoutingDetailsScreenAppBarAction(
-                profileName: _name,
-                pickedRoutingMode: _mode,
-                onDefaultModePicked: (context, mode) => _onDefaultModePicked(context, mode),
-                onClearRulesPressed: (context) => _onClearRulesPressed(context),
-              ),
-            ],
-            bottomHeight: context.isMobileBreakpoint ? 48 : 0,
-            bottomPadding: EdgeInsets.zero,
-            bottom: context.isMobileBreakpoint
-                ? TabBar(
-                    tabs: [
-                      ...RoutingMode.values.map(
-                        (item) => Text(
-                          item.localized(context),
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_hasChanges,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) {
+        _showNotSavedChangesWarning(context);
+      }
+    },
+    child: ScaffoldWrapper(
+      child: DefaultTabController(
+        length: RoutingMode.values.length,
+        child: ScaffoldMessenger(
+          child: Scaffold(
+            appBar: CustomAppBar(
+              leadingIconType: AppBarLeadingIconType.back,
+              centerTitle: true,
+              onBackPressed: () => Navigator.of(context).maybePop(),
+              title: _name,
+              actions: [
+                RoutingDetailsScreenAppBarAction(
+                  profileName: _name,
+                  pickedRoutingMode: _mode,
+                  onDefaultModePicked: (context, mode) => _onDefaultModePicked(context, mode),
+                  onClearRulesPressed: (context) => _onClearRulesPressed(context),
+                ),
+              ],
+              bottomHeight: context.isMobileBreakpoint ? 48 : 0,
+              bottomPadding: EdgeInsets.zero,
+              bottom: context.isMobileBreakpoint
+                  ? TabBar(
+                      tabs: [
+                        ...RoutingMode.values.map(
+                          (item) => Text(
+                            item.localized(context),
+                          ),
                         ),
+                      ],
+                    )
+                  : null,
+            ),
+            body: _loading
+                ? const SizedBox.shrink()
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Expanded(
+                        child: RoutingDetailsForm(),
+                      ),
+                      RoutingDetailsSubmitButtonSection(
+                        editing: _isEditing,
+                        onPressed: !_hasErrors && _hasChanges ? () => _onSubmitPressed(context) : null,
                       ),
                     ],
-                  )
-                : null,
+                  ),
           ),
-          body: _loading
-              ? const SizedBox.shrink()
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Expanded(
-                      child: RoutingDetailsForm(),
-                    ),
-                    RoutingDetailsSubmitButtonSection(
-                      editing: _isEditing,
-                      onPressed: !_hasErrors && _hasChanges ? () => _onSubmitPressed(context) : null,
-                    ),
-                  ],
-                ),
         ),
       ),
     ),
@@ -256,8 +264,8 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
       context: context,
       builder: (innerContext) => ScaffoldMessengerProvider(
         value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
-        child: RoutingDetailsDiscardChangesDialog(
-          onDiscardPressed: () => context.pop(),
+        child: DiscardChangesDialog(
+          onDiscardPressed: context.pop,
         ),
       ),
     );

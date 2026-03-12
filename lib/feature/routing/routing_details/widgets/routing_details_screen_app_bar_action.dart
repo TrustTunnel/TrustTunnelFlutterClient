@@ -71,6 +71,7 @@ class RoutingDetailsScreenAppBarAction extends StatelessWidget {
 
     showDialog(
       context: context,
+      
       builder: (innerContext) => ScaffoldMessengerProvider(
         value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
         child: RoutingDetailsDeleteRulesDialog(
