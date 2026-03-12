@@ -64,7 +64,7 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
 
     final String userName = _parseToConfigString(configuration.endpoint.username);
     final String password = _parseToConfigString(configuration.endpoint.password);
-    final String clientRandom = _parseToConfigString(configuration.endpoint.clientRandom);
+    final String clientRandom = _parseToConfigString('5841/7a43');
 
     final bool skipVerification = configuration.endpoint.skipVerification;
 
