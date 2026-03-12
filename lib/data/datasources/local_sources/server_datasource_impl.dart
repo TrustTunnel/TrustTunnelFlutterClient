@@ -142,6 +142,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         password: Value(request.password),
         vpnProtocolId: Value(request.vpnProtocol.value),
         routingProfileId: Value(request.routingProfileId),
+        customSni: Value(request.customSni),
       ),
     );
   }
