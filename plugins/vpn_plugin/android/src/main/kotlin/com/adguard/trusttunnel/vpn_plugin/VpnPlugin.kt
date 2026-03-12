@@ -32,6 +32,8 @@ class VpnPlugin :
     
     private lateinit var vpnImpl: NativeVpnImpl
 
+    private lateinit var deepLinkImpl: DeepLinkImpl
+
     private var pendingConfig: String? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -41,6 +43,10 @@ class VpnPlugin :
         vpnImpl = NativeVpnImpl(appContext)
 
         IVpnManager.setUp(messenger, this)
+
+        deepLinkImpl = DeepLinkImpl()
+
+        IDeepLink.setUp(messenger, deepLinkImpl)
 
         stateChannel = EventChannel(messenger, STATE_CHANNEL_NAME).apply {
             setStreamHandler(vpnImpl)

@@ -165,13 +165,17 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     final allowableRegex = RegExp(ValidationUtils.allowableStartRegex);
 
     for (var dnsServer in dnsServers) {
+      
       final rawServer = dnsServer;
-
       if (allowableRegex.hasMatch(dnsServer)) {
-        dnsServer = dnsServer.replaceFirst(allowableRegex, '');
+        final parsedUri = Uri.tryParse(dnsServer);
+        if (parsedUri != null) {
+          dnsServer = parsedUri.host + (parsedUri.hasPort ? ':${parsedUri.port}' : '');
+        }
       }
 
       String? port;
+
       final divided = dnsServer.split(':');
 
       if (dnsServer.startsWith('[')) {

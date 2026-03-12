@@ -1,8 +1,10 @@
 import Flutter
 import TrustTunnelClient
+import VpnClientFramework
 
 public class VpnPlugin: NSObject, FlutterPlugin {
     private static var vpnApi: IVpnManagerImpl?
+    private static var deepLink: IDeepLink?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let messenger = registrar.messenger()
@@ -13,6 +15,9 @@ public class VpnPlugin: NSObject, FlutterPlugin {
         let vpnImpl = IVpnManagerImpl(bundleIdentifier: "com.adguard.TrustTunnel.Extension",
                                               appGroup: "group.com.adguard.TrustTunnel")
         IVpnManagerSetup.setUp(binaryMessenger: messenger, api: vpnImpl)
+
+        let deepLinkImpl = IDeepLinkImpl()
+        IDeepLinkSetup.setUp(binaryMessenger: messenger, api: deepLinkImpl)
 
         let events = FlutterEventChannel(
             name: "vpn_plugin_event_channel", binaryMessenger: messenger)
@@ -119,5 +124,11 @@ final class QueryLogStreamHandler : NSObject, FlutterStreamHandler {
         } else {
             self.eventSink!(s)
         }
+    }
+}
+
+final class IDeepLinkImpl : NSObject, IDeepLink {
+    func decode(uri: String) throws -> String {
+        return try TrustTunnelDeepLink.decodeDeeplink(_: uri)
     }
 }
