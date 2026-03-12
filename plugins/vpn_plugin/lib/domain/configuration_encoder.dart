@@ -163,7 +163,7 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
   String _parseCertificateToString(String certificate) {
     var certificateCopy = certificate;
     if (certificateCopy.isNotEmpty) {
-      certificateCopy = '"\n$certificateCopy\n"';
+      certificateCopy = '""$certificateCopy""';
     }
     return _parseToConfigString(certificateCopy);
   }
