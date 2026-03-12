@@ -87,7 +87,7 @@ final class Configuration {
   Configuration({
     this.logLevel = ConfigurationLogLevel.debug,
     this.killSwitchEnabled = true,
-    this.postQuantumGroupEnabled = false,
+    this.postQuantumGroupEnabled = true,
     required this.vpnMode,
     required this.endpoint,
     required this.tun,

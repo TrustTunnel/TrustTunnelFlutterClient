@@ -46,7 +46,7 @@ abstract class ValidationUtils {
       r'(?:[A-Za-z]{2,63}|xn--[A-Za-z0-9-]{2,58}))'
       r'(?:/[^ \t\r\n]*)?#h3$';
 
-  static const allowableStartRegex = r'^(tls:\/\/|https:\/\/|http:\/\/|quic:\/\/|h3:\/\/)';
+  static const allowableStartRegex = r'^(tls:\/\/|https:\/\/|http:\/\/|quic:\/\/|h3:\/\/|sdns:\/\/|)';
 
   static String? getErrorString(
     BuildContext context,

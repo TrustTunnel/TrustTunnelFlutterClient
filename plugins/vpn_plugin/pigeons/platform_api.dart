@@ -224,3 +224,8 @@ class PlatformFieldError {
     required this.fieldName,
   });
 }
+
+@HostApi
+abstract class IDeepLink {
+  String decode({required String uri});
+}
