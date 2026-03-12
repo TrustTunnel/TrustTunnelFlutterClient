@@ -117,6 +117,6 @@
   "bypass": "Bypass",
   "vpn": "Vpn",
   "customSniLabel": "Custom SNI",
-  "customSniHint": "sni.example.com",
-  "customSniWrongFieldError": "Use the format sni.example.com"
+  "customSniHint": "example.com",
+  "customSniWrongFieldError": "Use the format example.com"
 }
