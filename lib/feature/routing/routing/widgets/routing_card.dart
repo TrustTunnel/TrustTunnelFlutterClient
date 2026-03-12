@@ -47,7 +47,7 @@ class RoutingCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                context.ln.editProfile,
+                context.ln.editProfileName,
                 style: context.textTheme.bodyLarge,
               ),
             ],

@@ -33,7 +33,7 @@
   "dnsServersWrongFieldError": "Use IP addresses, tls://, https://, quic://, or h3://",
   "urlWrongFieldError": "Please check the URL: it looks incorrect",
   "pleaseFillField": "Please fill out this field",
-  "editProfile": "Edit profile",
+  "editProfileName": "Edit name",
   "deleteProfile": "Delete profile",
   "deleteProfileDialogTitle": "Delete profile?",
   "addProfile": "Add profile",
@@ -116,6 +116,7 @@
   "http2": "HTTP/2",
   "bypass": "Bypass",
   "vpn": "Vpn",
+  "profileNameLabel": "Profile name",
   "customSniLabel": "Custom SNI",
   "customSniHint": "example.com",
   "customSniWrongFieldError": "Use the format example.com"
