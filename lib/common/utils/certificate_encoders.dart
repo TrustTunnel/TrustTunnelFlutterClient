@@ -54,27 +54,27 @@ class RawCertificateDecoder extends Converter<Uint8List, String> {
       throw const FormatException('Empty PEM certificate body');
     }
 
-    final wrappedBody = _splitByLength(base64Body, 64);
+    final wrappedBody = _splitByLength(base64Body, 64).join('\n');
 
     return '$_pemBegin\n$wrappedBody\n$_pemEnd';
   }
 
   String _derToPem(Uint8List derBytes) {
     final base64Body = base64Encode(derBytes);
-    final wrappedBody = _splitByLength(base64Body, 64);
+    final wrappedBody = _splitByLength(base64Body, 64).join('\n');
 
     return '$_pemBegin\n$wrappedBody\n$_pemEnd';
   }
 
-  String _splitByLength(String value, int chunkSize) {
-    final buffer = StringBuffer();
+  List<String> _splitByLength(String value, int chunkSize) {
+    final result = <String>[];
 
     for (var i = 0; i < value.length; i += chunkSize) {
       final end = (i + chunkSize < value.length) ? i + chunkSize : value.length;
-      buffer.write('${value.substring(i, end)}\n');
+      result.add(value.substring(i, end));
     }
 
-    return buffer.toString();
+    return result;
   }
 }
 
