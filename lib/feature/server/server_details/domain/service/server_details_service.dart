@@ -109,31 +109,34 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
     final clientRandom = parts[0];
     final mask = parts.length == 2 ? parts[1] : null;
+    final hexRegexp = RegExp(r'^[0-9A-Fa-f]+$');
+
+    if (!hexRegexp.hasMatch(clientRandom)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandom);
+    }
+
+    if (mask != null) {
+      if (!hexRegexp.hasMatch(mask)) {
+        return _getFieldWrongValue(PresentationFieldName.clientRandom);
+      }
+
+      if (clientRandom.length != mask.length) {
+        return _getFieldOutOfBounds(PresentationFieldName.clientRandom);
+      }
+    }
 
     if (!_isEvenLengthHex(clientRandom)) {
       return _getFieldWrongValue(PresentationFieldName.clientRandom);
     }
 
-    if (mask != null) {
-      if (!_isEvenLengthHex(mask)) {
-        return _getFieldWrongValue(PresentationFieldName.clientRandom);
-      }
-
-      if (mask.length != clientRandom.length) {
-        return _getFieldOutOfBounds(PresentationFieldName.clientRandom);
-      }
+    if (mask != null && !_isEvenLengthHex(mask)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandom);
     }
 
     return null;
   }
 
-  bool _isEvenLengthHex(String value) {
-    if (value.isEmpty || value.length.isOdd) {
-      return false;
-    }
-
-    return RegExp(r'^[0-9A-Fa-f]+$').hasMatch(value);
-  }
+  bool _isEvenLengthHex(String value) => value.isNotEmpty && value.length.isEven;
 
   PresentationField? _validateServerName(String serverName, Set<String> otherServerNames) {
     final fieldName = PresentationFieldName.serverName;
