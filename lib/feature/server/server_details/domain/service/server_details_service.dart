@@ -36,6 +36,11 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
       fields.add(domainValidationResult);
     }
 
+    final sniValidationResult = _validateSni(data.customSni);
+    if (sniValidationResult != null) {
+      fields.add(sniValidationResult);
+    }
+
     final usernameValidationResult = _validateUsername(data.username);
     if (usernameValidationResult != null) {
       fields.add(usernameValidationResult);
@@ -120,6 +125,20 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     final validationResult = ValidationUtils.validateIpAddress(ipAddress);
 
     return validationResult ? null : _getFieldWrongValue(PresentationFieldName.ipAddress);
+  }
+
+  PresentationField? _validateSni(String? sni) {
+    if (sni?.trim().isEmpty ?? true) {
+      return null;
+    }
+
+    final valid = ValidationUtils.tryParseDomain(sni!) != null;
+
+    if (!valid) {
+      return _getFieldWrongValue(PresentationFieldName.sni);
+    }
+
+    return null;
   }
 
   PresentationField? _validateDomain(String domain) {

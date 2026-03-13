@@ -59,6 +59,7 @@ class ServerRepositoryImpl implements ServerRepository {
 
   @override
   Future<Server?> getServerById({required String id}) => _serverDataSource.getServerById(id: id);
+
   @override
   Future<Certificate?> pickCertificate() => _certificateDataSource.pickCertificate();
 }

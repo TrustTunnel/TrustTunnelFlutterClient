@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS servers(
   selected BOOLEAN NOT NULL DEFAULT false,
   ipv6_enabled BOOLEAN NOT NULL DEFAULT true,
   tls_prefix TEXT,
+  custom_sni TEXT,
   FOREIGN KEY (vpn_protocol_id) REFERENCES protocols(id),
   FOREIGN KEY (routing_profile_id) REFERENCES routing_profiles(id)
 );

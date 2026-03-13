@@ -48,6 +48,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         routingProfileId: int.parse(
           request.routingProfileId,
         ),
+        customSni: Value(request.customSni),
       ),
     );
 
@@ -80,6 +81,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         ipv6: request.ipv6,
         certificate: request.certificate,
         tlsPrefix: request.tlsPrefix,
+        customSni: request.customSni,
       ),
     );
   }
@@ -130,6 +132,7 @@ class ServerDataSourceImpl implements ServerDataSource {
             tlsPrefix: e.tlsPrefix,
             ipv6: e.ipv6Enabled,
             selected: e.selected,
+            customSni: e.customSni,
           ),
         );
       },
@@ -190,6 +193,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         ),
         ipv6Enabled: Value(request.ipv6),
         tlsPrefix: Value(request.tlsPrefix),
+        customSni: Value(request.customSni),
       ),
     );
 
@@ -271,6 +275,7 @@ class ServerDataSourceImpl implements ServerDataSource {
               name: 'certificate.pem',
               data: configuration.endpoint.certificate,
             ),
+      customSni: configuration.endpoint.customSni,
     );
   }
 

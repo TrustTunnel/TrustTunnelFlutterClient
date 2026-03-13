@@ -140,6 +140,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     String? routingProfileId,
     List<String>? dnsServers,
     ValueData<String>? clientRandom,
+    ValueData<String>? customSni,
   }) => handle(() {
     setState(
       ServerDetailsState.idle(
@@ -157,6 +158,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
           dnsServers: dnsServers ?? state.data.dnsServers,
           ipv6: enableIpv6 ?? state.data.ipv6,
           tlsPrefix: clientRandom,
+          customSni: customSni,
         ),
       ),
     );

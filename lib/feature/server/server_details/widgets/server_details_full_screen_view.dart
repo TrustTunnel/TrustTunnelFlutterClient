@@ -59,8 +59,6 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
     );
 
     loading = loadingUpdate.loading;
-
-    print(loading);
   }
 
   @override

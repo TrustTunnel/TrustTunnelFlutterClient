@@ -78,6 +78,9 @@ abstract final class ConfigurationCodecKeys {
   /// Endpoint password key.
   static const password = 'password';
 
+  /// Custom SNI addresses list key.
+  static const customSni = 'custom_sni';
+
   /// Endpoint TLS client random key.
   static const clientRandom = 'client_random';
 
@@ -170,6 +173,7 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     endpoint.setString(ConfigurationCodecKeys.username, config.endpoint.username);
     endpoint.setString(ConfigurationCodecKeys.password, config.endpoint.password);
     endpoint.setString(ConfigurationCodecKeys.clientRandom, config.endpoint.clientRandom);
+    endpoint.setString(ConfigurationCodecKeys.customSni, config.endpoint.customSni);
     endpoint.setBool(ConfigurationCodecKeys.skipVerification, config.endpoint.skipVerification);
     endpoint.setMultilinePem(ConfigurationCodecKeys.certificate, config.endpoint.certificate);
     endpoint.setString(ConfigurationCodecKeys.upstreamProtocol, config.endpoint.upStreamProtocol.value);
@@ -251,6 +255,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final String password = endpoint.getString(ConfigurationCodecKeys.password) ?? '';
     final String clientRandom = endpoint.getString(ConfigurationCodecKeys.clientRandom) ?? '';
     final bool skipVerification = endpoint.getBool(ConfigurationCodecKeys.skipVerification) ?? false;
+    final String customSni = endpoint.getString(ConfigurationCodecKeys.customSni) ?? '';
 
     final String certificate = _normalizePem(endpoint.getString(ConfigurationCodecKeys.certificate) ?? '');
 
@@ -284,6 +289,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
         hasIpv6: hasIpv6,
         username: username,
         password: password,
+        customSni: customSni,
         upStreamProtocol: _enumByValue(
           UpStreamProtocol.values,
           upstreamProtocolStr,

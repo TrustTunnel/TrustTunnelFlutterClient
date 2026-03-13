@@ -86,6 +86,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               value: _formData.ipAddress,
               label: context.ln.enterIpAddressLabel,
               hint: context.ln.enterIpAddressHint,
+              helper: context.ln.enterIpAddressHelper,
               onChanged: (ipAddress) => _onDataChanged(
                 context,
                 ipAddress: ipAddress,
@@ -108,6 +109,20 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
                 context,
                 _fieldErrors,
                 PresentationFieldName.domain,
+              ),
+            ),
+            CustomTextField(
+              value: _formData.customSni,
+              label: context.ln.customSniLabel,
+              hint: context.ln.customSniHint,
+              onChanged: (domain) => _onDataChanged(
+                context,
+                customSni: ValueData(domain.trim().isEmpty ? null : domain),
+              ),
+              error: ValidationUtils.getErrorString(
+                context,
+                _fieldErrors,
+                PresentationFieldName.sni,
               ),
             ),
             CustomTextField(
@@ -201,7 +216,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
           readOnly: true,
           suffixIcon: _formData.certificate != null
               ? CustomIconButton(
-                  icon: Icons.close,
+                  icon: AssetIcons.close,
                   onPressed: () => _onClearPemCertificatePressed(
                     context,
                   ),
@@ -257,6 +272,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
     VpnProtocol? protocol,
     String? routingProfileId,
     List<String>? dnsServers,
+    ValueData<String>? customSni,
   }) =>
       ServerDetailsScope.controllerOf(
         context,
@@ -272,5 +288,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
         enableIpv6: enableIpv6,
         routingProfileId: routingProfileId,
         dnsServers: dnsServers,
+        customSni: customSni,
       );
 }

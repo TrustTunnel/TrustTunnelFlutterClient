@@ -92,6 +92,7 @@ class VpnDataSourceImpl implements VpnDataSource {
       hasIpv6: server.ipv6,
       certificate: server.certificate?.data ?? '',
       clientRandom: server.tlsPrefix ?? '',
+      customSni: server.customSni ?? '',
       username: server.username,
       password: server.password,
       addresses: [
@@ -143,7 +144,7 @@ class VpnDataSourceImpl implements VpnDataSource {
 
     final endPoint = Endpoint(
       hostName: server.domain,
-      hasIpv6: false,
+      hasIpv6: server.ipv6,
       username: server.username,
       password: server.password,
       addresses: [
@@ -154,6 +155,9 @@ class VpnDataSourceImpl implements VpnDataSource {
       upStreamProtocol: UpStreamProtocolEncoder().convert(
         server.vpnProtocol,
       ),
+      customSni: server.customSni ?? '',
+      certificate: server.certificate?.data ?? '',
+      clientRandom: server.tlsPrefix ?? '',
     );
 
     return _platformApi.updateConfiguration(

@@ -50,6 +50,8 @@ class ServerData {
 
   final String? tlsPrefix;
 
+  final String? customSni;
+
   /// {@macro server}
   const ServerData({
     required this.name,
@@ -63,6 +65,7 @@ class ServerData {
     required this.ipv6,
     this.certificate,
     this.tlsPrefix,
+    this.customSni,
     this.selected = false,
   });
 
@@ -78,6 +81,7 @@ class ServerData {
     this.ipv6 = true,
     this.certificate,
     this.tlsPrefix,
+    this.customSni,
     this.selected = false,
   });
 
@@ -95,6 +99,7 @@ class ServerData {
     certificate,
     ipv6,
     tlsPrefix,
+    customSni,
   );
 
   @override
@@ -103,6 +108,7 @@ class ServerData {
       'name: $name, '
       'ipAddress: $ipAddress, '
       'domain: $domain, '
+      'customSni: $customSni, '
       'username: $username, '
       'vpnProtocol: $vpnProtocol, '
       'dnsServers: $dnsServers, '
@@ -129,7 +135,8 @@ class ServerData {
         other.selected == selected &&
         other.ipv6 == ipv6 &&
         other.tlsPrefix == tlsPrefix &&
-        other.certificate == certificate;
+        other.certificate == certificate &&
+        other.customSni == customSni;
   }
 
   /// Creates a copy of this server with the given fields replaced.
@@ -148,6 +155,7 @@ class ServerData {
     bool? ipv6,
     ValueData<Certificate>? certificate,
     ValueData<String>? tlsPrefix,
+    ValueData<String>? customSni,
   }) => ServerData(
     name: name ?? this.name,
     ipAddress: ipAddress ?? this.ipAddress,
@@ -161,5 +169,6 @@ class ServerData {
     ipv6: ipv6 ?? this.ipv6,
     certificate: certificate != null ? certificate.value : this.certificate,
     tlsPrefix: tlsPrefix != null ? tlsPrefix.value : this.tlsPrefix,
+    customSni: customSni != null ? customSni.value : this.customSni,
   );
 }

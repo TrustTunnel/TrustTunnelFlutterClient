@@ -19,6 +19,7 @@ typedef DataChangedCallback =
       String? routingProfileId,
       List<String>? dnsServers,
       ValueData<String>? clientRandom,
+      ValueData<String>? customSni,
     });
 
 abstract class ServerDetailsScopeController {
