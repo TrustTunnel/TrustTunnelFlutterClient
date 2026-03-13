@@ -101,7 +101,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     required VpnController controller,
   }) {
     controller.updateConfiguration(server: server, routingProfile: routingProfile, excludedRoutes: excludedRoutes);
-
+    controller.start(server: server, routingProfile: routingProfile, excludedRoutes: excludedRoutes);
     _selectedServer = server;
     _selectedRoutingProfile = routingProfile;
     _excludedRoutes = excludedRoutes;
