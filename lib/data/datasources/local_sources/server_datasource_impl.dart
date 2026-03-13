@@ -244,6 +244,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         ipv6: server.ipv6Enabled,
         tlsPrefix: server.tlsPrefix,
         certificate: cert == null ? null : _parseCert(cert),
+        customSni: server.customSni,
       ),
     );
   }
