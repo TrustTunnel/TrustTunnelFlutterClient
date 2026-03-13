@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
+import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
+import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
@@ -41,6 +43,8 @@ class ServerDataSourceImpl implements ServerDataSource {
         login: request.username,
         password: request.password,
         vpnProtocolId: request.vpnProtocol.value,
+        ipv6Enabled: Value(request.ipv6),
+        tlsPrefix: Value(request.tlsPrefix),
         routingProfileId: int.parse(
           request.routingProfileId,
         ),
@@ -56,6 +60,12 @@ class ServerDataSourceImpl implements ServerDataSource {
       ),
     );
 
+    if (request.certificate != null) {
+      await database.certificateTable.insertOnConflictUpdate(
+        CertificateEncoder(serverId: id).convert(request.certificate!),
+      );
+    }
+
     return Server(
       id: id.toString(),
       serverData: ServerData(
@@ -67,6 +77,9 @@ class ServerDataSourceImpl implements ServerDataSource {
         vpnProtocol: request.vpnProtocol,
         routingProfileId: request.routingProfileId,
         dnsServers: request.dnsServers,
+        ipv6: request.ipv6,
+        certificate: request.certificate,
+        tlsPrefix: request.tlsPrefix,
       ),
     );
   }
@@ -79,6 +92,10 @@ class ServerDataSourceImpl implements ServerDataSource {
   Future<List<Server>> getAllServers() async {
     final serversRows = await database.select(database.servers).get();
     if (serversRows.isEmpty) return [];
+
+    final certs = await database.select(database.certificateTable).get();
+
+    final certsMap = {for (final c in certs) c.serverId: c};
 
     final serverIds = serversRows.map((s) => s.id).toList();
 
@@ -93,24 +110,30 @@ class ServerDataSourceImpl implements ServerDataSource {
       (dnsByServer[d.serverId] ??= <String>[]).add(d.data);
     }
 
-    return serversRows
-        .map(
-          (e) => Server(
-            id: e.id.toString(),
-            serverData: ServerData(
-              name: e.name,
-              ipAddress: e.ipAddress,
-              domain: e.domain,
-              username: e.login,
-              password: e.password,
-              vpnProtocol: VpnProtocol.values.firstWhere((p) => p.value == e.vpnProtocolId),
-              dnsServers: dnsByServer[e.id] ?? const <String>[],
-              routingProfileId: e.routingProfileId.toString(),
-              selected: e.selected,
-            ),
+    return serversRows.map(
+      (e) {
+        final rawCert = certsMap[e.id];
+        final cert = rawCert == null ? null : _parseCert(rawCert);
+
+        return Server(
+          id: e.id.toString(),
+          serverData: ServerData(
+            name: e.name,
+            ipAddress: e.ipAddress,
+            domain: e.domain,
+            username: e.login,
+            password: e.password,
+            vpnProtocol: VpnProtocol.values.firstWhere((p) => p.value == e.vpnProtocolId),
+            dnsServers: dnsByServer[e.id] ?? const <String>[],
+            routingProfileId: e.routingProfileId.toString(),
+            certificate: cert,
+            tlsPrefix: e.tlsPrefix,
+            ipv6: e.ipv6Enabled,
+            selected: e.selected,
           ),
-        )
-        .toList();
+        );
+      },
+    ).toList();
   }
 
   /// {@macro server_data_source_set_selected_server_id}
@@ -165,8 +188,20 @@ class ServerDataSourceImpl implements ServerDataSource {
         routingProfileId: Value(
           int.parse(request.routingProfileId),
         ),
+        ipv6Enabled: Value(request.ipv6),
+        tlsPrefix: Value(request.tlsPrefix),
       ),
     );
+
+    final cert = request.certificate;
+
+    if (cert != null) {
+      await database.certificateTable.insertOnConflictUpdate(
+        CertificateEncoder(serverId: parsedId).convert(cert),
+      );
+    } else {
+      await database.certificateTable.deleteWhere((c) => c.serverId.equals(parsedId));
+    }
   }
 
   /// {@macro server_data_source_get_server_by_id}
@@ -174,15 +209,21 @@ class ServerDataSourceImpl implements ServerDataSource {
   /// Throws a generic [Exception] when the server row does not exist.
   @override
   Future<Server> getServerById({required String id}) async {
+    final parsedId = int.parse(id);
+
     final server = await (database.select(
       database.servers,
-    )..where((e) => e.id.equals(int.parse(id)))).getSingleOrNull();
+    )..where((e) => e.id.equals(parsedId))).getSingleOrNull();
 
     if (server == null) {
       throw Exception('Server not found');
     }
 
     final dnsServers = await _loadDnsAddresses({id});
+
+    final cert = await (database.select(
+      database.certificateTable,
+    )..where((e) => e.serverId.equals(parsedId))).getSingleOrNull();
 
     return Server(
       id: server.id.toString(),
@@ -196,6 +237,9 @@ class ServerDataSourceImpl implements ServerDataSource {
         dnsServers: dnsServers.map((e) => e.data).toList(),
         routingProfileId: server.routingProfileId.toString(),
         selected: server.selected,
+        ipv6: server.ipv6Enabled,
+        tlsPrefix: server.tlsPrefix,
+        certificate: cert == null ? null : _parseCert(cert),
       ),
     );
   }
@@ -219,6 +263,14 @@ class ServerDataSourceImpl implements ServerDataSource {
           : VpnProtocol.quic,
       dnsServers: configuration.endpoint.dnsUpStreams,
       routingProfileId: routingProfileId,
+      ipv6: configuration.endpoint.hasIpv6,
+      tlsPrefix: configuration.endpoint.clientRandom,
+      certificate: configuration.endpoint.certificate.isEmpty
+          ? null
+          : Certificate(
+              name: 'certificate.pem',
+              data: configuration.endpoint.certificate,
+            ),
     );
   }
 
@@ -240,4 +292,6 @@ class ServerDataSourceImpl implements ServerDataSource {
 
     return select.get();
   }
+
+  Certificate _parseCert(db.CertificateTableData input) => const CertificateDecoder().convert(input);
 }

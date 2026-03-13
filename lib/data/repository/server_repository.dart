@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
+import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 
@@ -14,15 +16,20 @@ abstract class ServerRepository {
 
   Future<void> setNewServer({required String id, required ServerData request});
 
+  Future<Certificate?> pickCertificate();
+
   Future<void> removeServer({required String serverId});
 }
 
 class ServerRepositoryImpl implements ServerRepository {
   final ServerDataSource _serverDataSource;
+  final CertificateDataSource _certificateDataSource;
 
   ServerRepositoryImpl({
     required ServerDataSource serverDataSource,
-  }) : _serverDataSource = serverDataSource;
+    required CertificateDataSource certificateDataSource,
+  }) : _serverDataSource = serverDataSource,
+       _certificateDataSource = certificateDataSource;
 
   @override
   Future<Server> addNewServer({required ServerData request}) async {
@@ -52,4 +59,6 @@ class ServerRepositoryImpl implements ServerRepository {
 
   @override
   Future<Server?> getServerById({required String id}) => _serverDataSource.getServerById(id: id);
+  @override
+  Future<Certificate?> pickCertificate() => _certificateDataSource.pickCertificate();
 }

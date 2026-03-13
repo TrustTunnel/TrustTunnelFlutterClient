@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
+import 'package:trusttunnel/data/database/migrations/migrations_v2.dart';
 import 'connection.dart' as impl;
 
 part 'app_database.g.dart';
@@ -17,12 +18,11 @@ class AppDatabase extends _$AppDatabase {
     '192.168.0.0/16',
     '255.255.255.255/32',
   ];
-
   AppDatabase() : super(impl.connect());
   AppDatabase.inMemory(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +114,11 @@ class AppDatabase extends _$AppDatabase {
             ),
           ),
         );
+      }
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await const MigrationsV2().migrate(this, m);
       }
     },
   );

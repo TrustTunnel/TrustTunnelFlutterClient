@@ -51,8 +51,58 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
       fields.add(dnsServersValidationResult);
     }
 
+    if (data.tlsPrefix != null) {
+      final clientRandomValidationResult = validateClientRandom(data.tlsPrefix!);
+      if (clientRandomValidationResult != null) {
+        fields.add(clientRandomValidationResult);
+      }
+    }
+
     return fields;
   }
+
+  PresentationField? validateClientRandom(String value) {
+    final input = value.trim();
+
+    if (input.isEmpty) {
+      return null;
+    }
+
+    final parts = input.split('/');
+    if (parts.length > 2) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandom);
+    }
+
+    final clientRandom = parts[0];
+    final mask = parts.length == 2 ? parts[1] : null;
+    final hexRegexp = RegExp(r'^[0-9A-Fa-f]+$');
+
+    if (!hexRegexp.hasMatch(clientRandom)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandom);
+    }
+
+    if (mask != null) {
+      if (!hexRegexp.hasMatch(mask)) {
+        return _getFieldWrongValue(PresentationFieldName.clientRandom);
+      }
+
+      if (clientRandom.length != mask.length) {
+        return _getFieldOutOfBounds(PresentationFieldName.clientRandom);
+      }
+    }
+
+    if (!_isEvenLengthHex(clientRandom)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandom);
+    }
+
+    if (mask != null && !_isEvenLengthHex(mask)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandom);
+    }
+
+    return null;
+  }
+
+  bool _isEvenLengthHex(String value) => value.isNotEmpty && value.length.isEven;
 
   PresentationField? _validateServerName(String serverName, Set<String> otherServerNames) {
     final fieldName = PresentationFieldName.serverName;
@@ -114,11 +164,10 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     final allowableRegex = RegExp(ValidationUtils.allowableStartRegex);
 
     for (var dnsServer in dnsServers) {
-      
       final rawServer = dnsServer;
       if (allowableRegex.hasMatch(dnsServer)) {
         final parsedUri = Uri.tryParse(dnsServer);
-        if (parsedUri != null) {
+        if (parsedUri != null && parsedUri.host.isNotEmpty) {
           dnsServer = parsedUri.host + (parsedUri.hasPort ? ':${parsedUri.port}' : '');
         }
       }
@@ -172,6 +221,11 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
   PresentationField _getFieldWrongValue(PresentationFieldName fieldName) => PresentationField(
     code: PresentationFieldErrorCode.fieldWrongValue,
+    fieldName: fieldName,
+  );
+
+  PresentationField _getFieldOutOfBounds(PresentationFieldName fieldName) => PresentationField(
+    code: PresentationFieldErrorCode.outOfBounds,
     fieldName: fieldName,
   );
 }

@@ -10,6 +10,7 @@ abstract class AssetIcons {
   static const IconData arrowForward = IconData(0xe805, fontFamily: _kFontFam);
   static const IconData arrowLeft = IconData(0xe806, fontFamily: _kFontFam);
   static const IconData arrowRight = IconData(0xe807, fontFamily: _kFontFam);
+  static const IconData attach = IconData(0xe828, fontFamily: _kFontFam);
   static const IconData cancel = IconData(0xe808, fontFamily: _kFontFam);
   static const IconData checkBoxFilled = IconData(0xe809, fontFamily: _kFontFam);
   static const IconData checkBox = IconData(0xe80a, fontFamily: _kFontFam);

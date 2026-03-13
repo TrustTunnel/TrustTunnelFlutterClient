@@ -32,7 +32,7 @@
   "dnsServersWrongFieldError": "Use IP addresses, tls://, https://, quic://, or h3://",
   "urlWrongFieldError": "Please check the URL: it looks incorrect",
   "pleaseFillField": "Please fill out this field",
-  "editProfile": "Edit profile",
+  "editProfileName": "Edit name",
   "deleteProfile": "Delete profile",
   "deleteProfileDialogTitle": "Delete profile?",
   "addProfile": "Add profile",
@@ -114,5 +114,13 @@
   "quic": "QUIC",
   "http2": "HTTP/2",
   "bypass": "Bypass",
-  "vpn": "Vpn"
+  "vpn": "Vpn",
+  "profileNameLabel": "Profile name",
+  "clientRandomLabel": "Client Random, hex sequence",
+  "clientRandomHint": "abcdef, 0a0b0c/0f0f0f",
+  "clientRandomHelper": "Max length — 64 characters",
+  "pemLabel": "Self-signed certificate, PEM file",
+  "ipv6Label": "Allow IPv6 connections via the server",
+  "tlsOutOfBoundsError": "Mask and value should have the same length",
+  "tlsWrongFieldError": "Hex sequence only allows 0-9, a-f characters"
 }

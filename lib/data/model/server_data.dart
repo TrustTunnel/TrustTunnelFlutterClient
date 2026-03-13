@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:meta/meta.dart';
+import 'package:trusttunnel/common/models/value_data.dart';
+import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 /// {@template server}
@@ -43,6 +44,12 @@ class ServerData {
   /// Whether this server is marked as the currently selected one.
   final bool selected;
 
+  final Certificate? certificate;
+
+  final bool ipv6;
+
+  final String? tlsPrefix;
+
   /// {@macro server}
   const ServerData({
     required this.name,
@@ -53,6 +60,9 @@ class ServerData {
     required this.vpnProtocol,
     required this.dnsServers,
     required this.routingProfileId,
+    required this.ipv6,
+    this.certificate,
+    this.tlsPrefix,
     this.selected = false,
   });
 
@@ -65,6 +75,9 @@ class ServerData {
     this.vpnProtocol = VpnProtocol.http2,
     this.dnsServers = const [],
     this.routingProfileId = '',
+    this.ipv6 = true,
+    this.certificate,
+    this.tlsPrefix,
     this.selected = false,
   });
 
@@ -79,6 +92,9 @@ class ServerData {
     Object.hashAll(dnsServers),
     routingProfileId,
     selected,
+    certificate,
+    ipv6,
+    tlsPrefix,
   );
 
   @override
@@ -91,7 +107,10 @@ class ServerData {
       'vpnProtocol: $vpnProtocol, '
       'dnsServers: $dnsServers, '
       'routingProfile: $routingProfileId, '
-      'selected: $selected'
+      'selected: $selected,'
+      'ipv6: $ipv6,'
+      'tlsPrefix: $tlsPrefix,'
+      'certificate: $certificate,'
       ')';
 
   @override
@@ -107,7 +126,10 @@ class ServerData {
         other.vpnProtocol == vpnProtocol &&
         listEquals(other.dnsServers, dnsServers) &&
         other.routingProfileId == routingProfileId &&
-        other.selected == selected;
+        other.selected == selected &&
+        other.ipv6 == ipv6 &&
+        other.tlsPrefix == tlsPrefix &&
+        other.certificate == certificate;
   }
 
   /// Creates a copy of this server with the given fields replaced.
@@ -123,6 +145,9 @@ class ServerData {
     List<String>? dnsServers,
     String? routingProfileId,
     bool? selected,
+    bool? ipv6,
+    ValueData<Certificate>? certificate,
+    ValueData<String>? tlsPrefix,
   }) => ServerData(
     name: name ?? this.name,
     ipAddress: ipAddress ?? this.ipAddress,
@@ -133,5 +158,8 @@ class ServerData {
     dnsServers: dnsServers ?? this.dnsServers,
     routingProfileId: routingProfileId ?? this.routingProfileId,
     selected: selected ?? this.selected,
+    ipv6: ipv6 ?? this.ipv6,
+    certificate: certificate != null ? certificate.value : this.certificate,
+    tlsPrefix: tlsPrefix != null ? tlsPrefix.value : this.tlsPrefix,
   );
 }

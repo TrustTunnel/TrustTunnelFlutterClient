@@ -89,7 +89,9 @@ class VpnDataSourceImpl implements VpnDataSource {
 
     final endPoint = Endpoint(
       hostName: server.domain,
-      hasIpv6: false,
+      hasIpv6: server.ipv6,
+      certificate: server.certificate?.data ?? '',
+      clientRandom: server.tlsPrefix ?? '',
       username: server.username,
       password: server.password,
       addresses: [

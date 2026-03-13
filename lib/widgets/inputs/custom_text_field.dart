@@ -25,6 +25,7 @@ class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
   final SpellCheckService? spellCheckService;
+  final Widget? counter;
 
   const CustomTextField({
     super.key,
@@ -46,6 +47,7 @@ class CustomTextField extends StatefulWidget {
     this.onChanged,
     this.validator,
     this.spellCheckService,
+    this.counter,
   }) : suffixIcon = null,
        assert(
          (maxLines == null) || (minLines == null) || (maxLines >= minLines),
@@ -72,6 +74,7 @@ class CustomTextField extends StatefulWidget {
     this.onChanged,
     this.validator,
     this.spellCheckService,
+    this.counter,
   }) : showClearButton = false,
        assert(suffixIcon != null),
        assert(
@@ -102,8 +105,13 @@ class _CustomTextFieldState extends State<CustomTextField> {
     super.didUpdateWidget(oldWidget);
 
     final newText = widget.value;
-    if (newText != null && _controller.text != newText) {
-      _controller.text = newText;
+
+    if (_controller.text != newText) {
+      if (newText == null) {
+        _controller.clear();
+      } else {
+        _controller.text = newText;
+      }
     }
   }
 
@@ -119,6 +127,24 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
           )
         : null;
+
+    Widget? suffixIcon;
+    if (widget.suffixIcon != null || widget.error != null) {
+      suffixIcon = Padding(
+        padding: const EdgeInsets.all(4),
+        child:
+            widget.suffixIcon ??
+            (widget.error != null
+                ? Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: CustomIcon.medium(
+                      icon: AssetIcons.error,
+                      color: context.colors.error,
+                    ),
+                  )
+                : const SizedBox.shrink()),
+      );
+    }
 
     return FocusScope(
       node: _focusNode,
@@ -149,21 +175,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
             helperText: widget.helper,
             labelText: widget.label,
             errorText: widget.error,
+            counter: widget.counter,
             errorMaxLines: 3,
-            suffixIcon: Padding(
-              padding: const EdgeInsets.all(4),
-              child:
-                  widget.suffixIcon ??
-                  (widget.error != null
-                      ? Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: CustomIcon.medium(
-                            icon: AssetIcons.error,
-                            color: context.colors.error,
-                          ),
-                        )
-                      : const SizedBox.shrink()),
-            ),
+            suffixIcon: suffixIcon,
           ),
         ),
       ),

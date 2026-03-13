@@ -50,12 +50,12 @@ class _RoutingEditNameDialogState extends State<RoutingEditNameDialog> {
     );
 
     return CustomAlertDialog(
-      title: context.ln.editProfile,
+      title: context.ln.editProfileName,
       scrollable: true,
       content: Padding(
         padding: const EdgeInsets.only(top: 24),
         child: CustomTextField(
-          label: context.ln.routingProfile,
+          label: context.ln.profileNameLabel,
           value: _routingName,
           error: error?.toLocalizedString(context),
           onChanged: (name) => _onRoutingNameChanged(name, error != null),

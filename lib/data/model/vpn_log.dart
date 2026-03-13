@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:meta/meta.dart';
 import 'package:trusttunnel/data/model/vpn_log_action.dart';
 import 'package:trusttunnel/data/model/vpn_log_protocol.dart';
 
