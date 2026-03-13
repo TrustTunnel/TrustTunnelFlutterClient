@@ -173,7 +173,6 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     endpoint.setString(ConfigurationCodecKeys.username, config.endpoint.username);
     endpoint.setString(ConfigurationCodecKeys.password, config.endpoint.password);
     endpoint.setString(ConfigurationCodecKeys.clientRandom, config.endpoint.clientRandom);
-    endpoint.setString(ConfigurationCodecKeys.customSni, config.endpoint.customSni);
     endpoint.setBool(ConfigurationCodecKeys.skipVerification, config.endpoint.skipVerification);
     endpoint.setMultilinePem(ConfigurationCodecKeys.certificate, config.endpoint.certificate);
     endpoint.setString(ConfigurationCodecKeys.upstreamProtocol, config.endpoint.upStreamProtocol.value);
