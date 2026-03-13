@@ -59,194 +59,210 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      spacing: 16,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 32,
-          children: [
-            CustomTextField(
-              value: _formData.name,
-              label: context.ln.serverName,
-              hint: context.ln.serverName,
-              onChanged: (serverName) => _onDataChanged(
-                context,
-                serverName: serverName,
-              ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.serverName,
-              ),
-            ),
-            CustomTextField(
-              value: _formData.ipAddress,
-              label: context.ln.enterIpAddressLabel,
-              hint: context.ln.enterIpAddressHint,
-              helper: context.ln.enterIpAddressHelper,
-              onChanged: (ipAddress) => _onDataChanged(
-                context,
-                ipAddress: ipAddress,
-              ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.ipAddress,
-              ),
-            ),
-            CustomTextField(
-              value: _formData.domain,
-              label: context.ln.enterDomainLabel,
-              hint: context.ln.enterDomainHint,
-              onChanged: (domain) => _onDataChanged(
-                context,
-                domain: domain,
-              ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.domain,
-              ),
-            ),
-            CustomTextField(
-              value: _formData.customSni,
-              label: context.ln.customSniLabel,
-              hint: context.ln.customSniHint,
-              onChanged: (domain) => _onDataChanged(
-                context,
-                customSni: ValueData(domain.trim().isEmpty ? null : domain),
-              ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.sni,
-              ),
-            ),
-            CustomTextField(
-              value: _formData.username,
-              label: context.ln.username,
-              hint: context.ln.enterUsername,
-              onChanged: (username) => _onDataChanged(
-                context,
-                username: username,
-              ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.userName,
-              ),
-            ),
-            CustomTextField(
-              value: _formData.password,
-              label: context.ln.password,
-              hint: context.ln.enterPassword,
-              onChanged: (password) => _onDataChanged(
-                context,
-                password: password,
-              ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.password,
-              ),
-            ),
-            CustomDropdownMenu<VpnProtocol>.expanded(
-              value: _formData.vpnProtocol,
-              values: VpnProtocol.values,
-              toText: (value) => value.localized(context),
-              labelText: context.ln.protocol,
-              onChanged: (protocol) => _onDataChanged(
-                context,
-                protocol: protocol,
-              ),
-            ),
-            CustomDropdownMenu<RoutingProfile>.expanded(
-              value: _pickedRoutingProfile,
-              values: _routingProfiles,
-              toText: (value) => value.data.name,
-              labelText: context.ln.routingProfile,
-              onChanged: (profile) => _onDataChanged(
-                context,
-                routingProfileId: profile?.id,
-              ),
-            ),
-            CustomTextField(
-              value: _formData.dnsServers.join('\n'),
-              hint: context.ln.enterDnsServerHint,
-              label: context.ln.enterDnsServerLabel,
-              minLines: 1,
-              maxLines: 4,
-              onChanged: (dns) => _onDataChanged(
-                context,
-                dnsServers: dns.trim().split('\n'),
-              ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.dnsServers,
-              ),
-            ),
-            CustomTextField(
-              value: _formData.tlsPrefix,
-              hint: context.ln.clientRandomHint,
-              label: context.ln.clientRandomLabel,
-              helper: context.ln.clientRandomHelper,
-              counter: const SizedBox.shrink(),
-              maxLength: 64,
-              onChanged: (tls) => _onDataChanged(
-                context,
-                clientRandom: ValueData(
-                  tls.isEmpty ? null : tls,
+  Widget build(BuildContext context) {
+    final clientRandomError = [
+      ValidationUtils.getErrorString(
+        context,
+        _fieldErrors,
+        PresentationFieldName.clientRandom,
+      ),
+      ValidationUtils.getErrorString(
+        context,
+        _fieldErrors,
+        PresentationFieldName.clientRandomMask,
+      ),
+      ValidationUtils.getErrorString(
+        context,
+        _fieldErrors,
+        PresentationFieldName.clientRandomValue,
+      ),
+    ].whereType<String>().firstOrNull;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        spacing: 16,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 32,
+            children: [
+              CustomTextField(
+                value: _formData.name,
+                label: context.ln.serverName,
+                hint: context.ln.serverName,
+                onChanged: (serverName) => _onDataChanged(
+                  context,
+                  serverName: serverName,
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.serverName,
                 ),
               ),
-              error: ValidationUtils.getErrorString(
-                context,
-                _fieldErrors,
-                PresentationFieldName.clientRandom,
+              CustomTextField(
+                value: _formData.ipAddress,
+                label: context.ln.enterIpAddressLabel,
+                hint: context.ln.enterIpAddressHint,
+                helper: context.ln.enterIpAddressHelper,
+                onChanged: (ipAddress) => _onDataChanged(
+                  context,
+                  ipAddress: ipAddress,
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.ipAddress,
+                ),
               ),
-            ),
-          ],
-        ),
-        CustomTextField.customSuffixIcon(
-          value: _formData.certificate?.name,
-          label: context.ln.pemLabel,
-          readOnly: true,
-          suffixIcon: _formData.certificate != null
-              ? CustomIconButton(
-                  icon: AssetIcons.close,
-                  onPressed: () => _onClearPemCertificatePressed(
-                    context,
-                  ),
-                )
-              : CustomIconButton(
-                  icon: AssetIcons.attach,
-                  onPressed: () => _onSelectPemCertificatePressed(
-                    context,
+              CustomTextField(
+                value: _formData.domain,
+                label: context.ln.enterDomainLabel,
+                hint: context.ln.enterDomainHint,
+                onChanged: (domain) => _onDataChanged(
+                  context,
+                  domain: domain,
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.domain,
+                ),
+              ),
+              CustomTextField(
+                value: _formData.customSni,
+                label: context.ln.customSniLabel,
+                hint: context.ln.customSniHint,
+                onChanged: (domain) => _onDataChanged(
+                  context,
+                  customSni: ValueData(domain.trim().isEmpty ? null : domain),
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.sni,
+                ),
+              ),
+              CustomTextField(
+                value: _formData.username,
+                label: context.ln.username,
+                hint: context.ln.enterUsername,
+                onChanged: (username) => _onDataChanged(
+                  context,
+                  username: username,
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.userName,
+                ),
+              ),
+              CustomTextField(
+                value: _formData.password,
+                label: context.ln.password,
+                hint: context.ln.enterPassword,
+                onChanged: (password) => _onDataChanged(
+                  context,
+                  password: password,
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.password,
+                ),
+              ),
+              CustomDropdownMenu<VpnProtocol>.expanded(
+                value: _formData.vpnProtocol,
+                values: VpnProtocol.values,
+                toText: (value) => value.localized(context),
+                labelText: context.ln.protocol,
+                onChanged: (protocol) => _onDataChanged(
+                  context,
+                  protocol: protocol,
+                ),
+              ),
+              CustomDropdownMenu<RoutingProfile>.expanded(
+                value: _pickedRoutingProfile,
+                values: _routingProfiles,
+                toText: (value) => value.data.name,
+                labelText: context.ln.routingProfile,
+                onChanged: (profile) => _onDataChanged(
+                  context,
+                  routingProfileId: profile?.id,
+                ),
+              ),
+              CustomTextField(
+                value: _formData.dnsServers.join('\n'),
+                hint: context.ln.enterDnsServerHint,
+                label: context.ln.enterDnsServerLabel,
+                minLines: 1,
+                maxLines: 4,
+                onChanged: (dns) => _onDataChanged(
+                  context,
+                  dnsServers: dns.trim().split('\n'),
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.dnsServers,
+                ),
+              ),
+              CustomTextField(
+                value: _formData.tlsPrefix,
+                hint: context.ln.clientRandomHint,
+                label: context.ln.clientRandomLabel,
+                helper: context.ln.clientRandomHelper,
+                counter: const SizedBox.shrink(),
+                maxLength: 64,
+                onChanged: (tls) => _onDataChanged(
+                  context,
+                  clientRandom: ValueData(
+                    tls.isEmpty ? null : tls,
                   ),
                 ),
-          error: ValidationUtils.getErrorString(
-            context,
-            _fieldErrors,
-            PresentationFieldName.certificate,
+                error: clientRandomError,
+              ),
+            ],
           ),
-        ),
-        CheckboxListTile(
-          value: _formData.ipv6,
-          title: Text(
-            context.ln.ipv6Label,
+          CustomTextField.customSuffixIcon(
+            value: _formData.certificate?.name,
+            label: context.ln.pemLabel,
+            readOnly: true,
+            suffixIcon: _formData.certificate != null
+                ? CustomIconButton(
+                    icon: AssetIcons.close,
+                    onPressed: () => _onClearPemCertificatePressed(
+                      context,
+                    ),
+                  )
+                : CustomIconButton(
+                    icon: AssetIcons.attach,
+                    onPressed: () => _onSelectPemCertificatePressed(
+                      context,
+                    ),
+                  ),
+            error: ValidationUtils.getErrorString(
+              context,
+              _fieldErrors,
+              PresentationFieldName.certificate,
+            ),
           ),
-          contentPadding: const EdgeInsets.all(4),
-          onChanged: (value) => _onDataChanged(
-            context,
-            enableIpv6: value,
+          CheckboxListTile(
+            value: _formData.ipv6,
+            title: Text(
+              context.ln.ipv6Label,
+            ),
+            contentPadding: const EdgeInsets.all(4),
+            onChanged: (value) => _onDataChanged(
+              context,
+              enableIpv6: value,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
   RoutingProfile _getSelectedRoutingProfile(List<RoutingProfile> availableRoutingProfiles, String routingProfileId) =>
       availableRoutingProfiles.firstWhereOrNull((profile) => profile.id == routingProfileId) ??

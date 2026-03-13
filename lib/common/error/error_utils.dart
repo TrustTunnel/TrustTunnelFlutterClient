@@ -32,6 +32,10 @@ abstract class ErrorUtils {
       ln.urlWrongFieldError,
     PresentationFieldErrorCode.fieldWrongValue when field.fieldName == PresentationFieldName.clientRandom =>
       ln.tlsWrongFieldError,
+    PresentationFieldErrorCode.fieldWrongValue when field.fieldName == PresentationFieldName.clientRandomMask =>
+      ln.tlsWrongMaskError,
+    PresentationFieldErrorCode.fieldWrongValue when field.fieldName == PresentationFieldName.clientRandomValue =>
+      ln.tlsWrongValueError,
     PresentationFieldErrorCode.fieldRequired
         when field.fieldName == PresentationFieldName.userName ||
             field.fieldName == PresentationFieldName.ipAddress ||

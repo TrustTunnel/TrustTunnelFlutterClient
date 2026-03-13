@@ -86,22 +86,24 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
       return _getFieldWrongValue(PresentationFieldName.clientRandom);
     }
 
-    if (mask != null) {
-      if (!hexRegexp.hasMatch(mask)) {
-        return _getFieldWrongValue(PresentationFieldName.clientRandom);
+    if (mask == null) {
+      if (!_isEvenLengthHex(clientRandom)) {
+        return _getFieldWrongValue(PresentationFieldName.clientRandomValue);
       }
 
-      if (clientRandom.length != mask.length) {
-        return _getFieldOutOfBounds(PresentationFieldName.clientRandom);
-      }
+      return null;
     }
 
-    if (!_isEvenLengthHex(clientRandom)) {
+    if (!hexRegexp.hasMatch(mask)) {
       return _getFieldWrongValue(PresentationFieldName.clientRandom);
     }
 
-    if (mask != null && !_isEvenLengthHex(mask)) {
-      return _getFieldWrongValue(PresentationFieldName.clientRandom);
+    if (!_isEvenLengthHex(mask) || !_isEvenLengthHex(clientRandom)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandomMask);
+    }
+
+    if (clientRandom.length != mask.length) {
+      return _getFieldOutOfBounds(PresentationFieldName.clientRandom);
     }
 
     return null;

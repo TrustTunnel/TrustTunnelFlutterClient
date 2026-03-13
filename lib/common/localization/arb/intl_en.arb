@@ -126,5 +126,7 @@
   "pemLabel": "Self-signed certificate, PEM file",
   "ipv6Label": "Allow IPv6 connections via the server",
   "tlsOutOfBoundsError": "Mask and value should have the same length",
-  "tlsWrongFieldError": "Hex sequence only allows 0-9, a-f characters"
+  "tlsWrongFieldError": "Hex sequence only allows 0-9, a-f characters",
+  "tlsWrongValueError": "Value should have an even number of characters",
+  "tlsWrongMaskError": "Mask and value should have an even number of characters"
 }
