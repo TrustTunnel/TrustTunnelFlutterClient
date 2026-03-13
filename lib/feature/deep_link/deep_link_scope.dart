@@ -70,12 +70,6 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
       _controller.onDeepLinkReceived(link.toString());
     }
   }
-
-  @override
-  void dispose() {
-    // Permanent removal of a tree stent
-    super.dispose();
-  }
 }
 
 class _InheritedDeepLinkScope extends InheritedWidget {

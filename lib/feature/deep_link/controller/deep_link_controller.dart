@@ -20,8 +20,8 @@ final class DeepLinkController extends BaseStateController<DeepLinkState> with S
   void onDeepLinkReceived(String deepLink) => handle(
     () async {
       setState(
-        DeepLinkState.loading(
-          state.parsedData,
+        const DeepLinkState.loading(
+          null,
         ),
       );
 
