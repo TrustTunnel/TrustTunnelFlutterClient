@@ -28,6 +28,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     final fetchedDeepLink = DeepLinkScope.of(context).deepLinkData;
     if (fetchedDeepLink != _deepLinkData) {
       _deepLinkData = fetchedDeepLink;
+      _navigatorKey.currentState?.popUntil((f) => f.isFirst);
       _selectedTabNotifier.value = 0;
       _navigatorKey.currentContext?.push(
         ServerDetailsPopUp.preloaded(
