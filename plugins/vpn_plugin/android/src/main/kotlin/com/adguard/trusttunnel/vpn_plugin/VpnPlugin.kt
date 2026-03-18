@@ -62,6 +62,9 @@ class VpnPlugin :
         queryLogChannel?.setStreamHandler(null)
         stateChannel = null
         queryLogChannel = null
+        if (::vpnImpl.isInitialized) {
+            vpnImpl.dispose()
+        }
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
