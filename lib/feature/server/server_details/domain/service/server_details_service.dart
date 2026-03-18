@@ -104,13 +104,18 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
   PresentationField? _validateDomain(String domain) {
     final fieldName = PresentationFieldName.domain;
-    if (domain.isEmpty) {
+    final splitted = domain.split('|');
+
+    if (splitted.first.isEmpty || splitted.last.isEmpty) {
       return _getRequiredField(fieldName);
     }
-    final valid =
-        ValidationUtils.validateIpAddress(domain, allowPort: false) || ValidationUtils.tryParseDomain(domain) != null;
 
-    if (!valid) {
+    final valid =
+        ValidationUtils.validateIpAddress(domain, allowPort: false) ||
+        (ValidationUtils.tryParseDomain(splitted.first) != null &&
+            ValidationUtils.tryParseDomain(splitted.last) != null);
+
+    if (!valid || splitted.length > 2) {
       return _getFieldWrongValue(fieldName);
     }
 
@@ -144,7 +149,6 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     final allowableRegex = RegExp(ValidationUtils.allowableStartRegex);
 
     for (var dnsServer in dnsServers) {
-      
       final rawServer = dnsServer;
       if (allowableRegex.hasMatch(dnsServer)) {
         final parsedUri = Uri.tryParse(dnsServer);
