@@ -112,10 +112,10 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
     final valid =
         (ValidationUtils.validateIpAddress(
-              splitted.first,
+              splitted.last,
             ) ||
-            ValidationUtils.tryParseDomain(splitted.first) != null) &&
-        (splitted.last == splitted.first || ValidationUtils.tryParseDomain(splitted.last) != null);
+            ValidationUtils.tryParseDomain(splitted.last) != null) &&
+        (splitted.last == splitted.first || ValidationUtils.tryParseDomain(splitted.first) != null);
 
     if (!valid || splitted.length > 2) {
       return _getFieldWrongValue(fieldName);
