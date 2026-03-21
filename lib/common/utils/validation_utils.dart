@@ -55,14 +55,21 @@ abstract class ValidationUtils {
   ) => fieldErrors.where((element) => element.fieldName == fieldName).firstOrNull?.toLocalizedString(context);
 
 
-  static bool validateIpAddress(String ipAddress, {bool allowPort = true}) {
-  return ipAddress.isNotEmpty; 
-}
-  
+static bool validateIpAddress(String ipAddress, {bool allowPort = true}) {
+    // If it's not empty, we let the Save button work.
+    if (ipAddress.isEmpty) return false;
 
-    final address = InternetAddress.tryParse(ipAddress);
+    // Optional: Keep basic port check if you want to prevent obvious typos
+    final parts = ipAddress.split(':');
+    if (ipAddress.contains(':')) {
+      if (!allowPort) return false;
+      final portString = parts.last.replaceAll(']', '');
+      final port = int.tryParse(portString);
+      if (port == null || port < 1 || port > 65535) return false;
+    }
 
-    return address != null;
+    // This allows both IPs and Hostnames like ddnshome.dsylxeic.uk
+    return true; 
   }
 
   static bool validateCidr(String cidr) {
