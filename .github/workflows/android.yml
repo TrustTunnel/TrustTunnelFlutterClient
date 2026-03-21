@@ -16,7 +16,7 @@ jobs:
     - name: Set up Java
       uses: actions/setup-java@v4
       with:
-        java-version: '17' # Flutter 2026 works best with Java 17
+        java-version: '17'
         distribution: 'temurin'
 
     - name: Set up Flutter
@@ -27,7 +27,7 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       env:
-        GPR_KEY: ${{ secrets.GPR_KEY }} # Uses the secret you created
+        GPR_KEY: ${{ secrets.GPR_KEY }}
 
     - name: Build APK
       run: flutter build apk --debug
@@ -39,8 +39,3 @@ jobs:
       with:
         name: trust-tunnel-fixed
         path: build/app/outputs/flutter-apk/app-debug.apk
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x android/gradlew
-    - name: Build with Gradle
-      run: ./gradlew build
