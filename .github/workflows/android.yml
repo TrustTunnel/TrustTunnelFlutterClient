@@ -22,26 +22,29 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        # Using 3.24.3 ensures we meet your project's Dart 3.10.1 requirement
         flutter-version: '3.38.3'
         channel: 'stable'
         cache: true
 
-    - name: Get dependencies and generate stubs
+    - name: Get dependencies and generate code
       run: |
-        # Create directories
-        mkdir -p lib/common/localization/generated
-        mkdir -p plugins/vpn_plugin/lib
-        
-        # Create complete AppLocalizations stub (covers all missing getters from your error log)
-        cat > lib/common/localization/generated/l10n.dart << 'EOF'
-        // Minimal AppLocalizations stub for TrustTunnel Flutter Client
-        // Add getters as the compiler complains about them during build
+        # 1. Fetch packages
+        flutter pub get
 
+        # 2. Run build_runner. This is mandatory for Drift (app_database.g.dart)
+        # and vpn_plugin (platform_api.g.dart). It takes about 1-2 minutes.
+        flutter pub run build_runner build --delete-conflicting-outputs
+
+        # 3. Inject l10n.dart stub (since flutter gen-l10n is failing)
+        mkdir -p lib/common/localization/generated
+
+        cat > lib/common/localization/generated/l10n.dart << 'L10N_EOF'
+        // Comprehensive AppLocalizations stub covering all errors in paste.txt
         class AppLocalizations {
           static AppLocalizations get current => AppLocalizations();
           static AppLocalizations? of(dynamic context) => AppLocalizations();
           static Future<AppLocalizations> load(dynamic locale) => Future.value(AppLocalizations());
+          static const delegate = _AppLocalizationsDelegate();
 
           // Core app strings
           String get appTitle => 'TrustTunnel';
@@ -56,12 +59,19 @@ jobs:
           String get addServer => 'Add Server';
           String get editServer => 'Edit Server';
           String get serverName => 'Server Name';
-          String get serverDeletedSnackbar => (String name) => 'Server "$name" deleted';
+          String serverDeletedSnackbar(String name) => 'Server "$name" deleted';
+          String serverCreatedSnackbar(String name) => 'Server "$name" created';
           String get changesSavedSnackbar => 'Changes saved';
           String get discardChanges => 'Discard Changes';
           String get save => 'Save';
           String get add => 'Add';
           String get cancel => 'Cancel';
+          String get create => 'Create';
+          String get delete => 'Delete';
+          String get serversEmptyTitle => 'No servers';
+          String get serversEmptyDescription => 'Add a server to get started';
+          String get deleteServerDialogTitle => 'Delete server?';
+          String deleteServerDescription(String name) => 'Delete "$name"?';
 
           // Form fields
           String get enterIpAddressLabel => 'IP Address';
@@ -89,6 +99,7 @@ jobs:
           String get queryLog => 'Query Log';
           String get excludedRoutes => 'Excluded Routes';
           String get followUsOnGithub => 'Follow us on GitHub';
+          String get typeSomething => 'Type something...';
 
           // Errors
           String get unknownError => 'Unknown error';
@@ -108,55 +119,42 @@ jobs:
           String get addProfile => 'Add Profile';
           String get editProfileName => 'Edit Profile Name';
           String get deleteProfile => 'Delete Profile';
+          String get profileNameLabel => 'Profile Name';
+          String get enterRulesHint => 'Enter rules';
+          String get changeDefaultRoutingMode => 'Change default mode';
+          String get deleteAllRules => 'Delete all rules';
+          String get changeDefaultRoutingModeDialogDescription => 'Are you sure?';
+          String get defaultProfile => 'Default Profile';
+          String get deleteAllRulesDialogTitle => 'Delete all rules?';
+          String deleteAllRulesDialogDescription(String name) => 'Delete rules for $name?';
+          String get allRulesDeleted => 'All rules deleted';
+          String profileCreatedSnackbar(String name) => 'Profile "$name" created';
+          String get deleteProfileDialogTitle => 'Delete profile?';
+          String deleteProfileDescription(String name) => 'Delete "$name"?';
+          String profileDeletedSnackbar(String name) => 'Profile "$name" deleted';
+
+          // Enums
+          String get bypass => 'Bypass';
+          String get vpn => 'VPN';
+          String get http2 => 'HTTP/2';
+          String get quic => 'QUIC';
 
           // Server details dialogs
           String get discardChangesDialogTitle => 'Discard changes?';
           String get discardChangesDialogDescription => 'Unsaved changes will be lost.';
         }
-        EOF
 
-        # Create minimal platform_api.g.dart stub
-        cat > plugins/vpn_plugin/lib/platform_api.g.dart << 'EOF'
-        // Minimal platform_api.g.dart stub for vpn_plugin
-        enum VpnManagerState {
-          disconnected,
-          connecting,
-          connected,
-          waitingForRecovery,
-          recovering,
-          waitingForNetwork,
+        class _AppLocalizationsDelegate {
+          const _AppLocalizationsDelegate();
         }
+        L10N_EOF
 
-        class IVpnManager {
-          static IVpnManager get() => IVpnManager();
-          Future<VpnManagerState> getCurrentState() async => VpnManagerState.disconnected;
-        }
-
-        class IDeepLink {
-          IDeepLink();
-        }
-
-        enum PlatformErrorCode { unknown }
-        enum PlatformFieldErrorCode { fieldWrongValue, alreadyExists }
-        enum PlatformFieldName { serverName, dnsServers, domain, ipAddress }
-        class PlatformErrorResponse {}
-        class PlatformFieldError {}
-        EOF
-
-        # Now fetch packages
-        flutter pub get
       env:
         GPR_KEY: ${{ secrets.GPR_KEY }}
 
     - name: Build APK
       run: |
         export GPR_KEY=${{ secrets.GPR_KEY }}
-        
-        # Clean the build environment
-        flutter clean
-        flutter pub get
-        
-        # Build the APK using the system's default debug keystore
         flutter build apk --debug --no-shrink \
           --dart-define=GPR_KEY=${{ secrets.GPR_KEY }}
       env:
