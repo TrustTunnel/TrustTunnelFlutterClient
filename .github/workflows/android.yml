@@ -1,4 +1,4 @@
-name: Android CI
+name: Flutter Android Build
 
 on:
   push:
@@ -8,17 +8,37 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
-    - name: set up JDK 11
+
+    - name: Set up Java
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17' # Flutter 2026 works best with Java 17
         distribution: 'temurin'
-        cache: gradle
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+
+    - name: Get dependencies
+      run: flutter pub get
+      env:
+        GPR_KEY: ${{ secrets.GPR_KEY }} # Uses the secret you created
+
+    - name: Build APK
+      run: flutter build apk --debug
+      env:
+        GPR_KEY: ${{ secrets.GPR_KEY }}
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: trust-tunnel-fixed
+        path: build/app/outputs/flutter-apk/app-debug.apk
 
     - name: Grant execute permission for gradlew
       run: chmod +x android/gradlew
