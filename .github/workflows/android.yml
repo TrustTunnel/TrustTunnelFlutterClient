@@ -33,12 +33,17 @@ jobs:
 
     - name: Build APK
       run: |
-        export GPR_KEY=${{ secrets.GPR_KEY }} 
+        export GPR_KEY=${{ secrets.GPR_KEY }}
+        flutter clean
+        flutter pub get
+        # Generate the missing database/localization files
         flutter pub run build_runner build --delete-conflicting-outputs
-        flutter build apk --debug --no-shrink --dart-define=GPR_KEY=${{ secrets.GPR_KEY }} -PSTORE_FILE=debug.keystore
+        # Build using the built-in Android debug key to avoid the 'null' error
+        flutter build apk --debug --no-shrink \
+          --dart-define=GPR_KEY=${{ secrets.GPR_KEY }} \
+          -PSTORE_FILE=/usr/local/lib/android/sdk/debug.keystore
       env:
         GPR_KEY: ${{ secrets.GPR_KEY }}
-
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
