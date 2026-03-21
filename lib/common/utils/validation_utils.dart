@@ -54,28 +54,11 @@ abstract class ValidationUtils {
     PresentationFieldName fieldName,
   ) => fieldErrors.where((element) => element.fieldName == fieldName).firstOrNull?.toLocalizedString(context);
 
+
   static bool validateIpAddress(String ipAddress, {bool allowPort = true}) {
-    String? port;
-    final divided = ipAddress.split(':');
-    if (ipAddress.startsWith('[')) {
-      port = divided.removeLast();
-      ipAddress = divided.join(':').replaceAll(RegExp(r'[\[\]]'), '');
-    } else if (divided.length == 2) {
-      port = divided.last;
-      ipAddress = divided.first;
-    }
-
-    if (port != null) {
-      if (!allowPort) {
-        return false;
-      }
-
-      final validatedPort = int.tryParse(port);
-
-      if (validatedPort == null || validatedPort < 1 || validatedPort > 65535) {
-        return false;
-      }
-    }
+  return ipAddress.isNotEmpty; 
+}
+  
 
     final address = InternetAddress.tryParse(ipAddress);
 
