@@ -11,240 +11,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.3'
-          channel: 'stable'
-          cache: true
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.38.3'
+        channel: 'stable'
+        cache: true
 
-      - name: Install dependencies
-        run: flutter pub get
-        env:
-          GPR_KEY: ${{ secrets.GPR_KEY }}
+    - name: Initialize Project (make init)
+      run: |
+        # This single command runs whatever the original author configured
+        # to fetch dependencies and run code generators for plugins/database
+        make init
+      env:
+        GPR_KEY: ${{ secrets.GPR_KEY }}
 
-      - name: Generate root code
-        run: dart run build_runner build --delete-conflicting-outputs
-        env:
-          GPR_KEY: ${{ secrets.GPR_KEY }}
+    - name: Build APK
+      run: |
+        export GPR_KEY=${{ secrets.GPR_KEY }}
+        flutter build apk --debug --no-shrink \
+          --dart-define=GPR_KEY=${{ secrets.GPR_KEY }}
+      env:
+        GPR_KEY: ${{ secrets.GPR_KEY }}
 
-      - name: Create vpn_plugin stub
-        run: |
-          mkdir -p plugins/vpn_plugin/lib
-          cat > plugins/vpn_plugin/lib/platform_api.g.dart <<'PLATFORM_EOF'
-          enum VpnManagerState {
-            disconnected,
-            connecting,
-            connected,
-            waitingForRecovery,
-            recovering,
-            waitingForNetwork,
-          }
-
-          class IVpnManager {
-            IVpnManager();
-
-            Future<VpnManagerState> getCurrentState() async {
-              return VpnManagerState.disconnected;
-            }
-
-            Future<void> connect([Object? config]) async {}
-
-            Future<void> disconnect() async {}
-          }
-
-          class IDeepLink {
-            IDeepLink();
-
-            Future<String?> getInitialLink() async => null;
-
-            Stream<String?> get stream => const Stream<String?>.empty();
-          }
-
-          enum PlatformErrorCode {
-            unknown,
-          }
-
-          enum PlatformFieldErrorCode {
-            fieldWrongValue,
-            alreadyExists,
-          }
-
-          enum PlatformFieldName {
-            serverName,
-            dnsServers,
-            domain,
-            ipAddress,
-          }
-
-          class PlatformFieldError {
-            final PlatformFieldName fieldName;
-            final PlatformFieldErrorCode errorCode;
-
-            const PlatformFieldError({
-              this.fieldName = PlatformFieldName.serverName,
-              this.errorCode = PlatformFieldErrorCode.fieldWrongValue,
-            });
-          }
-
-          class PlatformErrorResponse {
-            final PlatformErrorCode errorCode;
-            final List<PlatformFieldError>? fieldErrors;
-
-            const PlatformErrorResponse({
-              this.errorCode = PlatformErrorCode.unknown,
-              this.fieldErrors,
-            });
-          }
-          PLATFORM_EOF
-
-      - name: Create localization stub
-        run: |
-          mkdir -p lib/common/localization/generated
-          cat > lib/common/localization/generated/l10n.dart <<'L10N_EOF'
-          import 'package:flutter/widgets.dart';
-
-          class AppLocalizations {
-            static const _delegate = _AppLocalizationsDelegate();
-            static const delegate = _delegate;
-
-            static AppLocalizations get current => AppLocalizations();
-
-            static Future<AppLocalizations> load(Locale locale) async {
-              return AppLocalizations();
-            }
-
-            static AppLocalizations of(BuildContext context) {
-              return AppLocalizations();
-            }
-
-            static List<Locale> get supportedLocales => _delegate.supportedLocales;
-
-            String get appTitle => 'TrustTunnel';
-
-            String get servers => 'Servers';
-            String get routing => 'Routing';
-            String get settings => 'Settings';
-            String get about => 'About';
-
-            String get addServer => 'Add Server';
-            String get editServer => 'Edit Server';
-            String get serverName => 'Server Name';
-            String serverDeletedSnackbar(String name) => 'Server "$name" deleted';
-            String serverCreatedSnackbar(String name) => 'Server "$name" created';
-            String get changesSavedSnackbar => 'Changes saved';
-            String get discardChanges => 'Discard Changes';
-            String get save => 'Save';
-            String get add => 'Add';
-            String get cancel => 'Cancel';
-            String get create => 'Create';
-            String get delete => 'Delete';
-            String get serversEmptyTitle => 'No servers';
-            String get serversEmptyDescription => 'Add a server to get started';
-            String get deleteServerDialogTitle => 'Delete server?';
-            String deleteServerDescription(String name) => 'Delete "$name"?';
-
-            String get enterIpAddressLabel => 'IP Address';
-            String get enterIpAddressHint => 'Enter IP address';
-            String get enterIpAddressHelper => 'e.g. 192.168.1.1';
-            String get enterDomainLabel => 'Domain';
-            String get enterDomainHint => 'Enter domain';
-            String get customSniLabel => 'Custom SNI';
-            String get customSniHint => 'Custom SNI hostname';
-            String get username => 'Username';
-            String get enterUsername => 'Enter username';
-            String get password => 'Password';
-            String get enterPassword => 'Enter password';
-            String get protocol => 'Protocol';
-            String get routingProfile => 'Routing Profile';
-            String get enterDnsServerHint => 'Enter DNS servers';
-            String get enterDnsServerLabel => 'DNS Servers';
-            String get clientRandomLabel => 'Client Random';
-            String get clientRandomHint => 'Client random value';
-            String get clientRandomHelper => 'Hex string';
-            String get pemLabel => 'PEM Certificate';
-            String get ipv6Label => 'IPv6';
-
-            String get queryLog => 'Query Log';
-            String get excludedRoutes => 'Excluded Routes';
-            String get followUsOnGithub => 'Follow us on GitHub';
-            String get typeSomething => 'Type something...';
-
-            String get unknownError => 'Unknown error';
-            String get nameAlreadyExistError => 'Name already exists';
-            String get ipAddressWrongFieldError => 'Invalid IP address';
-            String get domainWrongFieldError => 'Invalid domain';
-            String get customSniWrongFieldError => 'Invalid custom SNI';
-            String get dnsServersWrongFieldError => 'Invalid DNS servers';
-            String get urlWrongFieldError => 'Invalid URL';
-            String get tlsWrongFieldError => 'Invalid TLS configuration';
-            String get tlsWrongMaskError => 'Invalid TLS mask';
-            String get tlsWrongValueError => 'Invalid TLS value';
-            String get pleaseFillField => 'Please fill this field';
-            String get tlsOutOfBoundsError => 'TLS value out of bounds';
-
-            String get addProfile => 'Add Profile';
-            String get editProfileName => 'Edit Profile Name';
-            String get deleteProfile => 'Delete Profile';
-            String get profileNameLabel => 'Profile Name';
-            String get enterRulesHint => 'Enter rules';
-            String get changeDefaultRoutingMode => 'Change default mode';
-            String get deleteAllRules => 'Delete all rules';
-            String get changeDefaultRoutingModeDialogDescription => 'Are you sure?';
-            String get defaultProfile => 'Default Profile';
-            String get deleteAllRulesDialogTitle => 'Delete all rules?';
-            String deleteAllRulesDialogDescription(String name) => 'Delete rules for $name?';
-            String get allRulesDeleted => 'All rules deleted';
-            String profileCreatedSnackbar(String name) => 'Profile "$name" created';
-            String get deleteProfileDialogTitle => 'Delete profile?';
-            String deleteProfileDescription(String name) => 'Delete "$name"?';
-            String profileDeletedSnackbar(String name) => 'Profile "$name" deleted';
-
-            String get bypass => 'Bypass';
-            String get vpn => 'VPN';
-            String get http2 => 'HTTP/2';
-            String get quic => 'QUIC';
-
-            String get discardChangesDialogTitle => 'Discard changes?';
-            String get discardChangesDialogDescription => 'Unsaved changes will be lost.';
-          }
-
-          class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
-            const _AppLocalizationsDelegate();
-
-            List<Locale> get supportedLocales => const [
-              Locale('en'),
-            ];
-
-            @override
-            bool isSupported(Locale locale) => true;
-
-            @override
-            Future<AppLocalizations> load(Locale locale) async {
-              return AppLocalizations();
-            }
-
-            @override
-            bool shouldReload(covariant LocalizationsDelegate<AppLocalizations> old) => false;
-          }
-          L10N_EOF
-
-      - name: Build APK
-        run: flutter build apk --debug --no-shrink --dart-define=GPR_KEY=${{ secrets.GPR_KEY }}
-        env:
-          GPR_KEY: ${{ secrets.GPR_KEY }}
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: trust-tunnel-fixed
-          path: build/app/outputs/flutter-apk/app-debug.apk
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: trust-tunnel-fixed
+        path: build/app/outputs/flutter-apk/app-debug.apk
