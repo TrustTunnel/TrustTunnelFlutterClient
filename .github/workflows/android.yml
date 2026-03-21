@@ -22,23 +22,27 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.38.3'
+        flutter-version: '3.24.3' # Adjusted to a very stable version
         channel: 'stable'
         cache: true
 
     - name: Get dependencies
-      run: flutter pub get
+      run: |
+        flutter pub get
+        # Force generation of localization files specifically
+        flutter gen-l10n 
       env:
         GPR_KEY: ${{ secrets.GPR_KEY }}
 
     - name: Build APK
       run: |
         export GPR_KEY=${{ secrets.GPR_KEY }}
+        # Wipe old cache and redo dependencies
         flutter clean
         flutter pub get
-        # Generate the missing database/localization files
+        # Generate the missing .g.dart and database files
         flutter pub run build_runner build --delete-conflicting-outputs
-        # Build using the built-in Android debug key to avoid the 'null' error
+        # Build the debug APK while forcing a dummy keystore path to bypass the 'null' error
         flutter build apk --debug --no-shrink \
           --dart-define=GPR_KEY=${{ secrets.GPR_KEY }} \
           -PSTORE_FILE=/usr/local/lib/android/sdk/debug.keystore
