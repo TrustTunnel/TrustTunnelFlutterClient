@@ -32,8 +32,9 @@ jobs:
         GPR_KEY: ${{ secrets.GPR_KEY }}
 
     - name: Build APK
-      run: export GPR_KEY=${{ secrets.GPR_KEY }}
-      run: flutter build apk --debug --dart-define=GPR_KEY=${{ secrets.GPR_KEY }}
+      run: |
+        export GPR_KEY=${{ secrets.GPR_KEY }}
+        flutter build apk --debug --dart-define=GPR_KEY=${{ secrets.GPR_KEY }}
       env:
         GPR_KEY: ${{ secrets.GPR_KEY }}
 
