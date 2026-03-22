@@ -47,3 +47,4 @@ jobs:
       with:
         name: trust-tunnel-fixed
         path: build/app/outputs/flutter-apk/app-debug.apk
+        #atest
