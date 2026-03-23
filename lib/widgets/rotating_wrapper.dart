@@ -15,7 +15,8 @@ class RotatingWidget extends StatefulWidget {
 }
 
 class _RotatingWidgetState extends State<RotatingWidget> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
 
   @override
   void initState() {
@@ -23,12 +24,20 @@ class _RotatingWidgetState extends State<RotatingWidget> with SingleTickerProvid
     _controller = AnimationController(
       duration: widget.duration,
       vsync: this,
-    )..repeat();
+      animationBehavior: AnimationBehavior.preserve,
+    );
+
+    _animation = Tween(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(_controller);
+
+    _controller.repeat();
   }
 
   @override
   Widget build(BuildContext context) => RotationTransition(
-    turns: _controller,
+    turns: _animation,
     child: widget.child,
   );
 
