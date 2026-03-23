@@ -18,55 +18,70 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     Set<String> otherServersNames = const {},
   }) {
     final List<PresentationField> fields = [];
-    final serverNameValidationResult = _validateServerName(
-      data.name,
-      otherServersNames,
+
+    _addIfNotNull(
+      fields,
+      _validateServerName(
+        data.name,
+        otherServersNames,
+      ),
     );
-    if (serverNameValidationResult != null) {
-      fields.add(serverNameValidationResult);
-    }
 
-    final ipAddressValidationResult = _validateIpAddress(data.ipAddress);
-    if (ipAddressValidationResult != null) {
-      fields.add(ipAddressValidationResult);
-    }
+    _addIfNotNull(
+      fields,
+      _validateServerAddress(
+        data.ipAddress,
+      ),
+    );
 
-    final domainValidationResult = _validateDomain(data.domain);
-    if (domainValidationResult != null) {
-      fields.add(domainValidationResult);
-    }
+    _addIfNotNull(
+      fields,
+      _validateDomain(
+        data.domain,
+      ),
+    );
 
-    final sniValidationResult = _validateSni(data.customSni);
-    if (sniValidationResult != null) {
-      fields.add(sniValidationResult);
-    }
+    _addIfNotNull(
+      fields,
+      _validateSni(
+        data.customSni,
+      ),
+    );
 
-    final usernameValidationResult = _validateUsername(data.username);
-    if (usernameValidationResult != null) {
-      fields.add(usernameValidationResult);
-    }
+    _addIfNotNull(
+      fields,
+      _validateUsername(
+        data.username,
+      ),
+    );
 
-    final passwordValidationResult = _validatePassword(data.password);
-    if (passwordValidationResult != null) {
-      fields.add(passwordValidationResult);
-    }
+    _addIfNotNull(
+      fields,
+      _validatePassword(
+        data.password,
+      ),
+    );
 
-    final dnsServersValidationResult = _validateDnsServers(data.dnsServers);
-    if (dnsServersValidationResult != null) {
-      fields.add(dnsServersValidationResult);
-    }
+    _addIfNotNull(
+      fields,
+      _validateDnsServers(
+        data.dnsServers,
+      ),
+    );
 
     if (data.tlsPrefix != null) {
-      final clientRandomValidationResult = validateClientRandom(data.tlsPrefix!);
-      if (clientRandomValidationResult != null) {
-        fields.add(clientRandomValidationResult);
-      }
+      _addIfNotNull(
+        fields,
+        _validateClientRandom(
+          data.tlsPrefix!,
+        ),
+      );
     }
 
     return fields;
   }
 
-  PresentationField? validateClientRandom(String value) {
+  PresentationField? _validateClientRandom(String value) {
     final input = value.trim();
 
     if (input.isEmpty) {
@@ -111,22 +126,35 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
   bool _isEvenLengthHex(String value) => value.isNotEmpty && value.length.isEven;
 
-  PresentationField? _validateServerName(String serverName, Set<String> otherServerNames) {
+  PresentationField? _validateServerName(
+    String serverName,
+    Set<String> otherServerNames,
+  ) {
     final fieldName = PresentationFieldName.serverName;
-    if (serverName.trim().isEmpty) {
+    final normalizedName = serverName.trim();
+
+    if (normalizedName.isEmpty) {
       return _getRequiredField(fieldName);
     }
-    if (otherServerNames.map((e) => e.trim().toLowerCase()).contains(serverName.trim().toLowerCase())) {
+
+    final normalizedOtherNames = otherServerNames.map((e) => e.trim().toLowerCase()).toSet();
+
+    if (normalizedOtherNames.contains(normalizedName.toLowerCase())) {
       return _getAlreadyExistsField(fieldName);
     }
 
     return null;
   }
 
-  PresentationField? _validateIpAddress(String ipAddress) {
-    final validationResult = ValidationUtils.validateIpAddress(ipAddress);
+  PresentationField? _validateServerAddress(String value) {
+    final normalizedValue = value.trim();
+    if (normalizedValue.isEmpty) {
+      return _getRequiredField(PresentationFieldName.ipAddress);
+    }
 
-    return validationResult ? null : _getFieldWrongValue(PresentationFieldName.ipAddress);
+    final valid = ValidationUtils.validateServerAddress(normalizedValue);
+
+    return valid ? null : _getFieldWrongValue(PresentationFieldName.ipAddress);
   }
 
   PresentationField? _validateSni(String? sni) {
@@ -145,22 +173,22 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
   PresentationField? _validateDomain(String domain) {
     final fieldName = PresentationFieldName.domain;
-    if (domain.isEmpty) {
+    final normalizedDomain = domain.trim();
+
+    if (normalizedDomain.isEmpty) {
       return _getRequiredField(fieldName);
     }
+
     final valid =
-        ValidationUtils.validateIpAddress(domain, allowPort: false) || ValidationUtils.tryParseDomain(domain) != null;
+        ValidationUtils.validateIpAddress(normalizedDomain, allowPort: false) ||
+        ValidationUtils.parseServerHost(normalizedDomain) != null;
 
-    if (!valid) {
-      return _getFieldWrongValue(fieldName);
-    }
-
-    return null;
+    return valid ? null : _getFieldWrongValue(fieldName);
   }
 
   PresentationField? _validateUsername(String username) {
     final fieldName = PresentationFieldName.userName;
-    if (username.isEmpty) {
+    if (username.trim().isEmpty) {
       return _getRequiredField(fieldName);
     }
 
@@ -182,52 +210,23 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     if (dnsServers.isEmpty) {
       return _getRequiredField(fieldName);
     }
-    final allowableRegex = RegExp(ValidationUtils.allowableStartRegex);
 
-    for (var dnsServer in dnsServers) {
-      final rawServer = dnsServer;
-      if (allowableRegex.hasMatch(dnsServer)) {
-        final parsedUri = Uri.tryParse(dnsServer);
-        if (parsedUri != null && parsedUri.host.isNotEmpty) {
-          dnsServer = parsedUri.host + (parsedUri.hasPort ? ':${parsedUri.port}' : '');
-        }
-      }
-
-      String? port;
-
-      final divided = dnsServer.split(':');
-
-      if (dnsServer.startsWith('[')) {
-        port = divided.removeLast();
-        dnsServer = divided.join(':').replaceAll(RegExp(r'[\[\]]'), '');
-      } else if (divided.length == 2) {
-        port = divided.last;
-        dnsServer = divided.first;
-      }
-
-      final parsedPort = int.tryParse(port ?? '');
-
-      final invalidPort = port != null && parsedPort == null;
-
-      if (invalidPort) {
-        return _getFieldWrongValue(fieldName);
-      }
-
-      if (parsedPort != null)
-        if (parsedPort < 1 || parsedPort > 65535) {
-          return _getFieldWrongValue(fieldName);
-        }
-
-      final isValidURI = Uri.tryParse(rawServer)?.hasAbsolutePath ?? false;
-
-      if (!isValidURI &&
-          !ValidationUtils.validateIpAddress(dnsServer, allowPort: false) &&
-          ValidationUtils.tryParseDomain(dnsServer) == null) {
+    for (final dnsServer in dnsServers) {
+      if (!ValidationUtils.validateDnsServer(dnsServer)) {
         return _getFieldWrongValue(fieldName);
       }
     }
 
     return null;
+  }
+
+  void _addIfNotNull(
+    List<PresentationField> fields,
+    PresentationField? field,
+  ) {
+    if (field != null) {
+      fields.add(field);
+    }
   }
 
   PresentationField _getRequiredField(PresentationFieldName fieldName) => PresentationField(
