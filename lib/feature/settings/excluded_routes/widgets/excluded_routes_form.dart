@@ -20,18 +20,12 @@ class _ExcludedRoutesFormState extends State<ExcludedRoutesForm> {
   List<String> _excludedRoutes = [];
 
   @override
-  void initState() {
-    super.initState();
-    _excludedRoutes = ExcludedRoutesScope.controllerOf(context, listen: false).excludedRoutes;
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _excludedRoutes = ExcludedRoutesScope.controllerOf(
       context,
       aspect: ExcludedRoutesAspect.data,
-    ).excludedRoutes;
+    ).excludedRoutes.toList();
   }
 
   @override

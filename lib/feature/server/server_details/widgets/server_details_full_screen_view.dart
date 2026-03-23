@@ -13,12 +13,10 @@ import 'package:trusttunnel/widgets/custom_app_bar.dart';
 
 class ServerDetailsFullScreenView extends StatefulWidget {
   final Widget body;
-  final ValueChanged<bool> onDiscardChanges;
 
   const ServerDetailsFullScreenView({
     super.key,
     required this.body,
-    required this.onDiscardChanges,
   });
 
   @override
@@ -79,7 +77,7 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
             ],
             leadingIconType: AppBarLeadingIconType.back,
             centerTitle: true,
-            onBackPressed: () => widget.onDiscardChanges.call(_hasChanges),
+            onBackPressed: () => Navigator.of(context).maybePop(),
             title: _editing ? context.ln.editServer : context.ln.addServer,
           ),
         ),

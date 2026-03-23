@@ -94,7 +94,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   };
 
   Widget _getContent() => NavigatorPopHandler(
-    onPop: () => _navigatorKey.currentState!.pop(),
+    onPopWithResult: (_) => _navigatorKey.currentState!.maybePop(),
     child: Navigator(
       key: _navigatorKey,
       onGenerateInitialRoutes: (_, __) => [

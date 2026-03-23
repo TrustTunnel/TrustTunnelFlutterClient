@@ -4,7 +4,11 @@ import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routin
 
 class RoutingDetailsScreen extends StatelessWidget {
   final String? routingId;
-  const RoutingDetailsScreen({super.key, this.routingId});
+
+  const RoutingDetailsScreen({
+    super.key,
+    this.routingId,
+  });
 
   @override
   Widget build(BuildContext context) => RoutingDetailsScope(

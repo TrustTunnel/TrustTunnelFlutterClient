@@ -4,10 +4,10 @@ import 'package:trusttunnel/common/extensions/theme_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/widgets/custom_alert_dialog.dart';
 
-class RoutingDetailsDiscardChangesDialog extends StatelessWidget {
+class DiscardChangesDialog extends StatelessWidget {
   final VoidCallback onDiscardPressed;
 
-  const RoutingDetailsDiscardChangesDialog({
+  const DiscardChangesDialog({
     super.key,
     required this.onDiscardPressed,
   });
@@ -19,7 +19,7 @@ class RoutingDetailsDiscardChangesDialog extends StatelessWidget {
     content: Text(context.ln.discardChangesDialogDescription),
     actionsBuilder: (spacing) => [
       TextButton(
-        onPressed: () => context.pop(),
+        onPressed: context.pop,
         child: Text(context.ln.cancel),
       ),
       Theme(
