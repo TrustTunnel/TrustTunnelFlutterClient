@@ -32,21 +32,20 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
   List<String>? _excludedRoutes;
 
   @override
-  void initState() {
-    super.initState();
-    final vpnController = VpnScope.vpnControllerOf(
-      context,
-      listen: false,
-    );
-    vpnController.stop();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final serverScope = ServersScope.controllerOf(context, aspect: ServersScopeAspect.selectedServer);
+    final serverScope = ServersScope.controllerOf(
+      context,
+      aspect: ServersScopeAspect.selectedServer,
+    );
 
     final updatedServer = serverScope.selectedServer;
+
+    if (_selectedServer == null) {
+      _selectedServer = updatedServer;
+
+      return;
+    }
 
     final updatedRoutingProfileList = RoutingScope.controllerOf(
       context,
