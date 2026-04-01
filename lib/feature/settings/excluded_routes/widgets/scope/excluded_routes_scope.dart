@@ -130,6 +130,7 @@ class _InheritedExcludedRoutesScope extends InheritedModel<ExcludedRoutesAspect>
     for (final aspect in dependencies) {
       hasAnyChanges |= switch (aspect) {
         ExcludedRoutesAspect.loading => loading != oldWidget.loading,
+        ExcludedRoutesAspect.routes => !listEquals(_state.initialExcludedRoutes, oldWidget._state.initialExcludedRoutes),
         ExcludedRoutesAspect.data =>
           !listEquals(_state.excludedRoutes, oldWidget._state.excludedRoutes) ||
               !listEquals(_state.initialExcludedRoutes, oldWidget._state.initialExcludedRoutes) ||

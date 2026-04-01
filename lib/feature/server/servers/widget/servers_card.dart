@@ -55,7 +55,6 @@ class _ServersCardState extends State<ServersCard> {
         onPressed: () {
           if (vpnManagerState != VpnState.disconnected && widget.server.id == _pickedServer?.id) {
             _disconnectFromVpn(context);
-            _changeServer(context, null);
           } else {
             _connectToVpn(context, widget.server);
             _changeServer(context, widget.server.id);

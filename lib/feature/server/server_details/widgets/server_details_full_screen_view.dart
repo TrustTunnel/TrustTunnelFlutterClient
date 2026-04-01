@@ -131,26 +131,24 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
     if (!mounted) {
       return;
     }
+    final vpnController = VpnScope.vpnControllerOf(context, listen: false);
+    vpnController.stop();
 
-    VpnScope.vpnControllerOf(context, listen: false).stop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final serverScope = ServersScope.controllerOf(context, listen: false);
+      final server = ServerDetailsScope.controllerOf(context, listen: false);
+      serverScope.fetchServers();
 
-    final serverScope = ServersScope.controllerOf(context, listen: false);
+      if (server.data.selected) {
+        final updatedData = serverScope.servers.firstWhereOrNull((s) => s.id != server.id);
+        serverScope.pickServer(updatedData?.id);
+      }
 
-    final server = ServerDetailsScope.controllerOf(context, listen: false);
-
-    if (server.data.selected) {
-      final updatedData = serverScope.servers.where((s) => s.id != server.id);
-
-      serverScope.pickServer(updatedData.firstOrNull?.id);
-    }
-
-    serverScope.fetchServers();
-
-    if (Navigator.of(context).canPop()) {
-      context.pop();
-    }
-
-    context.showInfoSnackBar(message: context.ln.serverDeletedSnackbar(name));
+      if (Navigator.of(context).canPop()) {
+        context.pop();
+      }
+      context.showInfoSnackBar(message: context.ln.serverDeletedSnackbar(name));
+    });
   }
 
   void _onSubmitted(String name) {

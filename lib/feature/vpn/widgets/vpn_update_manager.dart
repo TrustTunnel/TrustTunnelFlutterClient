@@ -47,53 +47,52 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
       aspect: RoutingScopeAspect.profiles,
     ).routingList;
 
-    final updatedExcludedRoutes = ExcludedRoutesScope.controllerOf(
+    final excludedRoutesController = ExcludedRoutesScope.controllerOf(
       context,
-      aspect: ExcludedRoutesAspect.data,
-    ).excludedRoutes;
+      aspect: ExcludedRoutesAspect.routes,
+    );
+
+    final updatedExcludedRoutes = excludedRoutesController.excludedRoutes;
 
     final vpnController = VpnScope.vpnControllerOf(
       context,
       listen: false,
     );
 
-    if (_selectedServer != updatedServer) {
-      if (updatedServer == null) {
-        _deleteConfig(controller: vpnController);
-      } else if (_selectedServer != null) {
-        final routingProfile = updatedRoutingProfileList.firstWhere(
-          (element) => element.id == updatedServer.serverData.routingProfileId,
-        );
+    _selectedServer ??= updatedServer;
 
-        _updateConfig(
-          controller: vpnController,
-          server: updatedServer,
-          routingProfile: routingProfile,
-          excludedRoutes: updatedExcludedRoutes,
-        );
-      }
-    }
+    bool wasDeleted =
+        serverScope.servers.firstWhereOrNull(
+          (element) => element.id == _selectedServer?.id,
+        ) ==
+        null;
 
-    if (_selectedServer == null) {
-      _selectedServer = updatedServer;
-
+    if (_selectedServer == null || (!wasDeleted && updatedServer == null)) {
       return;
     }
 
-    if (vpnController.state == VpnState.disconnected) {
-      return;
-    }
+    if (serverScope.servers.isNotEmpty && updatedServer == null) {
+      serverScope.fetchServers();
 
-    if (updatedServer == null) {
       return;
     }
 
     final updatedRoutingProfile = updatedRoutingProfileList.firstWhereOrNull(
-      (element) => element.id == updatedServer.serverData.routingProfileId,
+      (element) => element.id == updatedServer?.serverData.routingProfileId,
     );
 
-    if (updatedRoutingProfile == null) {
+    _selectedRoutingProfile ??= updatedRoutingProfile;
+
+    if (_selectedRoutingProfile == null) {
       serverScope.fetchServers();
+
+      return;
+    }
+
+    _excludedRoutes ??= updatedExcludedRoutes;
+
+    if (_excludedRoutes == null) {
+      excludedRoutesController.fetchExcludedRoutes();
 
       return;
     }
@@ -101,12 +100,27 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     if (_selectedServer != updatedServer ||
         _selectedRoutingProfile != updatedRoutingProfile ||
         !listEquals(_excludedRoutes, updatedExcludedRoutes)) {
-      _runUpdatedInfo(
-        controller: vpnController,
-        server: updatedServer,
-        routingProfile: updatedRoutingProfile,
-        excludedRoutes: updatedExcludedRoutes,
-      );
+      if ((_selectedServer?.id == updatedServer?.id && vpnController.state == VpnState.disconnected) || wasDeleted) {
+        if (wasDeleted && serverScope.servers.isEmpty) {
+          _deleteConfig(controller: vpnController);
+
+          return;
+        }
+
+        _updateConfig(
+          controller: vpnController,
+          server: updatedServer!,
+          routingProfile: updatedRoutingProfile!,
+          excludedRoutes: updatedExcludedRoutes,
+        );
+      } else {
+        _runUpdatedInfo(
+          controller: vpnController,
+          server: updatedServer!,
+          routingProfile: updatedRoutingProfile!,
+          excludedRoutes: updatedExcludedRoutes,
+        );
+      }
     }
   }
 
@@ -119,23 +133,25 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
   }) async {
+    _selectedServer = server;
+    _selectedRoutingProfile = routingProfile;
+    _excludedRoutes = excludedRoutes;
+
+    await controller.stop();
     await controller.updateConfiguration(
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
     );
-    _selectedServer = server;
-    _selectedRoutingProfile = routingProfile;
-    _excludedRoutes = excludedRoutes;
   }
 
   Future<void> _deleteConfig({
     required VpnController controller,
   }) async {
-    await controller.deleteConfiguration();
     _selectedServer = null;
     _selectedRoutingProfile = null;
     _excludedRoutes = null;
+    await controller.deleteConfiguration();
   }
 
   Future<void> _runUpdatedInfo({
@@ -144,14 +160,13 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     required List<String> excludedRoutes,
     required VpnController controller,
   }) async {
+    _selectedServer = server;
+    _selectedRoutingProfile = routingProfile;
+    _excludedRoutes = excludedRoutes;
     await controller.start(
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
     );
-
-    _selectedServer = server;
-    _selectedRoutingProfile = routingProfile;
-    _excludedRoutes = excludedRoutes;
   }
 }

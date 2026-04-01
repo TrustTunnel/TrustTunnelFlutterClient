@@ -229,6 +229,15 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
 
       await _repository.removeServer(serverId: _serverId!);
 
+      setState(
+        ServerDetailsState.idle(
+          data: state.data,
+          initialData: state.initialData,
+          fieldErrors: state.fieldErrors,
+          routingProfiles: state.routingProfiles,
+        ),
+      );
+      
       onDeleted(
         state.data.name,
       );
