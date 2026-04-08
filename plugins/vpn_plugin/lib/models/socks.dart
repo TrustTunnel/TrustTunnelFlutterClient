@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// {@template socks}
 /// SOCKS configuration.
 ///
@@ -7,6 +9,7 @@
 /// Credentials are optional and may be left empty to allow unauthenticated
 /// access on the bound address.
 /// {@endtemplate}
+@immutable
 final class Socks {
   /// {@template socks_address}
   /// Address to bind the SOCKS listener to.
@@ -28,7 +31,7 @@ final class Socks {
   /// {@macro socks}
   ///
   /// Defaults bind to localhost with no authentication.
-  Socks({
+  const Socks({
     this.address = '127.0.0.1:1080',
     this.username = '',
     this.password = '',
@@ -46,8 +49,8 @@ final class Socks {
 
   @override
   int get hashCode => Object.hashAll([
-    address.hashCode,
-    username.hashCode,
-    password.hashCode,
+    address,
+    username,
+    password,
   ]);
 }

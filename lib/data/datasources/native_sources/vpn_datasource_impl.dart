@@ -88,6 +88,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     final exclusions = _getExclusionsByMode(routingProfile);
 
     final endPoint = Endpoint(
+      name: server.name,
       hostName: server.domain,
       hasIpv6: server.ipv6,
       certificate: server.certificate?.data ?? '',
@@ -115,7 +116,7 @@ class VpnDataSourceImpl implements VpnDataSource {
         tun: Tun(
           excludedRoutes: excludedRoutes,
         ),
-        socks: Socks(),
+        socks: const Socks(),
       ),
     );
   }
@@ -143,6 +144,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     final exclusions = _getExclusionsByMode(routingProfile);
 
     final endPoint = Endpoint(
+      name: server.name,
       hostName: server.domain,
       hasIpv6: server.ipv6,
       username: server.username,
@@ -170,7 +172,7 @@ class VpnDataSourceImpl implements VpnDataSource {
         tun: Tun(
           excludedRoutes: excludedRoutes,
         ),
-        socks: Socks(),
+        socks: const Socks(),
       ),
     );
   }

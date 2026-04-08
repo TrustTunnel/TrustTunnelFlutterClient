@@ -10,6 +10,7 @@ import 'package:trusttunnel/feature/deep_link/controller/deep_link_state.dart';
 /// {@endtemplate}
 final class DeepLinkController extends BaseStateController<DeepLinkState> with SequentialControllerHandler {
   final DeepLinkRepository _repository;
+  
 
   /// {@macro products_controller}
   DeepLinkController({

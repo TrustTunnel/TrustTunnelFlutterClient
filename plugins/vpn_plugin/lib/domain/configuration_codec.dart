@@ -46,9 +46,6 @@ abstract final class ConfigurationCodecKeys {
   /// Top-level exclusions list key.
   static const exclusions = 'exclusions';
 
-  /// Top-level DNS upstreams list key.
-  static const dnsUpStreams = 'dns_upstreams';
-
   // Sections
   /// `[endpoint]` section name.
   static const endpointSection = 'endpoint';
@@ -63,8 +60,14 @@ abstract final class ConfigurationCodecKeys {
   static const socksSection = 'listener.socks';
 
   // Endpoint keys
+  /// Endpoint name
+  static const name = 'name';
+
   /// Endpoint host name key.
   static const hostname = 'hostname';
+
+  /// Endpoint DNS upstreams list key.
+  static const dnsUpStreams = 'dns_upstreams';
 
   /// Endpoint addresses list key.
   static const addresses = 'addresses';
@@ -151,6 +154,8 @@ final class ConfigurationCodec extends Codec<Configuration, String> {
 ///
 @immutable
 final class ConfigurationEncoder extends Converter<Configuration, String> {
+  static const _escapeCharsEncoder = _EscapeCharsEncoder();
+
   /// Creates an encoder.
   const ConfigurationEncoder();
 
@@ -164,9 +169,9 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     top.setBool(ConfigurationCodecKeys.killSwitchEnabled, config.killSwitchEnabled);
     top.setBool(ConfigurationCodecKeys.postQuantumGroupEnabled, config.postQuantumGroupEnabled);
     top.setStringList(ConfigurationCodecKeys.exclusions, config.endpoint.exclusions);
-    top.setStringList(ConfigurationCodecKeys.dnsUpStreams, config.endpoint.dnsUpStreams);
 
     final IniSection endpoint = document.section(ConfigurationCodecKeys.endpointSection);
+
     endpoint.setString(ConfigurationCodecKeys.hostname, config.endpoint.hostName);
     endpoint.setStringList(ConfigurationCodecKeys.addresses, _normalizeAddresses(config.endpoint.addresses));
     endpoint.setBool(ConfigurationCodecKeys.hasIpv6, config.endpoint.hasIpv6);
@@ -182,6 +187,8 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
       config.endpoint.upStreamFallbackProtocol?.value ?? '',
     );
     endpoint.setBool(ConfigurationCodecKeys.antiDpi, config.endpoint.antiDpi);
+    endpoint.setStringList(ConfigurationCodecKeys.dnsUpStreams, config.endpoint.dnsUpStreams);
+    endpoint.setString(ConfigurationCodecKeys.name, _escapeCharsEncoder.convert(config.endpoint.name));
 
     document.section(ConfigurationCodecKeys.listenerSection);
 
@@ -226,6 +233,8 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
 /// Decodes backend INI-like configuration text into a [Configuration].
 @immutable
 final class ConfigurationDecoder extends Converter<String, Configuration> {
+  static const _escapeCharsDecoder = _EscapeCharsDecoder();
+
   /// Creates a decoder.
   const ConfigurationDecoder();
 
@@ -245,7 +254,6 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final bool postQuantumGroupEnabled = top.getBool(ConfigurationCodecKeys.postQuantumGroupEnabled) ?? false;
 
     final List<String> exclusions = top.getStringList(ConfigurationCodecKeys.exclusions) ?? const <String>[];
-    final List<String> dnsUpStreams = top.getStringList(ConfigurationCodecKeys.dnsUpStreams) ?? const <String>[];
 
     final String hostName = endpoint.getString(ConfigurationCodecKeys.hostname) ?? '';
     final List<String> addresses = endpoint.getStringList(ConfigurationCodecKeys.addresses) ?? const <String>[];
@@ -256,6 +264,9 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final String clientRandom = endpoint.getString(ConfigurationCodecKeys.clientRandom) ?? '';
     final bool skipVerification = endpoint.getBool(ConfigurationCodecKeys.skipVerification) ?? false;
     final String customSni = endpoint.getString(ConfigurationCodecKeys.customSni) ?? '';
+
+    final List<String> dnsUpStreams = endpoint.getStringList(ConfigurationCodecKeys.dnsUpStreams) ?? const <String>[];
+    final String name = _escapeCharsDecoder.convert(endpoint.getString(ConfigurationCodecKeys.name) ?? 'Server');
 
     final String certificate = _normalizePem(endpoint.getString(ConfigurationCodecKeys.certificate) ?? '');
 
@@ -285,6 +296,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
       postQuantumGroupEnabled: postQuantumGroupEnabled,
       vpnMode: _enumByValue(VpnMode.values, vpnModeStr, (e) => e.value, fallback: VpnMode.general),
       endpoint: Endpoint(
+        name: name,
         hostName: hostName,
         hasIpv6: hasIpv6,
         username: username,
@@ -346,4 +358,21 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     if (fallback != null) return fallback;
     throw FormatException('Unknown enum value "$raw" for $T');
   }
+}
+
+class _EscapeCharsEncoder extends Converter<String, String> {
+  const _EscapeCharsEncoder();
+
+  @override
+  String convert(String input) {
+    final encoded = jsonEncode(input);
+    return encoded.substring(1, encoded.length - 1);
+  }
+}
+
+class _EscapeCharsDecoder extends Converter<String, String> {
+  const _EscapeCharsDecoder();
+
+  @override
+  String convert(String input) => jsonDecode('"$input"') as String;
 }

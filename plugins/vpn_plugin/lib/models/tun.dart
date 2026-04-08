@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 /// Values are forwarded to the backend as provided. Only [mtuSize] has a basic
 /// invariant enforced locally.
 /// {@endtemplate}
+@immutable
 final class Tun {
   /// {@template tun_included_routes}
   /// CIDR routes that should be routed through the virtual interface.
@@ -33,7 +34,7 @@ final class Tun {
   final int mtuSize;
 
   /// {@macro tun}
-  Tun({
+  const Tun({
     this.includedRoutes = const [
       '0.0.0.0/0',
       '2000::/3',
@@ -56,8 +57,8 @@ final class Tun {
 
   @override
   int get hashCode => Object.hashAll([
-    includedRoutes.hashCode,
-    excludedRoutes.hashCode,
-    mtuSize.hashCode,
+    includedRoutes,
+    excludedRoutes,
+    mtuSize,
   ]);
 }

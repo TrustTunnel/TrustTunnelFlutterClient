@@ -46,11 +46,22 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
         );
 
         final profiles = await _routingRepository.getAllProfiles();
-
         if (_serverId == null) {
+          String serverName = state.data.name.trim();
+
+          if (serverName.isNotEmpty) {
+            final servers = await _repository.getAllServers();
+            serverName = _detailsService.fallbackDuplicateNames(
+              serverName,
+              servers.map((server) => server.serverData.name).toSet(),
+            );
+          }
+
           setState(
             ServerDetailsState.idle(
-              data: state.data,
+              data: state.data.copyWith(
+                name: serverName,
+              ),
               initialData: state.initialData,
               fieldErrors: state.fieldErrors,
               routingProfiles: profiles,
@@ -148,7 +159,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
         initialData: state.initialData,
         routingProfiles: state.routingProfiles,
         data: state.data.copyWith(
-          name: (serverName ?? state.data.name).trim(),
+          name: serverName ?? state.data.name,
           ipAddress: (ipAddress ?? state.data.ipAddress).trim(),
           domain: (domain ?? state.data.domain).trim(),
           username: (username ?? state.data.username).trim(),
@@ -168,7 +179,17 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     () async {
       setState(
         ServerDetailsState.loading(
-          data: state.data,
+          data: state.data.copyWith(
+            name: state.data.name.trim(),
+            ipAddress: state.data.ipAddress.trim(),
+            domain: state.data.domain.trim(),
+            username: state.data.username.trim(),
+            password: state.data.password.trim(),
+            dnsServers: state.data.dnsServers.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+            ipv6: state.data.ipv6,
+            tlsPrefix: ValueData(state.data.tlsPrefix?.trim()),
+            customSni: ValueData(state.data.customSni?.trim()),
+          ),
           initialData: state.initialData,
           fieldErrors: state.fieldErrors,
           routingProfiles: state.routingProfiles,
@@ -237,7 +258,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
           routingProfiles: state.routingProfiles,
         ),
       );
-      
+
       onDeleted(
         state.data.name,
       );

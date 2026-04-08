@@ -178,6 +178,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             counter: widget.counter,
             errorMaxLines: 3,
             suffixIcon: suffixIcon,
+            helperMaxLines: 3,
           ),
         ),
       ),

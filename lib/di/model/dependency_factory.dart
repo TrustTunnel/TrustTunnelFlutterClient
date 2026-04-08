@@ -8,7 +8,7 @@ import 'package:trusttunnel/data/datasources/local_sources/certificate_datasourc
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
-import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource.dart';
+import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';

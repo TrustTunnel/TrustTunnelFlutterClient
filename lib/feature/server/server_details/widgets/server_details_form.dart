@@ -81,7 +81,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        spacing: 16,
         children: [
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -196,6 +195,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
                 value: _formData.dnsServers.join('\n'),
                 hint: context.ln.enterDnsServerHint,
                 label: context.ln.enterDnsServerLabel,
+                helper: context.ln.enterDnsServerHelper,
                 minLines: 1,
                 maxLines: 4,
                 onChanged: (dns) => _onDataChanged(
@@ -208,22 +208,28 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
                   PresentationFieldName.dnsServers,
                 ),
               ),
-              CustomTextField(
-                value: _formData.tlsPrefix,
-                hint: context.ln.clientRandomHint,
-                label: context.ln.clientRandomLabel,
-                helper: context.ln.clientRandomHelper,
-                counter: const SizedBox.shrink(),
-                maxLength: 64,
-                onChanged: (tls) => _onDataChanged(
-                  context,
-                  clientRandom: ValueData(
-                    tls.isEmpty ? null : tls,
-                  ),
-                ),
-                error: clientRandomError,
-              ),
             ],
+          ),
+          const SizedBox(
+            height: 12,
+          ),
+          CustomTextField(
+            value: _formData.tlsPrefix,
+            hint: context.ln.clientRandomHint,
+            label: context.ln.clientRandomLabel,
+            helper: context.ln.clientRandomHelper,
+            counter: const SizedBox.shrink(),
+            maxLength: 64,
+            onChanged: (tls) => _onDataChanged(
+              context,
+              clientRandom: ValueData(
+                tls.isEmpty ? null : tls,
+              ),
+            ),
+            error: clientRandomError,
+          ),
+          const SizedBox(
+            height: 16,
           ),
           CustomTextField.customSuffixIcon(
             value: _formData.certificate?.name,
@@ -247,6 +253,9 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               _fieldErrors,
               PresentationFieldName.certificate,
             ),
+          ),
+          const SizedBox(
+            height: 16,
           ),
           CheckboxListTile(
             value: _formData.ipv6,

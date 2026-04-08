@@ -15,7 +15,10 @@ import 'package:vpn_plugin/models/upstream_protocol.dart';
 /// syntactically correct (for example, that an address is a valid IP literal),
 /// unless the backend enforces it later.
 /// {@endtemplate}
+@immutable
 final class Endpoint {
+  final String name;
+
   /// {@template endpoint_addresses}
   /// Candidate endpoint addresses to connect to.
   ///
@@ -126,7 +129,7 @@ final class Endpoint {
   /// - [clientRandom] and [certificate] default to empty strings.
   /// - [skipVerification] and [antiDpi] default to `false`.
   /// - [upStreamFallbackProtocol] defaults to `null` (no explicit fallback).
-  Endpoint({
+  const Endpoint({
     this.addresses = const [],
     this.dnsUpStreams = const [],
     this.exclusions = const [],
@@ -136,6 +139,7 @@ final class Endpoint {
     this.upStreamFallbackProtocol,
     this.antiDpi = false,
     this.skipVerification = false,
+    required this.name,
     required this.hostName,
     required this.username,
     required this.password,
@@ -145,7 +149,7 @@ final class Endpoint {
 
   @override
   String toString() =>
-      'Endpoint(addresses: $addresses, dnsUpStreams: $dnsUpStreams, exclusions: $exclusions, hostName: $hostName, username: $username, password: $password, clientRandom: $clientRandom, certificate: $certificate, upStreamProtocol: $upStreamProtocol, upStreamFallbackProtocol: $upStreamFallbackProtocol, antiDpi: $antiDpi, hasIpv6: $hasIpv6, skipVerification: $skipVerification)';
+      'Endpoint(name: $name, addresses: $addresses, dnsUpStreams: $dnsUpStreams, exclusions: $exclusions, hostName: $hostName, username: $username, password: $password, clientRandom: $clientRandom, certificate: $certificate, upStreamProtocol: $upStreamProtocol, upStreamFallbackProtocol: $upStreamFallbackProtocol, antiDpi: $antiDpi, hasIpv6: $hasIpv6, skipVerification: $skipVerification)';
 
   @override
   bool operator ==(covariant Endpoint other) {
@@ -154,6 +158,7 @@ final class Endpoint {
     return listEquals(other.addresses, addresses) &&
         listEquals(other.dnsUpStreams, dnsUpStreams) &&
         listEquals(other.exclusions, exclusions) &&
+        other.name == name &&
         other.hostName == hostName &&
         other.username == username &&
         other.password == password &&
@@ -168,18 +173,19 @@ final class Endpoint {
 
   @override
   int get hashCode => Object.hashAll([
-    addresses.hashCode,
-    dnsUpStreams.hashCode,
-    exclusions.hashCode,
-    hostName.hashCode,
-    username.hashCode,
-    password.hashCode,
-    clientRandom.hashCode,
-    certificate.hashCode,
-    upStreamProtocol.hashCode,
-    upStreamFallbackProtocol.hashCode,
-    antiDpi.hashCode,
-    hasIpv6.hashCode,
-    skipVerification.hashCode,
+    name,
+    addresses,
+    dnsUpStreams,
+    exclusions,
+    hostName,
+    username,
+    password,
+    clientRandom,
+    certificate,
+    upStreamProtocol,
+    upStreamFallbackProtocol,
+    antiDpi,
+    hasIpv6,
+    skipVerification,
   ]);
 }

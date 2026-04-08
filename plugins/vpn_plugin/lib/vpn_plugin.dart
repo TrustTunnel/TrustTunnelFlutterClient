@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:vpn_plugin/domain/configuration_encoder.dart';
+import 'package:vpn_plugin/domain/configuration_codec.dart';
 import 'package:vpn_plugin/domain/query_log_encoder.dart';
 import 'package:vpn_plugin/models/configuration.dart';
 import 'package:vpn_plugin/models/query_log_row.dart';

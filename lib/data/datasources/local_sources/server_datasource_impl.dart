@@ -257,6 +257,7 @@ class ServerDataSourceImpl implements ServerDataSource {
     final configuration = await deepLinkManager.getConfigurationByBase64(base64: base64);
 
     return ServerData.empty(
+      name: configuration.endpoint.name,
       ipAddress: configuration.endpoint.addresses.first,
       domain: configuration.endpoint.hostName,
       username: configuration.endpoint.username,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:vpn_plugin/models/configuration_log_level.dart';
 import 'package:vpn_plugin/models/endpoint.dart';
 import 'package:vpn_plugin/models/socks.dart';
@@ -18,6 +19,7 @@ import 'package:vpn_plugin/models/vpn_mode.dart';
 /// what is enforced by constructors/`assert`s in nested models. Consumers are
 /// expected to provide values that make sense for the backend.
 /// {@endtemplate}
+@immutable
 final class Configuration {
   /// {@template configuration_log_level_field}
   /// Verbosity of the VPN client logs.
@@ -84,7 +86,7 @@ final class Configuration {
   /// - [logLevel] defaults to [ConfigurationLogLevel.debug].
   /// - [killSwitchEnabled] defaults to `true`.
   /// - [postQuantumGroupEnabled] defaults to `false`.
-  Configuration({
+  const Configuration({
     this.logLevel = ConfigurationLogLevel.debug,
     this.killSwitchEnabled = true,
     this.postQuantumGroupEnabled = true,
@@ -113,12 +115,12 @@ final class Configuration {
 
   @override
   int get hashCode => Object.hashAll([
-    logLevel.hashCode,
-    vpnMode.hashCode,
-    endpoint.hashCode,
-    tun.hashCode,
-    socks.hashCode,
-    killSwitchEnabled.hashCode,
-    postQuantumGroupEnabled.hashCode,
+    logLevel,
+    vpnMode,
+    endpoint,
+    tun,
+    socks,
+    killSwitchEnabled,
+    postQuantumGroupEnabled,
   ]);
 }

@@ -124,7 +124,7 @@ class ServerData {
     if (identical(this, other)) return true;
 
     return other is ServerData &&
-        other.name == name &&
+        other.name.trim() == name.trim() &&
         other.ipAddress == ipAddress &&
         other.domain == domain &&
         other.username == username &&

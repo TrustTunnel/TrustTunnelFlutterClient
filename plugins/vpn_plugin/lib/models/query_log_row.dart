@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:vpn_plugin/models/connection_protocol.dart';
 import 'package:vpn_plugin/models/query_log_action.dart';
 
@@ -12,6 +13,7 @@ import 'package:vpn_plugin/models/query_log_action.dart';
 /// - an optional resolved [domain],
 /// - and the timestamp of the event ([stamp]).
 /// {@endtemplate}
+@immutable
 class QueryLogRow {
   /// {@template query_log_row_action}
   /// The action the engine took for this connection.
@@ -30,7 +32,7 @@ class QueryLogRow {
 
   /// {@template query_log_row_destination}
   /// Destination address of the connection as reported by the backend.
-  /// 
+  ///
   /// May be `null` if the backend did not provide a destination.
   /// {@endtemplate}
   final String? destination;
@@ -48,7 +50,7 @@ class QueryLogRow {
   final DateTime stamp;
 
   /// {@macro query_log_row}
-  QueryLogRow({
+  const QueryLogRow({
     required this.action,
     required this.source,
     required this.destination,
@@ -60,4 +62,26 @@ class QueryLogRow {
   @override
   String toString() =>
       'QueryLogRow(action: $action, protocol: $protocol, source: $source, destination: $destination, domain: $domain)';
+
+  @override
+  int get hashCode => Object.hash(
+    action,
+    protocol,
+    source,
+    destination,
+    domain,
+    stamp,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QueryLogRow &&
+          runtimeType == other.runtimeType &&
+          action == other.action &&
+          protocol == other.protocol &&
+          source == other.source &&
+          destination == other.destination &&
+          domain == other.domain &&
+          stamp == other.stamp;
 }

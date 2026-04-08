@@ -1,4 +1,4 @@
-import 'package:vpn_plugin/domain/configuration_encoder.dart';
+import 'package:vpn_plugin/domain/configuration_codec.dart';
 import 'package:vpn_plugin/models/configuration.dart';
 import 'package:vpn_plugin/platform_api.g.dart';
 

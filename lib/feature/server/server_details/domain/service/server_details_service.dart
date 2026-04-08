@@ -9,6 +9,8 @@ abstract class ServerDetailsService {
     required ServerData data,
     Set<String> otherServersNames = const {},
   });
+
+  String fallbackDuplicateNames(String baseName, Set<String> otherNames);
 }
 
 class ServerDetailsServiceImpl implements ServerDetailsService {
@@ -79,6 +81,20 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
     }
 
     return fields;
+  }
+
+  @override
+  String fallbackDuplicateNames(String baseName, Set<String> otherNames) {
+    final duplicateCandidates = otherNames.where((e) => e.startsWith(baseName));
+
+    for (int i = 1; i < duplicateCandidates.length + 1; i++) {
+      final candidate = '$baseName ${i + 1}';
+      if (!duplicateCandidates.contains(candidate)) {
+        return candidate;
+      }
+    }
+
+    return baseName;
   }
 
   PresentationField? _validateClientRandom(String value) {
@@ -176,8 +192,8 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
   PresentationField? _validateDnsServers(List<String> dnsServers) {
     final fieldName = PresentationFieldName.dnsServers;
 
-    if (dnsServers.isEmpty) {
-      return _getRequiredField(fieldName);
+    if (dnsServers.join().trim().isEmpty) {
+      return null;
     }
 
     for (var dnsServer in dnsServers) {

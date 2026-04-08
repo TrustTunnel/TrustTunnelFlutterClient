@@ -2,6 +2,8 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 /// Internal constants for the INI-like format.
 ///
 /// This is intentionally internal to keep the public surface small.
@@ -63,6 +65,7 @@ abstract final class IniConst {
 /// Use [IniDocument.parse] to parse a text document, and [toString] to serialize.
 ///
 /// Multiline values are supported using triple quotes: `""" ... """`.
+@immutable
 final class IniDocument {
   /// Creates an empty document.
   IniDocument();
@@ -212,6 +215,7 @@ final class IniDocument {
 }
 
 /// A key/value pair parsed from a single line.
+@immutable
 final class _KeyValue {
   /// Parsed key.
   final String key;
@@ -228,6 +232,7 @@ final class _KeyValue {
 /// A section inside an [IniDocument].
 ///
 /// Values are stored as [IniValue] instances.
+@immutable
 final class IniSection {
   IniSection._(this.name);
 
@@ -337,6 +342,7 @@ final class IniSection {
 /// A value node in an INI document.
 ///
 /// Use [IniValue.parse] to parse a value token.
+@immutable
 sealed class IniValue {
   /// Creates a value node.
   const IniValue();
@@ -458,6 +464,7 @@ sealed class IniValue {
 ///
 /// - Encodes single-line strings as `"..."`.
 /// - Encodes multiline strings as `"""..."""`.
+@immutable
 final class IniString extends IniValue {
   /// String contents (unescaped).
   final String value;
@@ -477,6 +484,7 @@ final class IniString extends IniValue {
 /// {@subCategory Configuration}
 ///
 /// A boolean value.
+@immutable
 final class IniBool extends IniValue {
   /// Value.
   final bool value;
@@ -492,6 +500,7 @@ final class IniBool extends IniValue {
 /// {@subCategory Configuration}
 ///
 /// An integer value.
+@immutable
 final class IniInt extends IniValue {
   /// Value.
   final int value;
@@ -507,6 +516,7 @@ final class IniInt extends IniValue {
 /// {@subCategory Configuration}
 ///
 /// A list value.
+@immutable
 final class IniList extends IniValue {
   /// Values in insertion order.
   final List<IniValue> items;
@@ -522,6 +532,7 @@ final class IniList extends IniValue {
 ///
 /// This is used internally by [IniDocument.parse] to collect a `""" ... """`
 /// value that may span multiple lines.
+@immutable
 final class _MultilineValue {
   /// Complete value token including opening and closing delimiters.
   final String valueToken;
