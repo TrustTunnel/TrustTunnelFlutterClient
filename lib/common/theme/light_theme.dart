@@ -52,6 +52,9 @@ class LightTheme {
   static const _specialStaticWhiteDisabled = Color(0x80FFFFFF);
   static const _staticTransparent = Colors.transparent;
 
+  static const _borderColor = Color(0xFF73859D);
+  static const _focusedBorderColor = Color(0xFF74869C);
+
   late final _customColors = const CustomColors(
     accent: _accent,
     accentHover: _accentHover,
@@ -574,14 +577,21 @@ class LightTheme {
       borderSide: BorderSide(color: _error),
     ),
     focusedBorder: const OutlineInputBorder(
-      borderSide: BorderSide(color: _neutralBlack, width: 3),
+      borderSide: BorderSide(
+        color: _focusedBorderColor,
+        width: 3,
+      ),
     ),
     focusedErrorBorder: const OutlineInputBorder(
       borderSide: BorderSide(color: _error, width: 3),
     ),
-    outlineBorder: const BorderSide(color: _neutralBlack),
+    outlineBorder: const BorderSide(
+      color: _borderColor,
+    ),
     border: const OutlineInputBorder(
-      borderSide: BorderSide(color: _neutralBlack),
+      borderSide: BorderSide(
+        color: _borderColor,
+      ),
     ),
     floatingLabelStyle: WidgetStateTextStyle.resolveWith(
       (states) {

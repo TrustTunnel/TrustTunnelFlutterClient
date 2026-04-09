@@ -75,7 +75,7 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   void _onDeepLinkReceived() {
     final link = _deepLinkSource.link;
     if (link != null) {
-      _controller.onDeepLinkReceived(link.toString());
+      _controller.onDeepLinkReceived(link);
     }
   }
 
