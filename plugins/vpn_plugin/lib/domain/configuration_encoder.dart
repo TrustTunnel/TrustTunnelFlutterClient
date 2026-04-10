@@ -245,7 +245,15 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final bool postQuantumGroupEnabled = top.getBool(ConfigurationCodecKeys.postQuantumGroupEnabled) ?? false;
 
     final List<String> exclusions = top.getStringList(ConfigurationCodecKeys.exclusions) ?? const <String>[];
-    final List<String> dnsUpStreams = top.getStringList(ConfigurationCodecKeys.dnsUpStreams) ?? const <String>[];
+
+    // The deep-link FFI (`trusttunnel_deeplink_decode`) serializes
+    // `dns_upstreams` inside the `[endpoint]` table, while [ConfigurationEncoder]
+    // historically writes the same key at the top level for the native VPN
+    // backend. Read from `[endpoint]` first to honor the deep-link spec, then
+    // fall back to the top level so existing producers keep working.
+    final List<String> dnsUpStreams = endpoint.getStringList(ConfigurationCodecKeys.dnsUpStreams)
+        ?? top.getStringList(ConfigurationCodecKeys.dnsUpStreams)
+        ?? const <String>[];
 
     final String hostName = endpoint.getString(ConfigurationCodecKeys.hostname) ?? '';
     final List<String> addresses = endpoint.getStringList(ConfigurationCodecKeys.addresses) ?? const <String>[];
