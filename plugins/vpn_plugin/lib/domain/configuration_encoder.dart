@@ -99,6 +99,13 @@ abstract final class ConfigurationCodecKeys {
   /// Endpoint anti-DPI toggle key.
   static const antiDpi = 'anti_dpi';
 
+  /// Endpoint human-readable display name key.
+  ///
+  /// Carried by the deep-link payload as TLV tag `0x0C` (`Name`) per the
+  /// TrustTunnel deep-link specification, and serialized by the Rust FFI
+  /// (`trusttunnel_deeplink_decode`) inside the `[endpoint]` table.
+  static const name = 'name';
+
   // Tun keys
   /// TUN included routes list key.
   static const includedRoutes = 'included_routes';
@@ -272,6 +279,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final String upstreamFallbackProtocolStr =
         endpoint.getString(ConfigurationCodecKeys.upstreamFallbackProtocol) ?? '';
     final bool antiDpi = endpoint.getBool(ConfigurationCodecKeys.antiDpi) ?? false;
+    final String name = endpoint.getString(ConfigurationCodecKeys.name) ?? '';
 
     final List<String> includedRoutes =
         tun.getStringList(ConfigurationCodecKeys.includedRoutes) ?? IniConst.defaultTunRoutes;
@@ -320,6 +328,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
         skipVerification: skipVerification,
         certificate: certificate,
         antiDpi: antiDpi,
+        name: name,
       ),
       tun: Tun(
         includedRoutes: includedRoutes,

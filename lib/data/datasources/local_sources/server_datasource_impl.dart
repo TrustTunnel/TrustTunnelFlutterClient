@@ -256,7 +256,15 @@ class ServerDataSourceImpl implements ServerDataSource {
   }) async {
     final configuration = await deepLinkManager.getConfigurationByBase64(base64: base64);
 
+    // Prefer the human-readable name carried by the deep-link payload (TLV
+    // tag 0x0C); fall back to the host name so the imported card never shows
+    // a blank title for older deep links that omit the field.
+    final String displayName = configuration.endpoint.name.isNotEmpty
+        ? configuration.endpoint.name
+        : configuration.endpoint.hostName;
+
     return ServerData.empty(
+      name: displayName,
       ipAddress: configuration.endpoint.addresses.first,
       domain: configuration.endpoint.hostName,
       username: configuration.endpoint.username,

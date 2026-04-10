@@ -119,11 +119,21 @@ final class Endpoint {
 
   final String customSni;
 
+  /// {@template endpoint_name}
+  /// Human-readable server name carried by the deep-link payload.
+  ///
+  /// Sourced from the optional TLV tag `0x0C` (`Name`) defined in the
+  /// TrustTunnel deep-link specification. When the deep link does not carry a
+  /// name, this field is empty and callers fall back to other identifiers
+  /// (typically [hostName]) when displaying the server.
+  /// {@endtemplate}
+  final String name;
+
   /// {@macro endpoint}
   ///
   /// Defaults are intentionally permissive:
   /// - [addresses], [dnsUpStreams] and [exclusions] default to empty lists.
-  /// - [clientRandom] and [certificate] default to empty strings.
+  /// - [clientRandom], [certificate] and [name] default to empty strings.
   /// - [skipVerification] and [antiDpi] default to `false`.
   /// - [upStreamFallbackProtocol] defaults to `null` (no explicit fallback).
   Endpoint({
@@ -133,6 +143,7 @@ final class Endpoint {
     this.clientRandom = '',
     this.certificate = '',
     this.customSni = '',
+    this.name = '',
     this.upStreamFallbackProtocol,
     this.antiDpi = false,
     this.skipVerification = false,
@@ -145,7 +156,7 @@ final class Endpoint {
 
   @override
   String toString() =>
-      'Endpoint(addresses: $addresses, dnsUpStreams: $dnsUpStreams, exclusions: $exclusions, hostName: $hostName, username: $username, password: $password, clientRandom: $clientRandom, certificate: $certificate, upStreamProtocol: $upStreamProtocol, upStreamFallbackProtocol: $upStreamFallbackProtocol, antiDpi: $antiDpi, hasIpv6: $hasIpv6, skipVerification: $skipVerification)';
+      'Endpoint(addresses: $addresses, dnsUpStreams: $dnsUpStreams, exclusions: $exclusions, hostName: $hostName, username: $username, password: $password, clientRandom: $clientRandom, certificate: $certificate, upStreamProtocol: $upStreamProtocol, upStreamFallbackProtocol: $upStreamFallbackProtocol, antiDpi: $antiDpi, hasIpv6: $hasIpv6, skipVerification: $skipVerification, name: $name)';
 
   @override
   bool operator ==(covariant Endpoint other) {
@@ -163,7 +174,8 @@ final class Endpoint {
         other.upStreamFallbackProtocol == upStreamFallbackProtocol &&
         other.antiDpi == antiDpi &&
         other.hasIpv6 == hasIpv6 &&
-        other.skipVerification == skipVerification;
+        other.skipVerification == skipVerification &&
+        other.name == name;
   }
 
   @override
@@ -181,5 +193,6 @@ final class Endpoint {
     antiDpi.hashCode,
     hasIpv6.hashCode,
     skipVerification.hashCode,
+    name.hashCode,
   ]);
 }
