@@ -95,7 +95,7 @@ class VpnPlugin :
         return false
     }
 
-    override fun start(serverName: String, config: String) {
+    override fun start(config: String) {
         val act = activity
         if (act != null) {
             val prepare = AndroidVpnService.prepare(act)
@@ -117,7 +117,7 @@ class VpnPlugin :
         vpnImpl.stop()
     }
 
-    override fun updateConfiguration(serverName: String?, config: String?) {
+    override fun updateConfiguration(config: String?) {
         // Do nothing, this is iOS specific
     }
 

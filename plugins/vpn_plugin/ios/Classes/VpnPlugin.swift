@@ -58,12 +58,12 @@ final class IVpnManagerImpl: NSObject, IVpnManager, FlutterStreamHandler {
 
     // MARK: - IVpnManager (Pigeon HostApi)
 
-    func start(serverName: String, config: String) throws {
-        vpnManager?.start(serverName: serverName, config: config)
+    func start(config: String) throws {
+        vpnManager?.start(config: config)
     }
 
-    func updateConfiguration(serverName: String?, config: String?) throws {
-        vpnManager?.updateConfiguration(serverName: serverName, config: config)
+    func updateConfiguration(config: String?) throws {
+        vpnManager?.updateConfiguration(config: config)
     }
 
     func stop() throws {

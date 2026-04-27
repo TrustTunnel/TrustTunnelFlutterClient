@@ -72,7 +72,7 @@ abstract class IVpnManager {
   /// the platform UI thread.
   /// {@endtemplate}
   @TaskQueue(type: TaskQueueType.serialBackgroundThread)
-  void start({required String serverName, required String config});
+  void start({required String config});
 
   /// {@template i_vpn_manager_stop}
   /// Stops the VPN engine.
@@ -90,8 +90,8 @@ abstract class IVpnManager {
   /// Updates the iOS system VPN profile or deletes it.
   ///
   /// The platform implementation should update the iOS system VPN profile
-  /// if the [serverName] and [config] are specified or delete the profile
-  /// entirely if one of them is `null`.
+  /// if the [config] is specified or delete the profile
+  /// entirely it is `null`.
   ///
   /// This method should always be called on stopped VPN engine.
   ///
@@ -99,7 +99,7 @@ abstract class IVpnManager {
   /// the platform UI thread.
   /// {@endtemplate}
   @TaskQueue(type: TaskQueueType.serialBackgroundThread)
-  void updateConfiguration({String? serverName, String? config});
+  void updateConfiguration({String? config});
 
   /// {@template i_vpn_manager_get_current_state}
   /// Returns the current VPN engine state.

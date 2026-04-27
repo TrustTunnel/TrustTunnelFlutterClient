@@ -21,7 +21,7 @@ abstract class VpnPlugin {
   ///
   /// Throws a [PlatformException] if the VPN service fails to start.
   /// {@endtemplate}
-  Future<void> start({required String serverName, required Configuration configuration});
+  Future<void> start({required Configuration configuration});
 
   /// {@template vpn_plugin_stop}
   /// Stops the active VPN connection.
@@ -48,13 +48,13 @@ abstract class VpnPlugin {
   /// This method has effect **only on iOS**. On other platforms it performs no
   /// changes.
   ///
-  /// The update is applied to the **system VPN profile** associated with
-  /// [serverName] and becomes visible in the iOS Settings app (VPN configuration
-  /// details for the selected profile).
+  /// The platform implementation should update the iOS system VPN profile
+  /// if the [config] is specified or delete the profile
+  /// entirely it is `null`.
   ///
   /// Throws a [PlatformException] if the configuration cannot be updated on iOS.
   /// {@endtemplate}
-  Future<void> updateConfiguration({required String? serverName, required Configuration? configuration});
+  Future<void> updateConfiguration({required Configuration? configuration});
 
   /// {@template vpn_plugin_states}
   /// Stream of VPN connection state changes.
@@ -104,21 +104,21 @@ class VpnPluginImpl implements VpnPlugin {
 
   /// {@macro vpn_plugin_start}
   @override
-  Future<void> start({required String serverName, required Configuration configuration}) {
+  Future<void> start({required Configuration configuration}) {
     final config = _codec.encode(configuration);
-    return _api.start(serverName: serverName, config: config);
+    return _api.start(config: config);
   }
 
   /// {@macro vpn_plugin_update_configuration}
   @override
-  Future<void> updateConfiguration({required String? serverName, required Configuration? configuration}) {
+  Future<void> updateConfiguration({required Configuration? configuration}) {
     String? config;
 
     if (configuration != null) {
       config = const ConfigurationEncoder().convert(configuration);
     }
 
-    return _api.updateConfiguration(serverName: serverName, config: config);
+    return _api.updateConfiguration(config: config);
   }
 
   /// {@macro vpn_plugin_stop}
