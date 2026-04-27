@@ -91,7 +91,7 @@ abstract class IVpnManager {
   ///
   /// The platform implementation should update the iOS system VPN profile
   /// if the [config] is specified or delete the profile
-  /// entirely it is `null`.
+  /// entirely if it is `null`.
   ///
   /// This method should always be called on stopped VPN engine.
   ///
