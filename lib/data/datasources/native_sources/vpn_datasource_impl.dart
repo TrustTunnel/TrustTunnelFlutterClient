@@ -107,7 +107,6 @@ class VpnDataSourceImpl implements VpnDataSource {
     );
 
     return _platformApi.start(
-      serverName: server.name,
       configuration: Configuration(
         vpnMode: VpnModeEncoder().convert(
           routingProfile.defaultMode,
@@ -163,7 +162,6 @@ class VpnDataSourceImpl implements VpnDataSource {
     );
 
     return _platformApi.updateConfiguration(
-      serverName: server.name,
       configuration: Configuration(
         vpnMode: VpnModeEncoder().convert(
           routingProfile.defaultMode,
@@ -178,7 +176,7 @@ class VpnDataSourceImpl implements VpnDataSource {
   }
 
   @override
-  Future<void> deleteConfiguration() => _platformApi.updateConfiguration(serverName: null, configuration: null);
+  Future<void> deleteConfiguration() => _platformApi.updateConfiguration(configuration: null);
 
   /// Computes the effective exclusion list based on routing mode.
   ///
