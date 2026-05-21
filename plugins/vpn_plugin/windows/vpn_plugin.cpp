@@ -173,18 +173,21 @@ ErrorOr<VpnManagerState> VpnPlugin::GetCurrentState() {
 }
 
 void VpnPlugin::NotifyStateChanged(int state) {
-  VpnManagerState converted_state = static_cast<VpnManagerState>(state);
-  
-  current_state_ = converted_state;
-  if (state_handler_) {
-    state_handler_->SendEvent(flutter::EncodableValue(static_cast<int64_t>(converted_state)));
-  }
+  dispatcher_.RunOnUIThread([this, state]() {
+    VpnManagerState converted_state = static_cast<VpnManagerState>(state);
+    current_state_ = converted_state;
+    if (state_handler_) {
+      state_handler_->SendEvent(flutter::EncodableValue(static_cast<int64_t>(converted_state)));
+    }
+  });
 }
 
 void VpnPlugin::NotifyConnectionInfo(const std::string& json) {
-  if (query_log_handler_) {
-    query_log_handler_->SendEvent(flutter::EncodableValue(json));
-  }
+  dispatcher_.RunOnUIThread([this, json]() {
+    if (query_log_handler_) {
+      query_log_handler_->SendEvent(flutter::EncodableValue(json));
+    }
+  });
 }
 
 }  // namespace vpn_plugin
