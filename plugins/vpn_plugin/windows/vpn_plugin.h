@@ -10,12 +10,12 @@
 #include <flutter/standard_method_codec.h>
 
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <queue>
 #include <string>
 
 #include "runner/platform_api.g.h"
+#include "ui_thread_dispatcher.h"
 
 namespace vpn_plugin {
 
@@ -66,6 +66,7 @@ class VpnPlugin : public flutter::Plugin, public IVpnManager {
   int32_t StartService(const std::string& config);
 
   flutter::PluginRegistrarWindows* registrar_;
+  UIThreadDispatcher dispatcher_;
 
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> state_channel_;
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> query_log_channel_;
