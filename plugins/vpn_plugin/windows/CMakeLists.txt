@@ -2,7 +2,7 @@
 # installed that includes CMake 3.14 or later. You should not increase this
 # version, as doing so will cause the plugin to fail to compile for some
 # customers of the plugin.
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.24)
 
 # Project-level configuration.
 set(PROJECT_NAME "vpn_plugin")
@@ -20,6 +20,8 @@ set(PLUGIN_NAME "vpn_plugin_plugin")
 
 # Any new source files that you add to the plugin should be added here.
 list(APPEND PLUGIN_SOURCES
+  "runner/platform_api.g.cpp"
+  "runner/platform_api.g.h"
   "vpn_plugin.cpp"
   "vpn_plugin.h"
 )
