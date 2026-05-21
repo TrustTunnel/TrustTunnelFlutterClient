@@ -24,6 +24,8 @@ list(APPEND PLUGIN_SOURCES
   "runner/platform_api.g.h"
   "vpn_plugin.cpp"
   "vpn_plugin.h"
+  "ui_thread_dispatcher.cpp"
+  "ui_thread_dispatcher.h"
 )
 
 # Define the plugin library target. Its name must not be changed (see comment
