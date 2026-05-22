@@ -13,6 +13,7 @@
 #include <optional>
 #include <queue>
 #include <string>
+#include <mutex>
 
 #include "runner/platform_api.g.h"
 #include "ui_thread_dispatcher.h"
