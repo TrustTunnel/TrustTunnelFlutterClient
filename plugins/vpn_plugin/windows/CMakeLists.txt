@@ -54,11 +54,60 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 
-# List of absolute paths to libraries that should be bundled with the plugin.
-# This list could contain prebuilt libraries, or libraries created by an
-# external build triggered from this build file.
+# === Download and use prebuilt TrustTunnelClientWindows ===
+include(FetchContent)
+
+set(TRUSTTUNNEL_CLIENT_VERSION "1.1.5")
+
+set(TRUSTTUNNEL_CLIENT_ARCHIVE_URL
+  "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${TRUSTTUNNEL_CLIENT_VERSION}/TrustTunnelClient-windows-${TRUSTTUNNEL_CLIENT_VERSION}.zip"
+  CACHE STRING "URL to the TrustTunnelClientWindows prebuilt archive"
+)
+
+FetchContent_Declare(
+  TrustTunnelClientWindows
+  URL ${TRUSTTUNNEL_CLIENT_ARCHIVE_URL}
+)
+FetchContent_MakeAvailable(TrustTunnelClientWindows)
+
+# The archive ships lib/cmake/TrustTunnelClientWindows/TrustTunnelClientWindowsConfig.cmake
+# Register that location so find_package() can discover it.
+list(APPEND CMAKE_PREFIX_PATH "${trusttunnelclientwindows_SOURCE_DIR}")
+
+find_package(TrustTunnelClientWindows REQUIRED)
+target_link_libraries(${PLUGIN_NAME} PRIVATE TrustTunnelClientWindows::vpn_easy)
+
+# --- Bundle vpn_easy_service.exe and wintun.dll ---
+# Both are shipped inside the prebuilt archive's bin/ directory.
+set(_TT_BIN_DIR "${trusttunnelclientwindows_SOURCE_DIR}/bin")
+
+set(VPN_SERVICE_EXE "${_TT_BIN_DIR}/vpn_easy_service.exe")
+if(NOT EXISTS "${VPN_SERVICE_EXE}")
+  message(FATAL_ERROR "vpn_easy_service.exe not found at ${VPN_SERVICE_EXE}")
+endif()
+
+set(VPN_EASY_DLL "${_TT_BIN_DIR}/vpn_easy.dll")
+if(NOT EXISTS "${VPN_EASY_DLL}")
+  message(FATAL_ERROR "vpn_easy.dll not found at ${VPN_EASY_DLL}")
+endif()
+
+set(WINTUN_DLL "${_TT_BIN_DIR}/wintun.dll")
+set(WINTUN_LICENSE "${trusttunnelclientwindows_SOURCE_DIR}/WINTUN_LICENSE.txt")
+
+if(NOT EXISTS "${WINTUN_DLL}")
+  message(FATAL_ERROR "wintun.dll not found at ${WINTUN_DLL}")
+endif()
+
+message(STATUS "Using vpn_easy_service.exe: ${VPN_SERVICE_EXE}")
+message(STATUS "Using wintun.dll: ${WINTUN_DLL}")
+
+# Bundle the executables, DLLs and license so the app-level install step copies
+# them next to the main executable at runtime.
 set(vpn_plugin_bundled_libraries
-  ""
+  "${VPN_SERVICE_EXE}"
+  "${VPN_EASY_DLL}"
+  "${WINTUN_DLL}"
+  "${WINTUN_LICENSE}"
   PARENT_SCOPE
 )
 
