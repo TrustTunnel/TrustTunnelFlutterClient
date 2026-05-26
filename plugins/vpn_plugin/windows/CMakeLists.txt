@@ -59,8 +59,19 @@ include(FetchContent)
 
 set(TRUSTTUNNEL_CLIENT_VERSION "1.1.5")
 
+# Determine the target architecture for the archive URL.
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM|aarch64")
+    set(TRUSTTUNNEL_CLIENT_ARCH "arm64")
+  else()
+    set(TRUSTTUNNEL_CLIENT_ARCH "amd64")
+  endif()
+else()
+  message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
 set(TRUSTTUNNEL_CLIENT_ARCHIVE_URL
-  "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${TRUSTTUNNEL_CLIENT_VERSION}/TrustTunnelClient-windows-${TRUSTTUNNEL_CLIENT_VERSION}.zip"
+  "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${TRUSTTUNNEL_CLIENT_VERSION}/TrustTunnelClient-windows-${TRUSTTUNNEL_CLIENT_ARCH}-${TRUSTTUNNEL_CLIENT_VERSION}.zip"
   CACHE STRING "URL to the TrustTunnelClientWindows prebuilt archive"
 )
 
