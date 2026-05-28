@@ -6,7 +6,11 @@
 #include "vpn/vpn_easy.h"
 #include "vpn/vpn_easy_service.h"
 
+#include "common/logger.h"
+
 namespace vpn_plugin {
+
+static ag::Logger g_logger{"VPN_PLUGIN"};
 
 // --- vpn_easy C Callbacks ---
 
@@ -95,15 +99,28 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
   vpn_easy_service_read_all_connection_info(
       ring_buffer_path_.c_str(), s_notify_connection_info, this);
 
-  // Attempt to attach if background service is already active
-  int32_t attach_result = AttachService();
-  if (attach_result == 0) {
-      is_started_ = true;
-  }
+  // Start the background event loop for offloading blocking operations.
+  ev_thread_ = std::thread([this]() {
+    ag::vpn_event_loop_run(ev_loop_.get());
+  });
+  ag::vpn_event_loop_dispatch_sync(ev_loop_.get(), nullptr, nullptr);
+
+  // Attempt to attach if background service is already active.
+  // Fire-and-forget: if it fails, Start() handles installing + starting fresh.
+  ag::event_loop::submit(ev_loop_.get(), [this]() {
+  AttachService();
+  }).release();
 }
 
 VpnPlugin::~VpnPlugin() {
+  // Tear down the pipe IO synchronously on the event loop thread before stopping.
+  ag::event_loop::dispatch_sync(ev_loop_.get(), []() {
   vpn_easy_service_detach();
+  });
+  ag::vpn_event_loop_stop(ev_loop_.get());
+  if (ev_thread_.joinable()) {
+    ev_thread_.join();
+  }
 }
 
 int32_t VpnPlugin::InstallService() {
@@ -202,47 +219,33 @@ int32_t VpnPlugin::StartService(const std::string& config) {
 }
 
 std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
+  ag::event_loop::submit(ev_loop_.get(), [this, config = config]() {
   int32_t start_result = StartService(config);
 
   if (start_result == VPN_EASY_SVC_ERR_NO_SUCH_SERVICE) {
     int32_t install_result = InstallService();
-    if (install_result == VPN_EASY_SVC_ERR_ACCESS) {
-      return FlutterError("SERVICE_INSTALL_ACCESS",
-                          "Administrator privileges are required to install the VPN service. "
-                          "Please accept the UAC prompt or run the application as administrator.");
-    }
     if (install_result != 0) {
-      return FlutterError("SERVICE_INSTALL", "Failed to install VPN service (error code: " + std::to_string(install_result) + ")");
+        errlog(g_logger, "Failed to install VPN service (error code: {})", install_result);
+        return;
     }
 
     start_result = StartService(config);
   }
 
-  if (start_result == VPN_EASY_SVC_ERR_TIMED_OUT) {
-    return FlutterError("SERVICE_START_TIMEOUT",
-                        "The VPN service did not respond in time. "
-                        "Please try connecting again.");
-  }
-
   if (start_result != 0) {
-    return FlutterError("SERVICE_START", "Failed to start VPN service (error code: " + std::to_string(start_result) + ")");
+      errlog(g_logger, "Failed to start VPN service (error code: {})", start_result);
+      return;
   }
+  }).release();
 
-  is_started_ = true;
   return std::nullopt;
 }
 
 std::optional<FlutterError> VpnPlugin::Stop() {
-  if (!is_started_) {
-    return std::nullopt;
-  }
+  ag::event_loop::submit(ev_loop_.get(), [this]() {
+    vpn_easy_service_stop(service_name_.c_str(), pipe_name_.c_str());
+  }).release();
 
-  int32_t stop_result = vpn_easy_service_stop(service_name_.c_str(), pipe_name_.c_str());
-  if (stop_result != 0) {
-    // Just log / ignore, we fall through and mark as stopped
-  }
-
-  is_started_ = false;
   return std::nullopt;
 }
 
