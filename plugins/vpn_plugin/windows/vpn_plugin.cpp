@@ -108,19 +108,53 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
   // Attempt to attach if background service is already active.
   // Fire-and-forget: if it fails, Start() handles installing + starting fresh.
   ag::event_loop::submit(ev_loop_.get(), [this]() {
-  AttachService();
+    AttachService();
   }).release();
 }
 
 VpnPlugin::~VpnPlugin() {
   // Tear down the pipe IO synchronously on the event loop thread before stopping.
   ag::event_loop::dispatch_sync(ev_loop_.get(), []() {
-  vpn_easy_service_detach();
+    vpn_easy_service_detach();
   });
   ag::vpn_event_loop_stop(ev_loop_.get());
   if (ev_thread_.joinable()) {
     ev_thread_.join();
   }
+}
+
+int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
+  wchar_t exe_path[MAX_PATH];
+  GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
+  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
+  std::wstring helper_exe = (exe_dir / L"service_installer.exe").wstring();
+
+  SHELLEXECUTEINFOW sei = {};
+  sei.cbSize = sizeof(sei);
+  sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+  sei.lpVerb = L"runas";
+  sei.lpFile = helper_exe.c_str();
+  sei.lpParameters = params.c_str();
+  sei.nShow = SW_HIDE;
+
+  if (!ShellExecuteExW(&sei)) {
+    DWORD err = GetLastError();
+    if (err == ERROR_CANCELLED) {
+      return VPN_EASY_SVC_ERR_ACCESS;
+    }
+    return VPN_EASY_SVC_ERR_OTHER;
+  }
+
+  DWORD wait_result = WaitForSingleObject(sei.hProcess, kServiceInstallTimeoutMs);
+  if (wait_result == WAIT_TIMEOUT) {
+    CloseHandle(sei.hProcess);
+    return VPN_EASY_SVC_ERR_TIMED_OUT;
+  }
+  DWORD exit_code = 0;
+  GetExitCodeProcess(sei.hProcess, &exit_code);
+  CloseHandle(sei.hProcess);
+
+  return static_cast<int32_t>(exit_code);
 }
 
 int32_t VpnPlugin::InstallService() {
@@ -130,80 +164,24 @@ int32_t VpnPlugin::InstallService() {
   std::wstring service_exe = (exe_dir / L"vpn_easy_service.exe").wstring();
   std::wstring log_path = exe_dir / L"vpn_easy_service.log";
   std::wstring ring_buffer_path_w(ring_buffer_path_.begin(), ring_buffer_path_.end());
-  std::wstring helper_exe = (exe_dir / L"service_installer.exe").wstring();
 
   // Build the command-line arguments for service_installer.exe:
   //   install <image_path> <logfile_path> <pipe_name> <name> <display_name> <description> <ring_buffer_path>
   std::wstring params = L"install";
-  params += L" \"" + service_exe + L"\"";       // arg 1: image_path
-  params += L" \"" + log_path + L"\"";           // arg 2: logfile_path
-  params += L" \"" + pipe_name_ + L"\"";          // arg 3: pipe_name
-  params += L" \"" + service_name_ + L"\"";       // arg 4: name
-  params += L" \"TrustTunnel VPN Service\"";      // arg 5: display_name
-  params += L" \"Provides VPN connectivity for the TrustTunnel client.\""; // arg 6: description
-  params += L" \"" + ring_buffer_path_w + L"\"";  // arg 7: ring_buffer_path
+  params += L" \"" + service_exe + L"\"";
+  params += L" \"" + log_path + L"\"";
+  params += L" \"" + pipe_name_ + L"\"";
+  params += L" \"" + service_name_ + L"\"";
+  params += L" \"TrustTunnel VPN Service\"";
+  params += L" \"Provides VPN connectivity for the TrustTunnel client.\"";
+  params += L" \"" + ring_buffer_path_w + L"\"";
 
-  // Launch the helper with UAC elevation (runas verb triggers the consent prompt).
-  // SEE_MASK_NOCLOSEPROCESS is required to get sei.hProcess back — without it,
-  // hProcess is NULL and we can't wait for the process or get its exit code.
-  SHELLEXECUTEINFOW sei = {};
-  sei.cbSize = sizeof(sei);
-  sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-  sei.lpVerb = L"runas";
-  sei.lpFile = helper_exe.c_str();
-  sei.lpParameters = params.c_str();
-  sei.nShow = SW_HIDE;
-
-  if (!ShellExecuteExW(&sei)) {
-    DWORD err = GetLastError();
-    if (err == ERROR_CANCELLED) {
-      return VPN_EASY_SVC_ERR_ACCESS;
-    }
-    return VPN_EASY_SVC_ERR_OTHER;
-  }
-
-  // Wait for the elevated helper to finish.
-  // With SEE_MASK_NOCLOSEPROCESS, hProcess is guaranteed valid when ShellExecuteExW returns TRUE.
-  WaitForSingleObject(sei.hProcess, INFINITE);
-  DWORD exit_code = 0;
-  GetExitCodeProcess(sei.hProcess, &exit_code);
-  CloseHandle(sei.hProcess);
-
-  return static_cast<int32_t>(exit_code);
+  return RunElevatedHelper(params);
 }
 
 int32_t VpnPlugin::UninstallService() {
-  wchar_t exe_path[MAX_PATH];
-  GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
-  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
-  std::wstring helper_exe = (exe_dir / L"service_installer.exe").wstring();
-
-  // Build the command-line arguments for service_installer.exe:
-  //   uninstall <name>
   std::wstring params = L"uninstall \"" + service_name_ + L"\"";
-
-  SHELLEXECUTEINFOW sei = {};
-  sei.cbSize = sizeof(sei);
-  sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-  sei.lpVerb = L"runas";
-  sei.lpFile = helper_exe.c_str();
-  sei.lpParameters = params.c_str();
-  sei.nShow = SW_HIDE;
-
-  if (!ShellExecuteExW(&sei)) {
-    DWORD err = GetLastError();
-    if (err == ERROR_CANCELLED) {
-      return VPN_EASY_SVC_ERR_ACCESS;
-    }
-    return VPN_EASY_SVC_ERR_OTHER;
-  }
-
-  // With SEE_MASK_NOCLOSEPROCESS, hProcess is guaranteed valid when ShellExecuteExW returns TRUE.
-  WaitForSingleObject(sei.hProcess, INFINITE);
-  DWORD exit_code = 0;
-  GetExitCodeProcess(sei.hProcess, &exit_code);
-  CloseHandle(sei.hProcess);
-  return static_cast<int32_t>(exit_code);
+  return RunElevatedHelper(params);
 }
 
 int32_t VpnPlugin::AttachService() {
@@ -220,22 +198,22 @@ int32_t VpnPlugin::StartService(const std::string& config) {
 
 std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
   ag::event_loop::submit(ev_loop_.get(), [this, config = config]() {
-  int32_t start_result = StartService(config);
+    int32_t start_result = StartService(config);
 
-  if (start_result == VPN_EASY_SVC_ERR_NO_SUCH_SERVICE) {
-    int32_t install_result = InstallService();
-    if (install_result != 0) {
+    if (start_result == VPN_EASY_SVC_ERR_NO_SUCH_SERVICE) {
+      int32_t install_result = InstallService();
+      if (install_result != 0) {
         errlog(g_logger, "Failed to install VPN service (error code: {})", install_result);
         return;
+      }
+
+      start_result = StartService(config);
     }
 
-    start_result = StartService(config);
-  }
-
-  if (start_result != 0) {
+    if (start_result != 0) {
       errlog(g_logger, "Failed to start VPN service (error code: {})", start_result);
       return;
-  }
+    }
   }).release();
 
   return std::nullopt;
