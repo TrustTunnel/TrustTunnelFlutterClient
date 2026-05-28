@@ -63,6 +63,7 @@ class VpnPlugin : public flutter::Plugin, public IVpnManager {
 
  private:
   int32_t InstallService();
+  int32_t UninstallService();
   int32_t AttachService();
   int32_t StartService(const std::string& config);
 
