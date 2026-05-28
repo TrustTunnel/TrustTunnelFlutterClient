@@ -64,6 +64,14 @@ class VpnPlugin : public flutter::Plugin, public IVpnManager {
   void NotifyConnectionInfo(const std::string& json);
 
  private:
+  // Timeout for elevated service installer helper (milliseconds).
+  static constexpr DWORD kServiceInstallTimeoutMs = 30000;
+
+  /// Launch the service installer helper elevated, wait for it, return its exit code.
+  /// @param params command-line arguments for service_installer.exe (install or uninstall)
+  /// @return the helper's exit code, or a negative VpnEasyServiceError on failure
+  int32_t RunElevatedHelper(const std::wstring& params);
+
   int32_t InstallService();
   int32_t UninstallService();
   int32_t AttachService();
