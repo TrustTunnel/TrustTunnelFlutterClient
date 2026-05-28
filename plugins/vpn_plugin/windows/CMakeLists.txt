@@ -109,8 +109,14 @@ if(NOT EXISTS "${WINTUN_DLL}")
   message(FATAL_ERROR "wintun.dll not found at ${WINTUN_DLL}")
 endif()
 
+set(SERVICE_INSTALLER_EXE "${_TT_BIN_DIR}/service_installer.exe")
+if(NOT EXISTS "${SERVICE_INSTALLER_EXE}")
+  message(FATAL_ERROR "service_installer.exe not found at ${SERVICE_INSTALLER_EXE}")
+endif()
+
 message(STATUS "Using vpn_easy_service.exe: ${VPN_SERVICE_EXE}")
 message(STATUS "Using wintun.dll: ${WINTUN_DLL}")
+message(STATUS "Using service_installer.exe: ${SERVICE_INSTALLER_EXE}")
 
 # Bundle the executables, DLLs and license so the app-level install step copies
 # them next to the main executable at runtime.
@@ -119,6 +125,7 @@ set(vpn_plugin_bundled_libraries
   "${VPN_EASY_DLL}"
   "${WINTUN_DLL}"
   "${WINTUN_LICENSE}"
+  "${SERVICE_INSTALLER_EXE}"
   PARENT_SCOPE
 )
 
