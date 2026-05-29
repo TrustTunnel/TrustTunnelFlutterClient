@@ -199,7 +199,7 @@ int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
 int32_t VpnPlugin::InstallService() {
   if (IsRunningInMsixPackage()) {
     // When running in MSIX, the service is managed by the platform (packaged service).
-    // Uninstalling isn't supported (the service is removed when the package is uninstalled).
+    // Installing isn't supported, the service is installed along with the package.
     return VPN_EASY_SVC_ERR_UNSUPPORTED;
   }
   wchar_t exe_path[MAX_PATH];
@@ -227,7 +227,7 @@ int32_t VpnPlugin::InstallService() {
 int32_t VpnPlugin::UninstallService() {
   if (IsRunningInMsixPackage()) {
     // When running in MSIX, the service is managed by the platform (packaged service).
-    // Uninstalling isn't supported (the service is removed when the package is uninstalled).
+    // Uninstalling isn't supported, the service is removed when the package is uninstalled.
     return VPN_EASY_SVC_ERR_UNSUPPORTED;
   }
   std::wstring params = L"uninstall \"" + service_name_ + L"\"";
