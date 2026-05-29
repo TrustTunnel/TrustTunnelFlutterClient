@@ -216,7 +216,7 @@ int32_t VpnPlugin::InstallService() {
   std::wstring service_exe = (exe_dir / L"vpn_easy_service.exe").wstring();
   // Use writable path (MSIX-safe) for the service log.
   std::wstring log_path = (GetWritableAppDataPath() / L"vpn_easy_service.log").wstring();
-  std::wstring ring_buffer_path_w(ring_buffer_path_.begin(), ring_buffer_path_.end());
+  std::wstring ring_buffer_path_w = std::filesystem::path(ring_buffer_path_).wstring();
 
   // Build the command-line arguments for service_installer.exe:
   //   install <image_path> <logfile_path> <pipe_name> <name> <display_name> <description> <ring_buffer_path>
