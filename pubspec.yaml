@@ -55,6 +55,7 @@ dev_dependencies:
   flutter_lints: 6.0.0
   flutter_test:
     sdk: flutter
+  msix: ^3.16.13
 
 flutter:
   generate: true
@@ -106,3 +107,24 @@ flutter_intl:
   arb_dir: lib/common/localization/arb
   output_dir: lib/common/localization/generated
   use_deferred_loading: false
+
+msix_config:
+  display_name: TrustTunnel VPN
+  publisher_display_name: AdGuard
+  publisher: CN=TrustTunnelDev
+  identity_name: com.adguard.trusttunnel
+  msix_version: 1.2.0.0
+  logo_path: assets\images\logo_white.png
+  # runFullTrust is auto-added by the msix tool.
+  # packagedServices + localSystemServices enable the windows.service
+  # extension so the platform auto-installs vpn_easy_service.exe as SYSTEM.
+  # allowElevation is kept for dev scenarios (unpackaged runs).
+  capabilities: internetClient,privateNetworkClientServer,allowElevation,packagedServices,localSystemServices
+  store: false
+  # Test certificate for local development signing.
+  # Generate it first: .\windows\msix\Setup-TestCert.ps1
+  # For production, override with CLI flags:
+  #   dart run msix:pack --certificate-path codesign.pfx --certificate-password XXX
+  #   — or use Build-MSIX.ps1 -CertificatePath / -SignToolOptions
+  certificate_path: windows\\msix\\test_cert.pfx
+  certificate_password: trusttunnel
