@@ -142,39 +142,10 @@ try {
         $applicationNode.AppendChild($extensionsNode) | Out-Null
     }
 
-    # Inject the packaged service extension.
-    # This tells Windows to auto-install vpn_easy_service.exe as a
-    # Windows service running as LocalSystem when the MSIX is provisioned.
-    #
-    # The Arguments string is passed verbatim to vpn_easy_service.exe.
-    # Must match pipe_name_ and ring_buffer_path_ in vpn_plugin.cpp.
-    #
-    # IMPORTANT: These attributes MUST match what vpn_easy_service_install()
-    # creates via CreateServiceW() in vpn-libs/platform/windows/src/vpn_easy.cpp:
-    #   - Service type:  SERVICE_WIN32_OWN_PROCESS  (implicit in desktop6:Service)
-    #   - Startup type:  SERVICE_AUTO_START          → StartupType="auto"
-    #   - Start account: LocalSystem (nullptr = LocalSystem) → StartAccount="localSystem"
-    #   - Error control: SERVICE_ERROR_NORMAL        (not configurable in manifest)
-    #
-    # Additionally, vpn_easy_service_install() does two things that the
-    # desktop6:Service declarative model does NOT replicate:
-    #   1. Grants Authenticated Users SERVICE_START|SERVICE_STOP via DACL
-    #   2. Immediately starts the service after creation
-    # Both of these are handled differently in the MSIX model:
-    #   - The app uses vpn_easy_service_start() (named pipe IPC) rather than
-    #     SCM start/stop, so the DACL grant is only needed for unpackaged mode.
-    #   - The service is started on-demand by the app, not at boot.
-    # We keep StartupType="manual" intentionally because:
-    #   - The Flutter app connects via named pipe and the service auto-starts
-    #     when the app sends the VPN_EASY_SVC_MSG_START message.
-    #   - Auto-starting at boot is unnecessary for a VPN client that should
-    #     only run when the user explicitly connects.
-    #   - If auto-start is desired, change to StartupType="auto" and add
-    #     <desktop6:ServiceTrigger> for the named pipe event.
-    #
-    # IMPORTANT: %ProgramData% expands to a path WITHOUT spaces on stock
-    # Windows, so no quoting is needed. If you move to a path with spaces,
-    # wrap each argument in escaped quotes:  `\"%ProgramData%\...\"`
+    # Inject the packaged service extension — declares vpn_easy_service.exe
+    # as a Windows service (LocalSystem) that Windows auto-installs with the MSIX.
+    # Arguments must match pipe_name_ and ring_buffer_path_ in vpn_plugin.cpp.
+    # StartupType="manual" because the app connects via named pipe on-demand.
     $serviceArgs = "%ProgramData%\TrustTunnel\vpn_easy_service.log \\.\pipe\trusttunnel_vpn %ProgramData%\TrustTunnel\vpn_query_log.ring"
 
     $d6ns = "http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
