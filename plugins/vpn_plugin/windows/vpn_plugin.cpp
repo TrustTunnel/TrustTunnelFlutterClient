@@ -40,13 +40,31 @@ static bool IsRunningInMsixPackage() {
   return (result == ERROR_INSUFFICIENT_BUFFER);
 }
 
+/// Returns the directory containing the running executable.
+/// Uses dynamic allocation to avoid MAX_PATH truncation.
+static std::filesystem::path GetExeDir() {
+  std::wstring exe_path;
+  DWORD buf_size = MAX_PATH;
+  do {
+    exe_path.resize(buf_size);
+    DWORD len = GetModuleFileNameW(nullptr, exe_path.data(), buf_size);
+    if (len == 0) {
+      LogError("GetModuleFileNameW failed (error: %lu)", GetLastError());
+      return {};
+    }
+    if (len < buf_size) {
+      exe_path.resize(len);
+      break;
+    }
+    buf_size *= 2;
+  } while (true);
+  return std::filesystem::path(exe_path).parent_path();
+}
+
 /// Returns a writable directory for runtime data (logs, ring buffers).
 ///
-/// When running inside an MSIX package, this returns
-/// %ProgramData%\TrustTunnel\ so that both the app (user) and the
-/// packaged Windows service (SYSTEM) can access the same files.
-///
-/// Outside MSIX, returns the directory of the running executable.
+/// MSIX: %ProgramData%\TrustTunnel\ (shared between app and SYSTEM service).
+/// Otherwise: same directory as the executable.
 static std::filesystem::path GetWritableAppDataPath() {
   if (IsRunningInMsixPackage()) {
     PWSTR programData = nullptr;
@@ -58,10 +76,7 @@ static std::filesystem::path GetWritableAppDataPath() {
       return p;
     }
   }
-  // Fallback: same directory as the executable.
-  wchar_t exe_path[MAX_PATH];
-  GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
-  return std::filesystem::path(exe_path).parent_path();
+  return GetExeDir();
 }
 
 // --- vpn_easy C Callbacks ---
@@ -163,9 +178,7 @@ VpnPlugin::~VpnPlugin() {
 }
 
 int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
-  wchar_t exe_path[MAX_PATH];
-  GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
-  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
+  std::filesystem::path exe_dir = GetExeDir();
   std::wstring helper_exe = (exe_dir / L"service_installer.exe").wstring();
 
   SHELLEXECUTEINFOW sei = {};
@@ -202,9 +215,7 @@ int32_t VpnPlugin::InstallService() {
     // Installing isn't supported, the service is installed along with the package.
     return VPN_EASY_SVC_ERR_UNSUPPORTED;
   }
-  wchar_t exe_path[MAX_PATH];
-  GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
-  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
+  std::filesystem::path exe_dir = GetExeDir();
   std::wstring service_exe = (exe_dir / L"vpn_easy_service.exe").wstring();
   // Use writable path (MSIX-safe) for the service log.
   std::wstring log_path = (GetWritableAppDataPath() / L"vpn_easy_service.log").wstring();
