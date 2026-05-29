@@ -159,14 +159,11 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
       &flutter::StandardMethodCodec::GetInstance());
   query_log_channel_->SetStreamHandler(std::move(query_log_handler));
 
-  // Pre-load connection states
-  vpn_easy_service_read_all_connection_info(
-      ring_buffer_path_.c_str(), s_notify_connection_info, this);
-
-  // Start background worker for offloading blocking operations.
-  // Attempt to attach if background service is already active.
+  // Attach to the background service and replay persisted connection info.
   worker_.Post([this]() {
     AttachService();
+    vpn_easy_service_read_all_connection_info(
+        ring_buffer_path_.c_str(), s_notify_connection_info, this);
   });
 }
 
