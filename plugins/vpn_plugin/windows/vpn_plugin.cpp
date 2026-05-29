@@ -286,7 +286,7 @@ std::optional<FlutterError> VpnPlugin::Stop() {
 }
 
 std::optional<FlutterError> VpnPlugin::UpdateConfiguration(const std::string* /*config*/) {
-  // Not used directly in Windows background service handling in this manner
+  // No-op on Windows
   return std::nullopt;
 }
 
