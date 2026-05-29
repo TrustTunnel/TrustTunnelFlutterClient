@@ -82,3 +82,7 @@ lib/common/localization/generated/
 */Podfile.lock
 */.bundle
 
+# Windows MSIX test certificate (each dev generates their own via Setup-TestCert.ps1)
+windows/msix/test_cert.pfx
+windows/msix/test_cert.cer
+
