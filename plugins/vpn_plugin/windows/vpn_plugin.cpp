@@ -2,6 +2,8 @@
 
 #include <filesystem>
 #include <shellapi.h>
+#include <ShlObj.h>
+#include <appmodel.h>
 
 #include "vpn/vpn_easy.h"
 #include "vpn/vpn_easy_service.h"
@@ -10,7 +12,43 @@
 
 namespace vpn_plugin {
 
-static ag::Logger g_logger{"VPN_PLUGIN"};
+// ---------------------------------------------------------------------------
+// MSIX helpers
+// ---------------------------------------------------------------------------
+
+/// Returns true when the process is running inside an MSIX/AppX container.
+static bool IsRunningInMsixPackage() {
+  UINT32 len = 0;
+  // Call with null buffer to probe: ERROR_INSUFFICIENT_BUFFER (122) means
+  // the process HAS package identity; APPMODEL_ERROR_NO_PACKAGE (15700)
+  // means it's an unpackaged Win32 process.
+  LONG result = GetCurrentPackageFullName(&len, nullptr);
+  return (result == ERROR_INSUFFICIENT_BUFFER);
+}
+
+/// Returns a writable directory for runtime data (logs, ring buffers).
+///
+/// When running inside an MSIX package, this returns
+/// %ProgramData%\TrustTunnel\ so that both the app (user) and the
+/// packaged Windows service (SYSTEM) can access the same files.
+///
+/// Outside MSIX, returns the directory of the running executable.
+static std::filesystem::path GetWritableAppDataPath() {
+  if (IsRunningInMsixPackage()) {
+    PWSTR programData = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_ProgramData, 0, nullptr, &programData))) {
+      std::filesystem::path p = std::filesystem::path(programData) / L"TrustTunnel";
+      CoTaskMemFree(programData);
+      std::error_code ec;
+      std::filesystem::create_directories(p, ec);
+      return p;
+    }
+  }
+  // Fallback: same directory as the executable.
+  wchar_t exe_path[MAX_PATH];
+  GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
+  return std::filesystem::path(exe_path).parent_path();
+}
 
 // --- vpn_easy C Callbacks ---
 
@@ -73,11 +111,8 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
       service_name_(L"TrustTunnelVPN"),
       pipe_name_(L"\\\\.\\pipe\\trusttunnel_vpn") {
 
-  // Resolve absolute paths matching native_vpn_impl.cpp
-  wchar_t exe_path[MAX_PATH];
-  GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
-  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
-  ring_buffer_path_ = (exe_dir / L"vpn_query_log.ring").string();
+  // Use writable path (MSIX-safe) for runtime data.
+  ring_buffer_path_ = (GetWritableAppDataPath() / L"vpn_query_log.ring").string();
 
   // Setup Event Channel for State
   auto state_handler = std::make_unique<VpnEventStreamHandler>();
@@ -158,11 +193,17 @@ int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
 }
 
 int32_t VpnPlugin::InstallService() {
+  if (IsRunningInMsixPackage()) {
+    // When running in MSIX, the service is managed by the platform (packaged service).
+    // Uninstalling isn't supported (the service is removed when the package is uninstalled).
+    return VPN_EASY_SVC_ERR_UNSUPPORTED;
+  }
   wchar_t exe_path[MAX_PATH];
   GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
   std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
   std::wstring service_exe = (exe_dir / L"vpn_easy_service.exe").wstring();
-  std::wstring log_path = exe_dir / L"vpn_easy_service.log";
+  // Use writable path (MSIX-safe) for the service log.
+  std::wstring log_path = (GetWritableAppDataPath() / L"vpn_easy_service.log").wstring();
   std::wstring ring_buffer_path_w(ring_buffer_path_.begin(), ring_buffer_path_.end());
 
   // Build the command-line arguments for service_installer.exe:
@@ -180,6 +221,11 @@ int32_t VpnPlugin::InstallService() {
 }
 
 int32_t VpnPlugin::UninstallService() {
+  if (IsRunningInMsixPackage()) {
+    // When running in MSIX, the service is managed by the platform (packaged service).
+    // Uninstalling isn't supported (the service is removed when the package is uninstalled).
+    return VPN_EASY_SVC_ERR_UNSUPPORTED;
+  }
   std::wstring params = L"uninstall \"" + service_name_ + L"\"";
   return RunElevatedHelper(params);
 }
