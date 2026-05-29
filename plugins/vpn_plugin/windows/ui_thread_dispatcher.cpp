@@ -8,61 +8,68 @@
 #include <mutex>
 #include <queue>
 
+namespace vpn_plugin {
+
 struct UIThreadDispatcher::Impl {
-  static constexpr UINT WM_DISPATCH = WM_APP + 1;
-  static constexpr const wchar_t kClassName[] = L"VpnPluginDispatcher";
+    static constexpr UINT WM_DISPATCH = WM_APP + 1;
+    static constexpr const wchar_t CLASS_NAME[] = L"VpnPluginDispatcher";
 
-  static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
+    static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp,
+                                    LPARAM lp);
 
-  HWND hwnd = nullptr;
-  std::mutex mutex;
-  std::queue<std::function<void()>> queue;
+    HWND hwnd = nullptr;
+    std::mutex mutex;
+    std::queue<std::function<void()>> queue;
 };
 
-UIThreadDispatcher::UIThreadDispatcher() : impl_(std::make_unique<Impl>()) {
-  WNDCLASSEXW wc = {};
-  wc.cbSize = sizeof(wc);
-  wc.lpfnWndProc = Impl::WndProc;
-  wc.lpszClassName = Impl::kClassName;
-  wc.hInstance = GetModuleHandle(nullptr);
-  RegisterClassExW(&wc);
-  impl_->hwnd = CreateWindowExW(0, Impl::kClassName, L"", 0, 0, 0, 0, 0,
-      HWND_MESSAGE, nullptr, GetModuleHandle(nullptr), nullptr);
-  SetWindowLongPtr(impl_->hwnd, GWLP_USERDATA,
-                   reinterpret_cast<LONG_PTR>(impl_.get()));
+UIThreadDispatcher::UIThreadDispatcher()
+    : m_impl(std::make_unique<Impl>()) {
+    WNDCLASSEXW wc = {};
+    wc.cbSize = sizeof(wc);
+    wc.lpfnWndProc = Impl::WndProc;
+    wc.lpszClassName = Impl::CLASS_NAME;
+    wc.hInstance = GetModuleHandle(nullptr);
+    RegisterClassExW(&wc);
+    m_impl->hwnd = CreateWindowExW(
+            0, Impl::CLASS_NAME, L"", 0, 0, 0, 0, 0,
+            HWND_MESSAGE, nullptr, GetModuleHandle(nullptr), nullptr);
+    SetWindowLongPtr(m_impl->hwnd, GWLP_USERDATA,
+                     reinterpret_cast<LONG_PTR>(m_impl.get()));
 }
 
 UIThreadDispatcher::~UIThreadDispatcher() {
-  if (impl_->hwnd) {
-    DestroyWindow(impl_->hwnd);
-  }
+    if (m_impl->hwnd) {
+        DestroyWindow(m_impl->hwnd);
+    }
 }
 
 void UIThreadDispatcher::RunOnUIThread(std::function<void()> task) {
-  {
-    std::lock_guard<std::mutex> lock(impl_->mutex);
-    impl_->queue.push(std::move(task));
-  }
-  PostMessage(impl_->hwnd, Impl::WM_DISPATCH, 0, 0);
+    {
+        std::lock_guard<std::mutex> lock(m_impl->mutex);
+        m_impl->queue.push(std::move(task));
+    }
+    PostMessage(m_impl->hwnd, Impl::WM_DISPATCH, 0, 0);
 }
 
 LRESULT CALLBACK UIThreadDispatcher::Impl::WndProc(HWND hwnd, UINT msg,
                                                    WPARAM wp, LPARAM lp) {
-  if (msg == WM_DISPATCH) {
-    auto* pimpl = reinterpret_cast<Impl*>(
-        GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    if (pimpl) {
-      std::queue<std::function<void()>> tasks;
-      {
-        std::lock_guard<std::mutex> lock(pimpl->mutex);
-        std::swap(tasks, pimpl->queue);
-      }
-      while (!tasks.empty()) {
-        tasks.front()();
-        tasks.pop();
-      }
+    if (msg == WM_DISPATCH) {
+        auto* pimpl = reinterpret_cast<Impl*>(
+                GetWindowLongPtr(hwnd, GWLP_USERDATA));
+        if (pimpl) {
+            std::queue<std::function<void()>> tasks;
+            {
+                std::lock_guard<std::mutex> lock(pimpl->mutex);
+                std::swap(tasks, pimpl->queue);
+            }
+            while (!tasks.empty()) {
+                tasks.front()();
+                tasks.pop();
+            }
+        }
+        return 0;
     }
-    return 0;
-  }
-  return DefWindowProc(hwnd, msg, wp, lp);
+    return DefWindowProc(hwnd, msg, wp, lp);
 }
+
+} // namespace vpn_plugin

@@ -5,58 +5,62 @@
 namespace vpn_plugin {
 
 BackgroundWorker::BackgroundWorker()
-    : thread_(&BackgroundWorker::Run, this) {}
+    : m_thread(&BackgroundWorker::Run, this) {}
 
 BackgroundWorker::~BackgroundWorker() {
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    stop_ = true;
-  }
-  cv_.notify_one();
-  if (thread_.joinable()) {
-    thread_.join();
-  }
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_stop = true;
+    }
+    m_cv.notify_one();
+    if (m_thread.joinable()) {
+        m_thread.join();
+    }
 }
 
 void BackgroundWorker::Post(std::function<void()> task) {
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (stop_) return;
-    queue_.push(std::move(task));
-  }
-  cv_.notify_one();
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_stop) {
+            return;
+        }
+        m_queue.push(std::move(task));
+    }
+    m_cv.notify_one();
 }
 
 void BackgroundWorker::Sync(std::function<void()> task) {
-  std::mutex sync_mutex;
-  std::condition_variable sync_cv;
-  bool done = false;
+    std::mutex sync_mutex;
+    std::condition_variable sync_cv;
+    bool done = false;
 
-  Post([&]() {
-    task();
-    {
-      std::lock_guard<std::mutex> lock(sync_mutex);
-      done = true;
-    }
-    sync_cv.notify_one();
-  });
+    Post([&]() {
+        task();
+        {
+            std::lock_guard<std::mutex> lock(sync_mutex);
+            done = true;
+        }
+        sync_cv.notify_one();
+    });
 
-  std::unique_lock<std::mutex> lock(sync_mutex);
-  sync_cv.wait(lock, [&] { return done; });
+    std::unique_lock<std::mutex> lock(sync_mutex);
+    sync_cv.wait(lock, [&] { return done; });
 }
 
 void BackgroundWorker::Run() {
-  for (;;) {
-    std::function<void()> task;
-    {
-      std::unique_lock<std::mutex> lock(mutex_);
-      cv_.wait(lock, [this] { return stop_ || !queue_.empty(); });
-      if (stop_ && queue_.empty()) return;
-      task = std::move(queue_.front());
-      queue_.pop();
+    for (;;) {
+        std::function<void()> task;
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_cv.wait(lock, [this] { return m_stop || !m_queue.empty(); });
+            if (m_stop && m_queue.empty()) {
+                return;
+            }
+            task = std::move(m_queue.front());
+            m_queue.pop();
+        }
+        task();
     }
-    task();
-  }
 }
 
-}  // namespace vpn_plugin
+} // namespace vpn_plugin
