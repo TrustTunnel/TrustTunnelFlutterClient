@@ -49,6 +49,11 @@ param(
     [ValidateSet("Debug", "Profile", "Release")]
     [string]$Configuration = "Release",
 
+    # Target CPU architecture for the MSIX package.
+    # Must match the architecture used by `flutter build windows`.
+    [ValidateSet("x64", "arm64", "x86")]
+    [string]$Architecture = "x64",
+
     # Path to a .pfx code-signing certificate. Overrides pubspec.yaml certificate_path.
     [string]$CertificatePath,
 
