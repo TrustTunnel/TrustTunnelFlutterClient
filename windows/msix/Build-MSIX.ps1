@@ -49,11 +49,6 @@ param(
     [ValidateSet("Debug", "Profile", "Release")]
     [string]$Configuration = "Release",
 
-    # Target CPU architecture for the MSIX package.
-    # Must match the architecture used by `flutter build windows`.
-    [ValidateSet("x64", "arm64", "x86")]
-    [string]$Architecture = "x64",
-
     # Path to a .pfx code-signing certificate. Overrides pubspec.yaml certificate_path.
     [string]$CertificatePath,
 
@@ -104,24 +99,34 @@ try {
     Write-Host "=== Injecting packaged service extension ===" -ForegroundColor Cyan
 
     # The msix plugin writes the manifest next to the built exe.
+    # Flutter build layout: build\windows\<arch>\runner\<Config>
+    # Cross-compilation is not supported, so there will only ever be one
+    # architecture directory matching the host platform.
     $buildConfigDir = switch ($Configuration) {
         "Debug"   { "Debug" }
         "Profile" { "Profile" }
         "Release" { "Release" }
     }
 
-    $manifestPath = Join-Path $PWD "build\windows\runner\$buildConfigDir\AppxManifest.xml"
+    # Detect the architecture directory produced by the build.
+    $buildOutputDir = $null
+    foreach ($arch in @("x64", "arm64", "x86")) {
+        $candidate = Join-Path $PWD "build\windows\$arch\runner\$buildConfigDir"
+        if (Test-Path $candidate) {
+            $buildOutputDir = $candidate
+            break
+        }
+    }
+    if (-not $buildOutputDir) {
+        Write-Error "Build output not found under build\windows\*\runner\$buildConfigDir. Did 'flutter build windows' succeed?"
+        exit 1
+    }
+
+    $manifestPath = Join-Path $buildOutputDir "AppxManifest.xml"
 
     if (-not (Test-Path $manifestPath)) {
-        # Fallback: search recursively (covers older layouts)
-        $found = Get-ChildItem -Path "build\windows" -Recurse -Filter "AppxManifest.xml" |
-            Select-Object -First 1
-        if ($found) {
-            $manifestPath = $found.FullName
-        } else {
-            Write-Error "Could not find AppxManifest.xml under build\windows"
-            exit 1
-        }
+        Write-Error "AppxManifest.xml not found at '$manifestPath'. Did 'dart run msix:build' succeed?"
+        exit 1
     }
 
     Write-Host "  Manifest: $manifestPath" -ForegroundColor Green
@@ -236,7 +241,7 @@ try {
     # ------------------------------------------------------------------
     # 5. Summary & install instructions
     # ------------------------------------------------------------------
-    $msixFile = Get-ChildItem -Path "build\windows\runner\$buildConfigDir" -Filter "*.msix" |
+    $msixFile = Get-ChildItem -Path $buildOutputDir -Filter "*.msix" |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
     $isTestCert = -not $CertificatePath -and -not $SignToolOptions
@@ -263,11 +268,11 @@ try {
     }
     Write-Host ""
     Write-Host "  --- INSTALL ---" -ForegroundColor Yellow
-    Write-Host '    Add-AppxPackage -Path ".\build\windows\runner\'$buildConfigDir'\trusttunnel.msix"' -ForegroundColor Cyan
+    $msixRelPath = $msixFile ? $msixFile.FullName.Substring($PWD.Path.Length + 1) : "build\windows\x64\runner\$buildConfigDir\trusttunnel.msix"
+    Write-Host "    Add-AppxPackage -Path `".\$msixRelPath`"" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  --- VERIFY SERVICE ---" -ForegroundColor Yellow
     Write-Host '    Get-Service TrustTunnelVPN' -ForegroundColor Cyan
-    Write-Host '    Start-Service TrustTunnelVPN' -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  --- SERVICE LOGS ---" -ForegroundColor Yellow
     Write-Host '    # Service log file (the first service argument):' -ForegroundColor White
