@@ -20,6 +20,8 @@ set(PLUGIN_NAME "vpn_plugin_plugin")
 
 # Any new source files that you add to the plugin should be added here.
 list(APPEND PLUGIN_SOURCES
+  "background_worker.cpp"
+  "background_worker.h"
   "runner/platform_api.g.cpp"
   "runner/platform_api.g.h"
   "vpn_plugin.cpp"
