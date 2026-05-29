@@ -91,8 +91,7 @@ list(APPEND CMAKE_PREFIX_PATH "${trusttunnelclientwindows_SOURCE_DIR}")
 find_package(TrustTunnelClientWindows REQUIRED)
 target_link_libraries(${PLUGIN_NAME} PRIVATE TrustTunnelClientWindows::vpn_easy)
 
-# --- Bundle vpn_easy_service.exe and wintun.dll ---
-# Both are shipped inside the prebuilt archive's bin/ directory.
+# --- Bundle required adapter's targets ---
 set(_TT_BIN_DIR "${trusttunnelclientwindows_SOURCE_DIR}/bin")
 
 set(VPN_SERVICE_EXE "${_TT_BIN_DIR}/vpn_easy_service.exe")
