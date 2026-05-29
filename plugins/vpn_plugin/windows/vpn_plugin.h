@@ -16,9 +16,9 @@
 #include <mutex>
 #include <thread>
 
+#include "background_worker.h"
 #include "runner/platform_api.g.h"
 #include "ui_thread_dispatcher.h"
-#include "vpn/event_loop.h"
 
 namespace vpn_plugin {
 
@@ -79,8 +79,7 @@ class VpnPlugin : public flutter::Plugin, public IVpnManager {
 
   flutter::PluginRegistrarWindows* registrar_;
   UIThreadDispatcher dispatcher_;
-  ag::UniquePtr<ag::VpnEventLoop, &ag::vpn_event_loop_destroy> ev_loop_{ag::vpn_event_loop_create()};
-  std::thread ev_thread_;
+  BackgroundWorker worker_;  // dedicated thread for blocking VPN operations
 
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> state_channel_;
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> query_log_channel_;

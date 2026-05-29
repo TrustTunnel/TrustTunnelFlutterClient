@@ -1,5 +1,6 @@
 #include "vpn_plugin.h"
 
+#include <cstdio>
 #include <filesystem>
 #include <shellapi.h>
 #include <ShlObj.h>
@@ -8,9 +9,22 @@
 #include "vpn/vpn_easy.h"
 #include "vpn/vpn_easy_service.h"
 
-#include "common/logger.h"
-
 namespace vpn_plugin {
+
+// Minimal Windows-native logging (replaces common/logger.h dependency).
+// OutputDebugStringA sends to the debugger; for production MSIX builds
+// these messages appear in tools like DebugView or ETW traces.
+static void LogError(const char* fmt, ...) {
+  char buf[512];
+  va_list args;
+  va_start(args, fmt);
+  int n = vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  if (n > 0) {
+    OutputDebugStringA(buf);
+    OutputDebugStringA("\n");
+  }
+}
 
 // ---------------------------------------------------------------------------
 // MSIX helpers
@@ -134,28 +148,18 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
   vpn_easy_service_read_all_connection_info(
       ring_buffer_path_.c_str(), s_notify_connection_info, this);
 
-  // Start the background event loop for offloading blocking operations.
-  ev_thread_ = std::thread([this]() {
-    ag::vpn_event_loop_run(ev_loop_.get());
-  });
-  ag::vpn_event_loop_dispatch_sync(ev_loop_.get(), nullptr, nullptr);
-
+  // Start background worker for offloading blocking operations.
   // Attempt to attach if background service is already active.
-  // Fire-and-forget: if it fails, Start() handles installing + starting fresh.
-  ag::event_loop::submit(ev_loop_.get(), [this]() {
+  worker_.Post([this]() {
     AttachService();
-  }).release();
+  });
 }
 
 VpnPlugin::~VpnPlugin() {
-  // Tear down the pipe IO synchronously on the event loop thread before stopping.
-  ag::event_loop::dispatch_sync(ev_loop_.get(), []() {
+  // Tear down the pipe IO synchronously before the worker stops.
+  worker_.Sync([]() {
     vpn_easy_service_detach();
   });
-  ag::vpn_event_loop_stop(ev_loop_.get());
-  if (ev_thread_.joinable()) {
-    ev_thread_.join();
-  }
 }
 
 int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
@@ -243,13 +247,13 @@ int32_t VpnPlugin::StartService(const std::string& config) {
 }
 
 std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
-  ag::event_loop::submit(ev_loop_.get(), [this, config = config]() {
+  worker_.Post([this, config = config]() {
     int32_t start_result = StartService(config);
 
     if (start_result == VPN_EASY_SVC_ERR_NO_SUCH_SERVICE) {
       int32_t install_result = InstallService();
       if (install_result != 0) {
-        errlog(g_logger, "Failed to install VPN service (error code: {})", install_result);
+        LogError("Failed to install VPN service (error code: %d)", install_result);
         return;
       }
 
@@ -257,18 +261,18 @@ std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
     }
 
     if (start_result != 0) {
-      errlog(g_logger, "Failed to start VPN service (error code: {})", start_result);
+      LogError("Failed to start VPN service (error code: %d)", start_result);
       return;
     }
-  }).release();
+  });
 
   return std::nullopt;
 }
 
 std::optional<FlutterError> VpnPlugin::Stop() {
-  ag::event_loop::submit(ev_loop_.get(), [this]() {
+  worker_.Post([this]() {
     vpn_easy_service_stop(service_name_.c_str(), pipe_name_.c_str());
-  }).release();
+  });
 
   return std::nullopt;
 }
