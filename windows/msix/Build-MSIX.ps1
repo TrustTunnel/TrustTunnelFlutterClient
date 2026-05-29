@@ -187,6 +187,19 @@ try {
     Write-Host "  Manifest patched successfully." -ForegroundColor Green
 
     # ------------------------------------------------------------------
+    # 3b. Remove service_installer.exe from the staging directory
+    #     (not needed in MSIX — the packaged service is managed by the
+    #      platform via desktop6:Service; service_installer.exe is only
+    #      used by the non-MSIX elevated helper path).
+    # ------------------------------------------------------------------
+    $stagingDir = $buildOutputDir
+    $svcInstaller = Join-Path $stagingDir "service_installer.exe"
+    if (Test-Path $svcInstaller) {
+        Remove-Item $svcInstaller -Force
+        Write-Host "  Removed service_installer.exe from MSIX staging (not needed for packaged service)" -ForegroundColor Green
+    }
+
+    # ------------------------------------------------------------------
     # 4. Package + sign
     # ------------------------------------------------------------------
     # Build the dart run msix:pack command, optionally overriding
