@@ -1,0 +1,86 @@
+import 'package:quick_actions/quick_actions.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/repository/routing_repository.dart';
+import 'package:trusttunnel/data/repository/server_repository.dart';
+import 'package:trusttunnel/data/repository/settings_repository.dart';
+import 'package:trusttunnel/data/repository/vpn_repository.dart';
+
+class SamsungRoutineHandler {
+  static final QuickActions _quickActions = const QuickActions();
+
+  static void init({
+    required ServerRepository serverRepository,
+    required VpnRepository vpnRepository,
+    required RoutingRepository routingRepository,
+    required SettingsRepository settingsRepository,
+  }) {
+    _quickActions.initialize((String shortcutType) async {
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (shortcutType == 'connect_server_1') {
+        try {
+          final servers = await serverRepository.getAllServers();
+          if (servers.isEmpty) return;
+
+          final Server targetServer =
+              _findServerByName(servers, 'server 1') ?? servers.first;
+
+          await serverRepository.setSelectedServerId(id: targetServer.id);
+
+          RoutingProfile? routingProfile = await routingRepository.getProfileById(
+            id: targetServer.serverData.routingProfileId,
+          );
+
+          if (routingProfile == null) {
+            final allProfiles = await routingRepository.getAllProfiles();
+            if (allProfiles.isEmpty) return;
+            routingProfile = allProfiles.first;
+          }
+
+          final excludedRoutes = await settingsRepository.getExcludedRoutes();
+
+          await vpnRepository.stop();
+
+          await vpnRepository.startListenToStates(
+            server: targetServer,
+            routingProfile: routingProfile,
+            excludedRoutes: excludedRoutes,
+          );
+        } catch (_) {
+          // Intentionally ignored so shortcut failures do not crash the app.
+        }
+      } else if (shortcutType == 'disconnect_vpn') {
+        await vpnRepository.stop();
+      }
+    });
+
+    _quickActions.setShortcutItems(<ShortcutItem>[
+      const ShortcutItem(
+        type: 'connect_server_1',
+        localizedTitle: 'Connect to server 1',
+        icon: 'ic_launcher',
+      ),
+      const ShortcutItem(
+        type: 'disconnect_vpn',
+        localizedTitle: 'Disconnect VPN',
+        icon: 'ic_launcher',
+      ),
+    ]);
+  }
+
+  static Server? _findServerByName(List<Server> servers, String name) {
+    final normalizedTarget = _normalize(name);
+
+    for (final server in servers) {
+      if (_normalize(server.serverData.name) == normalizedTarget) {
+        return server;
+      }
+    }
+
+    return null;
+  }
+
+  static String _normalize(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+}
