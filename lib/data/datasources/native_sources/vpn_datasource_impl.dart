@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/extensions/model_extensions.dart';
 import 'package:trusttunnel/common/utils/upstream_protocol_encoder.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
+import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
@@ -33,11 +34,14 @@ import 'package:vpn_plugin/vpn_plugin.dart';
 /// {@endtemplate}
 class VpnDataSourceImpl implements VpnDataSource {
   final VpnPlugin _platformApi;
+  final SettingsDataSource _settingsDataSource;
 
   /// {@macro vpn_data_source_impl}
   VpnDataSourceImpl({
     required VpnPlugin vpnPlugin,
-  }) : _platformApi = vpnPlugin;
+    required SettingsDataSource settingsDataSource,
+  })  : _platformApi = vpnPlugin,
+        _settingsDataSource = settingsDataSource;
 
   /// {@macro vpn_data_source_state_stream}
   ///
@@ -84,7 +88,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
-  }) {
+  }) async {
     final exclusions = _getExclusionsByMode(routingProfile);
 
     final endPoint = Endpoint(
@@ -106,6 +110,10 @@ class VpnDataSourceImpl implements VpnDataSource {
       ),
     );
 
+    final perAppProxy = await _settingsDataSource.getPerAppProxy();
+    final bypassApps = await _settingsDataSource.getBypassApps();
+    final proxyApps = await _settingsDataSource.getProxyApps();
+
     return _platformApi.start(
       configuration: Configuration(
         vpnMode: VpnModeEncoder().convert(
@@ -114,6 +122,9 @@ class VpnDataSourceImpl implements VpnDataSource {
         endpoint: endPoint,
         tun: Tun(
           excludedRoutes: excludedRoutes,
+          perAppProxy: perAppProxy,
+          bypassApps: bypassApps,
+          proxyApps: proxyApps,
         ),
         socks: const Socks(),
       ),
@@ -139,7 +150,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
-  }) {
+  }) async {
     final exclusions = _getExclusionsByMode(routingProfile);
 
     final endPoint = Endpoint(
@@ -161,6 +172,10 @@ class VpnDataSourceImpl implements VpnDataSource {
       clientRandom: server.tlsPrefix ?? '',
     );
 
+    final perAppProxy = await _settingsDataSource.getPerAppProxy();
+    final bypassApps = await _settingsDataSource.getBypassApps();
+    final proxyApps = await _settingsDataSource.getProxyApps();
+
     return _platformApi.updateConfiguration(
       configuration: Configuration(
         vpnMode: VpnModeEncoder().convert(
@@ -169,6 +184,9 @@ class VpnDataSourceImpl implements VpnDataSource {
         endpoint: endPoint,
         tun: Tun(
           excludedRoutes: excludedRoutes,
+          perAppProxy: perAppProxy,
+          bypassApps: bypassApps,
+          proxyApps: proxyApps,
         ),
         socks: const Socks(),
       ),

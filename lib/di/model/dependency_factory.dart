@@ -79,7 +79,10 @@ class DependencyFactoryImpl implements DependencyFactory {
   );
 
   @override
-  VpnDataSource get vpnDataSource => _vpnDataSource ??= VpnDataSourceImpl(vpnPlugin: vpnPlugin);
+  VpnDataSource get vpnDataSource => _vpnDataSource ??= VpnDataSourceImpl(
+    vpnPlugin: vpnPlugin,
+    settingsDataSource: settingsDataSource,
+  );
 
   @override
   CertificateDataSource get certificateDataSource => _certificateDataSource ??= CertificateDataSourceImpl(

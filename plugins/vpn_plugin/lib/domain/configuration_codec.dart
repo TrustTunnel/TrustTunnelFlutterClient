@@ -112,6 +112,15 @@ abstract final class ConfigurationCodecKeys {
   /// TUN MTU key.
   static const mtuSize = 'mtu_size';
 
+  /// TUN per-app proxy enabled key.
+  static const perAppProxy = 'per_app_proxy';
+
+  /// TUN bypass apps toggle key.
+  static const bypassApps = 'bypass_apps';
+
+  /// TUN proxy apps list key.
+  static const proxyApps = 'proxy_apps';
+
   // Socks keys
   /// SOCKS listener bind address key.
   static const socksAddress = 'address';
@@ -196,6 +205,9 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     tun.setStringList(ConfigurationCodecKeys.includedRoutes, config.tun.includedRoutes);
     tun.setStringList(ConfigurationCodecKeys.excludedRoutes, config.tun.excludedRoutes);
     tun.setInt(ConfigurationCodecKeys.mtuSize, config.tun.mtuSize);
+    tun.setBool(ConfigurationCodecKeys.perAppProxy, config.tun.perAppProxy);
+    tun.setBool(ConfigurationCodecKeys.bypassApps, config.tun.bypassApps);
+    tun.setStringList(ConfigurationCodecKeys.proxyApps, config.tun.proxyApps);
 
     // final IniSection socks = document.section(ConfigurationCodecKeys.socksSection);
     // socks.setString(ConfigurationCodecKeys.socksAddress, config.socks.address);
@@ -280,6 +292,9 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
         tun.getStringList(ConfigurationCodecKeys.includedRoutes) ?? IniConst.defaultTunRoutes;
     final List<String> excludedRoutes = tun.getStringList(ConfigurationCodecKeys.excludedRoutes) ?? const <String>[];
     final int mtuSize = tun.getInt(ConfigurationCodecKeys.mtuSize) ?? IniConst.defaultTunMtu;
+    final bool perAppProxy = tun.getBool(ConfigurationCodecKeys.perAppProxy) ?? false;
+    final bool bypassApps = tun.getBool(ConfigurationCodecKeys.bypassApps) ?? false;
+    final List<String> proxyApps = tun.getStringList(ConfigurationCodecKeys.proxyApps) ?? const <String>[];
 
     final String socksAddress = socks.getString(ConfigurationCodecKeys.socksAddress) ?? IniConst.defaultSocksAddress;
     final String socksUsername = socks.getString(ConfigurationCodecKeys.socksUsername) ?? '';
@@ -329,6 +344,9 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
         includedRoutes: includedRoutes,
         excludedRoutes: excludedRoutes,
         mtuSize: mtuSize,
+        perAppProxy: perAppProxy,
+        bypassApps: bypassApps,
+        proxyApps: proxyApps,
       ),
       socks: Socks(
         address: socksAddress,

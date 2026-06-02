@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 
@@ -37,5 +38,41 @@ class SettingsDataSourceImpl implements SettingsDataSource {
         ),
       ),
     );
+  }
+
+  @override
+  Future<void> setPerAppProxy(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('per_app_proxy', enabled);
+  }
+
+  @override
+  Future<bool> getPerAppProxy() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('per_app_proxy') ?? false;
+  }
+
+  @override
+  Future<void> setBypassApps(bool bypass) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('bypass_apps', bypass);
+  }
+
+  @override
+  Future<bool> getBypassApps() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('bypass_apps') ?? false;
+  }
+
+  @override
+  Future<void> setProxyApps(List<String> apps) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('proxy_apps', apps);
+  }
+
+  @override
+  Future<List<String>> getProxyApps() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('proxy_apps') ?? [];
   }
 }

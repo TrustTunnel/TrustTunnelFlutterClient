@@ -33,6 +33,22 @@ final class Tun {
   /// {@endtemplate}
   final int mtuSize;
 
+  /// {@template tun_per_app_proxy}
+  /// Enables per-app proxying (split tunneling).
+  /// {@endtemplate}
+  final bool perAppProxy;
+
+  /// {@template tun_bypass_apps}
+  /// If true, the proxyApps list is treated as a bypass list.
+  /// If false, the proxyApps list is treated as an allowed list.
+  /// {@endtemplate}
+  final bool bypassApps;
+
+  /// {@template tun_proxy_apps}
+  /// List of package names to route through or bypass.
+  /// {@endtemplate}
+  final List<String> proxyApps;
+
   /// {@macro tun}
   const Tun({
     this.includedRoutes = const [
@@ -41,10 +57,13 @@ final class Tun {
     ],
     this.excludedRoutes = const [],
     this.mtuSize = 1280,
+    this.perAppProxy = false,
+    this.bypassApps = false,
+    this.proxyApps = const [],
   }) : assert(mtuSize > 0, 'mtuSize must be greater than 0');
 
   @override
-  String toString() => 'Tun(includedRoutes: $includedRoutes, excludedRoutes: $excludedRoutes, mtuSize: $mtuSize)';
+  String toString() => 'Tun(includedRoutes: $includedRoutes, excludedRoutes: $excludedRoutes, mtuSize: $mtuSize, perAppProxy: $perAppProxy, bypassApps: $bypassApps, proxyApps: $proxyApps)';
 
   @override
   bool operator ==(covariant Tun other) {
@@ -52,7 +71,10 @@ final class Tun {
 
     return listEquals(other.includedRoutes, includedRoutes) &&
         listEquals(other.excludedRoutes, excludedRoutes) &&
-        other.mtuSize == mtuSize;
+        other.mtuSize == mtuSize &&
+        other.perAppProxy == perAppProxy &&
+        other.bypassApps == bypassApps &&
+        listEquals(other.proxyApps, proxyApps);
   }
 
   @override
@@ -60,5 +82,8 @@ final class Tun {
     includedRoutes,
     excludedRoutes,
     mtuSize,
+    perAppProxy,
+    bypassApps,
+    proxyApps,
   ]);
 }
