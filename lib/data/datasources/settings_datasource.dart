@@ -17,4 +17,13 @@ abstract class SettingsDataSource {
   /// Loads the currently stored excluded routes list.
   /// {@endtemplate}
   Future<List<String>> getExcludedRoutes();
+
+  Future<void> setPerAppProxy(bool enabled);
+  Future<bool> getPerAppProxy();
+
+  Future<void> setBypassApps(bool bypass);
+  Future<bool> getBypassApps();
+
+  Future<void> setProxyApps(List<String> apps);
+  Future<List<String>> getProxyApps();
 }
