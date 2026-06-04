@@ -27,8 +27,9 @@ public:
     /**
      * Enqueue a task for asynchronous execution.
      * @param task The task to execute on the worker thread.
+     * @return true if the task was enqueued, false if the worker is stopped.
      */
-    void Post(std::function<void()> task);
+    bool Post(std::function<void()> task);
 
     /**
      * Enqueue a task and block the calling thread until it completes.

@@ -18,15 +18,16 @@ BackgroundWorker::~BackgroundWorker() {
     }
 }
 
-void BackgroundWorker::Post(std::function<void()> task) {
+bool BackgroundWorker::Post(std::function<void()> task) {
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         if (m_stop) {
-            return;
+            return false;
         }
         m_queue.push(std::move(task));
     }
     m_cv.notify_one();
+    return true;
 }
 
 void BackgroundWorker::Sync(std::function<void()> task) {
@@ -34,7 +35,7 @@ void BackgroundWorker::Sync(std::function<void()> task) {
     std::condition_variable sync_cv;
     bool done = false;
 
-    Post([&]() {
+    bool posted = Post([&]() {
         task();
         {
             std::lock_guard<std::mutex> lock(sync_mutex);
@@ -42,6 +43,11 @@ void BackgroundWorker::Sync(std::function<void()> task) {
         }
         sync_cv.notify_one();
     });
+
+    if (!posted) {
+        task();
+        return;
+    }
 
     std::unique_lock<std::mutex> lock(sync_mutex);
     sync_cv.wait(lock, [&] { return done; });
