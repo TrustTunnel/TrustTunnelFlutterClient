@@ -14,6 +14,7 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <filesystem>
 
 #include "background_worker.h"
 #include "runner/platform_api.g.h"
@@ -156,7 +157,7 @@ private:
 
     std::wstring m_service_name;
     std::wstring m_pipe_name;
-    std::string m_ring_buffer_path;
+    std::filesystem::path m_ring_buffer_path;
 
     VpnManagerState m_current_state = VpnManagerState::kDisconnected;
 };

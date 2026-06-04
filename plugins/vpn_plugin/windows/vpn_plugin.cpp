@@ -167,8 +167,7 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
       m_service_name(L"TrustTunnelVPN"),
       m_pipe_name(L"\\\\.\\pipe\\trusttunnel_vpn") {
     // Use writable path (MSIX-safe) for runtime data.
-    m_ring_buffer_path =
-            (GetWritableAppDataPath() / L"vpn_query_log.ring").string();
+    m_ring_buffer_path = GetWritableAppDataPath() / L"vpn_query_log.ring";
 
     // Setup Event Channel for State
     auto state_handler = std::make_unique<VpnEventStreamHandler>();
@@ -192,8 +191,9 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
     // Attach to the background service and replay persisted connection info.
     m_worker.Post([this]() {
         AttachService();
+        std::wstring ring_buffer_path = m_ring_buffer_path.wstring();
         vpn_easy_service_read_all_connection_info(
-                m_ring_buffer_path.c_str(), s_notify_connection_info, this);
+                ring_buffer_path.c_str(), s_notify_connection_info, this);
     });
 }
 
