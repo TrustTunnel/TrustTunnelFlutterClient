@@ -141,7 +141,6 @@ set(TEST_RUNNER "${PROJECT_NAME}_test")
 enable_testing()
 
 # Add the Google Test dependency.
-include(FetchContent)
 FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/release-1.11.0.zip
