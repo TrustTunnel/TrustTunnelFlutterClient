@@ -250,25 +250,10 @@ try {
     Write-Host "==============================================" -ForegroundColor Green
     Write-Host "  MSIX package created successfully!" -ForegroundColor Green
     if ($msixFile) {
-        Write-Host "  File: $($msixFile.FullName)" -ForegroundColor White
-        Write-Host "  Size: $([math]::Round($msixFile.Length / 1MB, 1)) MB" -ForegroundColor White
+        $msixRelPath = $msixFile.FullName.Substring($PWD.Path.Length + 1)
+    } else {
+        $msixRelPath = "build\windows\x64\runner\$buildConfigDir\trusttunnel.msix"
     }
-    if ($isTestCert) {
-        Write-Host ""
-        Write-Host "  Signed with TEST certificate (CN=TrustTunnelDev)." -ForegroundColor Yellow
-        Write-Host "  For local testing only — the cert must be trusted on the target machine." -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "  If you haven't trusted the cert yet, run:" -ForegroundColor Yellow
-        Write-Host '    .\windows\msix\Setup-TestCert.ps1' -ForegroundColor Cyan
-    }
-    else {
-        Write-Host ""
-        Write-Host "  Signed with PRODUCTION certificate." -ForegroundColor Green
-        Write-Host "  Ensure the cert chain is trusted on the target machine." -ForegroundColor White
-    }
-    Write-Host ""
-    Write-Host "  --- INSTALL ---" -ForegroundColor Yellow
-    $msixRelPath = $msixFile ? $msixFile.FullName.Substring($PWD.Path.Length + 1) : "build\windows\x64\runner\$buildConfigDir\trusttunnel.msix"
     Write-Host "    Add-AppxPackage -Path `".\$msixRelPath`"" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  --- VERIFY SERVICE ---" -ForegroundColor Yellow
