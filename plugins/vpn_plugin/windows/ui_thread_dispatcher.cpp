@@ -29,10 +29,20 @@ UIThreadDispatcher::UIThreadDispatcher()
     wc.lpfnWndProc = Impl::WndProc;
     wc.lpszClassName = Impl::CLASS_NAME;
     wc.hInstance = GetModuleHandle(nullptr);
-    RegisterClassExW(&wc);
+    if (!RegisterClassExW(&wc)) {
+        DWORD err = GetLastError();
+        if (err != ERROR_CLASS_ALREADY_EXISTS) {
+            OutputDebugStringA("UIThreadDispatcher: RegisterClassExW failed\n");
+            return;
+        }
+    }
     m_impl->hwnd = CreateWindowExW(
             0, Impl::CLASS_NAME, L"", 0, 0, 0, 0, 0,
             HWND_MESSAGE, nullptr, GetModuleHandle(nullptr), nullptr);
+    if (!m_impl->hwnd) {
+        OutputDebugStringA("UIThreadDispatcher: CreateWindowExW failed\n");
+        return;
+    }
     SetWindowLongPtr(m_impl->hwnd, GWLP_USERDATA,
                      reinterpret_cast<LONG_PTR>(m_impl.get()));
 }
@@ -44,6 +54,9 @@ UIThreadDispatcher::~UIThreadDispatcher() {
 }
 
 void UIThreadDispatcher::RunOnUIThread(std::function<void()> task) {
+    if (!m_impl->hwnd) {
+        return;
+    }
     {
         std::lock_guard<std::mutex> lock(m_impl->mutex);
         m_impl->queue.push(std::move(task));
