@@ -1,42 +1,134 @@
-#include <flutter/method_call.h>
-#include <flutter/method_result_functions.h>
-#include <flutter/standard_method_codec.h>
 #include <gtest/gtest.h>
-#include <windows.h>
+#include <gmock/gmock.h>
 
-#include <memory>
+#include <atomic>
+#include <chrono>
+#include <mutex>
 #include <string>
-#include <variant>
+#include <thread>
+#include <vector>
 
+#include "background_worker.h"
 #include "vpn_plugin.h"
+#include "mocks/vpn_easy_stub_state.h"
+
+// The stub state is defined in mocks/vpn_easy_stubs.cpp.
+// We re-declare the extern struct here so tests can inspect/modify it.
+struct VpnEasyStubState;
+extern VpnEasyStubState g_vpn_easy_stub;
 
 namespace vpn_plugin {
 namespace test {
 
-namespace {
+// ---------------------------------------------------------------------------
+// BackgroundWorker tests
+// ---------------------------------------------------------------------------
 
-using flutter::EncodableMap;
-using flutter::EncodableValue;
-using flutter::MethodCall;
-using flutter::MethodResultFunctions;
+TEST(BackgroundWorkerTest, PostExecutesTask) {
+    BackgroundWorker worker;
+    std::atomic<bool> executed{false};
+    worker.Post([&]() { executed = true; });
+    for (int i = 0; i < 100 && !executed; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    EXPECT_TRUE(executed);
+}
 
-}  // namespace
+TEST(BackgroundWorkerTest, SyncBlocksUntilTaskCompletes) {
+    BackgroundWorker worker;
+    std::atomic<int> counter{0};
+    worker.Sync([&]() { counter++; });
+    EXPECT_EQ(counter, 1);
+}
 
-TEST(VpnPlugin, GetPlatformVersion) {
-  VpnPlugin plugin;
-  // Save the reply value from the success callback.
-  std::string result_string;
-  plugin.HandleMethodCall(
-      MethodCall("getPlatformVersion", std::make_unique<EncodableValue>()),
-      std::make_unique<MethodResultFunctions<>>(
-          [&result_string](const EncodableValue* result) {
-            result_string = std::get<std::string>(*result);
-          },
-          nullptr, nullptr));
+TEST(BackgroundWorkerTest, MultiplePostsAreAllExecuted) {
+    BackgroundWorker worker;
+    std::atomic<int> counter{0};
+    constexpr int kCount = 10;
+    for (int i = 0; i < kCount; ++i) {
+        worker.Post([&]() { counter++; });
+    }
+    worker.Sync([&]() {});
+    EXPECT_EQ(counter, kCount);
+}
 
-  // Since the exact string varies by host, just ensure that it's a string
-  // with the expected format.
-  EXPECT_TRUE(result_string.rfind("Windows ", 0) == 0);
+TEST(BackgroundWorkerTest, DestructorDoesNotHang) {
+    auto worker = std::make_unique<BackgroundWorker>();
+    std::atomic<int> counter{0};
+    worker->Sync([&]() { counter++; });
+    EXPECT_EQ(counter, 1);
+    worker.reset();  // Should not hang.
+}
+
+TEST(BackgroundWorkerTest, TasksExecuteInOrder) {
+    BackgroundWorker worker;
+    std::vector<int> order;
+    std::mutex m;
+    for (int i = 0; i < 5; ++i) {
+        worker.Post([&m, &order, i]() {
+            std::lock_guard<std::mutex> lock(m);
+            order.push_back(i);
+        });
+    }
+    worker.Sync([&m, &order]() {
+        std::lock_guard<std::mutex> lock(m);
+        order.push_back(99);
+    });
+    std::lock_guard<std::mutex> lock(m);
+    ASSERT_EQ(order.size(), 6u);
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(order[i], i);
+    }
+    EXPECT_EQ(order[5], 99);
+}
+
+TEST(BackgroundWorkerTest, SyncAfterMultiplePosts) {
+    BackgroundWorker worker;
+    std::atomic<int> counter{0};
+    worker.Post([&]() { counter++; });
+    worker.Post([&]() { counter++; });
+    worker.Sync([&]() { counter++; });
+    EXPECT_EQ(counter, 3);
+}
+
+// ---------------------------------------------------------------------------
+// VpnEventStreamHandler tests — event queuing is the plugin's own logic
+// ---------------------------------------------------------------------------
+
+class MockEventSink : public flutter::EventSink<flutter::EncodableValue> {
+public:
+    MOCK_METHOD(void, SuccessInternal,
+                (const flutter::EncodableValue* event), (override));
+    MOCK_METHOD(void, ErrorInternal,
+                (const std::string& error_code,
+                 const std::string& error_message,
+                 const flutter::EncodableValue* error_details), (override));
+    MOCK_METHOD(void, EndOfStreamInternal, (), (override));
+};
+
+TEST(VpnEventStreamHandlerTest, SendEventQueuesWhenNoSink) {
+    VpnEventStreamHandler handler;
+    handler.SendEvent(flutter::EncodableValue("hello"));
+    handler.SendEvent(flutter::EncodableValue("world"));
+
+    auto sink = std::make_unique<MockEventSink>();
+    EXPECT_CALL(*sink, SuccessInternal(testing::NotNull())).Times(2);
+    handler.OnListen(nullptr, std::move(sink));
+}
+
+TEST(VpnEventStreamHandlerTest, ReListenDeliversQueuedEvents) {
+    VpnEventStreamHandler handler;
+
+    auto sink1 = std::make_unique<MockEventSink>();
+    EXPECT_CALL(*sink1, SuccessInternal(testing::_)).Times(0);
+    handler.OnListen(nullptr, std::move(sink1));
+    handler.OnCancel(nullptr);
+
+    handler.SendEvent(flutter::EncodableValue(100));
+
+    auto sink2 = std::make_unique<MockEventSink>();
+    EXPECT_CALL(*sink2, SuccessInternal(testing::NotNull())).Times(1);
+    handler.OnListen(nullptr, std::move(sink2));
 }
 
 }  // namespace test
