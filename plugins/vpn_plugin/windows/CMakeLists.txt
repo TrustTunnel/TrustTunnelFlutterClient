@@ -154,14 +154,27 @@ FetchContent_MakeAvailable(googletest)
 
 # The plugin's C API is not very useful for unit testing, so build the sources
 # directly into the test binary rather than using the DLL.
+#
+# We link against the real TrustTunnelClientWindows headers (for declarations)
+# but provide stub implementations (test/mocks/vpn_easy_stubs.cpp) instead of
+# the real library, so tests can control return values and avoid starting a
+# real VPN service.
 add_executable(${TEST_RUNNER}
   test/vpn_plugin_test.cpp
+  test/mocks/vpn_easy_stubs.cpp
   ${PLUGIN_SOURCES}
 )
 apply_standard_settings(${TEST_RUNNER})
-target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${TEST_RUNNER} PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  # Use real vpn_easy headers from the TrustTunnelClientWindows package.
+  "${trusttunnelclientwindows_SOURCE_DIR}/include"
+)
+# Link against the Pigeon-generated API (for FlutterError, ErrorOr, etc.).
+# The real TrustTunnelClientWindows::vpn_easy is NOT linked — stubs replace it.
 target_link_libraries(${TEST_RUNNER} PRIVATE flutter_wrapper_plugin)
 target_link_libraries(${TEST_RUNNER} PRIVATE gtest_main gmock)
+target_link_libraries(${TEST_RUNNER} PRIVATE Shell32 Ole32)
 # flutter_wrapper_plugin has link dependencies on the Flutter DLL.
 add_custom_command(TARGET ${TEST_RUNNER} POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
