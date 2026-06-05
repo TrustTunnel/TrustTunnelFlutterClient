@@ -7,6 +7,7 @@
 #include <shellapi.h>
 #include <ShlObj.h>
 
+#include <cstdarg>
 #include <cstdio>
 #include <filesystem>
 
