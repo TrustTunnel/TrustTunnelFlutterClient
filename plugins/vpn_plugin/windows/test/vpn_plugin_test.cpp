@@ -12,11 +12,6 @@
 #include "vpn_plugin.h"
 #include "mocks/vpn_easy_stub_state.h"
 
-// The stub state is defined in mocks/vpn_easy_stubs.cpp.
-// We re-declare the extern struct here so tests can inspect/modify it.
-struct VpnEasyStubState;
-extern VpnEasyStubState g_vpn_easy_stub;
-
 namespace vpn_plugin {
 namespace test {
 
