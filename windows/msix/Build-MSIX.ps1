@@ -1,22 +1,12 @@
 # Build-MSIX.ps1
-# Builds a Windows MSIX package for TrustTunnel VPN.
+# Builds a Windows MSIX package for TrustTunnel VPN (dev/test only).
 #
 # Usage:
 #   First time setup (generates + trusts the test cert):
 #     .\windows\msix\Setup-TestCert.ps1
 #
-#   Local dev (test cert):
+#   Build:
 #     .\windows\msix\Build-MSIX.ps1
-#
-#   Production (real code-signing cert):
-#     .\windows\msix\Build-MSIX.ps1 -CertificatePath C:\ci\codesign.pfx
-#     .\windows\msix\Build-MSIX.ps1 -CertificatePath C:\ci\codesign.pfx -CertificatePassword $env:SIGN_PASSWORD
-#     .\windows\msix\Build-MSIX.ps1 -SignToolOptions "/sha1 A1B2C3... /fd SHA256 /tr http://timestamp.digicert.com /td SHA256"
-#     .\windows\msix\Build-MSIX.ps1 -Publisher "CN=AdGuard, O=AdGuard Software Limited, C=CY"
-#
-#   CI/CD (Azure Key Vault — download cert first, then sign):
-#     az keyvault secret download --vault-name MyVault --name CodeSigningCert --file cert.pfx
-#     .\windows\msix\Build-MSIX.ps1 -CertificatePath cert.pfx -CertificatePassword $env:SIGN_PASSWORD
 #
 # Prerequisites:
 #   - Flutter SDK
@@ -28,17 +18,7 @@
 #   2. dart run msix:build        (generates AppxManifest + assets)
 #   3. Patch AppxManifest.xml: inject packaged service extension
 #      so Windows auto-installs vpn_easy_service.exe as SYSTEM
-#   4. dart run msix:pack          (packages + signs)
-#
-# Signing:
-#   - If -CertificatePath is given, it OVERRIDES the certificate_path /
-#     certificate_password in pubspec.yaml for this build. The publisher
-#     subject is auto-detected from the PFX file.
-#   - If -SignToolOptions is given, those are passed verbatim to
-#     SignTool.exe (useful for /sha1 store selection, CSP providers, etc.).
-#   - If -Publisher is given, it OVERRIDES the publisher subject string.
-#   - If none of these are given, the test cert in msix_config is used.
-#     The test cert must be generated first via Setup-TestCert.ps1.
+#   4. dart run msix:pack          (packages + signs with test cert)
 #
 # Service logs after install:
 #   C:\ProgramData\TrustTunnel\vpn_easy_service.log
@@ -47,22 +27,7 @@
 
 param(
     [ValidateSet("Debug", "Profile", "Release")]
-    [string]$Configuration = "Release",
-
-    # Path to a .pfx code-signing certificate. Overrides pubspec.yaml certificate_path.
-    [string]$CertificatePath,
-
-    # Password for the .pfx file. Overrides pubspec.yaml certificate_password.
-    [string]$CertificatePassword,
-
-    # Raw SignTool.exe options (e.g. "/sha1 THUMBPRINT /fd SHA256 /tr http://timestamp.digicert.com /td SHA256").
-    # When set, passed as --signtool-options to dart run msix:pack.
-    [string]$SignToolOptions,
-
-    # Publisher subject string (e.g. "CN=AdGuard, O=AdGuard Software Limited, C=CY").
-    # Overrides pubspec.yaml publisher. Auto-detected from the PFX if not set
-    # and -CertificatePath is provided.
-    [string]$Publisher
+    [string]$Configuration = "Release"
 )
 
 $ErrorActionPreference = "Stop"
@@ -70,14 +35,13 @@ Push-Location $PSScriptRoot\..\..
 
 try {
     # ------------------------------------------------------------------
-    # 0. Pre-check: test cert must exist when not using production signing
+    # 0. Pre-check: test cert must exist
     # ------------------------------------------------------------------
     $testPfxPath = Join-Path $PSScriptRoot "test_cert.pfx"
-    if (-not $CertificatePath -and -not $SignToolOptions -and -not (Test-Path $testPfxPath)) {
+    if (-not (Test-Path $testPfxPath)) {
         Write-Host "Test certificate not found: $testPfxPath" -ForegroundColor Red
         Write-Host "Run this first to generate it:" -ForegroundColor Yellow
         Write-Host "  .\windows\msix\Setup-TestCert.ps1" -ForegroundColor Cyan
-        Write-Host "Or specify a production cert: -CertificatePath <path>" -ForegroundColor Yellow
         exit 1
     }
 
@@ -86,12 +50,20 @@ try {
     # ------------------------------------------------------------------
     Write-Host "=== Building Flutter Windows app ($Configuration) ===" -ForegroundColor Cyan
     flutter build windows --$($Configuration.ToLower())
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "flutter build windows failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
 
     # ------------------------------------------------------------------
     # 2. Generate MSIX files (manifest + assets, no packaging yet)
     # ------------------------------------------------------------------
     Write-Host "=== Generating MSIX assets (msix:build) ===" -ForegroundColor Cyan
     dart run msix:build --$($Configuration.ToLower())
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "msix:build failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
 
     # ------------------------------------------------------------------
     # 3. Locate and patch AppxManifest.xml IN-PLACE
@@ -102,23 +74,18 @@ try {
     # Flutter build layout: build\windows\<arch>\runner\<Config>
     # Cross-compilation is not supported, so there will only ever be one
     # architecture directory matching the host platform.
-    $buildConfigDir = switch ($Configuration) {
-        "Debug"   { "Debug" }
-        "Profile" { "Profile" }
-        "Release" { "Release" }
-    }
 
     # Detect the architecture directory produced by the build.
     $buildOutputDir = $null
     foreach ($arch in @("x64", "arm64", "x86")) {
-        $candidate = Join-Path $PWD "build\windows\$arch\runner\$buildConfigDir"
+        $candidate = Join-Path $PWD "build\windows\$arch\runner\$Configuration"
         if (Test-Path $candidate) {
             $buildOutputDir = $candidate
             break
         }
     }
     if (-not $buildOutputDir) {
-        Write-Error "Build output not found under build\windows\*\runner\$buildConfigDir. Did 'flutter build windows' succeed?"
+        Write-Error "Build output not found under build\windows\*\runner\$Configuration. Did 'flutter build windows' succeed?"
         exit 1
     }
 
@@ -181,11 +148,14 @@ try {
         Write-Host "  Service extension already present — skipping injection" -ForegroundColor Yellow
     }
 
-    # Ensure desktop6 is in IgnorableNamespaces (msix plugin may already add it)
+    # Ensure desktop6 is in IgnorableNamespaces.
+    # The msix plugin already declares xmlns:desktop6 on the root element but
+    # only puts "uap3 desktop" in IgnorableNamespaces, so we must add desktop6.
     $root = $manifest.DocumentElement
     $ignorable = $root.GetAttribute("IgnorableNamespaces")
     if ($ignorable -notmatch "\bdesktop6\b") {
-        $root.SetAttribute("IgnorableNamespaces", "$ignorable desktop6")
+        $newIgnorable = if ($ignorable) { "$ignorable desktop6" } else { "desktop6" }
+        $root.SetAttribute("IgnorableNamespaces", $newIgnorable)
     }
 
     $manifest.Save($manifestPath)
@@ -197,8 +167,7 @@ try {
     #      platform via desktop6:Service; service_installer.exe is only
     #      used by the non-MSIX elevated helper path).
     # ------------------------------------------------------------------
-    $stagingDir = $buildOutputDir
-    $svcInstaller = Join-Path $stagingDir "service_installer.exe"
+    $svcInstaller = Join-Path $buildOutputDir "service_installer.exe"
     if (Test-Path $svcInstaller) {
         Remove-Item $svcInstaller -Force
         Write-Host "  Removed service_installer.exe from MSIX staging (not needed for packaged service)" -ForegroundColor Green
@@ -207,30 +176,9 @@ try {
     # ------------------------------------------------------------------
     # 4. Package + sign
     # ------------------------------------------------------------------
-    # Build the dart run msix:pack command, optionally overriding
-    # the certificate / publisher / signtool options from pubspec.yaml.
+    Write-Host "=== Packaging MSIX (test cert from msix_config) ===" -ForegroundColor Cyan
 
     $packArgs = @("run", "msix:pack", "--$($Configuration.ToLower())")
-
-    if ($CertificatePath) {
-        $packArgs += @("--certificate-path", $CertificatePath)
-        if ($CertificatePassword) {
-            $packArgs += @("--certificate-password", $CertificatePassword)
-        }
-        Write-Host "=== Packaging MSIX with production cert: $CertificatePath ===" -ForegroundColor Cyan
-    }
-    elseif ($SignToolOptions) {
-        $packArgs += @("--signtool-options", $SignToolOptions)
-        Write-Host "=== Packaging MSIX with custom SignTool options ===" -ForegroundColor Cyan
-    }
-    else {
-        Write-Host "=== Packaging MSIX (test cert from msix_config) ===" -ForegroundColor Cyan
-    }
-
-    if ($Publisher) {
-        $packArgs += @("--publisher", $Publisher)
-    }
-
     Write-Host "  Command: dart $($packArgs -join ' ')" -ForegroundColor DarkGray
     & dart @packArgs
     if ($LASTEXITCODE -ne 0) {
@@ -244,15 +192,13 @@ try {
     $msixFile = Get-ChildItem -Path $buildOutputDir -Filter "*.msix" |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
-    $isTestCert = -not $CertificatePath -and -not $SignToolOptions
-
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Green
     Write-Host "  MSIX package created successfully!" -ForegroundColor Green
     if ($msixFile) {
         $msixRelPath = $msixFile.FullName.Substring($PWD.Path.Length + 1)
     } else {
-        $msixRelPath = "build\windows\x64\runner\$buildConfigDir\trusttunnel.msix"
+        $msixRelPath = "build\windows\x64\runner\$Configuration\trusttunnel.msix"
     }
     Write-Host "    Add-AppxPackage -Path `".\$msixRelPath`"" -ForegroundColor Cyan
     Write-Host ""
