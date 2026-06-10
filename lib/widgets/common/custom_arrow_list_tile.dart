@@ -6,11 +6,15 @@ import 'package:trusttunnel/widgets/custom_icon.dart';
 class CustomArrowListTile extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
+  final IconData trailingIcon;
+  final Color? trailingIconColor;
 
   const CustomArrowListTile({
     super.key,
     required this.title,
     required this.onTap,
+    this.trailingIcon = AssetIcons.navigateNext,
+    this.trailingIconColor,
   });
 
   @override
@@ -33,8 +37,8 @@ class CustomArrowListTile extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               CustomIcon.medium(
-                icon: AssetIcons.navigateNext,
-                color: context.colors.neutralDark,
+                icon: trailingIcon,
+                color: trailingIconColor ?? context.colors.neutralDark,
               ),
             ],
           ),
