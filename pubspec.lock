@@ -9,6 +9,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "92.0.0"
+  adguard_logger:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "v1.0.2"
+      resolved-ref: b1b2911bc531cc0cc0d23f73cfa3cf1a0e219977
+      url: "https://github.com/AdguardTeam/adguard-dart-logger"
+    source: git
+    version: "1.0.4"
   analyzer:
     dependency: transitive
     description:
@@ -397,6 +406,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  idb_shim:
+    dependency: transitive
+    description:
+      name: idb_shim
+      sha256: "48be1c95f06c4b059d0f5b9888dc5d7384e4a9e4d71824ae2deeb1e1546c6c07"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.9.2"
   image:
     dependency: transitive
     description:
@@ -669,6 +686,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.28.0"
+  sembast:
+    dependency: transitive
+    description:
+      name: sembast
+      sha256: "139cf71496105de32e7a08a4e3a1ead0f81c4a616ec9703ed07e8f0d10cdd505"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.8.6"
   shelf:
     dependency: transitive
     description:
@@ -762,6 +787,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  synchronized:
+    dependency: transitive
+    description:
+      name: synchronized
+      sha256: c254ade258ec8282947a0acbbc90b9575b4f19673533ee46f2f6e9b3aeefd7c0
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.0"
   term_glyph:
     dependency: transitive
     description:
@@ -858,6 +891,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.5"
+  uuid:
+    dependency: transitive
+    description:
+      name: uuid
+      sha256: "1fef9e8e11e2991bb773070d4656b7bd5d850967a2456cfc83cf47925ba79489"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.5.3"
   vector_math:
     dependency: transitive
     description:

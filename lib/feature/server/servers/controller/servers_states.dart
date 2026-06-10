@@ -32,10 +32,24 @@ sealed class ServersState {
 
   Server? get selectedServer => servers.firstWhereOrNull((e) => e.serverData.selected);
 
-
   PresentationError? get error => this is _ErrorServersState ? (this as _ErrorServersState).error : null;
 
   bool get loading => this is _LoadingServersState;
+
+  @override
+  String toString() {
+    String phaseName;
+    if (loading) {
+      phaseName = 'loading';
+    } else if (error != null) {
+      phaseName = 'error';
+    } else {
+      phaseName = 'idle';
+    }
+
+    return 'ServersState(phase: $phaseName, '
+        'count: ${servers.length}, selectedId: ${selectedServer?.id}, error: ${error?.runtimeType})';
+  }
 }
 
 final class _IdleServersState extends ServersState {

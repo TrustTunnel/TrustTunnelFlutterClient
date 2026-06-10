@@ -23,9 +23,7 @@ abstract class VpnDataSource {
   /// The stream emits new [VpnState] values whenever the backend reports a state
   /// change. The exact frequency and timing depend on the platform implementation.
   ///
-  /// Consumers should assume this stream is:
-  /// - single-subscription,
-  /// - long-lived for the duration of an active VPN session.
+  /// Implementations preserve the backend's broadcast semantics.
   /// {@endtemplate}
   Stream<VpnState> get vpnState;
 
@@ -34,6 +32,7 @@ abstract class VpnDataSource {
   ///
   /// Each emitted [VpnLog] represents a single log entry produced by the backend.
   /// Ordering is preserved as provided by the platform.
+  /// Implementations preserve the backend's broadcast semantics.
   /// {@endtemplate}
   Stream<VpnLog> get vpnLogs;
 

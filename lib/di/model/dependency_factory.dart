@@ -1,13 +1,25 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:trusttunnel/common/logging/app_logger.dart';
+import 'package:trusttunnel/common/logging/observers/logging_vpn_observer.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
+import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
+import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/log_storage_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/logs_archive_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/logs_export_destination_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/log_storage_datasource.dart';
+import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
+import 'package:trusttunnel/data/datasources/logs_archive_datasource.dart';
+import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
 import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
@@ -33,10 +45,28 @@ abstract class DependencyFactory {
 
   CertificateDataSource get certificateDataSource;
 
+  LoggingSettingsDataSource get loggingSettingsDataSource;
+
+  AppStateLoggingDataSource get appStateLoggingDataSource;
+
+  LogStorageDataSource get logStorageDataSource;
+
+  LogsArchiveDataSource get logsArchiveDataSource;
+
+  LogsExportDestinationDataSource get logsExportDestinationDataSource;
+
+  AppLogger get logger;
+
   db.AppDatabase get database;
 }
 
 class DependencyFactoryImpl implements DependencyFactory {
+  final AppLogger _logger;
+
+  DependencyFactoryImpl({
+    required AppLogger logger,
+  }) : _logger = logger;
+
   ThemeData? _lightThemeData;
 
   VpnPlugin? _vpnPlugin;
@@ -52,6 +82,16 @@ class DependencyFactoryImpl implements DependencyFactory {
   VpnDataSource? _vpnDataSource;
 
   CertificateDataSource? _certificateDataSource;
+
+  LoggingSettingsDataSource? _loggingSettingsDataSource;
+
+  AppStateLoggingDataSource? _appStateLoggingDataSource;
+
+  LogStorageDataSource? _logStorageDataSource;
+
+  LogsArchiveDataSource? _logsArchiveDataSource;
+
+  LogsExportDestinationDataSource? _logsExportDestinationDataSource;
 
   db.AppDatabase? _database;
 
@@ -79,7 +119,10 @@ class DependencyFactoryImpl implements DependencyFactory {
   );
 
   @override
-  VpnDataSource get vpnDataSource => _vpnDataSource ??= VpnDataSourceImpl(vpnPlugin: vpnPlugin);
+  VpnDataSource get vpnDataSource => _vpnDataSource ??= VpnDataSourceImpl(
+    vpnPlugin: vpnPlugin,
+    loggingVpnObserver: LoggingVpnObserver(logger: logger),
+  );
 
   @override
   CertificateDataSource get certificateDataSource => _certificateDataSource ??= CertificateDataSourceImpl(
@@ -88,5 +131,37 @@ class DependencyFactoryImpl implements DependencyFactory {
   );
 
   @override
-  db.AppDatabase get database => _database ??= db.AppDatabase();
+  db.AppDatabase get database => _database ??= db.AppDatabase(logger: logger);
+
+  @override
+  LoggingSettingsDataSource get loggingSettingsDataSource =>
+      _loggingSettingsDataSource ??= LoggingSettingsDataSourceImpl(
+        database: database,
+      );
+
+  @override
+  AppStateLoggingDataSource get appStateLoggingDataSource =>
+      _appStateLoggingDataSource ??= AppStateLoggingDataSourceImpl(
+        database: database,
+        serverDataSource: serverDataSource,
+        routingDataSource: routingDataSource,
+        settingsDataSource: settingsDataSource,
+        vpnDataSource: vpnDataSource,
+        settingsProvider: () => logger.settings,
+      );
+
+  @override
+  LogStorageDataSource get logStorageDataSource => _logStorageDataSource ??= LogStorageDataSourceImpl(logger: logger);
+
+  @override
+  LogsArchiveDataSource get logsArchiveDataSource => _logsArchiveDataSource ??= LogsArchiveDataSourceImpl();
+
+  @override
+  LogsExportDestinationDataSource get logsExportDestinationDataSource =>
+      _logsExportDestinationDataSource ??= LogsExportDestinationDataSourceImpl(
+        filePicker: FilePicker.platform,
+      );
+
+  @override
+  AppLogger get logger => _logger;
 }

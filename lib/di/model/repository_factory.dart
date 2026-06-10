@@ -1,4 +1,6 @@
 import 'package:trusttunnel/data/repository/deep_link_repository.dart';
+import 'package:trusttunnel/data/repository/export_logs_repository.dart';
+import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
 import 'package:trusttunnel/data/repository/settings_repository.dart';
@@ -15,6 +17,10 @@ abstract class RepositoryFactory {
   VpnRepository get vpnRepository;
 
   DeepLinkRepository get deepLinkRepository;
+
+  LoggingSettingsRepository get loggingSettingsRepository;
+
+  ExportLogsRepository get exportLogsRepository;
 }
 
 class RepositoryFactoryImpl implements RepositoryFactory {
@@ -33,6 +39,10 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   VpnRepository? _vpnRepository;
 
   DeepLinkRepository? _deepLinkRepository;
+
+  LoggingSettingsRepository? _loggingSettingsRepository;
+
+  ExportLogsRepository? _exportLogsRepository;
 
   @override
   ServerRepository get serverRepository => _serverRepository ??= ServerRepositoryImpl(
@@ -58,5 +68,20 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   @override
   DeepLinkRepository get deepLinkRepository => _deepLinkRepository ??= DeepLinkRepositoryImpl(
     serverDataSource: _dependencyFactory.serverDataSource,
+  );
+
+  @override
+  LoggingSettingsRepository get loggingSettingsRepository =>
+      _loggingSettingsRepository ??= LoggingSettingsRepositoryImpl(
+        dataSource: _dependencyFactory.loggingSettingsDataSource,
+      );
+
+  @override
+  ExportLogsRepository get exportLogsRepository => _exportLogsRepository ??= ExportLogsRepositoryImpl(
+    logger: _dependencyFactory.logger,
+    appStateLoggingDataSource: _dependencyFactory.appStateLoggingDataSource,
+    logStorageDataSource: _dependencyFactory.logStorageDataSource,
+    archiveDataSource: _dependencyFactory.logsArchiveDataSource,
+    destinationDataSource: _dependencyFactory.logsExportDestinationDataSource,
   );
 }

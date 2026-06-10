@@ -42,6 +42,22 @@ sealed class ExcludedRoutesState {
       this is _ErrorExcludedRoutesState ? (this as _ErrorExcludedRoutesState).exception : null;
 
   bool get loading => this is _LoadingExcludedRoutesState;
+
+  @override
+  String toString() {
+    String phaseName;
+    if (loading) {
+      phaseName = 'loading';
+    } else if (error != null) {
+      phaseName = 'error';
+    } else {
+      phaseName = 'idle';
+    }
+
+    return 'ExcludedRoutesState(phase: $phaseName, '
+        'excludedRoutes: $excludedRoutes, initialExcludedRoutes: $initialExcludedRoutes, '
+        'hasInvalidRoutes: $hasInvalidRoutes, error: ${error?.runtimeType})';
+  }
 }
 
 final class _IdleExcludedRoutesState extends ExcludedRoutesState {

@@ -55,6 +55,22 @@ sealed class ServerDetailsState {
   bool get loading => this is _LoadingServerDetailState;
 
   @override
+  String toString() {
+    String phaseName;
+    if (loading) {
+      phaseName = 'loading';
+    } else if (error != null) {
+      phaseName = 'error';
+    } else {
+      phaseName = 'idle';
+    }
+
+    return 'ServerDetailsState(phase: $phaseName, '
+        'data: $data, initialData: $initialData, fieldErrorCount: ${fieldErrors.length}, '
+        'routingProfileCount: ${routingProfiles.length}, error: ${error?.runtimeType})';
+  }
+
+  @override
   int get hashCode => Object.hashAll([
     runtimeType,
     data,

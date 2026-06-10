@@ -38,6 +38,22 @@ sealed class RoutingState {
   PresentationError? get error => this is _ErrorRoutingState ? (this as _ErrorRoutingState).exception : null;
 
   bool get loading => this is _LoadingRoutingState;
+
+  @override
+  String toString() {
+    String phaseName;
+    if (loading) {
+      phaseName = 'loading';
+    } else if (error != null) {
+      phaseName = 'error';
+    } else {
+      phaseName = 'idle';
+    }
+
+    return 'RoutingState(phase: $phaseName, '
+        'profileCount: ${routingList.length}, fieldErrorCount: ${fieldErrors.length}, '
+        'error: ${error?.runtimeType})';
+  }
 }
 
 final class _IdleRoutingState extends RoutingState {
