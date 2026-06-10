@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
@@ -112,6 +113,7 @@ class _ServersScreenViewState extends State<ServersScreenView> {
         value: _scaffoldMessengerKey.currentState ?? ScaffoldMessenger.of(context),
         child: serverDetailsScreen,
       ),
+      route: AppRoutes.serverDetails,
     );
 
     controller.fetchServers();

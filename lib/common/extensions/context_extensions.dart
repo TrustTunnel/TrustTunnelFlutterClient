@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/theme_extensions.dart';
+import 'package:trusttunnel/common/router/app_route.dart';
+import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/common/router/page/route/popup_route.dart';
 import 'package:trusttunnel/common/utils/common_utils.dart';
 import 'package:trusttunnel/data/model/breakpoint.dart';
-import 'package:trusttunnel/di/widgets/dependency_scope.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/repository_factory.dart';
+import 'package:trusttunnel/di/widgets/dependency_scope.dart';
 import 'package:trusttunnel/widgets/arb_parser/arb_parser.dart';
 import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_snack_bar.dart';
@@ -60,6 +62,9 @@ extension SnackBarExtension on BuildContext {
   }
 }
 
+/// Fallback route name for screens that are not registered in [AppRoutes]
+String _routeNameFor(Widget widget) => widget.runtimeType.toString();
+
 extension NavigatorExtension on BuildContext {
   void pop<T>({T? result}) => Navigator.of(this).pop(result);
 
@@ -72,8 +77,12 @@ extension NavigatorExtension on BuildContext {
     );
   }
 
-  Future<T?> push<T extends Object?>(Widget widget) => Navigator.of(this).push(
+  Future<T?> push<T extends Object?>(
+    Widget widget, {
+    AppRoute? route,
+  }) => Navigator.of(this).push(
     MaterialPageRoute<T>(
+      settings: route?.settings ?? RouteSettings(name: _routeNameFor(widget)),
       builder: (innerContext) => _getWidgetBuilder(this, widget).call(innerContext),
     ),
   );
@@ -84,6 +93,7 @@ extension RouterExtension on BuildContext {
   /// Before setting [replace] to true, ensure that the top route is a [PopUpRoute].
   Future<T?> pushPopUp<T extends Object?>(
     Widget widget, {
+    AppRoute? route,
     bool fullScreen = true,
     Duration? transitionDuration,
     Duration? reverseTransitionDuration,
@@ -91,9 +101,12 @@ extension RouterExtension on BuildContext {
     bool rootNavigator = true,
   }) {
     final actualNavigator = Navigator.of(this, rootNavigator: rootNavigator);
+    final routeSettings = route?.settings ?? RouteSettings(name: _routeNameFor(widget));
+
     final result = replace
         ? actualNavigator.pushReplacement<T, dynamic>(
             PopUpRoute(
+              settings: routeSettings,
               builder: (context) => widget,
               context: this,
               fullScreenDialog: fullScreen,
@@ -103,6 +116,7 @@ extension RouterExtension on BuildContext {
           )
         : actualNavigator.push<T>(
             PopUpRoute(
+              settings: routeSettings,
               builder: (context) => widget,
               context: this,
               fullScreenDialog: fullScreen,
