@@ -7,12 +7,31 @@ sealed class DeepLinkState {
   const DeepLinkState(this.parsedData);
 
   const factory DeepLinkState.initial() = _DeepLinkInitialState;
-  const factory DeepLinkState.idle(ServerData? parsedData) = _DeepLinkLoadingState;
+  const factory DeepLinkState.idle(ServerData? parsedData) = _DeepLinkIdleState;
   const factory DeepLinkState.loading(ServerData? parsedData) = _DeepLinkLoadingState;
   const factory DeepLinkState.exception(
     ServerData? parsedData, {
     required PresentationError exception,
   }) = _DeepLinkErroredState;
+
+  PresentationError? get error => this is _DeepLinkErroredState ? (this as _DeepLinkErroredState).exception : null;
+
+  bool get loading => this is _DeepLinkLoadingState;
+
+  @override
+  String toString() {
+    String phaseName;
+    if (loading) {
+      phaseName = 'loading';
+    } else if (error != null) {
+      phaseName = 'error';
+    } else {
+      phaseName = 'idle';
+    }
+
+    return 'DeepLinkState(phase: $phaseName, '
+        'deepLink: $parsedData, error: ${error?.runtimeType})';
+  }
 }
 
 class _DeepLinkLoadingState extends DeepLinkState {
