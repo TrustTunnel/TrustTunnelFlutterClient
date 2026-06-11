@@ -40,20 +40,10 @@ sealed class RoutingState {
   bool get loading => this is _LoadingRoutingState;
 
   @override
-  String toString() {
-    String phaseName;
-    if (loading) {
-      phaseName = 'loading';
-    } else if (error != null) {
-      phaseName = 'error';
-    } else {
-      phaseName = 'idle';
-    }
-
-    return 'RoutingState(phase: $phaseName, '
-        'profileCount: ${routingList.length}, fieldErrorCount: ${fieldErrors.length}, '
-        'error: ${error?.runtimeType})';
-  }
+  String toString() =>
+      'RoutingState(type: $runtimeType, '
+      'profileCount: ${routingList.length}, fieldErrorCount: ${fieldErrors.length}, '
+      'loading: $loading)';
 }
 
 final class _IdleRoutingState extends RoutingState {

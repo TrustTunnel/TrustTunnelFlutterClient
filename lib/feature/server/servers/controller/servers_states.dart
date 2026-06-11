@@ -37,19 +37,9 @@ sealed class ServersState {
   bool get loading => this is _LoadingServersState;
 
   @override
-  String toString() {
-    String phaseName;
-    if (loading) {
-      phaseName = 'loading';
-    } else if (error != null) {
-      phaseName = 'error';
-    } else {
-      phaseName = 'idle';
-    }
-
-    return 'ServersState(phase: $phaseName, '
-        'count: ${servers.length}, selectedId: ${selectedServer?.id}, error: ${error?.runtimeType})';
-  }
+  String toString() =>
+      'ServersState(type: $runtimeType, '
+      'count: ${servers.length}, selectedId: ${selectedServer?.id}, loading: $loading)';
 }
 
 final class _IdleServersState extends ServersState {

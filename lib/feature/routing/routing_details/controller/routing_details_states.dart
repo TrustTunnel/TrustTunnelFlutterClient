@@ -44,20 +44,10 @@ sealed class RoutingDetailsState {
   bool get loading => this is _LoadingRoutingDetailState;
 
   @override
-  String toString() {
-    String phaseName;
-    if (loading) {
-      phaseName = 'loading';
-    } else if (error != null) {
-      phaseName = 'error';
-    } else {
-      phaseName = 'idle';
-    }
-
-    return 'RoutingDetailsState(phase: $phaseName, '
-        'data: $data, initialData: $initialData, hasInvalidRules: $hasInvalidRules, '
-        'error: ${error?.runtimeType})';
-  }
+  String toString() =>
+      'RoutingDetailsState(type: $runtimeType, '
+      'data: $data, initialData: $initialData, hasInvalidRules: $hasInvalidRules, '
+      'loading: $loading)';
 
   @override
   int get hashCode => Object.hashAll([

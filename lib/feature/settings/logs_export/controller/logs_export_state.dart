@@ -3,6 +3,8 @@ import 'package:trusttunnel/common/error/model/presentation_error.dart';
 sealed class LogsExportState {
   const LogsExportState();
 
+  const factory LogsExportState.initial() = LogsExportIdleState;
+
   const factory LogsExportState.idle() = LogsExportIdleState;
 
   const factory LogsExportState.loading() = LogsExportLoadingState;
@@ -17,18 +19,7 @@ sealed class LogsExportState {
   };
 
   @override
-  String toString() {
-    String phaseName;
-    if (processing) {
-      phaseName = 'loading';
-    } else if (error != null) {
-      phaseName = 'error';
-    } else {
-      phaseName = 'idle';
-    }
-
-    return 'LogsExportState(phase: $phaseName, error: ${error?.runtimeType})';
-  }
+  String toString() => 'LogsExportState(type: $runtimeType, processing: $processing)';
 }
 
 final class LogsExportIdleState extends LogsExportState {

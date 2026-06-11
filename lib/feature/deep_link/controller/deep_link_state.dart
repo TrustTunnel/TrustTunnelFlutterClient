@@ -19,19 +19,7 @@ sealed class DeepLinkState {
   bool get loading => this is _DeepLinkLoadingState;
 
   @override
-  String toString() {
-    String phaseName;
-    if (loading) {
-      phaseName = 'loading';
-    } else if (error != null) {
-      phaseName = 'error';
-    } else {
-      phaseName = 'idle';
-    }
-
-    return 'DeepLinkState(phase: $phaseName, '
-        'deepLink: $parsedData, error: ${error?.runtimeType})';
-  }
+  String toString() => 'DeepLinkState(type: $runtimeType, deepLink: $parsedData, loading: $loading)';
 }
 
 class _DeepLinkLoadingState extends DeepLinkState {
