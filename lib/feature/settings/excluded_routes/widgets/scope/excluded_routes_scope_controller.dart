@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 
 typedef ExcludedRoutesDataChangedCallback =
     void Function({
@@ -17,7 +17,7 @@ abstract class ExcludedRoutesScopeController {
   abstract final bool canSave;
   abstract final bool loading;
 
-  abstract final PresentationError? error;
+  abstract final PresentationException? error;
 
   abstract final void Function() fetchExcludedRoutes;
   abstract final ExcludedRoutesDataChangedCallback changeData;

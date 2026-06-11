@@ -2,9 +2,9 @@ import 'dart:ui';
 
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
-import 'package:trusttunnel/common/error/error_utils.dart';
-import 'package:trusttunnel/common/error/model/presentation_base_error.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
@@ -58,7 +58,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
 
         final routingProfile = await _repository.getProfileById(id: _profileId);
         if (routingProfile == null) {
-          throw PresentationNotFoundError();
+          throw const PresentationNotFoundException();
         }
 
         setState(
@@ -79,15 +79,19 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     RoutingProfileData? initialData,
     bool? hasInvalidRules,
     String? name,
-  }) => handle(() {
-    setState(
-      RoutingDetailsState.idle(
-        data: data ?? state.data,
-        hasInvalidRules: hasInvalidRules ?? state.hasInvalidRules,
-        initialData: initialData ?? state.initialData,
-      ),
-    );
-  });
+  }) => handle(
+    () {
+      setState(
+        RoutingDetailsState.idle(
+          data: data ?? state.data,
+          hasInvalidRules: hasInvalidRules ?? state.hasInvalidRules,
+          initialData: initialData ?? state.initialData,
+        ),
+      );
+    },
+    errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
 
   void submit(VoidCallback onSaved) => handle(
     () async {
@@ -97,7 +101,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
           state.data,
         )).id;
       } else {
-        Future.wait([
+        await Future.wait([
           _repository.setDefaultRoutingMode(id: profileId, mode: state.data.defaultMode),
 
           _repository.setRules(
@@ -185,13 +189,14 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
         ),
       );
 
-      Future.delayed(Duration.zero).then((_) => onChanged());
+      onChanged();
     },
     errorHandler: _onError,
     completionHandler: _onCompleted,
   );
 
-  PresentationError _parseException(Object? exception) => ErrorUtils.toPresentationError(exception: exception);
+  PresentationException _parseException(Object? exception) =>
+      ExceptionUtils.toPresentationException(exception: exception);
 
   Future<void> _onError(Object? error, StackTrace _) async {
     final presentationException = _parseException(error);

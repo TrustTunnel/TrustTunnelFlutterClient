@@ -1,4 +1,4 @@
-import 'package:trusttunnel/common/error/model/enum/presentation_field_error_code.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_exception_code.dart';
 import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
@@ -294,22 +294,22 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
   }
 
   PresentationField _getRequiredField(PresentationFieldName fieldName) => PresentationField(
-    code: PresentationFieldErrorCode.fieldRequired,
+    code: PresentationFieldExceptionCode.fieldRequired,
     fieldName: fieldName,
   );
 
   PresentationField _getAlreadyExistsField(PresentationFieldName fieldName) => PresentationField(
-    code: PresentationFieldErrorCode.alreadyExists,
+    code: PresentationFieldExceptionCode.alreadyExists,
     fieldName: fieldName,
   );
 
   PresentationField _getFieldWrongValue(PresentationFieldName fieldName) => PresentationField(
-    code: PresentationFieldErrorCode.fieldWrongValue,
+    code: PresentationFieldExceptionCode.fieldWrongValue,
     fieldName: fieldName,
   );
 
   PresentationField _getFieldOutOfBounds(PresentationFieldName fieldName) => PresentationField(
-    code: PresentationFieldErrorCode.outOfBounds,
+    code: PresentationFieldExceptionCode.outOfBounds,
     fieldName: fieldName,
   );
 }

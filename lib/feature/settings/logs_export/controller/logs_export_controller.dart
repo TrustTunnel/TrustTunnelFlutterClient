@@ -3,41 +3,39 @@ import 'dart:io';
 import 'package:adg_share/adg_share.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
-import 'package:trusttunnel/common/error/error_utils.dart';
+import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/data/repository/export_logs_repository.dart';
-import 'package:trusttunnel/feature/settings/logs_export/controller/logs_export_action.dart';
 import 'package:trusttunnel/feature/settings/logs_export/controller/logs_export_state.dart';
-import 'package:trusttunnel/feature/settings/logs_export/error/logs_export_error.dart';
+import 'package:trusttunnel/feature/settings/logs_export/exception/logs_export_exception.dart';
 
-typedef LogsExportActionListener = void Function(LogsExportAction action);
+typedef LogsExportCallback = void Function();
 
 final class LogsExportController extends BaseStateController<LogsExportState> with SequentialControllerHandler {
   final ExportLogsRepository _repository;
-  final ShareClient _shareClient = const AdgShare();
-  final LogsExportActionListener? _actionListener;
-
-  File? _archive;
+  final ShareClient _shareClient;
 
   LogsExportController({
     required ExportLogsRepository repository,
-    LogsExportActionListener? actionListener,
+    ShareClient shareClient = const AdgShare(),
     super.initialState = const LogsExportState.initial(),
   }) : _repository = repository,
-       _actionListener = actionListener;
+       _shareClient = shareClient;
 
-  void export() {
-    if (state.processing || isProcessing) {
-      return;
-    }
-
+  void export({
+    LogsExportCallback? onArchiveReady,
+    LogsExportCallback? onCancelled,
+  }) {
     handle(
       () async {
-        final previousArchive = _archive;
-        _archive = null;
+        if (state is LogsExportLoadingState) {
+          return;
+        }
+
+        final previousArchive = state.archive;
+        setState(const LogsExportState.loading());
         if (previousArchive != null) {
           await _deleteArchive(previousArchive);
         }
-        setState(const LogsExportState.loading());
 
         final File archive;
         try {
@@ -47,7 +45,7 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
             return;
           }
           setState(const LogsExportState.idle());
-          _callActionListener(const LogsExportAction.cancelled());
+          _callCallback(onCancelled);
 
           return;
         }
@@ -56,9 +54,8 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
           return;
         }
 
-        _archive = archive;
-        setState(const LogsExportState.idle());
-        _callActionListener(const LogsExportAction.archiveReady());
+        setState(LogsExportState.idle(archive: archive));
+        _callCallback(onArchiveReady);
       },
       errorHandler: _onExportError,
     );
@@ -67,17 +64,20 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
   void share({
     required String subject,
     required String chooserTitle,
+    LogsExportCallback? onDismissed,
+    LogsExportCallback? onUnavailable,
   }) {
-    if (state.processing || isProcessing) {
-      return;
-    }
-    final archive = _archive;
-    if (archive == null) {
-      return;
-    }
-
     handle(
       () async {
+        if (state is LogsExportLoadingState) {
+          return;
+        }
+
+        final archive = state.archive;
+        if (archive == null) {
+          return;
+        }
+
         setState(const LogsExportState.loading());
 
         try {
@@ -103,17 +103,14 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
               setState(const LogsExportState.idle());
             case ShareDismissed():
               setState(const LogsExportState.idle());
-              _callActionListener(const LogsExportAction.shareDismissed());
+              _callCallback(onDismissed);
             case ShareUnavailable():
               setState(const LogsExportState.idle());
-              _callActionListener(const LogsExportAction.shareUnavailable());
+              _callCallback(onUnavailable);
             case ShareFailure(:final error):
               throw error;
           }
         } finally {
-          if (identical(_archive, archive)) {
-            _archive = null;
-          }
           await _deleteArchive(archive);
         }
       },
@@ -124,8 +121,8 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
   Future<void> _onExportError(Object error, StackTrace stackTrace) async {
     setState(
       LogsExportState.error(
-        LogsExportFailedPresentationError(
-          ErrorUtils.toPresentationError(exception: error),
+        LogsExportFailedPresentationException(
+          ExceptionUtils.toPresentationException(exception: error),
         ),
       ),
     );
@@ -134,19 +131,19 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
   Future<void> _onShareError(Object error, StackTrace stackTrace) async {
     setState(
       LogsExportState.error(
-        LogsShareFailedPresentationError(
-          ErrorUtils.toPresentationError(exception: error),
+        LogsShareFailedPresentationException(
+          ExceptionUtils.toPresentationException(exception: error),
         ),
       ),
     );
   }
 
-  void _callActionListener(LogsExportAction action) {
+  void _callCallback(LogsExportCallback? callback) {
     if (isDisposed) {
       return;
     }
     try {
-      _actionListener?.call(action);
+      callback?.call();
     } on Object catch (error, stackTrace) {
       onError(error, stackTrace);
     }
@@ -162,9 +159,8 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
 
   @override
   void dispose() {
-    final archive = _archive;
-    if (archive != null && !state.processing) {
-      _archive = null;
+    final archive = state.archive;
+    if (archive != null && state is! LogsExportLoadingState) {
       _deleteArchive(archive).ignore();
     }
 

@@ -1,4 +1,4 @@
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 
@@ -32,10 +32,10 @@ sealed class RoutingState {
   const factory RoutingState.exception({
     required List<RoutingProfile> routingList,
     required List<PresentationField> fieldErrors,
-    required PresentationError exception,
+    required PresentationException exception,
   }) = _ErrorRoutingState;
 
-  PresentationError? get error => this is _ErrorRoutingState ? (this as _ErrorRoutingState).exception : null;
+  PresentationException? get error => this is _ErrorRoutingState ? (this as _ErrorRoutingState).exception : null;
 
   bool get loading => this is _LoadingRoutingState;
 
@@ -69,7 +69,7 @@ final class _LoadingRoutingState extends RoutingState {
 }
 
 final class _ErrorRoutingState extends RoutingState {
-  final PresentationError exception;
+  final PresentationException exception;
 
   const _ErrorRoutingState({
     required super.routingList,

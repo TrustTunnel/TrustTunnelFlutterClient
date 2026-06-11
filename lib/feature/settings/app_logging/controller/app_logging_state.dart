@@ -1,4 +1,4 @@
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/logging/model/logging_settings.dart';
 
 sealed class AppLoggingState {
@@ -18,10 +18,10 @@ sealed class AppLoggingState {
 
   const factory AppLoggingState.error({
     required LoggingSettings settings,
-    required PresentationError error,
+    required PresentationException error,
   }) = AppLoggingErrorState;
 
-  PresentationError? get error => switch (this) {
+  PresentationException? get error => switch (this) {
     AppLoggingErrorState(:final error) => error,
     _ => null,
   };
@@ -46,7 +46,7 @@ final class AppLoggingLoadingState extends AppLoggingState {
 
 final class AppLoggingErrorState extends AppLoggingState {
   @override
-  final PresentationError error;
+  final PresentationException error;
 
   const AppLoggingErrorState({
     required super.settings,

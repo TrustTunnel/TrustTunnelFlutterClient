@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
@@ -35,7 +35,7 @@ abstract class ServerDetailsScopeController {
 
   abstract final bool hasChanges;
 
-  abstract final PresentationError? error;
+  abstract final PresentationException? error;
 
   abstract final void Function() fetchServer;
 

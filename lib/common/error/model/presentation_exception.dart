@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
 
-abstract class PresentationError {
+abstract interface class PresentationException implements Exception {
   String toLocalizedString(BuildContext context);
 }

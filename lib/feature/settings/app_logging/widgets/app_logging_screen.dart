@@ -4,7 +4,6 @@ import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
-import 'package:trusttunnel/feature/settings/app_logging/controller/app_logging_action.dart';
 import 'package:trusttunnel/feature/settings/app_logging/controller/app_logging_controller.dart';
 import 'package:trusttunnel/feature/settings/app_logging/controller/app_logging_state.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/dialogs/delete_app_logs_dialog.dart';
@@ -32,7 +31,6 @@ class _AppLoggingScreenState extends State<AppLoggingScreen> {
       settingsRepository: context.repositoryFactory.loggingSettingsRepository,
       exportLogsRepository: context.repositoryFactory.exportLogsRepository,
       settingsListener: context.dependencyFactory.logger.updateSettings,
-      actionListener: _onAppLoggingAction,
     )..fetch();
   }
 
@@ -111,19 +109,6 @@ class _AppLoggingScreenState extends State<AppLoggingScreen> {
     ),
   );
 
-  void _onAppLoggingAction(AppLoggingAction action) {
-    if (!mounted) {
-      return;
-    }
-
-    switch (action) {
-      case AppLoggingLogsDeletedAction():
-        context.showInfoSnackBar(message: context.ln.appLogsDeletedSnackbar);
-      default:
-        break;
-    }
-  }
-
   void _onControllerStateChanged(
     BuildContext context,
     AppLoggingController controller,
@@ -163,7 +148,10 @@ class _AppLoggingScreenState extends State<AppLoggingScreen> {
         case StrippedLoggingDialogAction.continueAnyway:
           _controller.setSecurityType(nextValue);
         case StrippedLoggingDialogAction.deleteLogs:
-          _controller.deleteLogsAndSetSecurityType(nextValue);
+          _controller.deleteLogsAndSetSecurityType(
+            nextValue,
+            onDeleted: _showLogsDeletedSnackBar,
+          );
       }
 
       return;
@@ -185,7 +173,15 @@ class _AppLoggingScreenState extends State<AppLoggingScreen> {
       return;
     }
 
-    _controller.deleteLogs();
+    _controller.deleteLogs(onDeleted: _showLogsDeletedSnackBar);
+  }
+
+  void _showLogsDeletedSnackBar() {
+    if (!mounted) {
+      return;
+    }
+
+    context.showInfoSnackBar(message: context.ln.appLogsDeletedSnackbar);
   }
 
   @override
