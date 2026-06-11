@@ -8,6 +8,8 @@ abstract interface class LogsArchiveDataSource {
     required Map<String, List<int>> files,
   });
 
+  Future<File> createTemporaryArchiveFile(LogsArchive archive);
+
   Future<void> deleteArchive(File archive);
 
   Future<void> cleanupStaleArchives();

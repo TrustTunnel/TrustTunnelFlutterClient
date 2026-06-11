@@ -28,11 +28,17 @@ final class LogsArchiveDataSourceImpl implements LogsArchiveDataSource {
       files.map((name, bytes) => MapEntry(name, Uint8List.fromList(bytes))),
     );
     final bytes = Uint8List.fromList(archivedBytes);
-    final tempDirectory = await getTemporaryDirectory();
-    final file = File(p.join(tempDirectory.path, name));
-    await file.writeAsBytes(bytes, flush: true);
 
-    return LogsArchive(file: file, bytes: bytes);
+    return LogsArchive(name: name, bytes: bytes);
+  }
+
+  @override
+  Future<File> createTemporaryArchiveFile(LogsArchive archive) async {
+    final tempDirectory = await getTemporaryDirectory();
+    final file = File(p.join(tempDirectory.path, archive.name));
+    await file.writeAsBytes(archive.bytes, flush: true);
+
+    return file;
   }
 
   @override

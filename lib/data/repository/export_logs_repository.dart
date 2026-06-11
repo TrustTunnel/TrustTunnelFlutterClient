@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/logging/app_logger.dart';
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/log_storage_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_archive_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
-import 'package:trusttunnel/data/model/logs_archive.dart';
 
 abstract interface class ExportLogsRepository {
   Future<File> exportLogs();
@@ -56,8 +56,6 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
 
   @override
   Future<File> exportLogs() async {
-    LogsArchive? archive;
-
     try {
       await _archiveDataSource.cleanupStaleArchives();
 
@@ -66,7 +64,7 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
 
       final appLog = await _logStorageDataSource.readCombinedLogs();
 
-      archive = await _archiveDataSource.createArchive(
+      final archive = await _archiveDataSource.createArchive(
         name: _archiveName(),
         files: {
           'app.log': utf8.encode(appLog),
@@ -75,17 +73,11 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
       );
       await _destinationDataSource.saveArchive(archive);
 
-      return archive.file;
-    } on LogsExportDestinationCancelledException {
-      if (archive != null) {
-        await _archiveDataSource.deleteArchive(archive.file);
-      }
-      throw const ExportLogsCancelledException();
-    } on Object catch (error) {
-      if (archive != null) {
-        await _archiveDataSource.deleteArchive(archive.file);
-      }
-      throw ExportLogsFailedException(error);
+      return _archiveDataSource.createTemporaryArchiveFile(archive);
+    } on LogsExportDestinationCancelledException catch (_, stackTrace) {
+      Error.throwWithStackTrace(const ExportLogsCancelledException(), stackTrace);
+    } on Object catch (error, stackTrace) {
+      Error.throwWithStackTrace(ExportLogsFailedException(error), stackTrace);
     }
   }
 
@@ -93,8 +85,8 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
   Future<void> deleteLogs() async {
     try {
       await _logStorageDataSource.deleteLogs();
-    } on Object catch (error) {
-      throw DeleteLogsFailedException(error);
+    } on Object catch (error, stackTrace) {
+      Error.throwWithStackTrace(DeleteLogsFailedException(error), stackTrace);
     }
   }
 
@@ -104,7 +96,7 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
   String _archiveName() {
     final currentDateTime = _getCurrentDateTime();
 
-    return 'trusttunnel_${Platform.operatingSystem}_logs_'
+    return 'trusttunnel_${defaultTargetPlatform.name}_logs_'
         '${currentDateTime.year}${_formatDateTime(currentDateTime.month)}${_formatDateTime(currentDateTime.day)}'
         'T${_formatDateTime(currentDateTime.hour)}${_formatDateTime(currentDateTime.minute)}${_formatDateTime(currentDateTime.second)}'
         '${currentDateTime.millisecond.toString().padLeft(3, '0')}.zip';

@@ -20,7 +20,7 @@ Future<File> get databaseFile async {
 /// Obtains a database connection for running drift in a Dart VM.
 DatabaseConnection connect({BaseLogger? logger}) => DatabaseConnection.delayed(
   Future(() async {
-    if (Platform.isAndroid) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
 
       final cacheBase = (await getTemporaryDirectory()).path;

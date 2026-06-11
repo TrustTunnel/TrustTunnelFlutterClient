@@ -21,7 +21,7 @@ final class LogsExportController extends BaseStateController<LogsExportState> wi
   LogsExportController({
     required ExportLogsRepository repository,
     LogsExportActionListener? actionListener,
-    super.initialState = const LogsExportState.idle(),
+    super.initialState = const LogsExportState.initial(),
   }) : _repository = repository,
        _actionListener = actionListener;
 

@@ -21,27 +21,27 @@ Future<void> main() async {
   void dispatchError(Object error, StackTrace? stackTrace) =>
       LoggingGlobalErrorObserver(logger: logger).onUncaughtError(error, stackTrace);
 
-  runZonedGuarded(
+  await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
       await logger.initialize();
       _applyGlobalErrorHandling(dispatchError);
 
-      final initializationResult = await InitializationHelperIo(
+      final initializationHelper = await InitializationHelperIo(
         logger: logger,
       ).init();
 
       runApp(
         DependencyScope(
-          dependenciesFactory: initializationResult.dependenciesFactory,
-          repositoryFactory: initializationResult.repositoryFactory,
+          dependenciesFactory: initializationHelper.dependenciesFactory,
+          repositoryFactory: initializationHelper.repositoryFactory,
           child: ServersScope(
             child: RoutingScope(
               child: ExcludedRoutesScope(
                 child: VpnScope(
-                  vpnRepository: initializationResult.repositoryFactory.vpnRepository,
-                  initialState: initializationResult.initialVpnState,
+                  vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
+                  initialState: initializationHelper.initialVpnState,
                   child: const VpnUpdateManager(
                     child: DeepLinkScope(
                       child: App(),

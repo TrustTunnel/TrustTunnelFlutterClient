@@ -26,7 +26,7 @@ class AppLinksSource extends DeepLinkSource {
   Uri? get link => _link;
 
   @override
-  Future<Uri?> getInitialLink() => !kIsWeb ? appLinks.getInitialLink() : Future.value();
+  Future<Uri?> getInitialLink() => appLinks.getInitialLink();
 
   @override
   void dispose() {
