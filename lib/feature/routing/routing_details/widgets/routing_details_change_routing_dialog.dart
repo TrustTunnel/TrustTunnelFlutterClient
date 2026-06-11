@@ -52,7 +52,7 @@ class _RoutingDetailsChangeRoutingDialogState extends State<RoutingDetailsChange
       ),
       Theme(
         data: context.theme.copyWith(
-          textButtonTheme: context.theme.extension<CustomTextButtonTheme>()!.success,
+          textButtonTheme: context.theme.extension<CustomTextButtonTheme>()?.success,
         ),
         child: TextButton(
           onPressed: _selectedRoutingMode == widget.currentRoutingMode

@@ -24,7 +24,7 @@ class DiscardChangesDialog extends StatelessWidget {
       ),
       Theme(
         data: context.theme.copyWith(
-          textButtonTheme: context.theme.extension<CustomTextButtonTheme>()!.danger,
+          textButtonTheme: context.theme.extension<CustomTextButtonTheme>()?.danger,
         ),
         child: TextButton(
           onPressed: () {
