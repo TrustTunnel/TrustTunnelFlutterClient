@@ -74,6 +74,10 @@ final class IVpnManagerImpl: NSObject, IVpnManager, FlutterStreamHandler {
         return state
     }
 
+    func exportLogs() throws -> [String] {
+        return vpnManager?.exportLogs() ?? []
+    }
+
     // MARK: - FlutterStreamHandler (EventChannel)
 
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink)

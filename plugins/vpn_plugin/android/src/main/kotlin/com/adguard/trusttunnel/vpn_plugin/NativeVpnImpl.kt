@@ -23,7 +23,7 @@ class NativeVpnImpl(
     val queryLogHandler: QueryLogStreamHandler = QueryLogStreamHandler()
 
     init {
-        VpnService.startNetworkManager(appContext)
+        VpnService.initialize(appContext)
         val queryLogFile = File(appContext.filesDir, "query_log.dat")
         VpnService.setAppNotifier(queryLogFile, this)
     }
@@ -36,6 +36,11 @@ class NativeVpnImpl(
     fun stop() {
         Log.i("VPN_PLUGIN", "stop()")
         VpnService.stop(appContext)
+    }
+
+    fun exportLogs(): List<String> {
+        Log.i("VPN_PLUGIN", "exportLogs()")
+        return VpnService.exportLogs(appContext)
     }
 
     fun getCurrentState(): VpnManagerState = currentState
