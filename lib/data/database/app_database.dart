@@ -22,11 +22,10 @@ class AppDatabase extends _$AppDatabase {
     '192.168.0.0/16',
     '255.255.255.255/32',
   ];
-  final BaseLogger? logger;
 
-  AppDatabase({this.logger}) : super(impl.connect(logger: logger));
+  AppDatabase() : super(impl.connect());
 
-  AppDatabase.inMemory(super.e) : logger = null;
+  AppDatabase.inMemory(super.e);
 
   @override
   int get schemaVersion => 4;
@@ -138,7 +137,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _runMigrationStep(String name, Future<void> Function() action) async {
     await action();
-    logger?.logInfo(
+    logger.logInfo(
       'DB migration completed: $name',
       additionalTags: const ['database', 'migration'],
     );

@@ -5,11 +5,11 @@ import 'model/share_payload.dart';
 
 /// Internal transport for invoking the platform share implementation.
 abstract class SharePlatform extends PlatformInterface {
-  SharePlatform() : super(token: _token);
-
   static final Object _token = Object();
 
   static SharePlatform _instance = MethodChannelSharePlatform();
+
+  SharePlatform() : super(token: _token);
 
   static SharePlatform get instance => _instance;
 

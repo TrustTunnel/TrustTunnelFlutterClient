@@ -39,15 +39,10 @@ sealed class RoutingDetailsState {
     required PresentationException exception,
   }) = _ErrorRoutingDetailState;
 
-  PresentationException? get error => this is _ErrorRoutingDetailState ? (this as _ErrorRoutingDetailState).error : null;
+  PresentationException? get error =>
+      this is _ErrorRoutingDetailState ? (this as _ErrorRoutingDetailState).error : null;
 
   bool get loading => this is _LoadingRoutingDetailState;
-
-  @override
-  String toString() =>
-      'RoutingDetailsState(type: $runtimeType, '
-      'data: $data, initialData: $initialData, hasInvalidRules: $hasInvalidRules, '
-      'loading: $loading)';
 
   @override
   int get hashCode => Object.hashAll([
@@ -58,6 +53,12 @@ sealed class RoutingDetailsState {
     loading,
     hasInvalidRules,
   ]);
+
+  @override
+  String toString() =>
+      'RoutingDetailsState(type: $runtimeType, '
+      'data: $data, initialData: $initialData, hasInvalidRules: $hasInvalidRules, '
+      'loading: $loading)';
 
   @override
   bool operator ==(Object other) =>

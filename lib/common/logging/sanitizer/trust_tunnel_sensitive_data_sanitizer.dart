@@ -22,16 +22,6 @@ class TrustTunnelSensitiveDataSanitizer {
     'add_server_link',
   };
 
-  /// Text patterns that are masked in all logging modes.
-  static final List<RegExp> alwaysMaskedTextPatterns = [
-    RegExp(r'tt://[^\s,\)\]\}]+', caseSensitive: false),
-    RegExp(r'trusttunnel://[^\s,\)\]\}]+', caseSensitive: false),
-    RegExp(
-      r'https?://[^\s,\)\]\}]+(?:subscription|configuration|config|add-server)[^\s,\)\]\}]*',
-      caseSensitive: false,
-    ),
-  ];
-
   /// Rules that are additionally masked in stripped logging mode.
   static const Set<String> strippedMaskedKeys = {
     'address',
@@ -70,6 +60,16 @@ class TrustTunnelSensitiveDataSanitizer {
     'destination',
   };
 
+  /// Text patterns that are masked in all logging modes.
+  static final List<RegExp> alwaysMaskedTextPatterns = [
+    RegExp(r'tt://[^\s,\)\]\}]+', caseSensitive: false),
+    RegExp(r'trusttunnel://[^\s,\)\]\}]+', caseSensitive: false),
+    RegExp(
+      r'https?://[^\s,\)\]\}]+(?:subscription|configuration|config|add-server)[^\s,\)\]\}]*',
+      caseSensitive: false,
+    ),
+  ];
+
   /// Text patterns that are additionally masked in stripped logging mode.
   static final List<RegExp> strippedMaskedTextPatterns = [
     RegExp(r'-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----', caseSensitive: false),
@@ -78,11 +78,11 @@ class TrustTunnelSensitiveDataSanitizer {
   const TrustTunnelSensitiveDataSanitizer();
 
   /// Sanitizes structured log data while preserving maps and lists for encoding.
-  Object? sanitizePayload(Object? value, LoggingSecurityType securityType) =>
+  T? sanitizePayload<T extends Object>(T? value, LoggingSecurityType securityType) =>
       _sanitizePayload(value, securityType, _keyMatchersFor(securityType), HashSet<Object>.identity());
 
   /// Sanitizes text fragments by masking sensitive key-values and link patterns.
-  String sanitizeText(String value, LoggingSecurityType securityType) {
+  String _sanitizeText(String value, LoggingSecurityType securityType) {
     final alwaysSanitized = _sanitizeTextByRules(
       value,
       keys: alwaysMaskedKeys,
@@ -100,22 +100,24 @@ class TrustTunnelSensitiveDataSanitizer {
     );
   }
 
-  Object? _sanitizePayload(
-    Object? value,
+  T? _sanitizePayload<T extends Object>(
+    T? value,
     LoggingSecurityType securityType,
     List<_SensitiveKeyMatcher> keyMatchers,
     Set<Object> visited,
-  ) => switch (value) {
-    null || num() || bool() || DateTime() => value,
-    String() => sanitizeText(value, securityType),
-    Uri() => sanitizeText(value.toString(), securityType),
-    Object() => _sanitizeTrackedPayload(
-      value,
-      securityType,
-      keyMatchers,
-      visited,
-    ),
-  };
+  ) =>
+      (switch (value) {
+            null || num() || bool() || DateTime() => value,
+            String() => _sanitizeText(value, securityType),
+            Uri() => _sanitizeText(value.toString(), securityType),
+            Object() => _sanitizeTrackedPayload(
+              value,
+              securityType,
+              keyMatchers,
+              visited,
+            ),
+          })
+          as T?;
 
   Object? _sanitizeTrackedPayload(
     Object value,
@@ -145,7 +147,7 @@ class TrustTunnelSensitiveDataSanitizer {
               ),
             )
             .toList(),
-      _ => sanitizeText(value.toString(), securityType),
+      _ => _sanitizeText(value.toString(), securityType),
     };
 
     return sanitizedValue;
@@ -224,14 +226,12 @@ class TrustTunnelSensitiveDataSanitizer {
 
 /// Matches sensitive keys in maps and in serialized `key: value` text.
 final class _SensitiveKeyMatcher {
-  final Set<String> _normalizedKeys;
   final RegExp pattern;
+  final Set<String> _normalizedKeys;
 
   _SensitiveKeyMatcher(Set<String> keys)
     : _normalizedKeys = keys.map(_normalizeKey).toSet(),
       pattern = _buildKeyPattern(keys);
-
-  bool matches(String key) => _normalizedKeys.contains(_normalizeKey(key));
 
   static String _normalizeKey(String key) => key.replaceAll(RegExp('[^a-zA-Z0-9]'), '').toLowerCase();
 
@@ -244,4 +244,6 @@ final class _SensitiveKeyMatcher {
       multiLine: true,
     );
   }
+
+  bool matches(String key) => _normalizedKeys.contains(_normalizeKey(key));
 }

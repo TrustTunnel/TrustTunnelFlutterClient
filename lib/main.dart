@@ -4,7 +4,8 @@ import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Router;
 import 'package:trusttunnel/common/logging/app_logger.dart';
-import 'package:trusttunnel/common/logging/observers/logging_global_error_observer.dart';
+import 'package:trusttunnel/common/logging/extensions/global_error_logger_extension.dart';
+import 'package:trusttunnel/common/logging/extensions/vpn_logger_extension.dart';
 import 'package:trusttunnel/di/model/initialization_helper.dart';
 import 'package:trusttunnel/di/widgets/dependency_scope.dart';
 import 'package:trusttunnel/feature/app/app.dart';
@@ -16,21 +17,22 @@ import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_update_manager.dart';
 
 Future<void> main() async {
-  final logger = AppLogger();
+  final logger = AppLogger(
+    extensions: [
+      GlobalErrorLoggerExtension(),
+      VpnLoggerExtension(),
+    ],
+  );
 
   void dispatchError(Object error, StackTrace? stackTrace) =>
-      LoggingGlobalErrorObserver(logger: logger).onUncaughtError(error, stackTrace);
+      logger.extension<GlobalErrorLoggerExtension>()?.onUncaughtError(error, stackTrace);
 
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-
-      await logger.initialize();
       _applyGlobalErrorHandling(dispatchError);
 
-      final initializationHelper = await InitializationHelperIo(
-        logger: logger,
-      ).init();
+      final initializationHelper = await const InitializationHelperIo().init();
 
       runApp(
         DependencyScope(

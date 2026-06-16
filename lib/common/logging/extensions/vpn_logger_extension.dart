@@ -1,16 +1,11 @@
 import 'dart:async';
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:trusttunnel/common/logging/app_logger.dart';
 
 typedef LogPayloadBuilder = Object? Function();
 
-final class LoggingVpnObserver {
-  final AppLogger _logger;
-
-  LoggingVpnObserver({
-    required AppLogger logger,
-  }) : _logger = logger;
-
+class VpnLoggerExtension extends LoggerExtension<VpnLoggerExtension> {
   Future<void> runCommand(
     String name,
     Future<void> Function() command, {
@@ -27,7 +22,9 @@ final class LoggingVpnObserver {
     LogPayloadBuilder? payloadBuilder,
   }) async {
     final tags = ['vpn', name];
-    _logger.logInfo('VPN command $name started', additionalTags: tags);
+
+    logInfo('VPN command $name started', additionalTags: tags);
+
     _logDetailedPayload(
       'VPN command $name payload',
       payloadBuilder,
@@ -36,11 +33,11 @@ final class LoggingVpnObserver {
 
     try {
       final result = await command();
-      _logger.logInfo('VPN command $name completed', additionalTags: tags);
+      logInfo('VPN command $name completed', additionalTags: tags);
 
       return result;
     } on Object catch (error, stackTrace) {
-      _logger.logError(
+      logError(
         'VPN command $name failed',
         error: error,
         stackTrace: stackTrace,
@@ -54,14 +51,14 @@ final class LoggingVpnObserver {
   Stream<T> observeStateStream<T>(Stream<T> stream) => stream.transform(
     StreamTransformer<T, T>.fromHandlers(
       handleData: (state, sink) {
-        _logger.logInfo(
-          'Tunnel state changed: ${_logger.sanitizePayload(state)}',
+        logInfo(
+          'Tunnel state changed: ${(logger as AppLogger).sanitizer.sanitize<Object>(state)}',
           additionalTags: const ['vpn', 'state'],
         );
         sink.add(state);
       },
       handleError: (error, stackTrace, sink) {
-        _logger.logError(
+        logError(
           'VPN state stream failed',
           error: error,
           stackTrace: stackTrace,
@@ -70,7 +67,7 @@ final class LoggingVpnObserver {
         sink.addError(error, stackTrace);
       },
       handleDone: (sink) {
-        _logger.logDebug(
+        logDebug(
           'VPN state stream completed',
           additionalTags: const ['vpn', 'state'],
         );
@@ -90,7 +87,7 @@ final class LoggingVpnObserver {
         sink.add(entry);
       },
       handleError: (error, stackTrace, sink) {
-        _logger.logError(
+        logError(
           'VPN query log stream failed',
           error: error,
           stackTrace: stackTrace,
@@ -99,7 +96,7 @@ final class LoggingVpnObserver {
         sink.addError(error, stackTrace);
       },
       handleDone: (sink) {
-        _logger.logDebug(
+        logDebug(
           'VPN query log stream completed',
           additionalTags: const ['vpn', 'query_log'],
         );
@@ -113,12 +110,8 @@ final class LoggingVpnObserver {
     LogPayloadBuilder? payloadBuilder,
     List<String> tags,
   ) {
-    if (!_logger.isDebugLoggingEnabled || payloadBuilder == null) {
-      return;
-    }
-
-    _logger.logDebug(
-      '$message: ${_logger.sanitizePayload(payloadBuilder())}',
+    logDebug(
+      '$message: ${(logger as AppLogger).sanitizer.sanitize<Object>(payloadBuilder?.call())}',
       additionalTags: tags,
     );
   }

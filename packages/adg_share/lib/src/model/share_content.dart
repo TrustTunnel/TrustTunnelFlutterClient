@@ -14,9 +14,9 @@ sealed class ShareContent {
 /// {@macro adg_share_text}
 @immutable
 final class ShareText extends ShareContent {
-  const ShareText(this.text);
-
   final String text;
+
+  const ShareText(this.text);
 }
 
 /// @template adg_share_file
@@ -25,15 +25,15 @@ final class ShareText extends ShareContent {
 /// {@macro adg_share_file}
 @immutable
 final class ShareFile extends ShareContent {
+  final String path;
+
+  final String? mimeType;
+  final String? fileNameOverride;
   const ShareFile({
     required this.path,
     this.mimeType,
     this.fileNameOverride,
   });
-
-  final String path;
-  final String? mimeType;
-  final String? fileNameOverride;
 }
 
 /// @template adg_share_uri
@@ -42,7 +42,7 @@ final class ShareFile extends ShareContent {
 /// {@macro adg_share_uri}
 @immutable
 final class ShareUri extends ShareContent {
-  const ShareUri(this.uri);
-
   final Uri uri;
+
+  const ShareUri(this.uri);
 }

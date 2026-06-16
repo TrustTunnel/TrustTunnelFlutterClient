@@ -55,12 +55,6 @@ sealed class ServerDetailsState {
   bool get loading => this is _LoadingServerDetailState;
 
   @override
-  String toString() =>
-      'ServerDetailsState(type: $runtimeType, '
-      'data: $data, initialData: $initialData, fieldErrorCount: ${fieldErrors.length}, '
-      'routingProfileCount: ${routingProfiles.length}, loading: $loading)';
-
-  @override
   int get hashCode => Object.hashAll([
     runtimeType,
     data,
@@ -70,6 +64,12 @@ sealed class ServerDetailsState {
     error,
     loading,
   ]);
+
+  @override
+  String toString() =>
+      'ServerDetailsState(type: $runtimeType, '
+      'data: $data, initialData: $initialData, fieldErrorCount: ${fieldErrors.length}, '
+      'routingProfileCount: ${routingProfiles.length}, loading: $loading)';
 
   @override
   bool operator ==(Object other) =>

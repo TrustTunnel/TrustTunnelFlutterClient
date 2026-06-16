@@ -24,20 +24,21 @@ abstract interface class ShareClient {
 /// {@macro adg_share_client}
 @immutable
 final class AdgShare implements ShareClient {
+  final SharePlatform _platform;
+
+  final MimeTypeResolver _mimeTypeResolver;
   const AdgShare({
     SharePlatform? platform,
     MimeTypeResolver? mimeTypeResolver,
   }) : _platform = platform ?? const _DelegatingSharePlatform(),
        _mimeTypeResolver = mimeTypeResolver ?? const MimeTypeResolver();
 
-  final SharePlatform _platform;
-  final MimeTypeResolver _mimeTypeResolver;
-
   @override
   Future<ShareResult> share(ShareRequest request) async {
     try {
       final payload = await _buildPayload(request);
       final response = await _platform.share(payload);
+
       return _mapResponse(response);
     } on ShareException catch (error) {
       return ShareFailure(error);
@@ -151,6 +152,7 @@ final class AdgShare implements ShareClient {
 
   String? _normalizeOptionalText(String? value) {
     final normalizedValue = value?.trim();
+
     return normalizedValue == null || normalizedValue.isEmpty ? null : normalizedValue;
   }
 }

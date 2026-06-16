@@ -5,9 +5,9 @@ import 'package:meta/meta.dart';
 /// @endtemplate
 @immutable
 sealed class ShareException implements Exception {
-  const ShareException(this.message);
-
   final String message;
+
+  const ShareException(this.message);
 
   @override
   String toString() => '$runtimeType: $message';

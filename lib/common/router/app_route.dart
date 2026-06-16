@@ -11,10 +11,10 @@ final class AppRoute {
   AppRoute(this.name) : settings = RouteSettings(name: name);
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is AppRoute && other.name == name;
+  int get hashCode => name.hashCode;
 
   @override
-  int get hashCode => name.hashCode;
+  bool operator ==(Object other) => identical(this, other) || other is AppRoute && other.name == name;
 
   @override
   String toString() => name;

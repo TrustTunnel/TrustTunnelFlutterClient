@@ -1,23 +1,15 @@
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:trusttunnel/common/controller/controller/controller.dart';
 import 'package:trusttunnel/common/controller/controller/controller_observer.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
-import 'package:trusttunnel/common/logging/app_logger.dart';
 
 class LoggingControllerObserver implements ControllerObserver {
-  final AppLogger _logger;
-
-  const LoggingControllerObserver({
-    required AppLogger logger,
-  }) : _logger = logger;
+  const LoggingControllerObserver();
 
   @override
   void onCreate(BaseController controller) {
-    if (!_logger.isDebugLoggingEnabled) {
-      return;
-    }
-
-    final controllerName = controller.runtimeType.toString();
-    _logger.logDebug(
+    final controllerName = _getControllerName(controller);
+    logger.logTrace(
       'Controller $controllerName created',
       additionalTags: ['controller', controllerName, 'lifecycle'],
     );
@@ -25,12 +17,13 @@ class LoggingControllerObserver implements ControllerObserver {
 
   @override
   void onDispose(BaseController controller) {
-    if (!_logger.isDebugLoggingEnabled) {
-      return;
-    }
+    final controllerName = _getControllerName(controller);
+    logger.logTrace(
+      'Controller $controllerName disposed',
+      additionalTags: ['controller', controllerName, 'lifecycle'],
+    );
 
-    final controllerName = controller.runtimeType.toString();
-    _logger.logDebug(
+    logger.logTrace(
       'Controller $controllerName disposed',
       additionalTags: ['controller', controllerName, 'lifecycle'],
     );
@@ -42,27 +35,24 @@ class LoggingControllerObserver implements ControllerObserver {
     S previousState,
     S nextState,
   ) {
-    if (!_logger.isDebugLoggingEnabled) {
-      return;
-    }
+    final controllerName = _getControllerName(controller);
 
-    final controllerName = controller.runtimeType.toString();
-    final sanitizedNewState = _logger.sanitizePayload(nextState);
-
-    _logger.logTrace(
-      'Controller $controllerName state changed, new state: $sanitizedNewState',
+    logger.logTrace(
+      'Controller $controllerName state changed, new state: $nextState',
       additionalTags: ['controller', controllerName, 'state'],
     );
   }
 
   @override
   void onError(BaseController controller, Object error, StackTrace stackTrace) {
-    final controllerName = controller.runtimeType.toString();
-    _logger.logError(
+    final controllerName = _getControllerName(controller);
+    logger.logError(
       'Controller $controllerName error',
       error: error,
       stackTrace: stackTrace,
       additionalTags: ['controller', controllerName, 'error'],
     );
   }
+
+  String _getControllerName(BaseController controller) => controller.runtimeType.toString();
 }

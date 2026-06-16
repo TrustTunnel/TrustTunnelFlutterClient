@@ -1,10 +1,15 @@
-import 'package:trusttunnel/common/logging/model/logging_settings.dart';
+import 'package:trusttunnel/common/logging/enum/logging_level.dart';
+import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
 
 abstract class LoggingSettingsRepository {
-  Future<LoggingSettings> getSettings();
+  Future<void> setLoggingLevel(LoggingLevel level);
 
-  Future<void> setSettings(LoggingSettings settings);
+  Future<void> setSecurityType(LoggingSecurityType securityType);
+
+  Future<LoggingLevel> getLoggingLevel();
+
+  Future<LoggingSecurityType> getSecurityType();
 }
 
 class LoggingSettingsRepositoryImpl implements LoggingSettingsRepository {
@@ -15,8 +20,14 @@ class LoggingSettingsRepositoryImpl implements LoggingSettingsRepository {
   }) : _dataSource = dataSource;
 
   @override
-  Future<LoggingSettings> getSettings() => _dataSource.getSettings();
+  Future<LoggingLevel> getLoggingLevel() => _dataSource.getLoggingLevel();
 
   @override
-  Future<void> setSettings(LoggingSettings settings) => _dataSource.setSettings(settings);
+  Future<LoggingSecurityType> getSecurityType() => _dataSource.getSecurityType();
+
+  @override
+  Future<void> setLoggingLevel(LoggingLevel level) => _dataSource.setLoggingLevel(level);
+
+  @override
+  Future<void> setSecurityType(LoggingSecurityType securityType) => _dataSource.setSecurityType(securityType);
 }

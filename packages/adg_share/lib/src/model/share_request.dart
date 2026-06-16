@@ -11,6 +11,12 @@ import 'share_target.dart';
 /// {@macro adg_share_request}
 @immutable
 final class ShareRequest {
+  final List<ShareContent> content;
+
+  final String? subject;
+  final String? chooserTitle;
+  final Rect? sharePositionOrigin;
+  final List<ShareTarget> excludedTargets;
   const ShareRequest({
     required this.content,
     this.subject,
@@ -18,10 +24,4 @@ final class ShareRequest {
     this.sharePositionOrigin,
     this.excludedTargets = const [],
   });
-
-  final List<ShareContent> content;
-  final String? subject;
-  final String? chooserTitle;
-  final Rect? sharePositionOrigin;
-  final List<ShareTarget> excludedTargets;
 }

@@ -5,8 +5,10 @@ final class QuoteScanner {
     '\'',
   };
 
-  String? _quote;
+  static bool isQuote(String char) => _quotes.contains(char);
   var _escaped = false;
+
+  String? _quote;
 
   bool consume(String char) {
     final quote = _quote;
@@ -30,6 +32,4 @@ final class QuoteScanner {
 
     return true;
   }
-
-  static bool isQuote(String char) => _quotes.contains(char);
 }

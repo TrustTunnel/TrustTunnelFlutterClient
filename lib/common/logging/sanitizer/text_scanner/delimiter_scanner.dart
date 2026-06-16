@@ -18,11 +18,11 @@ final class DelimiterScanner {
     for (final MapEntry(:key, :value) in _pairs.entries) value: key,
   };
 
-  final _openStack = <String>[];
-
   static String closingFor(String char) => _pairs[char]!;
 
   static bool isOpening(String char) => _openings.contains(char);
+
+  final _openStack = <String>[];
 
   bool consume(String char) {
     if (isOpening(char)) {

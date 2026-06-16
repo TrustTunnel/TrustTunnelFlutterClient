@@ -1,47 +1,41 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
-import 'package:trusttunnel/common/logging/model/logging_settings.dart';
-import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
 
 class LoggingSettingsDataSourceImpl implements LoggingSettingsDataSource {
-  static const _levelKey = 'logging.level';
-  static const _securityTypeKey = 'logging.security_type';
+  static const _loggingLevelKey = 'logging_level';
 
-  final db.AppDatabase _database;
+  static const _securityTypeKey = 'security_type';
 
-  const LoggingSettingsDataSourceImpl({
-    required db.AppDatabase database,
-  }) : _database = database;
+  final SharedPreferences _preferences;
+
+  LoggingSettingsDataSourceImpl({required SharedPreferences preferences}) : _preferences = preferences;
 
   @override
-  Future<LoggingSettings> getSettings() async {
-    final rows = await _database.select(_database.appSettings).get();
-    final values = <String, String>{};
-    for (final row in rows) {
-      values[row.settingKey] = row.value;
-    }
+  Future<LoggingLevel> getLoggingLevel() async {
+    final rawLevel = _preferences.getString(_loggingLevelKey);
 
-    return LoggingSettings(
-      level: LoggingLevel.parse(values[_levelKey]),
-      securityType: LoggingSecurityType.parse(values[_securityTypeKey]),
+    return LoggingLevel.values.firstWhere(
+      (level) => level.value == rawLevel,
+      orElse: () => LoggingLevel.defaultLevel,
     );
   }
 
   @override
-  Future<void> setSettings(LoggingSettings settings) => _database.batch(
-    (batch) => batch.insertAllOnConflictUpdate(
-      _database.appSettings,
-      [
-        db.AppSettingsCompanion.insert(
-          settingKey: _levelKey,
-          value: settings.level.value,
-        ),
-        db.AppSettingsCompanion.insert(
-          settingKey: _securityTypeKey,
-          value: settings.securityType.value,
-        ),
-      ],
-    ),
-  );
+  Future<LoggingSecurityType> getSecurityType() async {
+    final rawType = _preferences.getString(_securityTypeKey);
+
+    return LoggingSecurityType.values.firstWhere(
+      (type) => type.value == rawType,
+      orElse: () => LoggingSecurityType.stripped,
+    );
+  }
+
+  @override
+  Future<void> setLoggingLevel(LoggingLevel level) => _preferences.setString(_loggingLevelKey, level.value);
+
+  @override
+  Future<void> setSecurityType(LoggingSecurityType securityType) =>
+      _preferences.setString(_securityTypeKey, securityType.value);
 }

@@ -11,6 +11,12 @@ final class LogsArchive {
   });
 
   @override
+  int get hashCode => Object.hashAll([
+    name.hashCode,
+    bytes.hashCode,
+  ]);
+
+  @override
   String toString() => 'LogsArchive(name: $name, bytes: ${bytes.length} bytes)';
 
   @override
@@ -21,10 +27,4 @@ final class LogsArchive {
 
     return other is LogsArchive && other.name == name && other.bytes == bytes;
   }
-
-  @override
-  int get hashCode => Object.hashAll([
-    name.hashCode,
-    bytes.hashCode,
-  ]);
 }

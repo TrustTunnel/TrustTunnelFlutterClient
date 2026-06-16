@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import 'package:trusttunnel/common/logging/app_logger.dart';
+import 'package:trusttunnel/common/logging/extensions/db_logger_extension.dart';
 
 class DBLogInterceptor extends QueryInterceptor {
   static final RegExp _insertIntoPattern = RegExp(
@@ -23,13 +23,9 @@ class DBLogInterceptor extends QueryInterceptor {
     caseSensitive: false,
   );
 
-  final BaseLogger _logger;
-  final int slowQueryThresholdMs;
+  final DBLoggerExtension? _dbLogger;
 
-  DBLogInterceptor({
-    required BaseLogger logger,
-    this.slowQueryThresholdMs = 200,
-  }) : _logger = logger;
+  DBLogInterceptor() : _dbLogger = logger.extension<DBLoggerExtension>();
 
   @visibleForTesting
   static String describeBatch(BatchedStatements statements) => _DBOperationDescription.fromBatch(statements).summary;
@@ -37,85 +33,94 @@ class DBLogInterceptor extends QueryInterceptor {
   @visibleForTesting
   static String describeStatement(String statement) => _DBOperationDescription.fromStatement(statement).summary;
 
-  bool get _isDebugEnabled {
-    final logger = _logger;
-
-    return logger is AppLogger && logger.isDebugLoggingEnabled;
-  }
-
   @override
-  Future<void> commitTransaction(TransactionExecutor inner) => _run(
-    'commit transaction',
+  Future<void> commitTransaction(TransactionExecutor inner) => _runOperation(
+    'COMMIT transaction',
     () => inner.send(),
     mutating: true,
   );
 
   @override
-  Future<void> rollbackTransaction(TransactionExecutor inner) => _run(
-    'rollback transaction',
+  Future<void> rollbackTransaction(TransactionExecutor inner) => _runOperation(
+    'ROLLBACK transaction',
     () => inner.rollback(),
     mutating: true,
   );
 
   @override
-  Future<void> runBatched(QueryExecutor executor, BatchedStatements statements) => _run(
+  Future<void> runBatched(
+    QueryExecutor executor,
+    BatchedStatements statements,
+  ) => _runOperation(
     describeBatch(statements),
     () => executor.runBatched(statements),
     mutating: true,
-    description: _DBOperationDescription.fromBatch(statements),
   );
 
   @override
-  Future<int> runInsert(QueryExecutor executor, String statement, List<Object?> args) =>
-      _run(statement, () => executor.runInsert(statement, args), mutating: true);
-
-  @override
-  Future<int> runUpdate(QueryExecutor executor, String statement, List<Object?> args) =>
-      _run(statement, () => executor.runUpdate(statement, args), mutating: true);
-
-  @override
-  Future<int> runDelete(QueryExecutor executor, String statement, List<Object?> args) =>
-      _run(statement, () => executor.runDelete(statement, args), mutating: true);
-
-  @override
-  Future<void> runCustom(QueryExecutor executor, String statement, List<Object?> args) =>
-      _run(statement, () => executor.runCustom(statement, args), mutating: true);
-
-  @override
-  Future<List<Map<String, Object?>>> runSelect(QueryExecutor executor, String statement, List<Object?> args) =>
-      _run(statement, () => executor.runSelect(statement, args));
-
-  Future<T> _run<T>(
+  Future<int> runInsert(
+    QueryExecutor executor,
     String statement,
-    FutureOr<T> Function() operation, {
-    bool mutating = false,
-    _DBOperationDescription? description,
-  }) async {
-    final operationDescription = description ?? _DBOperationDescription.fromStatement(statement);
-    final stopwatch = Stopwatch()..start();
-    try {
-      final result = await operation();
-      stopwatch.stop();
+    List<Object?> args,
+  ) => _runOperation(
+    _DBOperationDescription.fromStatement(statement).summary,
+    () => executor.runInsert(statement, args),
+    mutating: true,
+  );
 
-      final elapsed = stopwatch.elapsedMilliseconds;
-      if (_isDebugEnabled && (mutating || elapsed >= slowQueryThresholdMs)) {
-        _logger.logDebug(
-          'DB ${operationDescription.summary} completed in ${elapsed}ms',
-          additionalTags: ['database'],
-        );
-      }
+  @override
+  Future<int> runUpdate(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) => _runOperation(
+    _DBOperationDescription.fromStatement(statement).summary,
+    () => executor.runUpdate(statement, args),
+    mutating: true,
+  );
 
-      return result;
-    } on Object catch (error, stackTrace) {
-      stopwatch.stop();
-      _logger.logError(
-        'DB ${operationDescription.summary} failed after ${stopwatch.elapsedMilliseconds}ms',
-        error: error.runtimeType,
-        stackTrace: stackTrace,
-        additionalTags: const ['database', 'error'],
-      );
-      rethrow;
+  @override
+  Future<int> runDelete(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) => _runOperation(
+    _DBOperationDescription.fromStatement(statement).summary,
+    () => executor.runDelete(statement, args),
+    mutating: true,
+  );
+
+  @override
+  Future<void> runCustom(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) => _runOperation(
+    _DBOperationDescription.fromStatement(statement).summary,
+    () => executor.runCustom(statement, args),
+    mutating: true,
+  );
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) => _runOperation(
+    _DBOperationDescription.fromStatement(statement).summary,
+    () => executor.runSelect(statement, args),
+  );
+
+  Future<T> _runOperation<T>(String description, Future<T> Function() operation, {bool mutating = false}) {
+    if (_dbLogger == null) {
+      return operation();
     }
+
+    return _dbLogger.runOperation(
+      description,
+      operation,
+      mutating: mutating,
+    );
   }
 }
 
@@ -129,20 +134,6 @@ final class _DBOperationDescription {
     this.table,
     this.suffix,
   });
-
-  String get summary {
-    final buffer = StringBuffer(action);
-    if (table != null) {
-      buffer.write(' ');
-      buffer.write(table);
-    }
-    if (suffix != null) {
-      buffer.write(' ');
-      buffer.write(suffix);
-    }
-
-    return buffer.toString();
-  }
 
   factory _DBOperationDescription.fromBatch(BatchedStatements statements) {
     final descriptions = statements.statements.map(_DBOperationDescription.fromStatement).toList();
@@ -224,5 +215,19 @@ final class _DBOperationDescription {
     }
 
     return tableName.substring(dotIndex + 1);
+  }
+
+  String get summary {
+    final buffer = StringBuffer(action);
+    if (table != null) {
+      buffer.write(' ');
+      buffer.write(table);
+    }
+    if (suffix != null) {
+      buffer.write(' ');
+      buffer.write(suffix);
+    }
+
+    return buffer.toString();
   }
 }

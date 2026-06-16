@@ -1,106 +1,66 @@
-import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
-import 'package:trusttunnel/common/logging/app_logger.dart';
-import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
+import 'package:trusttunnel/data/datasources/export_logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/log_storage_datasource.dart';
-import 'package:trusttunnel/data/datasources/logs_archive_datasource.dart';
-import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
 abstract interface class ExportLogsRepository {
-  Future<File> exportLogs();
+  Future<ExportLogsArchive> createArchive();
 
   Future<void> deleteLogs();
 
-  Future<void> deleteTemporaryArchive(File archive);
-}
+  Future<String?> pickFilePath({
+    String? dialogTitle,
+    String? fileName,
+    String? initialDirectory,
+    ExportFileType type = ExportFileType.any,
+    List<String>? allowedExtensions,
+    Uint8List? data,
+  });
 
-final class ExportLogsCancelledException implements Exception {
-  const ExportLogsCancelledException();
-}
-
-final class ExportLogsFailedException implements Exception {
-  final Object originalError;
-
-  const ExportLogsFailedException(this.originalError);
-}
-
-final class DeleteLogsFailedException implements Exception {
-  final Object originalError;
-
-  const DeleteLogsFailedException(this.originalError);
+  Future<String> saveRawFile({
+    required Uint8List data,
+    required String path,
+  });
 }
 
 final class ExportLogsRepositoryImpl implements ExportLogsRepository {
-  final AppLogger _logger;
-  final AppStateLoggingDataSource _appStateLoggingDataSource;
+  final ExportLogsLocalSource _localSource;
   final LogStorageDataSource _logStorageDataSource;
-  final LogsArchiveDataSource _archiveDataSource;
-  final LogsExportDestinationDataSource _destinationDataSource;
-  final DateTime Function() _getCurrentDateTime;
 
   ExportLogsRepositoryImpl({
-    required AppLogger logger,
-    required AppStateLoggingDataSource appStateLoggingDataSource,
+    required ExportLogsLocalSource localSource,
     required LogStorageDataSource logStorageDataSource,
-    required LogsArchiveDataSource archiveDataSource,
-    required LogsExportDestinationDataSource destinationDataSource,
-    DateTime Function()? getCurrentDateTime,
-  }) : _logger = logger,
-       _appStateLoggingDataSource = appStateLoggingDataSource,
-       _logStorageDataSource = logStorageDataSource,
-       _archiveDataSource = archiveDataSource,
-       _destinationDataSource = destinationDataSource,
-       _getCurrentDateTime = getCurrentDateTime ?? DateTime.now;
+  }) : _localSource = localSource,
+       _logStorageDataSource = logStorageDataSource;
 
   @override
-  Future<File> exportLogs() async {
-    try {
-      await _archiveDataSource.cleanupStaleArchives();
-
-      final snapshot = await _appStateLoggingDataSource.collectSnapshot();
-      final sanitizedSnapshot = _logger.sanitizePayload(snapshot.toJson())! as Map<String, Object?>;
-
-      final appLog = await _logStorageDataSource.readCombinedLogs();
-
-      final archive = await _archiveDataSource.createArchive(
-        name: _archiveName(),
-        files: {
-          'app.log': utf8.encode(appLog),
-          'app_state.txt': utf8.encode(const JsonEncoder.withIndent('  ').convert(sanitizedSnapshot)),
-        },
-      );
-      await _destinationDataSource.saveArchive(archive);
-
-      return _archiveDataSource.createTemporaryArchiveFile(archive);
-    } on LogsExportDestinationCancelledException catch (_, stackTrace) {
-      Error.throwWithStackTrace(const ExportLogsCancelledException(), stackTrace);
-    } on Object catch (error, stackTrace) {
-      Error.throwWithStackTrace(ExportLogsFailedException(error), stackTrace);
-    }
-  }
+  Future<ExportLogsArchive> createArchive() => _localSource.archiveData();
 
   @override
-  Future<void> deleteLogs() async {
-    try {
-      await _logStorageDataSource.deleteLogs();
-    } on Object catch (error, stackTrace) {
-      Error.throwWithStackTrace(DeleteLogsFailedException(error), stackTrace);
-    }
-  }
+  Future<void> deleteLogs() => _logStorageDataSource.deleteLogs();
 
   @override
-  Future<void> deleteTemporaryArchive(File archive) => _archiveDataSource.deleteArchive(archive);
+  Future<String?> pickFilePath({
+    String? dialogTitle,
+    String? fileName,
+    String? initialDirectory,
+    ExportFileType type = ExportFileType.any,
+    List<String>? allowedExtensions,
+    Uint8List? data,
+  }) => _localSource.pickFilePath(
+    dialogTitle: dialogTitle,
+    fileName: fileName,
+    initialDirectory: initialDirectory,
+    type: type,
+    allowedExtensions: allowedExtensions,
+    data: data,
+  );
 
-  String _archiveName() {
-    final currentDateTime = _getCurrentDateTime();
-
-    return 'trusttunnel_${defaultTargetPlatform.name}_logs_'
-        '${currentDateTime.year}${_formatDateTime(currentDateTime.month)}${_formatDateTime(currentDateTime.day)}'
-        'T${_formatDateTime(currentDateTime.hour)}${_formatDateTime(currentDateTime.minute)}${_formatDateTime(currentDateTime.second)}'
-        '${currentDateTime.millisecond.toString().padLeft(3, '0')}.zip';
-  }
-
-  String _formatDateTime(int value) => value.toString().padLeft(2, '0');
+  @override
+  Future<String> saveRawFile({
+    required Uint8List data,
+    required String path,
+  }) => _localSource.saveRawFile(data: data, path: path);
 }

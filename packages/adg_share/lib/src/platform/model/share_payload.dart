@@ -2,6 +2,12 @@ import 'package:meta/meta.dart';
 
 @immutable
 final class SharePayload {
+  final List<SharePayloadItem> content;
+
+  final String? subject;
+  final String? chooserTitle;
+  final List<String> excludedTargets;
+  final SharePayloadPositionOrigin? sharePositionOrigin;
   const SharePayload({
     required this.content,
     this.subject,
@@ -9,12 +15,6 @@ final class SharePayload {
     this.excludedTargets = const [],
     this.sharePositionOrigin,
   });
-
-  final List<SharePayloadItem> content;
-  final String? subject;
-  final String? chooserTitle;
-  final List<String> excludedTargets;
-  final SharePayloadPositionOrigin? sharePositionOrigin;
 }
 
 @immutable

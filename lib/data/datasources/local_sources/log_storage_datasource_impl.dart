@@ -1,48 +1,43 @@
-import 'dart:io';
-
-import 'package:trusttunnel/common/logging/app_logger.dart';
+import 'package:adguard_logger/adguard_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:trusttunnel/data/datasources/log_storage_datasource.dart';
 
 final class LogStorageDataSourceImpl implements LogStorageDataSource {
-  final AppLogger _logger;
+  final LogStorage _logStorage;
+  final String _directoryPath;
 
-  const LogStorageDataSourceImpl({
-    required AppLogger logger,
-  }) : _logger = logger;
+  LogStorageDataSourceImpl({
+    required LogStorage logStorage,
+    required String directoryPath,
+  }) : _logStorage = logStorage,
+       _directoryPath = directoryPath;
 
   @override
-  Future<String> readCombinedLogs() => _logger.appLogAppender.synchronize((snapshot) async {
+  Future<String> readCombinedLogs() async {
     final buffer = StringBuffer();
-    for (final path in snapshot.orderedLogPaths) {
-      final file = File(path);
-      final fileExists = await file.exists();
-      if (!fileExists) {
-        continue;
-      }
-      final content = await file.readAsString();
-      if (content.isEmpty) {
-        continue;
-      }
-      buffer.write(content);
-      if (!content.endsWith(Platform.lineTerminator)) {
-        buffer.writeln();
+    final fileNames = await _logStorage.readFileNames(_directoryPath);
+
+    for (final fileName in fileNames) {
+      final fullPath = p.join(_directoryPath, fileName);
+      final content = await _logStorage.readLogData(fullPath);
+      if (content != null && content.isNotEmpty) {
+        if (buffer.isNotEmpty) {
+          buffer.writeln();
+        }
+        buffer.write(content);
       }
     }
 
     return buffer.toString();
-  });
+  }
 
   @override
-  Future<void> deleteLogs() => _logger.appLogAppender.synchronize(
-    (snapshot) async {
-      for (final path in [...snapshot.orderedLogPaths, snapshot.metadataPath]) {
-        final file = File(path);
-        final fileExists = await file.exists();
-        if (fileExists) {
-          await file.delete();
-        }
-      }
-    },
-    resetAfter: true,
-  );
+  Future<void> deleteLogs() async {
+    final fileNames = await _logStorage.readFileNames(_directoryPath);
+
+    for (final fileName in fileNames) {
+      final fullPath = p.join(_directoryPath, fileName);
+      await _logStorage.deleteData(fullPath);
+    }
+  }
 }

@@ -1,14 +1,17 @@
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:trusttunnel/common/logging/app_logger.dart';
-import 'package:trusttunnel/common/logging/observers/logging_vpn_observer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trusttunnel/common/logging/model/logging_settings.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
+import 'package:trusttunnel/data/datasources/export_logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/export_logs_local_source_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/log_storage_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_archive_datasource_impl.dart';
@@ -29,6 +32,8 @@ import 'package:vpn_plugin/deep_link_manager.dart';
 import 'package:vpn_plugin/vpn_plugin.dart';
 
 abstract class DependencyFactory {
+  abstract final SharedPreferences sharedPreferences;
+
   ThemeData get lightThemeData;
 
   VpnPlugin get vpnPlugin;
@@ -51,21 +56,21 @@ abstract class DependencyFactory {
 
   LogStorageDataSource get logStorageDataSource;
 
+  FileLogAppender get fileLogAppender;
+
+  ExportLogsLocalSource get exportLogsLocalSource;
+
   LogsArchiveDataSource get logsArchiveDataSource;
 
   LogsExportDestinationDataSource get logsExportDestinationDataSource;
-
-  AppLogger get logger;
 
   db.AppDatabase get database;
 }
 
 class DependencyFactoryImpl implements DependencyFactory {
-  final AppLogger _logger;
-
   DependencyFactoryImpl({
-    required AppLogger logger,
-  }) : _logger = logger;
+    required this.sharedPreferences,
+  });
 
   ThemeData? _lightThemeData;
 
@@ -87,6 +92,14 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   AppStateLoggingDataSource? _appStateLoggingDataSource;
 
+  FileLogAppender? _fileLogAppender;
+
+  ExportLogsLocalSource? _exportLogsLocalSource;
+
+  LogStorage? _logStorage;
+
+  String? _logDirectoryPath;
+
   LogStorageDataSource? _logStorageDataSource;
 
   LogsArchiveDataSource? _logsArchiveDataSource;
@@ -94,6 +107,9 @@ class DependencyFactoryImpl implements DependencyFactory {
   LogsExportDestinationDataSource? _logsExportDestinationDataSource;
 
   db.AppDatabase? _database;
+
+  @override
+  SharedPreferences sharedPreferences;
 
   @override
   ThemeData get lightThemeData => _lightThemeData ??= LightTheme().data;
@@ -121,7 +137,6 @@ class DependencyFactoryImpl implements DependencyFactory {
   @override
   VpnDataSource get vpnDataSource => _vpnDataSource ??= VpnDataSourceImpl(
     vpnPlugin: vpnPlugin,
-    loggingVpnObserver: LoggingVpnObserver(logger: logger),
   );
 
   @override
@@ -131,12 +146,9 @@ class DependencyFactoryImpl implements DependencyFactory {
   );
 
   @override
-  db.AppDatabase get database => _database ??= db.AppDatabase(logger: logger);
-
-  @override
   LoggingSettingsDataSource get loggingSettingsDataSource =>
       _loggingSettingsDataSource ??= LoggingSettingsDataSourceImpl(
-        database: database,
+        preferences: sharedPreferences,
       );
 
   @override
@@ -147,11 +159,24 @@ class DependencyFactoryImpl implements DependencyFactory {
         routingDataSource: routingDataSource,
         settingsDataSource: settingsDataSource,
         vpnDataSource: vpnDataSource,
-        settingsProvider: () => logger.settings,
+        settingsProvider: () => const LoggingSettings(),
       );
 
   @override
-  LogStorageDataSource get logStorageDataSource => _logStorageDataSource ??= LogStorageDataSourceImpl(logger: logger);
+  LogStorageDataSource get logStorageDataSource => _logStorageDataSource ??= LogStorageDataSourceImpl(
+    logStorage: _logStorage!,
+    directoryPath: _logDirectoryPath!,
+  );
+
+  @override
+  FileLogAppender get fileLogAppender => _fileLogAppender!;
+
+  @override
+  ExportLogsLocalSource get exportLogsLocalSource => _exportLogsLocalSource ??= ExportLogsLocalSourceImpl(
+    logAppender: fileLogAppender,
+    appStateLoggingDataSource: appStateLoggingDataSource,
+    filePicker: FilePicker.platform,
+  );
 
   @override
   LogsArchiveDataSource get logsArchiveDataSource => _logsArchiveDataSource ??= LogsArchiveDataSourceImpl();
@@ -163,5 +188,15 @@ class DependencyFactoryImpl implements DependencyFactory {
       );
 
   @override
-  AppLogger get logger => _logger;
+  db.AppDatabase get database => _database ??= db.AppDatabase();
+
+  set fileLogAppender(FileLogAppender value) => _fileLogAppender = value;
+
+  LogStorage get logStorage => _logStorage!;
+
+  set logStorage(LogStorage value) => _logStorage = value;
+
+  String get logDirectoryPath => _logDirectoryPath!;
+
+  set logDirectoryPath(String value) => _logDirectoryPath = value;
 }

@@ -29,7 +29,7 @@ final class ShareUnavailable extends ShareResult {
 /// {@macro adg_share_result}
 @immutable
 final class ShareFailure extends ShareResult {
-  const ShareFailure(this.error);
-
   final Object error;
+
+  const ShareFailure(this.error);
 }

@@ -31,10 +31,16 @@ environment:
   sdk: 3.10.1
 
 dependencies:
-  drift: 2.30.0
-  file_picker: 10.3.10
+  adg_share:
+    path: packages/adg_share
+  adguard_logger:
+    git:
+      url: https://github.com/AdguardTeam/adguard-dart-logger
+      ref: v1.0.2
   app_links: 7.0.0
   collection: 1.19.1
+  drift: 2.30.0
+  file_picker: 10.3.10
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -47,22 +53,11 @@ dependencies:
   path_provider: 2.1.5
   punycoder: 0.2.2
   rxdart: 0.28.0
+  shared_preferences: 2.5.5
   sqlite3_flutter_libs: 0.5.41
   url_launcher: 6.3.2
-
-  # Local plugins
   vpn_plugin:
     path: plugins/vpn_plugin
-
-  # Local packages
-  adg_share:
-    path: packages/adg_share
-
-  # GitHub dependencies
-  adguard_logger:
-    git:
-      url: https://github.com/AdguardTeam/adguard-dart-logger
-      ref: v1.0.2
 
 dev_dependencies:
   build_runner: 2.10.4

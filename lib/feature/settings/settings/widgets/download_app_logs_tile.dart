@@ -3,8 +3,8 @@ import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
-import 'package:trusttunnel/feature/settings/logs_export/controller/logs_export_controller.dart';
-import 'package:trusttunnel/feature/settings/logs_export/controller/logs_export_state.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_controller.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_state.dart';
 import 'package:trusttunnel/widgets/common/custom_arrow_list_tile.dart';
 import 'package:trusttunnel/widgets/custom_snack_bar.dart';
 
@@ -16,38 +16,37 @@ class DownloadAppLogsTile extends StatefulWidget {
 }
 
 class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
-  late final LogsExportController _logsExportController;
+  late final LogsManagerController _logsManagerController;
 
   @override
   void initState() {
     super.initState();
 
-    _logsExportController = LogsExportController(
+    _logsManagerController = LogsManagerController(
       repository: context.repositoryFactory.exportLogsRepository,
     );
   }
 
   @override
-  Widget build(BuildContext context) => StateConsumer<LogsExportController, LogsExportState>(
-    controller: _logsExportController,
-    listener: _onLogsExportStateChanged,
+  Widget build(BuildContext context) => StateConsumer<LogsManagerController, LogsManagerState>(
+    controller: _logsManagerController,
+    listener: _onLogsManagerStateChanged,
     builder: (context, state, _) => CustomArrowListTile(
       title: context.ln.downloadAppLogs,
       trailingIcon: AssetIcons.fileDownload,
-      onTap: () => _logsExportController.export(
+      onTap: () => _logsManagerController.export(
         onArchiveReady: _showArchiveReadySnackBar,
-        onCancelled: _showExportCancelledSnackBar,
       ),
     ),
   );
 
-  void _onLogsExportStateChanged(
+  void _onLogsManagerStateChanged(
     BuildContext context,
-    LogsExportController controller,
-    LogsExportState previous,
-    LogsExportState current,
+    LogsManagerController controller,
+    LogsManagerState previous,
+    LogsManagerState current,
   ) {
-    if (current is! LogsExportErrorState) {
+    if (current is! LogsManagerErrorState) {
       return;
     }
     context.showInfoSnackBar(
@@ -72,7 +71,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
             TextButton(
               onPressed: () {
                 messenger.removeCurrentSnackBar();
-                _logsExportController.share(
+                _logsManagerController.share(
                   subject: context.ln.downloadAppLogs,
                   chooserTitle: context.ln.share,
                 );
@@ -87,17 +86,9 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
       );
   }
 
-  void _showExportCancelledSnackBar() {
-    if (!mounted) {
-      return;
-    }
-
-    context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar);
-  }
-
   @override
   void dispose() {
-    _logsExportController.dispose();
+    _logsManagerController.dispose();
 
     super.dispose();
   }

@@ -13,7 +13,6 @@ class App extends StatelessWidget {
     theme: context.dependencyFactory.lightThemeData,
     navigatorObservers: [
       LoggingNavigatorObserver(
-        logger: context.dependencyFactory.logger,
         navigatorName: 'root',
       ),
     ],

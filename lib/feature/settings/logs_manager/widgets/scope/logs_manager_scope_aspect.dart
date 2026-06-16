@@ -1,0 +1,4 @@
+enum LogsManagerScopeAspect {
+  loading,
+  archive,
+}

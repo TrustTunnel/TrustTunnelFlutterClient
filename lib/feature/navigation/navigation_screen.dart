@@ -28,7 +28,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
   void initState() {
     super.initState();
     _navigatorObserver = LoggingNavigatorObserver(
-      logger: context.dependencyFactory.logger,
       navigatorName: 'navigation',
     );
   }

@@ -18,6 +18,18 @@ final class AppLogMetadata {
     lengthInBytes: json['lengthInBytes']! as int,
   );
 
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    createdAt,
+    lengthInBytes,
+  ]);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AppLogMetadata && other.id == id && other.createdAt == createdAt && other.lengthInBytes == lengthInBytes;
+
   AppLogMetadata copyWith({
     int? lengthInBytes,
   }) => AppLogMetadata(
@@ -31,16 +43,4 @@ final class AppLogMetadata {
     'createdAt': createdAt.millisecondsSinceEpoch,
     'lengthInBytes': lengthInBytes,
   };
-
-  @override
-  int get hashCode => Object.hashAll([
-    id,
-    createdAt,
-    lengthInBytes,
-  ]);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AppLogMetadata && other.id == id && other.createdAt == createdAt && other.lengthInBytes == lengthInBytes;
 }

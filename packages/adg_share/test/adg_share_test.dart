@@ -154,27 +154,31 @@ void main() {
 }
 
 final class MockSharePlatform with MockPlatformInterfaceMixin implements SharePlatform {
+  final Map<Object?, Object?>? response;
+
   MockSharePlatform({this.response});
 
-  final Map<Object?, Object?>? response;
   SharePayload? lastRequest;
 
   @override
   Future<Map<Object?, Object?>?> share(SharePayload request) async {
     lastRequest = request;
+
     return response;
   }
 }
 
 final class _RecordingSharePlatform extends SharePlatform {
+  final Map<Object?, Object?>? response;
+
   _RecordingSharePlatform({this.response});
 
-  final Map<Object?, Object?>? response;
   SharePayload? lastRequest;
 
   @override
   Future<Map<Object?, Object?>?> share(SharePayload request) async {
     lastRequest = request;
+
     return response;
   }
 }

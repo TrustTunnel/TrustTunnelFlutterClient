@@ -17,3 +17,5 @@ final class LogsExportFailedPresentationException extends LogsExportPresentation
 final class LogsShareFailedPresentationException extends LogsExportPresentationException {
   const LogsShareFailedPresentationException(super.originalError);
 }
+
+// Deprecated: use logs_manager_exception.dart instead.

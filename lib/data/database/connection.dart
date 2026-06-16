@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:adguard_logger/adguard_logger.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
@@ -18,7 +17,7 @@ Future<File> get databaseFile async {
 }
 
 /// Obtains a database connection for running drift in a Dart VM.
-DatabaseConnection connect({BaseLogger? logger}) => DatabaseConnection.delayed(
+DatabaseConnection connect() => DatabaseConnection.delayed(
   Future(() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
@@ -33,11 +32,8 @@ DatabaseConnection connect({BaseLogger? logger}) => DatabaseConnection.delayed(
     final connection = NativeDatabase.createBackgroundConnection(
       await databaseFile,
     );
-    if (logger == null) {
-      return connection;
-    }
 
-    return connection.interceptWith(DBLogInterceptor(logger: logger));
+    return connection.interceptWith(DBLogInterceptor());
   }),
 );
 

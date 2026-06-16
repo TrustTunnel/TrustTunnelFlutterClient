@@ -1,23 +1,31 @@
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
-import 'package:trusttunnel/common/logging/model/logging_settings.dart';
+import 'package:trusttunnel/common/logging/enum/logging_level.dart';
+import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 
 sealed class AppLoggingState {
-  final LoggingSettings settings;
+  final LoggingSecurityType securityType;
+  final LoggingLevel level;
 
   const AppLoggingState({
-    required this.settings,
+    required this.securityType,
+    required this.level,
   });
 
+  const factory AppLoggingState.initial() = AppLoggingInitialState;
+
   const factory AppLoggingState.idle({
-    required LoggingSettings settings,
+    required LoggingSecurityType securityType,
+    required LoggingLevel level,
   }) = AppLoggingIdleState;
 
   const factory AppLoggingState.loading({
-    required LoggingSettings settings,
+    required LoggingSecurityType securityType,
+    required LoggingLevel level,
   }) = AppLoggingLoadingState;
 
   const factory AppLoggingState.error({
-    required LoggingSettings settings,
+    required LoggingSecurityType securityType,
+    required LoggingLevel level,
     required PresentationException error,
   }) = AppLoggingErrorState;
 
@@ -29,18 +37,29 @@ sealed class AppLoggingState {
   bool get loading => this is AppLoggingLoadingState;
 
   @override
-  String toString() => 'AppLoggingState(type: $runtimeType, settings: $settings, loading: $loading)';
+  String toString() =>
+      'AppLoggingState(type: $runtimeType, securityType: $securityType, level: $level, loading: $loading)';
+}
+
+final class AppLoggingInitialState extends AppLoggingIdleState {
+  const AppLoggingInitialState()
+    : super(
+        securityType: LoggingSecurityType.stripped,
+        level: LoggingLevel.defaultLevel,
+      );
 }
 
 final class AppLoggingIdleState extends AppLoggingState {
   const AppLoggingIdleState({
-    super.settings = LoggingSettings.defaults,
+    required super.securityType,
+    required super.level,
   });
 }
 
 final class AppLoggingLoadingState extends AppLoggingState {
   const AppLoggingLoadingState({
-    required super.settings,
+    required super.securityType,
+    required super.level,
   });
 }
 
@@ -49,7 +68,8 @@ final class AppLoggingErrorState extends AppLoggingState {
   final PresentationException error;
 
   const AppLoggingErrorState({
-    required super.settings,
+    required super.securityType,
+    required super.level,
     required this.error,
   });
 }

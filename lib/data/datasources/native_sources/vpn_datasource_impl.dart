@@ -1,7 +1,8 @@
 import 'dart:async';
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:trusttunnel/common/extensions/model_extensions.dart';
-import 'package:trusttunnel/common/logging/observers/logging_vpn_observer.dart';
+import 'package:trusttunnel/common/logging/extensions/vpn_logger_extension.dart';
 import 'package:trusttunnel/common/utils/upstream_protocol_encoder.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
@@ -35,18 +36,15 @@ import 'package:vpn_plugin/vpn_plugin.dart';
 /// {@endtemplate}
 class VpnDataSourceImpl implements VpnDataSource {
   final VpnPlugin _platformApi;
-  final LoggingVpnObserver? _loggingVpnObserver;
-  late final Stream<VpnState> _vpnState;
-  late final Stream<VpnLog> _vpnLogs;
 
   /// {@macro vpn_data_source_impl}
   VpnDataSourceImpl({
     required VpnPlugin vpnPlugin,
-    LoggingVpnObserver? loggingVpnObserver,
-  }) : _platformApi = vpnPlugin,
-       _loggingVpnObserver = loggingVpnObserver {
+  }) : _platformApi = vpnPlugin {
     final platformStates = _platformApi.states;
     final platformQueryLog = _platformApi.queryLog;
+    
+    _loggingVpnObserver = logger.extension<VpnLoggerExtension>();
 
     final vpnState = platformStates.transform(
       StreamTransformer<p.VpnManagerState, VpnState>.fromHandlers(
@@ -69,6 +67,10 @@ class VpnDataSourceImpl implements VpnDataSource {
     _vpnState = _loggingVpnObserver?.observeStateStream(vpnState) ?? vpnState;
     _vpnLogs = _loggingVpnObserver?.observeQueryLogStream(vpnLogs) ?? vpnLogs;
   }
+
+  late final VpnLoggerExtension? _loggingVpnObserver;
+  late final Stream<VpnState> _vpnState;
+  late final Stream<VpnLog> _vpnLogs;
 
   /// {@macro vpn_data_source_state_stream}
   ///

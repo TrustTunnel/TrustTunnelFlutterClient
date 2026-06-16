@@ -4,32 +4,29 @@ import 'package:trusttunnel/common/logging/sanitizer/trust_tunnel_sensitive_data
 class LogSanitizer {
   final TrustTunnelSensitiveDataSanitizer _sensitiveDataSanitizer;
 
+  final LoggingSecurityType _securityType;
+
   const LogSanitizer({
     TrustTunnelSensitiveDataSanitizer sensitiveDataSanitizer = const TrustTunnelSensitiveDataSanitizer(),
-  }) : _sensitiveDataSanitizer = sensitiveDataSanitizer;
+    LoggingSecurityType securityType = LoggingSecurityType.stripped,
+  }) : _securityType = securityType,
+       _sensitiveDataSanitizer = sensitiveDataSanitizer;
 
-  String sanitizeText(String value, LoggingSecurityType securityType) =>
-      _sensitiveDataSanitizer.sanitizeText(value, securityType);
+  T? sanitize<T extends Object>(T? value) => _sensitiveDataSanitizer.sanitizePayload(value, _securityType);
 
-  Object? sanitizePayload(Object? value, LoggingSecurityType securityType) =>
-      _sensitiveDataSanitizer.sanitizePayload(value, securityType);
-
-  Object? sanitizeError(Object? value, LoggingSecurityType securityType) {
+  Object? sanitizeError(Object? value) {
     if (value == null) {
       return null;
     }
 
-    return sanitizeText(value.toString(), securityType);
+    return sanitize(value.toString());
   }
 
-  StackTrace? sanitizeStackTrace(StackTrace? stackTrace, LoggingSecurityType securityType) {
+  StackTrace? sanitizeStackTrace(StackTrace? stackTrace) {
     if (stackTrace == null) {
       return null;
     }
 
-    return StackTrace.fromString(sanitizeText(stackTrace.toString(), securityType));
+    return StackTrace.fromString(sanitize(stackTrace.toString()) ?? '');
   }
-
-  List<String>? sanitizeTags(List<String>? tags, LoggingSecurityType securityType) =>
-      tags?.map((tag) => sanitizeText(tag, securityType)).toList();
 }
