@@ -8,6 +8,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/common/controller/controller/controller.dart';
 import 'package:trusttunnel/common/logging/app_logger.dart';
+import 'package:trusttunnel/common/logging/appenders/custom_console_appender.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/logging/observers/logging_controller_observer.dart';
@@ -57,6 +58,7 @@ class InitializationHelperIo extends InitializationHelper {
     final initialVpnState = await repositoryFactory.vpnRepository.requestState();
 
     FlutterNativeSplash.remove();
+
     logger.logInfo(
       'App initialization completed',
       additionalTags: ['app', 'initialization'],
@@ -88,7 +90,7 @@ class InitializationHelperIo extends InitializationHelper {
       ),
     );
 
-    final consoleAppender = ConsoleLogAppender();
+    final consoleAppender = CustomConsoleAppender();
     consoleAppender.attachToLogger(logger);
 
     final String path;
