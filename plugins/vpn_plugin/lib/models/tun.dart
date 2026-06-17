@@ -40,7 +40,7 @@ final class Tun {
       '2000::/3',
     ],
     this.excludedRoutes = const [],
-    this.mtuSize = 1280,
+    this.mtuSize = 1350,
   }) : assert(mtuSize > 0, 'mtuSize must be greater than 0');
 
   @override
