@@ -110,6 +110,20 @@ abstract class IVpnManager {
   /// - diagnose platform-side lifecycle issues.
   /// {@endtemplate}
   VpnManagerState getCurrentState();
+
+  /// {@template i_vpn_manager_export_logs}
+  /// Exports the collected VPN query logs to files on disk.
+  ///
+  /// Returns a list of absolute file paths where the exported logs are stored.
+  /// Each log entry within a file is separated by the `\x1E` byte separator
+  /// (ASCII Record Separator). Consumers must split the file contents on this
+  /// delimiter to obtain individual log entries.
+  ///
+  /// This call is executed on a serial background task queue to avoid blocking
+  /// the platform UI thread.
+  /// {@endtemplate}
+  @TaskQueue(type: TaskQueueType.serialBackgroundThread)
+  List<String> exportLogs();
 }
 
 /// {@template vpn_manager_state}

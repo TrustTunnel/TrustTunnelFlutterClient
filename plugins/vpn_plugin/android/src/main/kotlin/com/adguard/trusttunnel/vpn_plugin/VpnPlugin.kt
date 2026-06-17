@@ -124,4 +124,8 @@ class VpnPlugin :
     override fun getCurrentState(): VpnManagerState {
         return vpnImpl.getCurrentState()
     }
+
+    override fun exportLogs(): List<String> {
+        return vpnImpl.exportLogs()
+    }
 }
