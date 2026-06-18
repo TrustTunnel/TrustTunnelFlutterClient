@@ -37,6 +37,24 @@ sealed class AppLoggingState {
   bool get loading => this is AppLoggingLoadingState;
 
   @override
+  int get hashCode => Object.hash(
+    securityType,
+    level,
+    error,
+    loading,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AppLoggingState &&
+          runtimeType == other.runtimeType &&
+          securityType == other.securityType &&
+          level == other.level &&
+          error == other.error &&
+          loading == other.loading;
+
+  @override
   String toString() =>
       'AppLoggingState(type: $runtimeType, securityType: $securityType, level: $level, loading: $loading)';
 }

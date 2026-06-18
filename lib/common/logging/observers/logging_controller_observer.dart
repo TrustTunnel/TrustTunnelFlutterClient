@@ -22,11 +22,6 @@ class LoggingControllerObserver implements ControllerObserver {
       'Controller $controllerName disposed',
       additionalTags: ['controller', controllerName, 'lifecycle'],
     );
-
-    logger.logTrace(
-      'Controller $controllerName disposed',
-      additionalTags: ['controller', controllerName, 'lifecycle'],
-    );
   }
 
   @override
@@ -35,9 +30,13 @@ class LoggingControllerObserver implements ControllerObserver {
     S previousState,
     S nextState,
   ) {
+    if (previousState == nextState) {
+      return;
+    }
+
     final controllerName = _getControllerName(controller);
 
-    logger.logTrace(
+    logger.logInfo(
       'Controller $controllerName state changed, new state: $nextState',
       additionalTags: ['controller', controllerName, 'state'],
     );
