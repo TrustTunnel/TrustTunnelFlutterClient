@@ -1,11 +1,8 @@
 import 'package:adguard_logger/adguard_logger.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/sanitizer/log_sanitizer.dart';
 
 class AppLogger extends Logger {
-  static const _bufferDuration = Duration(milliseconds: 200);
-
   LogSanitizer sanitizer;
 
   AppLogger({
@@ -20,12 +17,6 @@ class AppLogger extends Logger {
     LoggingLevel.defaultLevel => LogLevel.info,
     LoggingLevel.debug => LogLevel.trace,
   };
-
-  @override
-  Stream<LogRecord> get logStream => super.logStream
-      .bufferTime(_bufferDuration)
-      .map((batch) => [...batch]..sort((a, b) => a.timeLog.dateTime.compareTo(b.timeLog.dateTime)))
-      .asyncExpand(Stream.fromIterable);
 
   @override
   void log(
