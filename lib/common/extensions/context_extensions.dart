@@ -41,6 +41,8 @@ extension SnackBarExtension on BuildContext {
     required String message,
     bool showCloseIcon = true,
     SnackBarBehavior behavior = SnackBarBehavior.fixed,
+    List<Widget> trailingActions = const [],
+    SnackBarAction? action,
   }) {
     var scaffoldMessenger = ScaffoldMessenger.of(this);
 
@@ -57,8 +59,20 @@ extension SnackBarExtension on BuildContext {
           ),
           behavior: behavior,
           showCloseIcon: showCloseIcon,
+          trailingActions: trailingActions,
+          action: action,
         ),
       );
+  }
+
+  void closeCurrentSnackBar() {
+    var scaffoldMessenger = ScaffoldMessenger.of(this);
+
+    if (scaffoldMessenger is ScaffoldMessengerProviderState) {
+      scaffoldMessenger = scaffoldMessenger.value;
+    }
+
+    scaffoldMessenger.removeCurrentSnackBar();
   }
 }
 

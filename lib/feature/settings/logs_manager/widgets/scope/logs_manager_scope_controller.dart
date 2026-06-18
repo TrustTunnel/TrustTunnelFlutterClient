@@ -8,6 +8,7 @@ abstract class LogsManagerScopeController {
 
   abstract final void Function({
     VoidCallback? onArchiveReady,
+    VoidCallback? onError,
   })
   exportLogs;
 

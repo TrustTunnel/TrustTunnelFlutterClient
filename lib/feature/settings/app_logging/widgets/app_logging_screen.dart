@@ -8,6 +8,7 @@ import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_loggi
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope_controller.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/stripped_logging_dialog.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope_aspect.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope_controller.dart';
 import 'package:trusttunnel/widgets/common/custom_radio_list_tile.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
@@ -27,20 +28,15 @@ class _AppLoggingScreenState extends State<AppLoggingScreen> {
   late LogsManagerScopeController _logsManagerController;
 
   @override
-  void initState() {
-    super.initState();
-    _logsManagerController = LogsManagerScope.controllerOf(
-      context,
-      listen: false,
-    );
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _controller = AppLoggingScope.controllerOf(context);
     _loggingLevel = _controller.loggingLevel;
     _securityType = _controller.securityType;
+    _logsManagerController = LogsManagerScope.controllerOf(
+      context,
+      aspect: LogsManagerScopeAspect.loading,
+    );
   }
 
   @override
@@ -98,7 +94,7 @@ class _AppLoggingScreenState extends State<AppLoggingScreen> {
             height: 64,
             child: Center(
               child: TextButton(
-                onPressed: _controller.loading ? null : () => _deleteLogs(context),
+                onPressed: _controller.loading || _logsManagerController.loading ? null : () => _deleteLogs(context),
                 child: Text(
                   context.ln.deleteAppLogs,
                   style: context.textTheme.labelLarge?.copyWith(color: context.colors.error),

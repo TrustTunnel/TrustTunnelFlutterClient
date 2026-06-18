@@ -22,6 +22,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
 
   void export({
     VoidCallback? onArchiveReady,
+    VoidCallback? onError,
   }) => handle(
     () async {
       setState(
@@ -35,7 +36,10 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       );
       onArchiveReady?.call();
     },
-    errorHandler: _onError,
+    errorHandler: (error, stackTrace) {
+      onError?.call();
+      _onError(error, stackTrace);
+    },
     completionHandler: _onCompleted,
   );
 

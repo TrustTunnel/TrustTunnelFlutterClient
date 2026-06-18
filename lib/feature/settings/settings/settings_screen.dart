@@ -20,35 +20,37 @@ class SettingsScreen extends StatelessWidget {
     appBar: CustomAppBar(
       title: context.ln.settings,
     ),
-    body: ListView(
-      children: [
-        CustomArrowListTile(
-          title: context.ln.queryLog,
-          onTap: () => _pushQueryLogScreen(context),
-        ),
-        const Divider(),
-        CustomArrowListTile(
-          title: context.ln.appLogging,
-          onTap: () => _pushAppLoggingScreen(context),
-        ),
-        const Divider(),
-        const DownloadAppLogsTile(),
-        const Divider(),
-        CustomArrowListTile(
-          title: context.ln.excludedRoutes,
-          onTap: () => _pushExcludedRoutesScreen(context),
-        ),
-        const Divider(),
-        CustomArrowListTile(
-          title: context.ln.followUsOnGithub,
-          onTap: _openGithubOrganization,
-        ),
-        const Divider(),
-        CustomArrowListTile(
-          title: context.ln.about,
-          onTap: () => _pushAboutScreen(context),
-        ),
-      ],
+    body: LogsManagerScope(
+      child: ListView(
+        children: [
+          CustomArrowListTile(
+            title: context.ln.queryLog,
+            onTap: () => _pushQueryLogScreen(context),
+          ),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.appLogging,
+            onTap: () => _pushAppLoggingScreen(context),
+          ),
+          const Divider(),
+          const DownloadAppLogsTile(),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.excludedRoutes,
+            onTap: () => _pushExcludedRoutesScreen(context),
+          ),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.followUsOnGithub,
+            onTap: _openGithubOrganization,
+          ),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.about,
+            onTap: () => _pushAboutScreen(context),
+          ),
+        ],
+      ),
     ),
   );
 
@@ -57,8 +59,11 @@ class SettingsScreen extends StatelessWidget {
   );
 
   void _pushAppLoggingScreen(BuildContext context) => context.push(
-    const LogsManagerScope(
-      child: AppLoggingScope(
+    LogsManagerProvider(
+      controller: LogsManagerScope.controllerOf(
+        context,
+      ),
+      child: const AppLoggingScope(
         child: AppLoggingScreen(),
       ),
     ),

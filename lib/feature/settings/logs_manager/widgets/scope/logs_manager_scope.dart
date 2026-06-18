@@ -56,8 +56,10 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
 
   void _exportLogs({
     VoidCallback? onArchiveReady,
+    VoidCallback? onError,
   }) => _controller.export(
     onArchiveReady: onArchiveReady,
+    onError: onError,
   );
 
   void _shareLogs({
@@ -85,6 +87,27 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
   }
 }
 
+class LogsManagerProvider extends StatelessWidget {
+  final LogsManagerScopeController controller;
+  final Widget child;
+
+  const LogsManagerProvider({
+    required this.controller,
+    required this.child,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) => _InheritedLogsManagerScope(
+    loading: controller.loading,
+    archive: controller.archive,
+    exportLogs: controller.exportLogs,
+    shareLogs: controller.shareLogs,
+    deleteLogs: controller.deleteLogs,
+    child: child,
+  );
+}
+
 class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> implements LogsManagerScopeController {
   const _InheritedLogsManagerScope({
     required super.child,
@@ -104,6 +127,7 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   @override
   final void Function({
     VoidCallback? onArchiveReady,
+    VoidCallback? onError,
   })
   exportLogs;
 
