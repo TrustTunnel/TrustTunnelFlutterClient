@@ -142,6 +142,7 @@ class _AppLoggingScreenState extends State<AppLoggingScreen> {
         _controller.updateSecurityType(securityType: value);
       case StrippedLoggingDialogAction.deleteLogs:
         _logsManagerController.deleteLogs(onDeleted: _showLogsDeletedSnackBar);
+        _controller.updateSecurityType(securityType: value);
     }
   }
 

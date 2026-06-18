@@ -21,35 +21,37 @@ class SettingsScreen extends StatelessWidget {
       title: context.ln.settings,
     ),
     body: LogsManagerScope(
-      child: ListView(
-        children: [
-          CustomArrowListTile(
-            title: context.ln.queryLog,
-            onTap: () => _pushQueryLogScreen(context),
-          ),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.appLogging,
-            onTap: () => _pushAppLoggingScreen(context),
-          ),
-          const Divider(),
-          const DownloadAppLogsTile(),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.excludedRoutes,
-            onTap: () => _pushExcludedRoutesScreen(context),
-          ),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.followUsOnGithub,
-            onTap: _openGithubOrganization,
-          ),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.about,
-            onTap: () => _pushAboutScreen(context),
-          ),
-        ],
+      child: Builder(
+        builder: (context) => ListView(
+          children: [
+            CustomArrowListTile(
+              title: context.ln.queryLog,
+              onTap: () => _pushQueryLogScreen(context),
+            ),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.appLogging,
+              onTap: () => _pushAppLoggingScreen(context),
+            ),
+            const Divider(),
+            const DownloadAppLogsTile(),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.excludedRoutes,
+              onTap: () => _pushExcludedRoutesScreen(context),
+            ),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.followUsOnGithub,
+              onTap: _openGithubOrganization,
+            ),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.about,
+              onTap: () => _pushAboutScreen(context),
+            ),
+          ],
+        ),
       ),
     ),
   );

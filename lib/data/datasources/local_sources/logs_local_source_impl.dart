@@ -6,21 +6,24 @@ import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
-import 'package:trusttunnel/data/datasources/export_logs_local_source.dart';
+import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
-final class ExportLogsLocalSourceImpl implements ExportLogsLocalSource {
+final class LogsLocalSourceImpl implements LogsLocalSource {
   final FileLogAppender _logAppender;
   final AppStateLoggingDataSource _appStateLoggingDataSource;
   final FilePicker _filePicker;
+  final LogStorage _logStorage;
 
-  ExportLogsLocalSourceImpl({
+  LogsLocalSourceImpl({
     required FileLogAppender logAppender,
     required AppStateLoggingDataSource appStateLoggingDataSource,
     required FilePicker filePicker,
+    required LogStorage logStorage,
   }) : _logAppender = logAppender,
        _appStateLoggingDataSource = appStateLoggingDataSource,
+       _logStorage = logStorage,
        _filePicker = filePicker;
 
   @override
@@ -72,6 +75,9 @@ final class ExportLogsLocalSourceImpl implements ExportLogsLocalSource {
 
     return path;
   }
+
+  @override
+  Future<void> deleteLogs() => _logStorage.deleteData(_logAppender.filePath);
 
   String _generateArchiveName() {
     final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-]'), '').replaceAll(RegExp(r'\..*'), '');

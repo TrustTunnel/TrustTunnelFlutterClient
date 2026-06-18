@@ -8,21 +8,19 @@ import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
-import 'package:trusttunnel/data/datasources/export_logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
-import 'package:trusttunnel/data/datasources/local_sources/export_logs_local_source_impl.dart';
-import 'package:trusttunnel/data/datasources/local_sources/log_storage_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_archive_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_export_destination_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/logs_local_source_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
-import 'package:trusttunnel/data/datasources/log_storage_datasource.dart';
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_archive_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
+import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
@@ -54,11 +52,9 @@ abstract class DependencyFactory {
 
   AppStateLoggingDataSource get appStateLoggingDataSource;
 
-  LogStorageDataSource get logStorageDataSource;
-
   FileLogAppender get fileLogAppender;
 
-  ExportLogsLocalSource get exportLogsLocalSource;
+  LogsLocalSource get exportLogsLocalSource;
 
   LogsArchiveDataSource get logsArchiveDataSource;
 
@@ -94,13 +90,11 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   FileLogAppender? _fileLogAppender;
 
-  ExportLogsLocalSource? _exportLogsLocalSource;
+  LogsLocalSource? _exportLogsLocalSource;
 
   LogStorage? _logStorage;
 
   String? _logDirectoryPath;
-
-  LogStorageDataSource? _logStorageDataSource;
 
   LogsArchiveDataSource? _logsArchiveDataSource;
 
@@ -163,19 +157,14 @@ class DependencyFactoryImpl implements DependencyFactory {
       );
 
   @override
-  LogStorageDataSource get logStorageDataSource => _logStorageDataSource ??= LogStorageDataSourceImpl(
-    logStorage: _logStorage!,
-    directoryPath: _logDirectoryPath!,
-  );
-
-  @override
   FileLogAppender get fileLogAppender => _fileLogAppender!;
 
   @override
-  ExportLogsLocalSource get exportLogsLocalSource => _exportLogsLocalSource ??= ExportLogsLocalSourceImpl(
+  LogsLocalSource get exportLogsLocalSource => _exportLogsLocalSource ??= LogsLocalSourceImpl(
     logAppender: fileLogAppender,
     appStateLoggingDataSource: appStateLoggingDataSource,
     filePicker: FilePicker.platform,
+    logStorage: logStorage,
   );
 
   @override

@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:trusttunnel/data/datasources/export_logs_local_source.dart';
-import 'package:trusttunnel/data/datasources/log_storage_datasource.dart';
+import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
@@ -26,20 +25,17 @@ abstract interface class ExportLogsRepository {
 }
 
 final class ExportLogsRepositoryImpl implements ExportLogsRepository {
-  final ExportLogsLocalSource _localSource;
-  final LogStorageDataSource _logStorageDataSource;
+  final LogsLocalSource _localSource;
 
   ExportLogsRepositoryImpl({
-    required ExportLogsLocalSource localSource,
-    required LogStorageDataSource logStorageDataSource,
-  }) : _localSource = localSource,
-       _logStorageDataSource = logStorageDataSource;
+    required LogsLocalSource localSource,
+  }) : _localSource = localSource;
 
   @override
   Future<ExportLogsArchive> createArchive() => _localSource.archiveData();
 
   @override
-  Future<void> deleteLogs() => _logStorageDataSource.deleteLogs();
+  Future<void> deleteLogs() => _localSource.deleteLogs();
 
   @override
   Future<String?> pickFilePath({

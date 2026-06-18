@@ -79,6 +79,5 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   @override
   ExportLogsRepository get exportLogsRepository => _exportLogsRepository ??= ExportLogsRepositoryImpl(
     localSource: _dependencyFactory.exportLogsLocalSource,
-    logStorageDataSource: _dependencyFactory.logStorageDataSource,
   );
 }

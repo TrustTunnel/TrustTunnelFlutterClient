@@ -68,8 +68,8 @@ sealed class ServerDetailsState {
   @override
   String toString() =>
       'ServerDetailsState(type: $runtimeType, '
-      'data: $data, initialData: $initialData, fieldErrorCount: ${fieldErrors.length}, '
-      'routingProfileCount: ${routingProfiles.length}, loading: $loading)';
+      'data: $data, initialData: $initialData, fieldErrors: ${fieldErrors.map((e) => e.toString()).join(', ')}, '
+      'routingProfiles: ${routingProfiles.map((e) => e.toString()).join(', ')}, loading: $loading)';
 
   @override
   bool operator ==(Object other) =>

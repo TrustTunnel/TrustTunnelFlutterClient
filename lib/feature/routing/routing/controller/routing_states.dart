@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
@@ -40,9 +41,28 @@ sealed class RoutingState {
   bool get loading => this is _LoadingRoutingState;
 
   @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    Object.hashAll(routingList),
+    Object.hashAll(fieldErrors),
+    error,
+    loading,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RoutingState &&
+          runtimeType == other.runtimeType &&
+          const ListEquality<RoutingProfile>().equals(routingList, other.routingList) &&
+          const ListEquality<PresentationField>().equals(fieldErrors, other.fieldErrors) &&
+          error == other.error &&
+          loading == other.loading;
+
+  @override
   String toString() =>
       'RoutingState(type: $runtimeType, '
-      'profileCount: ${routingList.length}, fieldErrorCount: ${fieldErrors.length}, '
+      'routingList: ${routingList.map((e) => e.toString()).join(', ')}, fieldErrors: ${fieldErrors.map((e) => e.toString()).join(', ')}, '
       'loading: $loading)';
 }
 
