@@ -165,6 +165,7 @@ class DependencyFactoryImpl implements DependencyFactory {
     appStateLoggingDataSource: appStateLoggingDataSource,
     filePicker: FilePicker.platform,
     logStorage: logStorage,
+    vpnPlugin: vpnPlugin,
   );
 
   @override

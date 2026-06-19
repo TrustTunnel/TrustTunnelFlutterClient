@@ -9,21 +9,26 @@ import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
+import 'package:vpn_plugin/models/logs/log_platform_files.dart';
+import 'package:vpn_plugin/vpn_plugin.dart';
 
 final class LogsLocalSourceImpl implements LogsLocalSource {
   final FileLogAppender _logAppender;
   final AppStateLoggingDataSource _appStateLoggingDataSource;
   final FilePicker _filePicker;
   final LogStorage _logStorage;
+  final VpnPlugin _vpnPlugin;
 
   LogsLocalSourceImpl({
     required FileLogAppender logAppender,
     required AppStateLoggingDataSource appStateLoggingDataSource,
     required FilePicker filePicker,
     required LogStorage logStorage,
+    required VpnPlugin vpnPlugin,
   }) : _logAppender = logAppender,
        _appStateLoggingDataSource = appStateLoggingDataSource,
        _logStorage = logStorage,
+       _vpnPlugin = vpnPlugin,
        _filePicker = filePicker;
 
   @override
@@ -31,11 +36,23 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     final snapshot = await _appStateLoggingDataSource.collectSnapshot();
     final formattedState = const JsonEncoder.withIndent('  ').convert(snapshot.toJson());
 
+    final logPaths = await _vpnPlugin.fetchLogsPath();
+
+    final Map<String, Uint8List> additionalFiles = {'app_state.log': utf8.encode(formattedState)};
+
+    for (final group in LogPlatformFiles.platform(defaultTargetPlatform).value) {
+      final regex = RegExp(r'.*' + group + r'(\.\d+)?\.log');
+
+      final selectedPaths = logPaths.where(regex.hasMatch).toList();
+
+      final exportedLogs = await _vpnPlugin.exportLogsFor(selectedPaths);
+
+      additionalFiles['$group.log'] = utf8.encode(exportedLogs.join(Platform.lineTerminator));
+    }
+
     final archivedData = await _logAppender.archiveData(
       lastModifiedDuration: const Duration(days: 1),
-      additionalFiles: {
-        'app_state.txt': utf8.encode(formattedState),
-      },
+      additionalFiles: additionalFiles,
     );
 
     final archiveName = _generateArchiveName();

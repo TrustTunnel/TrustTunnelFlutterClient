@@ -40,27 +40,25 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
-  void _showArchiveReadySnackBar() {
-    context.showInfoSnackBar(
-      message: context.ln.appLogsExportedSnackbar,
-      trailingActions: [
-        TextButton(
-          onPressed: () {
-            context.closeCurrentSnackBar();
+  void _showArchiveReadySnackBar() => context.showInfoSnackBar(
+    message: context.ln.appLogsExportedSnackbar,
+    trailingActions: [
+      TextButton(
+        onPressed: () {
+          context.closeCurrentSnackBar();
 
-            _controller.shareLogs(
-              subject: context.ln.downloadAppLogs,
-              chooserTitle: context.ln.share,
-            );
-          },
-          child: Text(
-            context.ln.share,
-            style: context.textTheme.labelLarge?.copyWith(
-              color: context.colors.accent,
-            ),
+          _controller.shareLogs(
+            subject: context.ln.downloadAppLogs,
+            chooserTitle: context.ln.share,
+          );
+        },
+        child: Text(
+          context.ln.share,
+          style: context.textTheme.labelLarge?.copyWith(
+            color: context.colors.accent,
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }
