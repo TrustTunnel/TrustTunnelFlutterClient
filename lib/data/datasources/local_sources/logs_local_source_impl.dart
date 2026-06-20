@@ -94,7 +94,10 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
   }
 
   @override
-  Future<void> deleteLogs() => _logStorage.deleteData(_logAppender.filePath);
+  Future<void> deleteLogs() => Future.wait([
+    _logStorage.deleteData(_logAppender.filePath),
+    _vpnPlugin.clearLogs(),
+  ]);
 
   String _generateArchiveName() {
     final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-]'), '').replaceAll(RegExp(r'\..*'), '');

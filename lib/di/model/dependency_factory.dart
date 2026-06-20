@@ -11,14 +11,12 @@ import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
-import 'package:trusttunnel/data/datasources/local_sources/logs_archive_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_export_destination_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_local_source_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
-import 'package:trusttunnel/data/datasources/logs_archive_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource_impl.dart';
@@ -55,8 +53,6 @@ abstract class DependencyFactory {
   FileLogAppender get fileLogAppender;
 
   LogsLocalSource get exportLogsLocalSource;
-
-  LogsArchiveDataSource get logsArchiveDataSource;
 
   LogsExportDestinationDataSource get logsExportDestinationDataSource;
 
@@ -95,8 +91,6 @@ class DependencyFactoryImpl implements DependencyFactory {
   LogStorage? _logStorage;
 
   String? _logDirectoryPath;
-
-  LogsArchiveDataSource? _logsArchiveDataSource;
 
   LogsExportDestinationDataSource? _logsExportDestinationDataSource;
 
@@ -167,9 +161,6 @@ class DependencyFactoryImpl implements DependencyFactory {
     logStorage: logStorage,
     vpnPlugin: vpnPlugin,
   );
-
-  @override
-  LogsArchiveDataSource get logsArchiveDataSource => _logsArchiveDataSource ??= LogsArchiveDataSourceImpl();
 
   @override
   LogsExportDestinationDataSource get logsExportDestinationDataSource =>

@@ -39,7 +39,6 @@ class InitializationHelperIo extends InitializationHelper {
     final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
 
     final dependenciesFactory = DependencyFactoryImpl(sharedPreferences: sharedPreferences);
-    await _cleanupStaleLogArchives(dependenciesFactory);
 
     final repositoryFactory = RepositoryFactoryImpl(
       dependencyFactory: dependenciesFactory,
@@ -154,18 +153,5 @@ class InitializationHelperIo extends InitializationHelper {
     ];
 
     await SystemChrome.setPreferredOrientations(legalOrientations);
-  }
-
-  Future<void> _cleanupStaleLogArchives(DependencyFactory dependenciesFactory) async {
-    try {
-      await dependenciesFactory.logsArchiveDataSource.cleanupStaleArchives();
-    } on Object catch (error, stackTrace) {
-      logger.logWarning(
-        'Stale logs archive cleanup failed',
-        error: error.runtimeType,
-        stackTrace: stackTrace,
-        additionalTags: const ['export_logs'],
-      );
-    }
   }
 }
