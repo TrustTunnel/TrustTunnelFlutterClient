@@ -101,22 +101,7 @@ class InitializationHelperIo extends InitializationHelper {
       directoryName: 'Logs',
     );
 
-    storage = FileLogStorage(
-      formatter: const DataLoggerFormatter(
-        loggingData: [
-          LoggingData.time(),
-          LoggingData.level(),
-          LoggingData.trace(),
-          LoggingData.separator('\n'),
-          LoggingData.message(),
-          LoggingData.separator('\n'),
-          LoggingData.error(),
-          LoggingData.separator('\n'),
-          LoggingData.stackTrace(),
-          LoggingData.separator('\n\x1E'),
-        ],
-      ),
-    );
+    storage = FileLogStorage();
 
     final fileAppender = FileLogAppender(
       logStorage: storage,

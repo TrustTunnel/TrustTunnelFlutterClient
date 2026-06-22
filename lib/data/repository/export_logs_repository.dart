@@ -32,7 +32,7 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
   }) : _localSource = localSource;
 
   @override
-  Future<ExportLogsArchive> createArchive() => _localSource.archiveData();
+  Future<ExportLogsArchive> createArchive() => _localSource.createArchive();
 
   @override
   Future<void> deleteLogs() => _localSource.deleteLogs();

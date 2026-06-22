@@ -32,34 +32,34 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
        _filePicker = filePicker;
 
   @override
-  Future<ExportLogsArchive> archiveData() async {
-    final snapshot = await _appStateLoggingDataSource.collectSnapshot();
-    final formattedState = const JsonEncoder.withIndent('  ').convert(snapshot.toJson());
-
+  Future<ExportLogsArchive> createArchive() async {
     final logPaths = await _vpnPlugin.fetchLogsPath();
-
-    final Map<String, Uint8List> additionalFiles = {'app_state.log': utf8.encode(formattedState)};
+    final logFiles = <String, Uint8List>{};
 
     for (final group in LogPlatformFiles.platform(defaultTargetPlatform).value) {
       final regex = RegExp(r'.*' + group + r'(\.\d+)?\.log');
-
       final selectedPaths = logPaths.where(regex.hasMatch).toList();
 
-      final exportedLogs = await _vpnPlugin.exportLogsFor(selectedPaths);
+      final lines = selectedPaths.isEmpty
+          ? <String>[]
+          : (await _vpnPlugin.exportLogsFor(selectedPaths)).map((r) => r.message).toList();
 
-      additionalFiles['$group.log'] = utf8.encode(exportedLogs.join(Platform.lineTerminator));
+      logFiles['$group.log'] = utf8.encode(lines.join(Platform.lineTerminator));
     }
+
+    final snapshot = await _appStateLoggingDataSource.collectSnapshot();
+    logFiles['app_state.log'] = utf8.encode(
+      const JsonEncoder.withIndent('  ').convert(snapshot.toJson()),
+    );
 
     final archivedData = await _logAppender.archiveData(
       lastModifiedDuration: const Duration(days: 1),
-      additionalFiles: additionalFiles,
+      additionalFiles: logFiles,
     );
-
-    final archiveName = _generateArchiveName();
 
     return ExportLogsArchive(
       data: archivedData,
-      name: archiveName,
+      name: _generateArchiveName(),
     );
   }
 
