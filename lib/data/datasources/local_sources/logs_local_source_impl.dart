@@ -94,7 +94,7 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
   }) async {
     await File(path).writeAsBytes(data, flush: true);
     final tempLogs = _sharedPreferences.getStringList(_logTempKey);
-    _sharedPreferences.setStringList(_logTempKey, [...?tempLogs, path]);
+    await _sharedPreferences.setStringList(_logTempKey, [...?tempLogs, path]);
 
     return path;
   }
