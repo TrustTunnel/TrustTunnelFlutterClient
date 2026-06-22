@@ -13,11 +13,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: c3be7b9838fe5dd52d7eb4bc8509ba211d56bf8c
-      resolved-ref: c3be7b9838fe5dd52d7eb4bc8509ba211d56bf8c
+      ref: "v1.0.3"
+      resolved-ref: "038870aa035c3688f61cac74bdc2fd8c01f0e86a"
       url: "https://github.com/AdguardTeam/adguard-dart-logger"
     source: git
-    version: "1.0.2"
+    version: "1.0.3"
   analyzer:
     dependency: transitive
     description:

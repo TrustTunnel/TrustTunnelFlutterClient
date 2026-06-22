@@ -36,7 +36,7 @@ dependencies:
   adguard_logger:
     git:
       url: https://github.com/AdguardTeam/adguard-dart-logger
-      ref: c3be7b9838fe5dd52d7eb4bc8509ba211d56bf8c
+      ref: v1.0.3
   app_links: 7.0.0
   collection: 1.19.1
   drift: 2.30.0
