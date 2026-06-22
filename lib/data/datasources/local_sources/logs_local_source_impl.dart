@@ -53,7 +53,6 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     );
 
     final archivedData = await _logAppender.archiveData(
-      lastModifiedDuration: const Duration(days: 1),
       additionalFiles: logFiles,
     );
 

@@ -30,6 +30,10 @@ import 'package:vpn_plugin/vpn_plugin.dart';
 abstract class DependencyFactory {
   abstract final SharedPreferences sharedPreferences;
 
+  abstract final FileLogAppender fileLogAppender;
+
+  abstract final FileLogStorage logStorage;
+
   ThemeData get lightThemeData;
 
   VpnPlugin get vpnPlugin;
@@ -50,8 +54,6 @@ abstract class DependencyFactory {
 
   AppStateLoggingDataSource get appStateLoggingDataSource;
 
-  FileLogAppender get fileLogAppender;
-
   LogsLocalSource get exportLogsLocalSource;
 
   LogsExportDestinationDataSource get logsExportDestinationDataSource;
@@ -60,8 +62,19 @@ abstract class DependencyFactory {
 }
 
 class DependencyFactoryImpl implements DependencyFactory {
+  @override
+  final SharedPreferences sharedPreferences;
+
+  @override
+  final FileLogAppender fileLogAppender;
+
+  @override
+  final FileLogStorage logStorage;
+
   DependencyFactoryImpl({
     required this.sharedPreferences,
+    required this.fileLogAppender,
+    required this.logStorage,
   });
 
   ThemeData? _lightThemeData;
@@ -84,20 +97,11 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   AppStateLoggingDataSource? _appStateLoggingDataSource;
 
-  FileLogAppender? _fileLogAppender;
-
   LogsLocalSource? _exportLogsLocalSource;
-
-  LogStorage? _logStorage;
-
-  String? _logDirectoryPath;
 
   LogsExportDestinationDataSource? _logsExportDestinationDataSource;
 
   db.AppDatabase? _database;
-
-  @override
-  SharedPreferences sharedPreferences;
 
   @override
   ThemeData get lightThemeData => _lightThemeData ??= LightTheme().data;
@@ -151,9 +155,6 @@ class DependencyFactoryImpl implements DependencyFactory {
       );
 
   @override
-  FileLogAppender get fileLogAppender => _fileLogAppender!;
-
-  @override
   LogsLocalSource get exportLogsLocalSource => _exportLogsLocalSource ??= LogsLocalSourceImpl(
     logAppender: fileLogAppender,
     appStateLoggingDataSource: appStateLoggingDataSource,
@@ -170,14 +171,4 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   @override
   db.AppDatabase get database => _database ??= db.AppDatabase();
-
-  set fileLogAppender(FileLogAppender value) => _fileLogAppender = value;
-
-  LogStorage get logStorage => _logStorage!;
-
-  set logStorage(LogStorage value) => _logStorage = value;
-
-  String get logDirectoryPath => _logDirectoryPath!;
-
-  set logDirectoryPath(String value) => _logDirectoryPath = value;
 }

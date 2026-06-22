@@ -8,7 +8,6 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/common/controller/controller/controller.dart';
 import 'package:trusttunnel/common/logging/app_logger.dart';
-import 'package:trusttunnel/common/logging/appenders/custom_console_appender.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/logging/observers/logging_controller_observer.dart';
@@ -38,7 +37,31 @@ class InitializationHelperIo extends InitializationHelper {
 
     final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
 
-    final dependenciesFactory = DependencyFactoryImpl(sharedPreferences: sharedPreferences);
+    final String path;
+
+    path = await ContainmentFileUtil.getPlatformContainmentDirectoryPath(
+      'log',
+      appName: 'TrustTunnel',
+      directoryName: 'Logs',
+    );
+
+    final logStorage = FileLogStorage();
+
+    final fileAppender = FileLogAppender(
+      logStorage: logStorage,
+      filePath: path,
+      rotationFileController: RotationFileController(
+        containmentDaysDuration: 7,
+        rotationSizeLimit: 1024 * 1024 * 30,
+        rotationFileLimit: 1024 * 1024 * 3,
+      ),
+    );
+
+    final dependenciesFactory = DependencyFactoryImpl(
+      sharedPreferences: sharedPreferences,
+      fileLogAppender: fileAppender,
+      logStorage: logStorage,
+    );
 
     final repositoryFactory = RepositoryFactoryImpl(
       dependencyFactory: dependenciesFactory,
@@ -89,34 +112,8 @@ class InitializationHelperIo extends InitializationHelper {
       ),
     );
 
-    final consoleAppender = CustomConsoleAppender();
-    consoleAppender.attachToLogger(logger);
-
-    final String path;
-    final LogStorage storage;
-
-    path = await ContainmentFileUtil.getPlatformContainmentDirectoryPath(
-      'log',
-      appName: 'TrustTunnel',
-      directoryName: 'Logs',
-    );
-
-    storage = FileLogStorage();
-
-    final fileAppender = FileLogAppender(
-      logStorage: storage,
-      filePath: path,
-      rotationFileController: RotationFileController(
-        containmentDaysDuration: 7,
-        rotationSizeLimit: 1024 * 1024 * 30,
-        rotationFileLimit: 1024 * 1024 * 3,
-      ),
-    );
-    fileAppender.attachToLogger(logger);
-
-    dependenciesFactory.fileLogAppender = fileAppender;
-    dependenciesFactory.logStorage = storage;
-    dependenciesFactory.logDirectoryPath = path;
+    ConsoleLogAppender().attachToLogger(logger);
+    dependenciesFactory.fileLogAppender.attachToLogger(logger);
 
     logger.logInfo(
       'Logger configured with level: $loggingLevel and security type: $securityType',
