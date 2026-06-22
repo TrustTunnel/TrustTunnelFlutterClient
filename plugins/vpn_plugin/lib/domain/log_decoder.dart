@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-
 import 'package:vpn_plugin/models/logs/log_level.dart';
 import 'package:vpn_plugin/models/logs/log_record.dart';
 
@@ -50,20 +49,7 @@ class LogDecoder extends Converter<List<int>, LogRecord> {
     return LogRecord(dateTime: timestamp, level: level, message: message);
   }
 
-  static LogLevel _parseLevel(String s) {
-    switch (s.toLowerCase()) {
-      case '[debug]':
-        return LogLevel.debug;
-      case '[info]':
-        return LogLevel.info;
-      case '[error]':
-        return LogLevel.error;
-      case '[warn]':
-        return LogLevel.warn;
-      default:
-        throw FormatException('Unknown log level: $s');
-    }
-  }
+  static LogLevel _parseLevel(String s) => LogLevel.fromString(s);
 }
 
 class _StringSplitter extends Converter<List<int>, String> {
