@@ -3,10 +3,42 @@ import 'dart:convert';
 import 'package:vpn_plugin/models/logs/log_level.dart';
 import 'package:vpn_plugin/models/logs/log_record.dart';
 
+/// {@template log_decoder}
+/// Converts raw VPN plugin log bytes into [LogRecord] instances.
+///
+/// The VPN plugin outputs binary log data with records separated by
+/// the `0x1E` (Record Separator) byte. Each record consists of a
+/// timestamp, a bracketed level string (e.g. `[info]`), and a message.
+///
+/// ## Line format
+///
+/// ```text
+/// 2025-01-01T12:00:00.000 [info] VPN connection established
+/// ```
+///
+/// ## Usage
+///
+/// ```dart
+/// final decoder = LogDecoder();
+/// final record = decoder.convert(rawBytes);
+/// ```
+/// {@endtemplate}
 class LogDecoder extends Converter<List<int>, LogRecord> {
+  /// The byte value used as a record separator (`0x1E`).
   static const int _recordSeparator = 0x1E;
+
+  /// The byte value for a space character (`0x20`).
   static const int _space = 0x20;
 
+  /// {@template log_decoder_parse_line}
+  /// Parses a single log line string into a [LogRecord].
+  ///
+  /// The [line] is expected to have at least three space-separated
+  /// tokens: a timestamp, a bracketed level, and a message.
+  ///
+  /// ### Throws:
+  /// - [FormatException]: If the line contains fewer than three tokens.
+  /// {@endtemplate}
   static LogRecord parseLine(String line) {
     final parts = line.split(' ');
     if (parts.length < 3) {
@@ -19,6 +51,10 @@ class LogDecoder extends Converter<List<int>, LogRecord> {
     );
   }
 
+  /// {@template log_decoder_string_splitter}
+  /// A pre-constructed [_StringSplitter] for splitting byte streams
+  /// on the `0x1E` record separator.
+  /// {@endtemplate}
   static const stringSplitter = _StringSplitter();
 
   @override
@@ -27,6 +63,10 @@ class LogDecoder extends Converter<List<int>, LogRecord> {
   @override
   Sink<List<int>> startChunkedConversion(Sink<LogRecord> sink) => _LogDecoderSink(sink);
 
+  /// Parses raw bytes into a [LogRecord].
+  ///
+  /// Reads the timestamp up to the first space, the bracketed level
+  /// up to the second space, and treats the remainder as the message.
   static LogRecord _parse(List<int> bytes) {
     final len = bytes.length;
 
@@ -49,6 +89,10 @@ class LogDecoder extends Converter<List<int>, LogRecord> {
     return LogRecord(dateTime: timestamp, level: level, message: message);
   }
 
+  /// Delegates level parsing to [LogLevel.fromString].
+  ///
+  /// See [LogLevel.fromString] for details on supported level strings
+  /// and fallback behaviour.
   static LogLevel _parseLevel(String s) => LogLevel.fromString(s);
 }
 
