@@ -13,11 +13,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.0.2"
-      resolved-ref: b1b2911bc531cc0cc0d23f73cfa3cf1a0e219977
+      ref: "feature/TRUST-592-clear-logs"
+      resolved-ref: "5d8b4c0467adb69d26c76a3b1aa3b159eddd06f5"
       url: "https://github.com/AdguardTeam/adguard-dart-logger"
     source: git
-    version: "1.0.4"
+    version: "1.0.2"
   analyzer:
     dependency: transitive
     description:

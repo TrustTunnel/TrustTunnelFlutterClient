@@ -18,7 +18,7 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
   final FileLogAppender _logAppender;
   final AppStateLoggingDataSource _appStateLoggingDataSource;
   final FilePicker _filePicker;
-  final LogStorage _logStorage;
+  final FileLogAppender _logFileController;
   final VpnPlugin _vpnPlugin;
   final SharedPreferences _sharedPreferences;
 
@@ -26,12 +26,12 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     required FileLogAppender logAppender,
     required AppStateLoggingDataSource appStateLoggingDataSource,
     required FilePicker filePicker,
-    required LogStorage logStorage,
+    required FileLogAppender logFileController,
     required VpnPlugin vpnPlugin,
     required SharedPreferences sharedPreferences,
   }) : _logAppender = logAppender,
        _appStateLoggingDataSource = appStateLoggingDataSource,
-       _logStorage = logStorage,
+       _logFileController = logFileController,
        _vpnPlugin = vpnPlugin,
        _sharedPreferences = sharedPreferences,
        _filePicker = filePicker;
@@ -102,7 +102,7 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
   @override
   Future<void> deleteLogs() => Future.wait([
     clearTempFiles(),
-    _logStorage.deleteData(_logAppender.filePath),
+    _logFileController.clearAllLogs(),
     _vpnPlugin.clearLogs(),
   ]);
 

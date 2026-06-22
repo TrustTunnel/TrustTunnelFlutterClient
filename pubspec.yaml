@@ -36,7 +36,7 @@ dependencies:
   adguard_logger:
     git:
       url: https://github.com/AdguardTeam/adguard-dart-logger
-      ref: v1.0.2
+      ref: feature/TRUST-592-clear-logs
   app_links: 7.0.0
   collection: 1.19.1
   drift: 2.30.0
