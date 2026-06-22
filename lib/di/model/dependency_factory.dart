@@ -158,7 +158,6 @@ class DependencyFactoryImpl implements DependencyFactory {
     logAppender: fileLogAppender,
     appStateLoggingDataSource: appStateLoggingDataSource,
     filePicker: FilePicker.platform,
-    logStorage: logStorage,
     vpnPlugin: vpnPlugin,
     sharedPreferences: sharedPreferences,
   );
