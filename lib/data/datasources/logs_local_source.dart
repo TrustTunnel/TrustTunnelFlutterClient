@@ -4,9 +4,6 @@ import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
 abstract class LogsLocalSource {
-  /// Collects raw log lines from the VPN plugin, encodes them grouped by
-  /// platform log group name (e.g. "app", "vpn"), appends an `app_state.log`
-  /// snapshot, and archives everything into a single ZIP.
   Future<ExportLogsArchive> createArchive();
 
   Future<String?> pickFilePath({
@@ -24,4 +21,6 @@ abstract class LogsLocalSource {
   });
 
   Future<void> deleteLogs();
+
+  Future<void> clearTempFiles();
 }

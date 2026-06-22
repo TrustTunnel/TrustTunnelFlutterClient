@@ -77,6 +77,8 @@ class InitializationHelperIo extends InitializationHelper {
       additionalTags: ['app', 'initialization'],
     );
 
+    await dependenciesFactory.exportLogsLocalSource.clearTempFiles();
+
     final initialVpnState = await repositoryFactory.vpnRepository.requestState();
 
     FlutterNativeSplash.remove();

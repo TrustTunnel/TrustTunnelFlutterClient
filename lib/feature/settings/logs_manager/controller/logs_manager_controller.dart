@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -62,42 +60,35 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       final tempDir = await getTemporaryDirectory();
       final tempPath = '${tempDir.path}/${archive.name}';
 
-      try {
-        await _repository.saveRawFile(
-          data: archive.data,
-          path: tempPath,
-        );
+      await _repository.saveRawFile(
+        data: archive.data,
+        path: tempPath,
+      );
 
-        final result = await _shareClient.share(
-          ShareRequest(
-            content: [
-              ShareFile(
-                path: tempPath,
-                mimeType: 'application/zip',
-              ),
-            ],
-            subject: subject,
-            chooserTitle: chooserTitle,
-          ),
-        );
+      final result = await _shareClient.share(
+        ShareRequest(
+          content: [
+            ShareFile(
+              path: tempPath,
+              mimeType: 'application/zip',
+            ),
+          ],
+          subject: subject,
+          chooserTitle: chooserTitle,
+        ),
+      );
 
-        switch (result) {
-          case ShareSuccess():
-            setState(const LogsManagerState.idle());
-          case ShareDismissed():
-            setState(const LogsManagerState.idle());
-            onDismissed?.call();
-          case ShareUnavailable():
-            setState(const LogsManagerState.idle());
-            onUnavailable?.call();
-          case ShareFailure(:final error):
-            throw error;
-        }
-      } finally {
-        final tempFile = File(tempPath);
-        if (await tempFile.exists()) {
-          await tempFile.delete();
-        }
+      switch (result) {
+        case ShareSuccess():
+          setState(const LogsManagerState.idle());
+        case ShareDismissed():
+          setState(const LogsManagerState.idle());
+          onDismissed?.call();
+        case ShareUnavailable():
+          setState(const LogsManagerState.idle());
+          onUnavailable?.call();
+        case ShareFailure(:final error):
+          throw error;
       }
     },
     errorHandler: _onError,

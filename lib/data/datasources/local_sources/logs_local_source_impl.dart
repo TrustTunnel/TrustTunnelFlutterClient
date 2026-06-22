@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type.dart';
@@ -13,11 +13,14 @@ import 'package:vpn_plugin/models/logs/log_platform_files.dart';
 import 'package:vpn_plugin/vpn_plugin.dart';
 
 final class LogsLocalSourceImpl implements LogsLocalSource {
+  static const _logTempKey = '_logTempKey';
+
   final FileLogAppender _logAppender;
   final AppStateLoggingDataSource _appStateLoggingDataSource;
   final FilePicker _filePicker;
   final LogStorage _logStorage;
   final VpnPlugin _vpnPlugin;
+  final SharedPreferences _sharedPreferences;
 
   LogsLocalSourceImpl({
     required FileLogAppender logAppender,
@@ -25,10 +28,12 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     required FilePicker filePicker,
     required LogStorage logStorage,
     required VpnPlugin vpnPlugin,
+    required SharedPreferences sharedPreferences,
   }) : _logAppender = logAppender,
        _appStateLoggingDataSource = appStateLoggingDataSource,
        _logStorage = logStorage,
        _vpnPlugin = vpnPlugin,
+       _sharedPreferences = sharedPreferences,
        _filePicker = filePicker;
 
   @override
@@ -42,7 +47,7 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
 
       final lines = selectedPaths.isEmpty
           ? <String>[]
-          : (await _vpnPlugin.exportLogsFor(selectedPaths)).map((r) => r.message).toList();
+          : (await _vpnPlugin.exportLogsFor(selectedPaths)).map((r) => r.toString()).toList();
 
       logFiles['$group.log'] = utf8.encode(lines.join(Platform.lineTerminator));
     }
@@ -88,15 +93,31 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     required String path,
   }) async {
     await File(path).writeAsBytes(data, flush: true);
+    final tempLogs = _sharedPreferences.getStringList(_logTempKey);
+    _sharedPreferences.setStringList(_logTempKey, [...?tempLogs, path]);
 
     return path;
   }
 
   @override
   Future<void> deleteLogs() => Future.wait([
+    clearTempFiles(),
     _logStorage.deleteData(_logAppender.filePath),
     _vpnPlugin.clearLogs(),
   ]);
+
+  @override
+  Future<void> clearTempFiles() async {
+    final tempFiles = _sharedPreferences.getStringList(_logTempKey)?.map((path) => File(path)) ?? [];
+
+    for (final file in tempFiles) {
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+
+    await _sharedPreferences.remove(_logTempKey);
+  }
 
   String _generateArchiveName() {
     final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-]'), '').replaceAll(RegExp(r'\..*'), '');

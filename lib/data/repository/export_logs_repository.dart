@@ -22,6 +22,8 @@ abstract interface class ExportLogsRepository {
     required Uint8List data,
     required String path,
   });
+
+  Future<void> clearTempFiles();
 }
 
 final class ExportLogsRepositoryImpl implements ExportLogsRepository {
@@ -59,4 +61,10 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
     required Uint8List data,
     required String path,
   }) => _localSource.saveRawFile(data: data, path: path);
+  
+  @override
+  Future<void> clearTempFiles() {
+    // TODO: implement clearTempFiles
+    throw UnimplementedError();
+  }
 }

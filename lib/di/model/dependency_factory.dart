@@ -160,6 +160,7 @@ class DependencyFactoryImpl implements DependencyFactory {
     filePicker: FilePicker.platform,
     logStorage: logStorage,
     vpnPlugin: vpnPlugin,
+    sharedPreferences: sharedPreferences,
   );
 
   @override
