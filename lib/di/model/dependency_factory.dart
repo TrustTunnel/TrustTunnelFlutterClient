@@ -2,7 +2,6 @@ import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trusttunnel/common/logging/model/logging_settings.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
@@ -151,7 +150,7 @@ class DependencyFactoryImpl implements DependencyFactory {
         routingDataSource: routingDataSource,
         settingsDataSource: settingsDataSource,
         vpnDataSource: vpnDataSource,
-        settingsProvider: () => const LoggingSettings(),
+        loggingSettingsDataSource: loggingSettingsDataSource,
       );
 
   @override

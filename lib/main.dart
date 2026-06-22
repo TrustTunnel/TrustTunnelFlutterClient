@@ -4,6 +4,7 @@ import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Router;
 import 'package:trusttunnel/common/logging/app_logger.dart';
+import 'package:trusttunnel/common/logging/extensions/db_logger_extension.dart';
 import 'package:trusttunnel/common/logging/extensions/global_error_logger_extension.dart';
 import 'package:trusttunnel/common/logging/extensions/vpn_logger_extension.dart';
 import 'package:trusttunnel/di/model/initialization_helper.dart';
@@ -21,6 +22,7 @@ Future<void> main() async {
     extensions: [
       GlobalErrorLoggerExtension(),
       VpnLoggerExtension(),
+      DBLoggerExtension(),
     ],
   );
 

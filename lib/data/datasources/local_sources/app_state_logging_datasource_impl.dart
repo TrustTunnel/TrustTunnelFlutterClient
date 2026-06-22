@@ -1,16 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/logging/model/app_state_snapshot.dart';
-import 'package:trusttunnel/common/logging/model/logging_settings.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/database/connection.dart';
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
+import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
-
-typedef AppStateLoggingSettingsProvider = LoggingSettings Function();
 
 final class AppStateLoggingDataSourceImpl implements AppStateLoggingDataSource {
   final db.AppDatabase _database;
@@ -18,7 +17,7 @@ final class AppStateLoggingDataSourceImpl implements AppStateLoggingDataSource {
   final RoutingDataSource _routingDataSource;
   final SettingsDataSource _settingsDataSource;
   final VpnDataSource _vpnDataSource;
-  final AppStateLoggingSettingsProvider _settingsProvider;
+  final LoggingSettingsDataSource _loggingSettingsDataSource;
 
   const AppStateLoggingDataSourceImpl({
     required db.AppDatabase database,
@@ -26,13 +25,13 @@ final class AppStateLoggingDataSourceImpl implements AppStateLoggingDataSource {
     required RoutingDataSource routingDataSource,
     required SettingsDataSource settingsDataSource,
     required VpnDataSource vpnDataSource,
-    required AppStateLoggingSettingsProvider settingsProvider,
+    required LoggingSettingsDataSource loggingSettingsDataSource,
   }) : _database = database,
        _serverDataSource = serverDataSource,
        _routingDataSource = routingDataSource,
        _settingsDataSource = settingsDataSource,
        _vpnDataSource = vpnDataSource,
-       _settingsProvider = settingsProvider;
+       _loggingSettingsDataSource = loggingSettingsDataSource;
 
   @override
   Future<AppStateSnapshot> collectSnapshot() async {
@@ -51,8 +50,9 @@ final class AppStateLoggingDataSourceImpl implements AppStateLoggingDataSource {
     final queryLogs = await queryLogsFuture;
     final vpnStatus = await vpnStatusFuture;
     final databaseSnapshot = await databaseSnapshotFuture;
-    final settings = _settingsProvider();
-    final includeSensitiveData = settings.isFullSecurity;
+    final securityType = await _loggingSettingsDataSource.getSecurityType();
+    final level = await _loggingSettingsDataSource.getLoggingLevel();
+    final includeSensitiveData = securityType == LoggingSecurityType.full;
 
     return AppStateSnapshot(
       app: AppMetadataSnapshot(
@@ -63,7 +63,10 @@ final class AppStateLoggingDataSourceImpl implements AppStateLoggingDataSource {
       ),
       vpn: vpnStatus,
       database: databaseSnapshot,
-      logging: LoggingConfigurationSnapshot.fromSettings(settings),
+      logging: LoggingConfigurationSnapshot(
+        securityType: securityType.value,
+        level: level.value,
+      ),
       servers: ServersSnapshot.fromServers(
         servers,
         selectedServer: servers.selectedServer,
