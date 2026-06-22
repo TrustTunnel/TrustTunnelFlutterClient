@@ -58,6 +58,8 @@ class LogDecoder extends Converter<List<int>, LogRecord> {
         return LogLevel.info;
       case '[error]':
         return LogLevel.error;
+      case '[warn]':
+        return LogLevel.warn;
       default:
         throw FormatException('Unknown log level: $s');
     }
