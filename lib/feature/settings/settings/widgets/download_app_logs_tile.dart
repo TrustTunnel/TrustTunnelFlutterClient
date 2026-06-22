@@ -46,10 +46,11 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
       TextButton(
         onPressed: () {
           context.closeCurrentSnackBar();
-
           _controller.shareLogs(
             subject: context.ln.downloadAppLogs,
             chooserTitle: context.ln.share,
+            onDismissed: () => context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar),
+            onUnavailable: () => context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar),
           );
         },
         child: Text(

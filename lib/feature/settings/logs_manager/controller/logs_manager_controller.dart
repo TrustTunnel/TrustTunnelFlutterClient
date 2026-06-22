@@ -91,7 +91,10 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
           throw error;
       }
     },
-    errorHandler: _onError,
+    errorHandler: (error, stackTrace) {
+      onUnavailable?.call();
+      _onError(error, stackTrace);
+    },
     completionHandler: _onCompleted,
   );
 
