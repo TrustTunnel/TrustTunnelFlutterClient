@@ -25,7 +25,7 @@ class SettingsScreen extends StatelessWidget {
         builder: (context) => ListView(
           children: [
             CustomArrowListTile(
-              title: context.ln.queryLog,
+              title: context.ln.connectionLog,
               onTap: () => _pushQueryLogScreen(context),
             ),
             const Divider(),

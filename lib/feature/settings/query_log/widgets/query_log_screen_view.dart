@@ -40,7 +40,9 @@ class _QueryLogScreenViewState extends State<QueryLogScreenView> {
   @override
   Widget build(BuildContext context) => ScaffoldWrapper(
     child: Scaffold(
-      appBar: CustomAppBar(title: context.ln.queryLog),
+      appBar: CustomAppBar(
+        title: context.ln.connectionLog,
+      ),
       body: QueryLogListView(
         logs: _logs,
         controller: _scrollController,

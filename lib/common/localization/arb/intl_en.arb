@@ -65,7 +65,7 @@
   "discardChangesDialogTitle": "Discard changes?",
   "discardChangesDialogDescription": "Are you sure you want to discard all changes?",
   "about": "About",
-  "queryLog": "Query log",
+  "connectionLog": "Connection log",
   "excludedRoutes": "Excluded routes",
   "followUsOnGithub": "Follow us on Github",
   "typeSomething": "Type something",
