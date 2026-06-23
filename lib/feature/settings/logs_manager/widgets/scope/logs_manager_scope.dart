@@ -3,7 +3,6 @@ import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_controller.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_state.dart';
-import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope_aspect.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope_controller.dart';
 
@@ -46,7 +45,6 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
     controller: _controller,
     builder: (context, state, _) => _InheritedLogsManagerScope(
       loading: state.loading,
-      archive: state.archive,
       exportLogs: _exportLogs,
       shareLogs: _shareLogs,
       deleteLogs: _deleteLogs,
@@ -55,7 +53,7 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
   );
 
   void _exportLogs({
-    VoidCallback? onArchiveReady,
+    ValueChanged<String>? onArchiveReady,
     VoidCallback? onError,
   }) => _controller.export(
     onArchiveReady: onArchiveReady,
@@ -65,11 +63,13 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
   void _shareLogs({
     required String subject,
     required String chooserTitle,
+    required String filePath,
     VoidCallback? onDismissed,
     VoidCallback? onUnavailable,
   }) => _controller.share(
     subject: subject,
     chooserTitle: chooserTitle,
+    filePath: filePath,
     onDismissed: onDismissed,
     onUnavailable: onUnavailable,
   );
@@ -100,7 +100,6 @@ class LogsManagerProvider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _InheritedLogsManagerScope(
     loading: controller.loading,
-    archive: controller.archive,
     exportLogs: controller.exportLogs,
     shareLogs: controller.shareLogs,
     deleteLogs: controller.deleteLogs,
@@ -112,7 +111,6 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   const _InheritedLogsManagerScope({
     required super.child,
     required this.loading,
-    required this.archive,
     required this.exportLogs,
     required this.shareLogs,
     required this.deleteLogs,
@@ -122,11 +120,8 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   final bool loading;
 
   @override
-  final ExportLogsArchive? archive;
-
-  @override
   final void Function({
-    VoidCallback? onArchiveReady,
+    ValueChanged<String>? onArchiveReady,
     VoidCallback? onError,
   })
   exportLogs;
@@ -135,6 +130,7 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   final void Function({
     required String subject,
     required String chooserTitle,
+    required String filePath,
     VoidCallback? onDismissed,
     VoidCallback? onUnavailable,
   })
@@ -149,7 +145,6 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   @override
   bool updateShouldNotify(_InheritedLogsManagerScope oldWidget) =>
       loading != oldWidget.loading ||
-      archive != oldWidget.archive ||
       exportLogs != oldWidget.exportLogs ||
       shareLogs != oldWidget.shareLogs ||
       deleteLogs != oldWidget.deleteLogs;
@@ -166,7 +161,6 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
     for (final aspect in dependencies) {
       hasAnyChanges |= switch (aspect) {
         LogsManagerScopeAspect.loading => loading != oldWidget.loading,
-        LogsManagerScopeAspect.archive => archive != oldWidget.archive,
       };
 
       if (hasAnyChanges) return true;

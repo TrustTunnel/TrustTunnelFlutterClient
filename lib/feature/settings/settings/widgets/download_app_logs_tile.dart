@@ -40,7 +40,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
-  void _showArchiveReadySnackBar() => context.showInfoSnackBar(
+  void _showArchiveReadySnackBar(String filePath) => context.showInfoSnackBar(
     message: context.ln.appLogsExportedSnackbar,
     trailingActions: [
       TextButton(
@@ -49,6 +49,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
           _controller.shareLogs(
             subject: context.ln.downloadAppLogs,
             chooserTitle: context.ln.share,
+            filePath: filePath,
             onDismissed: () => context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar),
             onUnavailable: () => context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar),
           );

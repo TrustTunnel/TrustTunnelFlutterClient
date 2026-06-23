@@ -19,20 +19,37 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
        _shareClient = shareClient;
 
   void export({
-    VoidCallback? onArchiveReady,
+    ValueChanged<String>? onArchiveReady,
     VoidCallback? onError,
   }) => handle(
     () async {
       setState(
-        LogsManagerState.loading(archive: state.archive),
+        const LogsManagerState.loading(),
       );
 
       final archive = await _repository.createArchive();
+      final downloadDir = await getDownloadsDirectory();
+
+      if (downloadDir != null) {
+        final downloadPath = '${downloadDir.path}/${archive.name}';
+        await _repository.saveRawFile(
+          data: archive.data,
+          path: downloadPath,
+        );
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = '${tempDir.path}/${archive.name}';
+
+      await _repository.saveRawFile(
+        data: archive.data,
+        path: tempPath,
+      );
 
       setState(
-        LogsManagerState.idle(archive: archive),
+        const LogsManagerState.idle(),
       );
-      onArchiveReady?.call();
+      onArchiveReady?.call(tempPath);
     },
     errorHandler: (error, stackTrace) {
       onError?.call();
@@ -44,42 +61,20 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
   void share({
     required String subject,
     required String chooserTitle,
+    required String filePath,
     VoidCallback? onDismissed,
     VoidCallback? onUnavailable,
   }) => handle(
     () async {
-      final archive = state.archive;
-      if (archive == null) {
-        return;
-      }
-
       setState(
-        LogsManagerState.loading(archive: archive),
-      );
-
-      final tempDir = await getTemporaryDirectory();
-      final tempPath = '${tempDir.path}/${archive.name}';
-
-      final downloadDir = await getDownloadsDirectory();
-
-      if (downloadDir != null) {
-        final downloadPath = '${downloadDir.path}/${archive.name}';
-        await _repository.saveRawFile(
-          data: archive.data,
-          path: downloadPath,
-        );
-      }
-
-      await _repository.saveRawFile(
-        data: archive.data,
-        path: tempPath,
+        const LogsManagerState.loading(),
       );
 
       final result = await _shareClient.share(
         ShareRequest(
           content: [
             ShareFile(
-              path: tempPath,
+              path: filePath,
               mimeType: 'application/zip',
             ),
           ],
@@ -113,13 +108,13 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
   }) => handle(
     () async {
       setState(
-        LogsManagerState.loading(archive: state.archive),
+        const LogsManagerState.loading(),
       );
 
       await _repository.deleteLogs();
 
       setState(
-        LogsManagerState.idle(archive: state.archive),
+        const LogsManagerState.idle(),
       );
       onDeleted?.call();
     },
@@ -130,11 +125,10 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
   void _onError(Object? error, StackTrace? stackTrace) => setState(
     LogsManagerState.error(
       ExceptionUtils.toPresentationException(exception: error),
-      archive: state.archive,
     ),
   );
 
   void _onCompleted() => setState(
-    LogsManagerState.idle(archive: state.archive),
+    const LogsManagerState.idle(),
   );
 }

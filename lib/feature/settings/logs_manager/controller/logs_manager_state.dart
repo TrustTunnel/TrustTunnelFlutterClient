@@ -1,27 +1,17 @@
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
-import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
 sealed class LogsManagerState {
-  final ExportLogsArchive? archive;
-
-  const LogsManagerState({
-    this.archive,
-  });
+  const LogsManagerState();
 
   const factory LogsManagerState.initial() = LogsManagerInitialState;
 
-  const factory LogsManagerState.idle({
-    ExportLogsArchive? archive,
-  }) = LogsManagerIdleState;
+  const factory LogsManagerState.idle() = LogsManagerIdleState;
 
-  const factory LogsManagerState.loading({
-    ExportLogsArchive? archive,
-  }) = LogsManagerLoadingState;
+  const factory LogsManagerState.loading() = LogsManagerLoadingState;
 
   const factory LogsManagerState.error(
-    PresentationException error, {
-    ExportLogsArchive? archive,
-  }) = LogsManagerErrorState;
+    PresentationException error,
+  ) = LogsManagerErrorState;
 
   PresentationException? get error => switch (this) {
     LogsManagerErrorState(:final error) => error,
@@ -31,7 +21,7 @@ sealed class LogsManagerState {
   bool get loading => this is LogsManagerLoadingState;
 
   @override
-  String toString() => 'LogsManagerState(type: $runtimeType, loading: $loading, hasArchive: ${archive != null})';
+  String toString() => 'LogsManagerState(type: $runtimeType, loading: $loading)';
 }
 
 final class LogsManagerInitialState extends LogsManagerIdleState {
@@ -39,15 +29,11 @@ final class LogsManagerInitialState extends LogsManagerIdleState {
 }
 
 final class LogsManagerIdleState extends LogsManagerState {
-  const LogsManagerIdleState({
-    super.archive,
-  });
+  const LogsManagerIdleState();
 }
 
 final class LogsManagerLoadingState extends LogsManagerState {
-  const LogsManagerLoadingState({
-    super.archive,
-  });
+  const LogsManagerLoadingState();
 }
 
 final class LogsManagerErrorState extends LogsManagerState {
@@ -55,7 +41,6 @@ final class LogsManagerErrorState extends LogsManagerState {
   final PresentationException error;
 
   const LogsManagerErrorState(
-    this.error, {
-    super.archive,
-  });
+    this.error,
+  );
 }
