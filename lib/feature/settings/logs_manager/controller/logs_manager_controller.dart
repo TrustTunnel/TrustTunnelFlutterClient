@@ -60,6 +60,16 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       final tempDir = await getTemporaryDirectory();
       final tempPath = '${tempDir.path}/${archive.name}';
 
+      final downloadDir = await getDownloadsDirectory();
+
+      if (downloadDir != null) {
+        final downloadPath = '${downloadDir.path}/${archive.name}';
+        await _repository.saveRawFile(
+          data: archive.data,
+          path: downloadPath,
+        );
+      }
+
       await _repository.saveRawFile(
         data: archive.data,
         path: tempPath,
