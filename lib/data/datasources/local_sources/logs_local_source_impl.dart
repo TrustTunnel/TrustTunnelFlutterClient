@@ -89,7 +89,8 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     required Uint8List data,
     required String path,
   }) async {
-    await File(path).writeAsBytes(data, flush: true);
+    final file = await File(path).create(recursive: true);
+    await file.writeAsBytes(data, mode: FileMode.writeOnly, flush: true);
     final tempLogs = _sharedPreferences.getStringList(_logTempKey);
     await _sharedPreferences.setStringList(_logTempKey, [...?tempLogs, path]);
 

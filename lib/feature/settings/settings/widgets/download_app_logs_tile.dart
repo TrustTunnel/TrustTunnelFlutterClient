@@ -26,11 +26,20 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
   Widget build(BuildContext context) => CustomArrowListTile(
     title: context.ln.downloadAppLogs,
     trailingIcon: AssetIcons.fileDownload,
-    onTap: () => _controller.exportLogs(
+    onTap: _onExportLogsPressed,
+  );
+
+  void _onExportLogsPressed() {
+    _controller.exportLogs(
       onArchiveReady: _showArchiveReadySnackBar,
       onError: _onExportLogsError,
-    ),
-  );
+    );
+
+    context.showInfoSnackBar(
+      message: context.ln.exportingLogs,
+      duration: const Duration(minutes: 1),
+    );
+  }
 
   void _onExportLogsError() {
     if (!mounted) {

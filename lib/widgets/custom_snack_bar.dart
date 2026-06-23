@@ -57,7 +57,6 @@ class CustomSnackBar extends SnackBar {
           elevation: snackBarTheme.elevation ?? 0,
           textStyle: snackBarTheme.contentTextStyle,
           shadowColor: context.theme.shadowColor,
-
           child: Row(
             children: [
               Expanded(

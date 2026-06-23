@@ -132,7 +132,7 @@
   "tlsWrongMaskError": "Mask and value should have an even number of characters",
   "somethingWentWrongSnackbar": "Something went wrong. Please try again later",
   "appLogging": "App logging",
-  "downloadAppLogs": "Download app logs",
+  "downloadAppLogs": "Export app logs and system info",
   "loggingLevel": "Logging level",
   "loggingLevelBasic": "Default",
   "loggingLevelDetailed": "Debug",
@@ -153,5 +153,6 @@
   "deleteAppLogsDialogTitle": "Delete app logs?",
   "deleteAppLogsDialogDescription": "App logs will be cleared. This will not delete your app settings or connection log",
   "appLogsDeletedSnackbar": "App logs deleted",
-  "appLogsExportedSnackbar": "App logs exported"
+  "appLogsExportedSnackbar": "App logs exported",
+  "exportingLogs": "Exporting logs…"
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -28,10 +30,12 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       );
 
       final archive = await _repository.createArchive();
-      final downloadDir = await getDownloadsDirectory();
+      final downloadDir = defaultTargetPlatform == TargetPlatform.iOS
+          ? await getApplicationDocumentsDirectory()
+          : await getDownloadsDirectory();
 
       if (downloadDir != null) {
-        final downloadPath = '${downloadDir.path}/${archive.name}';
+        final downloadPath = '${downloadDir.path}${Platform.pathSeparator}${archive.name}';
         await _repository.saveRawFile(
           data: archive.data,
           path: downloadPath,
@@ -39,7 +43,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       }
 
       final tempDir = await getTemporaryDirectory();
-      final tempPath = '${tempDir.path}/${archive.name}';
+      final tempPath = '${tempDir.path}${Platform.pathSeparator}${archive.name}';
 
       await _repository.saveRawFile(
         data: archive.data,

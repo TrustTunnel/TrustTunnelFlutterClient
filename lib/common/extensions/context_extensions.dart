@@ -42,6 +42,7 @@ extension SnackBarExtension on BuildContext {
     bool showCloseIcon = true,
     SnackBarBehavior behavior = SnackBarBehavior.fixed,
     List<Widget> trailingActions = const [],
+    Duration? duration,
     SnackBarAction? action,
   }) {
     var scaffoldMessenger = ScaffoldMessenger.of(this);
