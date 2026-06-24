@@ -129,5 +129,9 @@
   "tlsOutOfBoundsError": "Mask and value should have the same length",
   "tlsWrongFieldError": "Hex sequence only allows 0-9, a-f characters",
   "tlsWrongValueError": "Value should have an even number of characters",
-  "tlsWrongMaskError": "Mask and value should have an even number of characters"
+  "tlsWrongMaskError": "Mask and value should have an even number of characters",
+  "exitDialogTitle": "Quit TrustTunnel?",
+  "exitDialogDescription": "This will disconnect you from the active server",
+  "quit": "Quit",
+  "dontQuit": "Don’t quit"
 }
