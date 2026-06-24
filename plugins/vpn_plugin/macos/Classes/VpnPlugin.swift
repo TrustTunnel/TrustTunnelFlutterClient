@@ -1,9 +1,11 @@
 import Cocoa
 import FlutterMacOS
 import TrustTunnelClient
+import VpnClientFramework
 
 public class VpnPlugin: NSObject, FlutterPlugin {
     private static var vpnApi: IVpnManagerImpl?
+    private static var deepLink: IDeepLink?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let messenger = registrar.messenger
@@ -12,8 +14,11 @@ public class VpnPlugin: NSObject, FlutterPlugin {
         // Konstantin Gorynin <k.gorynin@adguard.com>, 25 August 2025
         // Setup all platform managers
         let vpnImpl = IVpnManagerImpl(bundleIdentifier: "com.adguard.TrustTunnel.Extension",
-                                              appGroup: "TC3Q7MAJXF.com.adguard.TrustTunnel")
+                                              appGroup: "group.com.adguard.TrustTunnel")
         IVpnManagerSetup.setUp(binaryMessenger: messenger, api: vpnImpl)
+
+        let deepLinkImpl = IDeepLinkImpl()
+        IDeepLinkSetup.setUp(binaryMessenger: messenger, api: deepLinkImpl)
 
         let events = FlutterEventChannel(
             name: "vpn_plugin_event_channel", binaryMessenger: messenger)
@@ -56,6 +61,10 @@ final class IVpnManagerImpl: NSObject, IVpnManager, FlutterStreamHandler {
 
     func start(config: String) throws {
         vpnManager?.start(config: config)
+    }
+
+    func updateConfiguration(config: String?) throws {
+        vpnManager?.updateConfiguration(config: config)
     }
 
     func stop() throws {
@@ -120,5 +129,11 @@ final class QueryLogStreamHandler : NSObject, FlutterStreamHandler {
         } else {
             self.eventSink!(s)
         }
+    }
+}
+
+final class IDeepLinkImpl : NSObject, IDeepLink {
+    func decode(uri: String) throws -> String {
+        return try TrustTunnelDeepLink.decodeDeeplink(_: uri)
     }
 }
