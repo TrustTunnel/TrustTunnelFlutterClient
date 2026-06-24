@@ -181,20 +181,25 @@ class VpnScope extends StatefulWidget {
 }
 
 class _VpnScopeState extends State<VpnScope> {
+  static const _logLimit = 500;
+
   late final ValueNotifier<VpnState> _stateNotifier;
   late final ValueNotifier<List<VpnLog>> _logsNotifier;
-  late final StreamSubscription<VpnLog> _logStreamSub;
-  static const _logLimit = 500;
+  late final AppLifecycleListener _appLifecycleListener;
+
+  StreamSubscription<VpnLog>? _logStreamSub;
+  StreamSubscription<VpnState>? _vpnStreamSub;
 
   @override
   void initState() {
     super.initState();
     _stateNotifier = ValueNotifier(widget.initialState);
     _logsNotifier = ValueNotifier(<VpnLog>[]);
-    widget.vpnRepository.listenToLogs().then((stream) => _logStreamSub = stream.listen(_onLogCollected));
+    _appLifecycleListener = AppLifecycleListener(
+      onResume: _onAppResumed,
+    );
+    unawaited(_listenToLogs());
   }
-
-  StreamSubscription<VpnState>? _vpnStreamSub;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -228,7 +233,7 @@ class _VpnScopeState extends State<VpnScope> {
     required List<String> excludedRoutes,
   }) async {
     await _stop();
-    
+
     final newServerStream = await widget.vpnRepository.startListenToStates(
       server: server,
       routingProfile: routingProfile,
@@ -269,11 +274,33 @@ class _VpnScopeState extends State<VpnScope> {
     _logsNotifier.value = [...trimmedList, log];
   }
 
+  Future<void> _listenToLogs() async {
+    final stream = await widget.vpnRepository.listenToLogs();
+    if (!mounted) {
+      return;
+    }
+
+    _logStreamSub = stream.listen(_onLogCollected);
+  }
+
+  Future<void> _refreshState() async {
+    final state = await widget.vpnRepository.requestState();
+    if (!mounted) {
+      return;
+    }
+
+    _stateNotifier.value = state;
+  }
+
+  void _onAppResumed() => unawaited(_refreshState());
+
   @override
   void dispose() {
-    _stop().ignore();
-    _logStreamSub.cancel().ignore();
+    _appLifecycleListener.dispose();
+    _logStreamSub?.cancel().ignore();
     _vpnStreamSub?.cancel().ignore();
+    _stateNotifier.dispose();
+    _logsNotifier.dispose();
     super.dispose();
   }
 }
