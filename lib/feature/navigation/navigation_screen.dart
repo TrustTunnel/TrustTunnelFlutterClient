@@ -1,9 +1,12 @@
+import 'dart:ui' show AppExitResponse;
+
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/utils/navigation_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/deep_link_scope.dart';
 import 'package:trusttunnel/feature/navigation/widgets/custom_navigation_rail.dart';
+import 'package:trusttunnel/feature/navigation/widgets/exit_dialog.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/routing_screen.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/settings_screen.dart';
@@ -18,8 +21,15 @@ class NavigationScreen extends StatefulWidget {
 class _NavigationScreenState extends State<NavigationScreen> {
   final ValueNotifier<int> _selectedTabNotifier = ValueNotifier(0);
   final _navigatorKey = GlobalKey<NavigatorState>();
+  late final AppLifecycleListener _appLifecycleListener;
 
   ServerData? _deepLinkData;
+
+  @override
+  void initState() {
+    super.initState();
+    _appLifecycleListener = AppLifecycleListener(onExitRequested: _onExitRequested);
+  }
 
   @override
   void didChangeDependencies() {
@@ -82,8 +92,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
     ),
   );
 
-// TODO: Make navigator works with deeplink in right way
-// Konstantin Gorynin <k.gorynin@adguard.com>, 31 March 2026
+  // TODO: Make navigator works with deeplink in right way
+  // Konstantin Gorynin <k.gorynin@adguard.com>, 31 March 2026
   Widget getScreenByIndex(
     int selectedIndex, {
     ServerData? deepLinkData,
@@ -100,7 +110,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     onPopWithResult: (_) => _navigatorKey.currentState!.maybePop(),
     child: Navigator(
       key: _navigatorKey,
-      onGenerateInitialRoutes: (_, __) => [
+      onGenerateInitialRoutes: (_, _) => [
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => const ServersScreen(),
           transitionDuration: Duration.zero,
@@ -125,5 +135,25 @@ class _NavigationScreenState extends State<NavigationScreen> {
         (_) => false,
       );
     }
+  }
+
+  Future<AppExitResponse> _onExitRequested() async {
+    final result = await showDialog<ExitDialogResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const ExitDialog(),
+    );
+
+    if (result == ExitDialogResult.quit) {
+      return AppExitResponse.exit;
+    }
+
+    return AppExitResponse.cancel;
+  }
+
+  @override
+  void dispose() {
+    _appLifecycleListener.dispose();
+    super.dispose();
   }
 }
