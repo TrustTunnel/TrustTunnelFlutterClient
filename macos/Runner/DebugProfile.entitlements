@@ -10,7 +10,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>$(TeamIdentifierPrefix)com.adguard.TrustTunnel</string>
+		<string>group.com.adguard.TrustTunnel</string>
 	</array>
 	<key>com.apple.security.cs.allow-jit</key>
 	<true/>

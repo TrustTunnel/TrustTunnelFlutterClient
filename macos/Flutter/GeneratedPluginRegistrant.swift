@@ -10,6 +10,7 @@ import file_picker
 import package_info_plus
 import path_provider_foundation
 import sqlite3_flutter_libs
+import tray_manager
 import url_launcher_macos
 import vpn_plugin
 
@@ -19,6 +20,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
   PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   Sqlite3FlutterLibsPlugin.register(with: registry.registrar(forPlugin: "Sqlite3FlutterLibsPlugin"))
+  TrayManagerMacosPlugin.register(with: registry.registrar(forPlugin: "TrayManagerMacosPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
   VpnPlugin.register(with: registry.registrar(forPlugin: "VpnPlugin"))
 }
