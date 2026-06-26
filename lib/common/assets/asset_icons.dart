@@ -21,6 +21,8 @@ abstract class AssetIcons {
   static const IconData delete = IconData(0xe80f, fontFamily: _kFontFam);
   static const IconData dns = IconData(0xe810, fontFamily: _kFontFam);
   static const IconData error = IconData(0xe811, fontFamily: _kFontFam);
+  static const IconData eye = IconData(0xe829, fontFamily: _kFontFam);
+  static const IconData eyeClosed = IconData(0xe82a, fontFamily: _kFontFam);
   static const IconData fileDownload = IconData(0xe812, fontFamily: _kFontFam);
   static const IconData home = IconData(0xe813, fontFamily: _kFontFam);
   static const IconData locationOff = IconData(0xe814, fontFamily: _kFontFam);

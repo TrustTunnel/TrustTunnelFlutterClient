@@ -1,317 +1,76 @@
-require 'yaml'
-
 ensure_bundle_exec
 
 
-
-before_all do |lane, options|
-    FASTLANE_BUILD_DIRECTORY = "build"
-    FASTLANE_BUILD_NAME = "TrustTunnel"
-end
-
-
-
-lane :sync_certs_and_profiles do |options|
-
-    if options[:type].nil?; raise "type is not given"; end
-    if !["development", "adhoc", "appstore"].include?(options[:type]); raise "type can be only 'development', 'adhoc' or 'appstore'"; end
-
-    keychain_path = nil
-    if ENV["KEYCHAIN_PATH_LOCAL"] == 'true'
-        keychain_path = "#{ENV['PWD']}/#{FASTLANE_BUILD_DIRECTORY}/certs/#{ENV['MATCH_KEYCHAIN_NAME']}"
-        create_local_keychain(keychain_path)
-        UI.success "Keychain path: #{keychain_path}"
-    end
-
-    match(
-        app_identifier: [
-            "com.adguard.TrustTunnel",
-            "com.adguard.TrustTunnel.Extension",
-        ],
-        type: options[:type],
-        keychain_name: keychain_path,
-
-        readonly: if options[:readonly].nil?; "false"; else options[:readonly]; end,
-        force: if options[:force].nil?; "false"; else options[:force]; end,
-        force_for_new_devices: if options[:force_for_new_devices].nil?; "false"; else options[:force_for_new_devices]; end,
-        verbose: if options[:verbose].nil?; "false"; else options[:verbose]; end,
-
-        git_url: "ssh://git@bit.int.agrd.dev:7999/adguard-core-libs/certificates.git",
-        git_branch: "master",
-        clone_branch_directly: "true",
-        shallow_clone: "true",
-        platform: "ios",
-        fail_on_name_taken: "true"
-    )
-end
-
-
-
 lane :build_simulator_app_and_zip do |options|
-    load_pubspec_resolved_parameters()
-    print_additional_options({
-        "Build type"                => "#{options[:type]}",
-        "Version title"             => "#{ENV['PUBSPEC_RESOLVED_VERSION_TITLE']}",
-        "Project version"           => "#{ENV['PUBSPEC_RESOLVED_PROJECT_VERSION']}",
-        "Build number"              => "#{ENV['PUBSPEC_RESOLVED_BUILD_NUMBER']}",
-        "Build channel"             => "#{ENV['PUBSPEC_RESOLVED_BUILD_CHANNEL']}",
-    })
-
-    clean()
     build_app(
-        scheme: "Runner",
-        clean: true,
+        scheme: ENV['CUSTOM_FASTLANE_SCHEMA'],
         configuration: "Debug",
         destination: "generic/platform=iOS Simulator",
         skip_package_ipa: true,
-        output_directory: FASTLANE_BUILD_DIRECTORY,
-        archive_path: "#{FASTLANE_BUILD_DIRECTORY}/#{FASTLANE_BUILD_NAME}.xcarchive",
-        build_path: FASTLANE_BUILD_DIRECTORY,
-        derived_data_path: "#{FASTLANE_BUILD_DIRECTORY}/derived_data",
-        buildlog_path: "#{FASTLANE_BUILD_DIRECTORY}/logs",
+        output_directory: ENV['FASTLANE_BUILD_DIRECTORY'],
+        archive_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.xcarchive",
+        build_path: ENV['FASTLANE_BUILD_DIRECTORY'],
+        derived_data_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/derived_data",
+        buildlog_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/logs",
     )
     zip(
-        path: "#{FASTLANE_BUILD_DIRECTORY}/#{FASTLANE_BUILD_NAME}.xcarchive/Products/Applications/#{FASTLANE_BUILD_NAME}.app",
-        output_path: "#{FASTLANE_BUILD_DIRECTORY}/#{FASTLANE_BUILD_NAME}.app.zip"
+        path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.xcarchive/Products/Applications/#{ENV['CUSTOM_FASTLANE_SCHEMA']}.app",
+        output_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app.zip"
     )
 end
 
 lane :build_ipa do |options|
+    type = options[:type]
 
-    if options[:type].nil?; raise "type is not given"; end
-    if !["adhoc", "appstore"].include?(options[:type]); raise "type can be only 'adhoc' or 'appstore'"; end
+    app_store_connect_api_key
 
-    upload_symbols = options[:upload_symbols] == true
+    # Set Release signing to match profiles installed by match_sync
+    match_type_name = type == "appstore" ? "AppStore" : "AdHoc"
 
-    load_pubspec_resolved_parameters()
-    print_additional_options({
-        "Build type"                => "#{options[:type]}",
-        "Version title"             => "#{ENV['PUBSPEC_RESOLVED_VERSION_TITLE']}",
-        "Project version"           => "#{ENV['PUBSPEC_RESOLVED_PROJECT_VERSION']}",
-        "Build number"              => "#{ENV['PUBSPEC_RESOLVED_BUILD_NUMBER']}",
-        "Build channel"             => "#{ENV['PUBSPEC_RESOLVED_BUILD_CHANNEL']}",
-        "Upload symbols to Sentry"  => "#{upload_symbols}"
-    })
+    signing_targets = ENV.fetch('SIGNING_TARGETS').split(',').map { |pair| pair.split(':', 2) }
 
-    clean()
-    sync_certs_and_profiles(type: options[:type], readonly: true)
+    signing_targets.each do |target_name, bundle_id|
+      update_code_signing_settings(
+        path: "Runner.xcodeproj",
+        use_automatic_signing: false,
+        team_id: ENV.fetch('TEAM_ID'),
+        code_sign_identity: "Apple Distribution",
+        profile_name: "match #{match_type_name} #{bundle_id}",
+        targets: [target_name],
+        build_configurations: ["Release"]
+      )
+    end
+
+    # Ensure the signing keychain is unlocked and in the search list
+    if ENV['MATCH_KEYCHAIN_NAME'] && !ENV['MATCH_KEYCHAIN_NAME'].empty?
+      unlock_keychain(
+        path: ENV['MATCH_KEYCHAIN_NAME'],
+        password: ENV.fetch('MATCH_KEYCHAIN_PASSWORD', ''),
+        add_to_search_list: true,
+        set_default: false
+      )
+    end
+
     build_app(
-        scheme: "Runner",
-        output_directory: FASTLANE_BUILD_DIRECTORY,
-        output_name: "#{FASTLANE_BUILD_NAME}.ipa",
-        clean: true,
+        scheme: ENV['CUSTOM_FASTLANE_SCHEMA'],
+        output_directory: ENV['FASTLANE_BUILD_DIRECTORY'],
+        output_name: "#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.ipa",
         include_bitcode: false, # Deprecated in xcodebuild, crashed with error "cannot upload bitcode because bitcode is imbalanced"
         include_symbols: true,
-        archive_path: "#{FASTLANE_BUILD_DIRECTORY}/#{FASTLANE_BUILD_NAME}.xcarchive",
-        derived_data_path: "#{FASTLANE_BUILD_DIRECTORY}/derived_data",
-        buildlog_path: "#{FASTLANE_BUILD_DIRECTORY}/logs",
-        build_path: FASTLANE_BUILD_DIRECTORY,
+        archive_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.xcarchive",
+        derived_data_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/derived_data",
+        buildlog_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/logs",
+        build_path: ENV['FASTLANE_BUILD_DIRECTORY'],
+        export_method: type == "appstore" ? "app-store" : "ad-hoc",
         export_options: {
-            manageAppVersionAndBuildNumber: false
+            manageAppVersionAndBuildNumber: type == "appstore",
+            generateAppStoreInformation: true
         }
     )
-
-    if upload_symbols
-        sentry_processed_successfully = false
-        for i in 1..10
-            puts("Try ##{i} of 10")
-            begin
-                sentry_upload_dif(
-                    auth_token: "#{ENV['bamboo_sentryAuthTokenProductsPassword']}",
-                    org_slug: 'adg',
-                    project_slug: 'adguard-vpn-ios',
-                    url: 'https://s10.int.agrd.dev/',
-                    wait: true,
-                    path: FASTLANE_BUILD_DIRECTORY,
-                    include_sources: true
-                )
-                sentry_processed_successfully = true
-            rescue => error
-                puts("Sentry cli terminated, error: #{error}")
-                sleep(5)
-            end
-            if sentry_processed_successfully
-                break
-            end
-        end
-    end
 end
-
-
-
-lane :deploy_to_testflight do |options|
-
-    changelog = ""
-    options_to_print = { }
-    if !options[:changelog_path].nil?
-        changelog = File.read(options[:changelog_path])
-        options_to_print["Changelog"] = changelog
-    else
-        options_to_print["Changelog"] = "Missed"
-    end
-
-    distribute_external = true
-    if !options[:distribute_external].nil?
-        distribute_external = options[:distribute_external] == true
-    end
-
-    submit_beta_review = false
-    if !options[:submit_beta_review].nil?
-        submit_beta_review = options[:submit_beta_review] == true
-    end
-
-    groups = []
-    case options[:track]
-        when "prenightly"
-            groups = ["Pre-Nightly testers"]
-        when "nightly"
-            groups = distribute_external ? ["Nightly testers", "Nightly public testers"] : ["Nightly testers"]
-        when "beta"
-            groups = ["Review testers"]
-        when "rc"
-            groups = ["Review testers"]
-        when "release"
-            groups = ["Review testers"]
-        when nil
-            puts("A track hasn't been passed, won't use any testers group")
-        else
-            puts("The given track is unsupported. won't use any testers group")
-    end
-    print_additional_options(options_to_print.merge({
-        "Selected track" => "'#{options[:track]}'",
-        "Distribute external" => "#{distribute_external}",
-        "Selected TestFlight groups" => "#{groups}",
-        "Submit beta review" => "#{submit_beta_review}"
-    }))
-
-    upload_to_testflight(
-        ipa: "#{FASTLANE_BUILD_DIRECTORY}/#{FASTLANE_BUILD_NAME}.ipa",
-        skip_waiting_for_build_processing: false,
-        distribute_external: true,
-        skip_submission: false,
-        changelog: changelog,
-        groups: groups,
-        submit_beta_review: submit_beta_review,
-        wait_processing_interval: 15
-    )
-end
-
-
 
 lane :generate_migration_id do |options|
     time_in_ms_string = DateTime.now.strftime("%Q")
     hash = (Digest::SHA1.hexdigest time_in_ms_string)[0, 10]
     puts("Generated ID: #{hash}")
-end
-
-
-
-lane :remove_certs do |options|
-    keychain_path = "#{ENV['PWD']}/#{FASTLANE_BUILD_DIRECTORY}/certs/#{ENV['MATCH_KEYCHAIN_NAME']}"
-    step_name = "Remove local keychain, which contains certificates"
-
-    if !File.exist?(keychain_path)
-        Actions.execute_action(step_name) do
-            UI.success "No local keychain"
-        end
-        next
-    end
-
-    delete_keychain(
-        keychain_path: keychain_path,
-        step_name: step_name
-    )
-end
-
-
-
-
-
-
-
-
-##########################################
-##            Implementation            ##
-##########################################
-
-ENV["fastfile_loaded"] = "true"
-
-
-
-def clean()
-    FastlaneCore::CommandExecutor.execute(
-        command: "rm -rf #{ENV['PWD']}/#{FASTLANE_BUILD_DIRECTORY}",
-        print_all: true,
-        error: proc do |error_output|
-            UI.error("Failed to run clean: #{error_output}")
-        end
-    )
-end
-
-def print_additional_options(hashes)
-    puts("")
-    puts("==================================================================")
-    puts("## Additional options")
-    puts("")
-
-    hashes.each do |key, value|
-        value_lines = value.split("\n")
-        if value_lines.length > 1
-            puts(key + ":")
-            puts("```")
-            value_lines.each { |line| puts(line) }
-            puts("```")
-        else
-            puts(key + ": " + value)
-        end
-        puts("")
-    end
-    puts("==================================================================")
-    puts("")
-end
-
-def load_pubspec_resolved_parameters()
-    puts("Loading version info from pubspec.yaml...")
-  
-    pubspec_path = File.join(ENV['PWD'], '..', 'pubspec.yaml')
-    unless File.exist?(pubspec_path)
-      UI.user_error!("pubspec.yaml not found at #{pubspec_path}")
-    end
-  
-    pubspec = YAML.load_file(pubspec_path)
-  
-    version_line = pubspec['version']
-    if version_line.nil? || version_line.empty?
-      UI.user_error!("No 'version' field found in pubspec.yaml")
-    end
-  
-    version, build_number = version_line.split('+', 2)
-    version = version.to_s.strip
-    build_number = build_number.to_s.strip
-  
-    if version.empty? || build_number.empty?
-      UI.user_error!("Cannot parse version+build_number from pubspec.yaml: '#{version_line}'")
-    end
-  
-    version_with_build_number = "#{version}.#{build_number}"
-
-    build_channel = pubspec['build_channel']
-  
-    ENV['PUBSPEC_RESOLVED_PROJECT_VERSION'] = version
-    ENV['PUBSPEC_RESOLVED_BUILD_NUMBER']    = build_number
-    ENV['PUBSPEC_RESOLVED_VERSION_TITLE']   = version_with_build_number
-    ENV['PUBSPEC_RESOLVED_BUILD_CHANNEL']   = build_channel
-  end
-
-def create_local_keychain(keychain_path)
-    create_keychain(
-      unlock: true,
-      timeout: 0,
-      add_to_search_list: true,
-      lock_after_timeout: false,
-      path: keychain_path,
-      password: ENV["MATCH_KEYCHAIN_PASSWORD"],
-      step_name: "Create local keychain for build"
-    )
-    return keychain_path
 end

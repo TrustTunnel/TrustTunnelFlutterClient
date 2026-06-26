@@ -1,0 +1,178 @@
+name: Build & Deploy
+run-name: 'Deploy ${{ inputs.tag || github.ref_name }}'
+
+on:
+  push:
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Semver tag to deploy, for example v1.3.0-beta.1 or v1.3.0'
+        required: true
+        type: string
+      slack-channel:
+        description: 'Slack channel for build notification'
+        type: string
+        default: '#build-trusttunnel'
+
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+        description: 'Semver tag to deploy'
+      slack-channel:
+        type: string
+        default: '#build-trusttunnel'
+        description: 'Slack channel for build notification'
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+concurrency:
+  group: deploy-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  meta:
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/version-metadata.yml@master
+    with:
+      team: flutter
+      tag: ${{ inputs.tag || github.ref_name }}
+
+  build-number:
+    needs: [meta]
+    runs-on: [team-flutter]
+    outputs:
+      build-number: ${{ steps.counter.outputs.BUILD_NUMBER }}
+    steps:
+      - uses: AdGuardSoftwareLimited/actions/actions/kv-multi@master
+        id: counter
+        with:
+          increment: |
+            BUILD_NUMBER=trusttunnel-flutter/v${{ needs.meta.outputs.version }}
+
+  changelog-qa:
+    needs: [meta]
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/collect-changelog.yml@master
+    with:
+      team: flutter
+      from-ref: ${{ needs.meta.outputs.previous-tag }}
+      repo: trusttunnel-flutter-client
+      format: md
+      private: 'true'
+      artifact-name: qa-changelog
+
+  changelog-public:
+    needs: [meta]
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/collect-changelog.yml@master
+    with:
+      team: flutter
+      from-ref: ${{ needs.meta.outputs.previous-tag }}
+      repo: trusttunnel-flutter-client
+      github-repo: TrustTunnel/TrustTunnelClient
+      format: txt
+      private: 'false'
+      artifact-name: changelog
+
+  build-android:
+    needs: [meta, build-number]
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      platform: android
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      channel: ${{ needs.meta.outputs.release-channel }}
+      build-mode: appbundle
+      artifact-name: trusttunnel-android-aab
+      artifact-path: build/app/outputs/bundle/release/app-release.aab
+      release: ${{ needs.meta.outputs.release }}
+
+  build-ios:
+    needs: [meta, build-number]
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      platform: ios
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      channel: ${{ needs.meta.outputs.release-channel }}
+      signing-type: appstore
+      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
+      artifact-name: trusttunnel-ios-ipa
+      artifact-path: |
+        ios/build/TrustTunnel.ipa
+        ios/build/AppStoreInfo.plist
+      release: ${{ needs.meta.outputs.release }}
+
+  build-simulator:
+    needs: [meta, build-number]
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      platform: ios
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      channel: ${{ needs.meta.outputs.release-channel }}
+      build-mode: simulator
+      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
+      artifact-name: TrustTunnel.app.zip
+      artifact-path: ios/build//TrustTunnel.app.zip
+
+  deploy-testflight:
+    needs: [meta, build-ios, changelog-public]
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
+    with:
+      team: flutter
+      asset-artifact-name: trusttunnel-ios-ipa
+      changelog-artifact-name: changelog.txt
+      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
+      distribute-external: true
+      submit-beta-review: false
+      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+
+  deploy-google-play:
+    needs: [meta, build-number, build-android, changelog-public]
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
+    with:
+      team: flutter
+      package-name: com.adguard.trusttunnel
+      track: ${{ needs.meta.outputs.release-channel == 'release' && 'production' || needs.meta.outputs.release-channel }}
+      release-name: ${{ needs.meta.outputs.version-title }}
+      artifact-pattern: trusttunnel-android-aab
+      version-codes: ${{ needs.build-number.outputs.build-number }}
+      changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
+      environment: ${{ needs.meta.outputs.release-channel }}-google-play
+
+  deploy-appetize:
+    needs: [meta, build-simulator]
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
+    with:
+      team: flutter
+      artifact-name: TrustTunnel.app.zip
+      platform: ios
+      note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag || github.ref_name }}'
+      environment: ${{ needs.meta.outputs.release-channel }}-appetize
+
+  notify-slack:
+    needs: [meta, build-android, build-ios, build-simulator]
+    if: github.event_name == 'push' || inputs.slack-channel != ''
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
+    with:
+      team: flutter
+      channel: ${{ inputs.slack-channel || '#build-trusttunnel' }}
+      product: TrustTunnel
+      version-title: ${{ needs.meta.outputs.version-title }}
+      metadata: >-
+        {
+          "Channel": "${{ needs.meta.outputs.release-channel }}",
+          "Version": "${{ needs.meta.outputs.version }}",
+          "Tag": "${{ inputs.tag || github.ref_name }}"
+        }

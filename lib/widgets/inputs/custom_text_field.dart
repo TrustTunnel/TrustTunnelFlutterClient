@@ -18,6 +18,7 @@ class CustomTextField extends StatefulWidget {
   final bool showClearButton;
   final Widget? suffixIcon;
   final int? maxLength;
+    final bool obscureText;
   final bool autofocus;
   final List<TextInputFormatter>? inputFormatters;
   final TextInputType? keyboardType;
@@ -48,6 +49,7 @@ class CustomTextField extends StatefulWidget {
     this.validator,
     this.spellCheckService,
     this.counter,
+    this.obscureText = false,
   }) : suffixIcon = null,
        assert(
          (maxLines == null) || (minLines == null) || (maxLines >= minLines),
@@ -75,6 +77,7 @@ class CustomTextField extends StatefulWidget {
     this.validator,
     this.spellCheckService,
     this.counter,
+    this.obscureText = false,
   }) : showClearButton = false,
        assert(suffixIcon != null),
        assert(
@@ -157,6 +160,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           enabled: widget.enabled,
           readOnly: widget.readOnly,
           scrollController: _scrollController,
+          obscureText: widget.obscureText,
           cursorWidth: 1,
           autofocus: widget.autofocus,
           cursorHeight: context.textTheme.bodyLarge?.fontSize,

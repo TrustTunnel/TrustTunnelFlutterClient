@@ -1,0 +1,57 @@
+name: Flutter Test
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-runner:
+    runs-on: [team-flutter]
+    outputs:
+      image: ${{ steps.kv.outputs.value }}
+    steps:
+      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
+        id: kv
+        with:
+          key: build-images/macos
+
+  test:
+    needs: [resolve-runner]
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-5120
+      - ephemeral-limit-cpu-2
+      - ephemeral-limit-disk-gb-20
+    defaults:
+      run:
+        shell: bash
+    env:
+      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY  }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Apply PR overrides
+        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Check if tests exist
+        id: check-tests
+        run: |
+          if [ -d test ] && [ "$(find test -name '*.dart' -type f | head -1)" ]; then
+            echo "has_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tests=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No test files found in test/, skipping."
+          fi
+
+      - name: Initialize project
+        if: steps.check-tests.outputs.has_tests == 'true'
+        run: make init
+
+      - name: Flutter test
+        if: steps.check-tests.outputs.has_tests == 'true'
+        run: flutter test

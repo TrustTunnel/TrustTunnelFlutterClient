@@ -1,0 +1,20 @@
+name: Mirror
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  actions: write
+  contents: read
+  id-token: write
+
+jobs:
+  mirror:
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/mirror.yml@master
+    with:
+      team: flutter
+      target_repo: git@github.com:TrustTunnel/TrustTunnelFlutterClient.git
+      disable_workflows_target: all
+      disable_workflows_source: none

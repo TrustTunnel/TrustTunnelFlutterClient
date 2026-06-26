@@ -3,28 +3,7 @@ description: "Mobile VPN client for Android and iOS, built with Flutter"
 
 publish_to: 'none'
 
-version: 1.2.0+7171
-
-workspace:
-  - packages/adg_share
-
-version_titles:
-  versionTitleReleaseNumber: 2
-  versionTitleRcNumber: 0
-  versionTitleBetaNumber: 0
-  versionTitleNightlyNumber: 1
-  versionTitlePreNightlyNumber: 0
-
-# build_channel defines the current CI build track.
-# Input value from bamboo managed in bamboo-specs/scripts/configure_before_ios_build.sh script
-# resulting value updates this variable before building the app
-# Possible values:
-#   - Release (default)
-#   - Rc
-#   - Beta
-#   - Nightly
-#   - PreNightly
-build_channel: Release
+version: 1.2.0
 
 environment:
   flutter: 3.38.3

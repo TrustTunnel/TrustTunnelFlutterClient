@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import '../controller/controller.dart';
 import 'package:meta/meta.dart';
+
+import '../controller/controller.dart';
 
 /// {@template droppable_controller_handler}
 /// Mixin that implements droppable concurrency semantics for a controller.

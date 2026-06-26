@@ -75,8 +75,6 @@ lib/common/localization/generated/
 */fastlane/Preview.html
 */fastlane/screenshots
 */fastlane/test_output
-*/fastlane/.env
-*/fastlane/.env.default
 */fastlane/AppStoreApiInfo.json
 */Gemfile.lock
 */Podfile.lock

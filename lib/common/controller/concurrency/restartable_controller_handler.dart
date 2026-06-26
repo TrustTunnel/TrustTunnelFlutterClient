@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import '../controller/state_controller.dart';
 import 'package:meta/meta.dart';
+
+import '../controller/state_controller.dart';
 
 /// {@template restartable_controller_handler}
 /// Mixin that provides restartable concurrency semantics for a state controller.

@@ -5,5 +5,5 @@ class QueryLogScreen extends StatelessWidget {
   const QueryLogScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => QueryLogScreenView();
+  Widget build(BuildContext context) => const QueryLogScreenView();
 }

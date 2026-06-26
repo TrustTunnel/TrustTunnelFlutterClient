@@ -1,0 +1,235 @@
+name: Flutter Build
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        required: true
+        description: 'android or ios'
+      vault-role:
+        type: string
+        default: 'trusttunnel-app'
+        description: 'Vault JWT auth role for signing secrets'
+      version:
+        type: string
+        default: '0.0.0'
+        description: 'Version string for build'
+      build-number:
+        type: string
+        default: '1'
+        description: 'Build number'
+      version-title:
+        type: string
+        default: ''
+        description: 'Human-readable version title'
+      build-mode:
+        type: string
+        default: 'apk'
+        description: 'apk | appbundle | ipa | simulator'
+      signing-type:
+        type: string
+        default: 'adhoc'
+        description: 'iOS signing type: adhoc, appstore, development'
+      ios-app-identifiers:
+        type: string
+        default: ''
+        description: 'Comma-separated iOS app identifiers for signing'
+      artifact-name:
+        type: string
+        default: ''
+        description: 'Name for uploaded build artifact'
+      artifact-path:
+        type: string
+        default: ''
+        description: 'Path to build output file(s)'
+      channel:
+        type: string
+        required: true
+        description: 'Build channel (nightly, beta, rc, release)'
+      release:
+        type: string
+        default: ''
+        description: 'Release identifier (e.g. "1.2")'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  resolve-runner:
+    runs-on: [team-flutter]
+    outputs:
+      image: ${{ steps.kv.outputs.value }}
+    steps:
+      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
+        id: kv
+        with:
+          key: build-images/macos
+
+  build-android:
+    needs: [resolve-runner]
+    if: inputs.platform == 'android'
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-5120
+      - ephemeral-limit-cpu-2
+      - ephemeral-limit-disk-gb-20
+    defaults:
+      run:
+        shell: bash
+    env:
+      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
+    steps:
+      - name: Fix Flutter git safe directory   
+        run: git config --global --add safe.directory /opt/flutter
+      - name: Fetch secrets from Vault
+        uses: hashicorp/vault-action@v4
+        with:
+          url: ${{ vars.VAULT_URL }}
+          method: jwt
+          path: jwt
+          role: ${{ inputs.vault-role }}
+          secrets: |
+            secret/data/ci-secrets/${{ inputs.vault-role }} keystore         | KEYSTORE_BASE64 ;
+            secret/data/ci-secrets/${{ inputs.vault-role }} keyAlias         | ORG_GRADLE_PROJECT_signingConfigKeyAlias ;
+            secret/data/ci-secrets/${{ inputs.vault-role }} keyPassword      | ORG_GRADLE_PROJECT_signingConfigKeyPassword ;
+            secret/data/ci-secrets/${{ inputs.vault-role }} keystorePassword | ORG_GRADLE_PROJECT_signingConfigKeyStorePassword
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Apply PR overrides
+        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Prepare Android signing
+        run: |
+          set -euo pipefail
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/trusttunnel.keystore
+          echo "ORG_GRADLE_PROJECT_signingConfigKeyStorePath=/tmp/trusttunnel.keystore" >> "$GITHUB_ENV"
+
+      - name: Flutter pub get and code generation
+        run: |
+          set -euo pipefail
+          make init
+
+      - name: Build Android APK
+        if: inputs.build-mode == 'apk'
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build-number }}
+        run: |
+          set -euo pipefail
+          flutter build apk --release \
+            --build-name="$PROJECT_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --no-pub
+
+      - name: Build Android AAB
+        if: inputs.build-mode == 'appbundle'
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build-number }}
+        run: |
+          set -euo pipefail
+          flutter build appbundle --release \
+            --build-name="$PROJECT_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --no-pub
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: error
+
+  build-ios:
+    needs: [resolve-runner]
+    if: inputs.platform == 'ios'
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-7168
+      - ephemeral-limit-cpu-4
+      - ephemeral-limit-disk-gb-20
+    defaults:
+      run:
+        shell: bash
+    env:
+      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY  }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Apply PR overrides
+        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Prepare Ruby environment
+        run: |
+          set -euo pipefail
+          set -x
+          eval "$(rbenv init - bash)"
+          rbenv install 3.3.10 --skip-existing
+          rbenv local 3.3.10
+          rbenv rehash
+          printf '%s\n' "$HOME/.rbenv/bin" "$HOME/.rbenv/shims" >> "$GITHUB_PATH"
+          gem install bundler -v 2.7.2
+          rbenv rehash
+          export BUNDLER_VERSION=2.7.2
+          cd ios
+          bundle config set --local path '.bundle/vendor'
+          bundle install
+          cd ..
+
+      - name: Flutter pub get and code generation
+        run: |
+          set -euo pipefail
+          make init
+
+      - name: Pod install
+        run: |
+          set -euo pipefail
+          cd ios
+          bundle exec pod install --repo-update
+          cd ..
+
+      - name: Load signing env
+        if: inputs.build-mode != 'simulator'
+        run: |
+          grep -vE '^\s*(#|$)' "ios/fastlane/.env" >> "$GITHUB_ENV"
+
+      - name: Sync iOS signing assets
+        if: inputs.build-mode != 'simulator'
+        id: signing
+        uses: AdGuardSoftwareLimited/apple-devices/.github/actions/match-sync@master
+        with:
+          vault_url: ${{ vars.VAULT_URL }}
+          type: ${{ inputs.signing-type }}
+          app_id: ${{ env.APP_IDENTIFIERS }}
+          keychain_name: ci-signing
+          readonly: 'true'
+
+      - name: Build iOS with Fastlane
+        env:
+          MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
+          MATCH_KEYCHAIN_PASSWORD: ${{ steps.signing.outputs.keychain_password }}
+        run: |
+          set -euo pipefail
+          cd ios
+          if [ "${{ inputs.build-mode }}" = "simulator" ]; then
+            bundle exec fastlane build_simulator_app_and_zip
+          else
+            bundle exec fastlane build_ipa type:"${{ inputs.signing-type }}"
+          fi
+          cd ..
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: error

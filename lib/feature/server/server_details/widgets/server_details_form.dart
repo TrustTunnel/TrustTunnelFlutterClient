@@ -29,6 +29,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
   late List<PresentationField> _fieldErrors;
   late List<RoutingProfile> _routingProfiles;
   late RoutingProfile _pickedRoutingProfile;
+  late final ValueNotifier<bool> _isPasswordVisibleNotifier;
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
     _fieldErrors = controller.fieldErrors;
     _routingProfiles = controller.routingProfiles;
     _pickedRoutingProfile = _getSelectedRoutingProfile(_routingProfiles, _formData.routingProfileId);
+    _isPasswordVisibleNotifier = ValueNotifier<bool>(false);
   }
 
   @override
@@ -157,18 +159,28 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
                   PresentationFieldName.userName,
                 ),
               ),
-              CustomTextField(
-                value: _formData.password,
-                label: context.ln.password,
-                hint: context.ln.enterPassword,
-                onChanged: (password) => _onDataChanged(
-                  context,
-                  password: password,
-                ),
-                error: ValidationUtils.getErrorString(
-                  context,
-                  _fieldErrors,
-                  PresentationFieldName.password,
+              ListenableBuilder(
+                listenable: _isPasswordVisibleNotifier,
+                builder: (context, _) => CustomTextField.customSuffixIcon(
+                  value: _formData.password,
+                  label: context.ln.password,
+                  hint: context.ln.enterPassword,
+                  obscureText: !_isPasswordVisibleNotifier.value,
+                  onChanged: (password) => _onDataChanged(
+                    context,
+                    password: password,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisibleNotifier.value ? AssetIcons.eye : AssetIcons.eyeClosed,
+                    ),
+                    onPressed: () => _isPasswordVisibleNotifier.value = !_isPasswordVisibleNotifier.value,
+                  ),
+                  error: ValidationUtils.getErrorString(
+                    context,
+                    _fieldErrors,
+                    PresentationFieldName.password,
+                  ),
                 ),
               ),
               CustomDropdownMenu<VpnProtocol>.expanded(
@@ -315,4 +327,10 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
         dnsServers: dnsServers,
         customSni: customSni,
       );
+
+  @override
+  void dispose() {
+    _isPasswordVisibleNotifier.dispose();
+    super.dispose();
+  }
 }

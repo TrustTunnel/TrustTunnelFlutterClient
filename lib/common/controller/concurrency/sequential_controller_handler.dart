@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
 
-import '../controller/controller.dart';
 import 'package:meta/meta.dart';
+
+import '../controller/controller.dart';
 
 /// {@template sequential_controller_handler}
 /// Mixin that enforces sequential (FIFO) execution of controller handlers.

@@ -81,7 +81,7 @@ class QueryLogListView extends StatelessWidget {
         log: log,
       );
     },
-    separatorBuilder: (_, __) => const Divider(),
+    separatorBuilder: (_, _) => const Divider(),
     itemCount: logs.length,
   );
 }

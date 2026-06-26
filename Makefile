@@ -1,4 +1,10 @@
-.PHONY: gen init release-android ln ci-set-version-suffix aux-setup-android-signing
+.PHONY: gen ln init release-android aux-setup-android-signing \
+        ci-lint-dart ci-test-flutter \
+        ci-build-android-apk ci-build-android-aab \
+        ci-setup-ruby ci-setup-gpr \
+        ci-fastlane-build-ipa ci-fastlane-build-simulator \
+        ci-fastlane-build-ios ci-fastlane-build-ios-simulator \
+        ci-fastlane-build-macos
 
 gen:
 	@echo "* Starting code generation... *"
@@ -47,10 +53,6 @@ lib/common/localization/generated/l10n.dart: .dart_tool/package_config.json lib/
 	@$(MAKE) -C plugins/vpn_plugin gen
 	@echo "* Code generation successful *"
 
-# ----------------------------
-# Android signing helpers
-# ----------------------------
-
 aux-setup-android-signing:
 	@echo "Enter password for Android keystore (will be used for keystore AND written to android/local.properties):"
 	@read -s PASSWORD; echo ""; \
@@ -82,3 +84,68 @@ release-android:
 	@echo "* Building Android release (AAB) *"
 	@flutter build appbundle --release
 	@echo "* Android release build done *"
+
+ci-lint-dart:
+	@echo "* Running flutter analyze *"
+	@flutter analyze
+	@echo "* Lint OK *"
+
+ci-test-flutter:
+	@echo "* Running flutter test *"
+	@flutter test
+	@echo "* Tests OK *"
+
+ci-setup-gpr:
+	@if [ -z "$$GPR_KEY" ]; then \
+		echo "ERROR: GPR_KEY env var is not set"; exit 1; \
+	fi
+	@echo "* GPR_KEY is set *"
+
+ci-setup-ruby:
+	@echo "* Setting up Ruby gems (ios/) *"
+	@cd ios && bundle config set --local path '.bundle/vendor' && bundle install
+	@echo "* Ruby setup done *"
+
+ci-build-android-apk: .dart_tool/build/entrypoint/build.dart
+	@if [ -z "$$PROJECT_VERSION" ]; then \
+		echo "ERROR: PROJECT_VERSION env var is not set"; exit 1; \
+	fi
+	@if [ -z "$$BUILD_NUMBER" ]; then \
+		echo "ERROR: BUILD_NUMBER env var is not set"; exit 1; \
+	fi
+	@echo "* Building Android APK (release) *"
+	@flutter build apk --release \
+		--build-name=$$PROJECT_VERSION \
+		--build-number=$$BUILD_NUMBER
+	@echo "* Android APK build done *"
+
+ci-build-android-aab: .dart_tool/build/entrypoint/build.dart
+	@if [ -z "$$PROJECT_VERSION" ]; then \
+		echo "ERROR: PROJECT_VERSION env var is not set"; exit 1; \
+	fi
+	@if [ -z "$$BUILD_NUMBER" ]; then \
+		echo "ERROR: BUILD_NUMBER env var is not set"; exit 1; \
+	fi
+	@echo "* Building Android AAB (release) *"
+	@flutter build appbundle --release \
+		--build-name=$$PROJECT_VERSION \
+		--build-number=$$BUILD_NUMBER
+	@echo "* Android AAB build done *"
+
+ci-fastlane-build-ipa: ci-setup-gpr ci-setup-ruby
+	@echo "* Building iOS IPA via fastlane *"
+	@cd ios && bundle exec fastlane build_ipa type:"$${BUILD_TYPE:-adhoc}"
+	@echo "* iOS IPA build done *"
+
+ci-fastlane-build-simulator: ci-setup-gpr ci-setup-ruby
+	@echo "* Building iOS Simulator app via fastlane *"
+	@cd ios && bundle exec fastlane build_simulator_app_and_zip
+	@echo "* iOS Simulator build done *"
+
+ci-fastlane-build-ios: ci-fastlane-build-ipa
+
+ci-fastlane-build-ios-simulator: ci-fastlane-build-simulator
+
+ci-fastlane-build-macos:
+	@echo "* macOS build is not configured yet *"
+	@exit 1

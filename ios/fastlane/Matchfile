@@ -1,3 +1,7 @@
-if ENV["fastfile_loaded"].nil?
-  raise "Use 'fastlane sync_certs_and_profiles' with parameters you need"
-end
+# Matchfile — static signing configuration for Fastlane Match.
+# Type-specific settings (type, git_branch, force_for_new_devices)
+# are passed by the :match / :build_ipa lanes in the Fastfile.
+
+team_id(ENV.fetch('TEAM_ID'))
+platform("ios")
+app_identifier(ENV.fetch('APP_IDENTIFIERS').split(',').map(&:strip))
