@@ -121,12 +121,10 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
     }
 
     if (defaultTargetPlatform == TargetPlatform.android) {
-      final status = await Permission.manageExternalStorage.status;
-      if (!status.isGranted) {
-        final result = await Permission.manageExternalStorage.request();
-        if (!result.isGranted) {
-          return getTemporaryDirectory();
-        }
+      final storageStatus = await Permission.storage.request();
+      final manageExternalStorageStatus = await Permission.manageExternalStorage.request();
+      
+      if (storageStatus.isGranted || manageExternalStorageStatus.isGranted) {
         final directory = Directory('/storage/emulated/0/Download');
 
         if (!await directory.exists()) {
