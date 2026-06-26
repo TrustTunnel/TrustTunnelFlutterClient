@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/feature/menu_bar/widgets/tray_menu_scope.dart';
 import 'package:trusttunnel/feature/navigation/navigation_screen.dart';
 
 class App extends StatelessWidget {
@@ -17,7 +18,9 @@ class App extends StatelessWidget {
           statusBarColor: context.colors.background,
           statusBarBrightness: context.theme.brightness,
         ),
-        child: const NavigationScreen(),
+        child: const TrayMenuScope(
+          child: NavigationScreen(),
+        ),
       ),
     ),
     title: 'TrustTunnel',
