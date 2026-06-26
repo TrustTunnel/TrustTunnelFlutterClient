@@ -30,7 +30,6 @@ dependencies:
   intl_utils: 2.8.13
   package_info_plus: 9.0.0
   path_provider: 2.1.5
-  permission_handler: 12.0.3
   punycoder: 0.2.2
   rxdart: 0.28.0
   shared_preferences: 2.5.5

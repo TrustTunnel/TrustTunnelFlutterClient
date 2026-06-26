@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
@@ -120,26 +119,15 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       return getApplicationDocumentsDirectory();
     }
 
+    final directory = await getDownloadsDirectory();
+
     if (defaultTargetPlatform == TargetPlatform.android) {
-      final storageStatus = await Permission.storage.request();
-      final manageExternalStorageStatus = await Permission.manageExternalStorage.request();
-      
-      if (storageStatus.isGranted || manageExternalStorageStatus.isGranted) {
-        final directory = Directory('/storage/emulated/0/Download');
+      final externalStorageDir = await getExternalStorageDirectory();
 
-        if (!await directory.exists()) {
-          final externalStorageDir = await getExternalStorageDirectory();
-
-          return externalStorageDir ?? getTemporaryDirectory();
-        }
-
-        return directory;
-      }
+      return directory ?? externalStorageDir ?? getTemporaryDirectory();
     }
 
-    final result = await getDownloadsDirectory();
-
-    return result ?? getTemporaryDirectory();
+    return directory ?? getTemporaryDirectory();
   }
 
   void _onError(Object? error, StackTrace? stackTrace) => setState(
