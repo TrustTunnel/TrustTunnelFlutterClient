@@ -87,26 +87,6 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
   }
 }
 
-class LogsManagerProvider extends StatelessWidget {
-  final LogsManagerScopeController controller;
-  final Widget child;
-
-  const LogsManagerProvider({
-    required this.controller,
-    required this.child,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) => _InheritedLogsManagerScope(
-    loading: controller.loading,
-    exportLogs: controller.exportLogs,
-    shareLogs: controller.shareLogs,
-    deleteLogs: controller.deleteLogs,
-    child: child,
-  );
-}
-
 class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> implements LogsManagerScopeController {
   const _InheritedLogsManagerScope({
     required super.child,
