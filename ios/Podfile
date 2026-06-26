@@ -46,13 +46,5 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
-
-    if target.name == 'Extension'
-      target.build_configurations.each do |config|
-        config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']
-        config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '${PODS_ROOT}/../Flutter/Flutter.framework'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-      end
-    end
   end
 end
