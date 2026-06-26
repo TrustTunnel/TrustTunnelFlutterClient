@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
@@ -30,30 +31,18 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       );
 
       final archive = await _repository.createArchive();
-      final downloadDir = defaultTargetPlatform == TargetPlatform.iOS
-          ? await getApplicationDocumentsDirectory()
-          : await getDownloadsDirectory();
-
-      if (downloadDir != null) {
-        final downloadPath = '${downloadDir.path}${Platform.pathSeparator}${archive.name}';
-        await _repository.saveRawFile(
-          data: archive.data,
-          path: downloadPath,
-        );
-      }
-
-      final tempDir = await getTemporaryDirectory();
-      final tempPath = '${tempDir.path}${Platform.pathSeparator}${archive.name}';
+      final downloadDir = await _getDownloadsDirectory();
+      final downloadPath = '${downloadDir.path}${Platform.pathSeparator}${archive.name}';
 
       await _repository.saveRawFile(
         data: archive.data,
-        path: tempPath,
+        path: downloadPath,
       );
 
       setState(
         const LogsManagerState.idle(),
       );
-      onArchiveReady?.call(tempPath);
+      onArchiveReady?.call(downloadPath);
     },
     errorHandler: (error, stackTrace) {
       onError?.call();
@@ -125,6 +114,35 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
     errorHandler: _onError,
     completionHandler: _onCompleted,
   );
+
+  Future<Directory> _getDownloadsDirectory() async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return getApplicationDocumentsDirectory();
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      final status = await Permission.manageExternalStorage.status;
+      if (!status.isGranted) {
+        final result = await Permission.manageExternalStorage.request();
+        if (!result.isGranted) {
+          return getTemporaryDirectory();
+        }
+        final directory = Directory('/storage/emulated/0/Download');
+
+        if (!await directory.exists()) {
+          final externalStorageDir = await getExternalStorageDirectory();
+
+          return externalStorageDir ?? getTemporaryDirectory();
+        }
+
+        return directory;
+      }
+    }
+
+    final result = await getDownloadsDirectory();
+
+    return result ?? getTemporaryDirectory();
+  }
 
   void _onError(Object? error, StackTrace? stackTrace) => setState(
     LogsManagerState.error(
