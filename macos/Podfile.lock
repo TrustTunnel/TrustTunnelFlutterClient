@@ -89,7 +89,7 @@ SPEC CHECKSUMS:
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   sqlite3: 8d708bc63e9f4ce48f0ad9d6269e478c5ced1d9b
   sqlite3_flutter_libs: d13b8b3003f18f596e542bcb9482d105577eff41
-  tray_manager: 3fe745b06dbc483013f503a8f1e483888c557996
+  tray_manager: 061091258370a059b7e7e271491d4532b58278e7
   TrustTunnelClient: 982ee9fb999fc98168889ba1ba68861f7b13deeb
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   vpn_plugin: fe6f1796a2b921d01d9bd75d72a06a7e4aebb2b1
