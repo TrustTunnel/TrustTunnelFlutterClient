@@ -123,7 +123,7 @@ final class AdgShare implements ShareClient {
   ShareResult _mapResponse(Map<Object?, Object?>? response) {
     final status = response?['status'];
     if (status is! String || status.isEmpty) {
-      return ShareFailure(
+      return const ShareFailure(
         ShareValidationException('Missing share result status.'),
       );
     }

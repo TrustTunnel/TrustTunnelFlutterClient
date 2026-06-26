@@ -9,6 +9,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "92.0.0"
+  adg_share:
+    dependency: "direct main"
+    description:
+      path: "packages/adg_share"
+      relative: true
+    source: path
+    version: "0.0.1"
   adguard_logger:
     dependency: "direct main"
     description:
