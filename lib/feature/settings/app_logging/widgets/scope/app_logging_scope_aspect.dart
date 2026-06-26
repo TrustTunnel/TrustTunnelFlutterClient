@@ -1,0 +1,4 @@
+enum AppLoggingScopeAspect {
+  loggingLevel,
+  securityType,
+}

@@ -1,8 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vpn_plugin/data/logs_reader.dart';
 import 'package:vpn_plugin/domain/configuration_codec.dart';
 import 'package:vpn_plugin/domain/query_log_encoder.dart';
 import 'package:vpn_plugin/models/configuration.dart';
+import 'package:vpn_plugin/models/logs/log_record.dart';
 import 'package:vpn_plugin/models/query_log_row.dart';
 import 'package:vpn_plugin/platform_api.g.dart';
 
@@ -70,6 +75,12 @@ abstract class VpnPlugin {
   /// Emits [QueryLogRow] objects representing network traffic passing through the VPN.
   /// {@endtemplate}
   abstract final Stream<QueryLogRow> queryLog;
+
+  Future<List<LogRecord>> exportLogsFor(List<String> paths);
+
+  Future<List<String>> fetchLogsPath();
+
+  Future<void> clearLogs();
 }
 
 /// {@template vpn_plugin_impl}
@@ -88,6 +99,7 @@ class VpnPluginImpl implements VpnPlugin {
     EventChannel? channel,
     EventChannel? logChannel,
   }) : _api = IVpnManager(),
+       _logsReader = LogsReader(),
        _codec = const ConfigurationCodec(),
        _vpnChannel = channel ?? const EventChannel('vpn_plugin_event_channel'),
        _queryLogChannel = logChannel ?? const EventChannel('vpn_plugin_event_channel_query_log');
@@ -96,6 +108,8 @@ class VpnPluginImpl implements VpnPlugin {
   final IVpnManager _api;
   final EventChannel _vpnChannel;
   final EventChannel _queryLogChannel;
+  final LogsReader _logsReader;
+  SharedPreferences? _storage;
 
   @override
   Future<VpnManagerState> getCurrentState() => _api.getCurrentState();
@@ -155,5 +169,41 @@ class VpnPluginImpl implements VpnPlugin {
     }
 
     return VpnManagerState.disconnected;
+  }
+
+  @override
+  Future<List<LogRecord>> exportLogsFor(List<String> paths) async {
+    final records = <LogRecord>[];
+    for (final path in paths) {
+      records.addAll(await _logsReader.readLogs(path));
+    }
+
+    return records;
+  }
+
+  @override
+  Future<List<String>> fetchLogsPath() async {
+    _storage ??= await SharedPreferences.getInstance();
+    final logsPaths = await _api.exportLogs();
+    await _storage!.setStringList('logs_paths_vpn_plugin', logsPaths);
+    return logsPaths;
+  }
+
+  @override
+  Future<void> clearLogs() async {
+    _storage ??= await SharedPreferences.getInstance();
+    final logPaths = _storage?.getStringList('logs_paths_vpn_plugin');
+    if (logPaths?.isEmpty ?? true) {
+      return;
+    }
+
+    for (final path in logPaths!) {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+
+    await _storage?.remove('logs_paths_vpn_plugin');
   }
 }

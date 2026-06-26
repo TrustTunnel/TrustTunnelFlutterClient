@@ -1,37 +1,125 @@
+import 'dart:async';
 import 'dart:ui';
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trusttunnel/common/controller/controller/controller.dart';
+import 'package:trusttunnel/common/logging/app_logger.dart';
+import 'package:trusttunnel/common/logging/enum/logging_level.dart';
+import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
+import 'package:trusttunnel/common/logging/observers/logging_controller_observer.dart';
+import 'package:trusttunnel/common/logging/sanitizer/log_sanitizer.dart';
+import 'package:trusttunnel/common/logging/utils/containment_file_util.dart';
+import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/initialization_result.dart';
 import 'package:trusttunnel/di/model/repository_factory.dart';
 
 abstract class InitializationHelper {
+  const InitializationHelper();
+
   Future<InitializationResult> init();
 }
 
 class InitializationHelperIo extends InitializationHelper {
+  const InitializationHelperIo();
+
   @override
   Future<InitializationResult> init() async {
     final bindings = WidgetsFlutterBinding.ensureInitialized();
     FlutterNativeSplash.preserve(widgetsBinding: bindings);
     await _updateDeviceOrientation();
 
-    final dependenciesFactory = DependencyFactoryImpl();
+    BaseController.observer = const LoggingControllerObserver();
+
+    final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+
+    final String path;
+
+    path = await ContainmentFileUtil.getPlatformContainmentDirectoryPath(
+      'log',
+      appName: 'TrustTunnel',
+      directoryName: 'Logs',
+    );
+
+    final logStorage = FileLogStorage();
+
+    final fileAppender = FileLogAppender(
+      logStorage: logStorage,
+      filePath: path,
+      rotationFileController: RotationFileController(
+        containmentDaysDuration: 7,
+        rotationSizeLimit: 1024 * 1024 * 30,
+        rotationFileLimit: 1024 * 1024 * 3,
+      ),
+    );
+
+    final dependenciesFactory = DependencyFactoryImpl(
+      sharedPreferences: sharedPreferences,
+      fileLogAppender: fileAppender,
+      logStorage: logStorage,
+    );
 
     final repositoryFactory = RepositoryFactoryImpl(
       dependencyFactory: dependenciesFactory,
     );
 
+    await _configureLogging(
+      repositoryFactory.loggingSettingsRepository,
+      dependenciesFactory,
+    );
+
+    logger.logInfo(
+      'App initialization started',
+      additionalTags: ['app', 'initialization'],
+    );
+
+    await dependenciesFactory.exportLogsLocalSource.clearTempFiles();
+
     final initialVpnState = await repositoryFactory.vpnRepository.requestState();
 
     FlutterNativeSplash.remove();
+
+    logger.logInfo(
+      'App initialization completed',
+      additionalTags: ['app', 'initialization'],
+    );
 
     return InitializationResult(
       dependenciesFactory: dependenciesFactory,
       repositoryFactory: repositoryFactory,
       initialVpnState: initialVpnState,
+    );
+  }
+
+  Future<void> _configureLogging(
+    LoggingSettingsRepository loggingSettingsRepository,
+    DependencyFactoryImpl dependenciesFactory,
+  ) async {
+    final loggingSettings = await Future.wait([
+      loggingSettingsRepository.getLoggingLevel(),
+      loggingSettingsRepository.getSecurityType(),
+    ]);
+
+    final loggingLevel = loggingSettings[0] as LoggingLevel;
+    final securityType = loggingSettings[1] as LoggingSecurityType;
+
+    (logger as AppLogger).updateSettings(
+      loggingLevel: loggingLevel,
+      sanitizer: LogSanitizer(
+        securityType: securityType,
+      ),
+    );
+
+    ConsoleLogAppender().attachToLogger(logger);
+    dependenciesFactory.fileLogAppender.attachToLogger(logger);
+
+    logger.logInfo(
+      'Logger configured with level: $loggingLevel and security type: $securityType',
+      additionalTags: ['app', 'initialization'],
     );
   }
 

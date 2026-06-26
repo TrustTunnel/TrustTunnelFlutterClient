@@ -68,7 +68,7 @@ class _RoutingEditNameDialogState extends State<RoutingEditNameDialog> {
         ),
         Theme(
           data: context.theme.copyWith(
-            textButtonTheme: context.theme.extension<CustomTextButtonTheme>()!.success,
+            textButtonTheme: context.theme.extension<CustomTextButtonTheme>()?.success,
           ),
           child: TextButton(
             onPressed: error != null ? null : () => _onSavePressed(_routingName),

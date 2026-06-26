@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/logging/observers/logging_navigator_observer.dart';
+import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/common/utils/navigation_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/deep_link_scope.dart';
@@ -18,8 +20,17 @@ class NavigationScreen extends StatefulWidget {
 class _NavigationScreenState extends State<NavigationScreen> {
   final ValueNotifier<int> _selectedTabNotifier = ValueNotifier(0);
   final _navigatorKey = GlobalKey<NavigatorState>();
+  late final LoggingNavigatorObserver _navigatorObserver;
 
   ServerData? _deepLinkData;
+
+  @override
+  void initState() {
+    super.initState();
+    _navigatorObserver = LoggingNavigatorObserver(
+      navigatorName: 'navigation',
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -100,8 +111,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
     onPopWithResult: (_) => _navigatorKey.currentState!.maybePop(),
     child: Navigator(
       key: _navigatorKey,
+      observers: [_navigatorObserver],
       onGenerateInitialRoutes: (_, _) => [
         PageRouteBuilder(
+          settings: AppRoutes.servers.settings,
           pageBuilder: (context, animation, secondaryAnimation) => const ServersScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
@@ -115,6 +128,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       _selectedTabNotifier.value = selectedIndex;
       _navigatorKey.currentState!.pushAndRemoveUntil(
         PageRouteBuilder(
+          settings: AppRoutes.byNavigationIndex(selectedIndex).settings,
           pageBuilder: (context, animation, secondaryAnimation) => getScreenByIndex(
             selectedIndex,
             deepLinkData: deepLinkData,

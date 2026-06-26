@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
@@ -22,7 +22,7 @@ abstract class RoutingDetailsScopeController {
   abstract final bool hasInvalidRules;
   abstract final String name;
 
-  abstract final PresentationError? error;
+  abstract final PresentationException? error;
 
   abstract final void Function() fetchProfile;
   abstract final RoutingDataChangedCallback changeData;

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
@@ -133,7 +133,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   String get name => _state.data.name;
 
   @override
-  PresentationError? get error => _state.error;
+  PresentationException? get error => _state.error;
 
   @override
   bool get loading => _state.loading;

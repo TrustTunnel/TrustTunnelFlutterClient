@@ -1,4 +1,4 @@
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
 /// {@template Routings_state}
@@ -36,10 +36,11 @@ sealed class RoutingDetailsState {
     required RoutingProfileData data,
     required RoutingProfileData initialData,
     required bool hasInvalidRules,
-    required PresentationError exception,
+    required PresentationException exception,
   }) = _ErrorRoutingDetailState;
 
-  PresentationError? get error => this is _ErrorRoutingDetailState ? (this as _ErrorRoutingDetailState).error : null;
+  PresentationException? get error =>
+      this is _ErrorRoutingDetailState ? (this as _ErrorRoutingDetailState).error : null;
 
   bool get loading => this is _LoadingRoutingDetailState;
 
@@ -52,6 +53,12 @@ sealed class RoutingDetailsState {
     loading,
     hasInvalidRules,
   ]);
+
+  @override
+  String toString() =>
+      'RoutingDetailsState(type: $runtimeType, '
+      'data: $data, initialData: $initialData, hasInvalidRules: $hasInvalidRules, '
+      'loading: $loading)';
 
   @override
   bool operator ==(Object other) =>
@@ -91,7 +98,7 @@ final class _LoadingRoutingDetailState extends RoutingDetailsState {
 }
 
 final class _ErrorRoutingDetailState extends RoutingDetailsState {
-  final PresentationError exception;
+  final PresentationException exception;
 
   const _ErrorRoutingDetailState({
     required this.exception,

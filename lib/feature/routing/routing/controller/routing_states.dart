@@ -1,4 +1,5 @@
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:collection/collection.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 
@@ -32,12 +33,37 @@ sealed class RoutingState {
   const factory RoutingState.exception({
     required List<RoutingProfile> routingList,
     required List<PresentationField> fieldErrors,
-    required PresentationError exception,
+    required PresentationException exception,
   }) = _ErrorRoutingState;
 
-  PresentationError? get error => this is _ErrorRoutingState ? (this as _ErrorRoutingState).exception : null;
+  PresentationException? get error => this is _ErrorRoutingState ? (this as _ErrorRoutingState).exception : null;
 
   bool get loading => this is _LoadingRoutingState;
+
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    Object.hashAll(routingList),
+    Object.hashAll(fieldErrors),
+    error,
+    loading,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RoutingState &&
+          runtimeType == other.runtimeType &&
+          const ListEquality<RoutingProfile>().equals(routingList, other.routingList) &&
+          const ListEquality<PresentationField>().equals(fieldErrors, other.fieldErrors) &&
+          error == other.error &&
+          loading == other.loading;
+
+  @override
+  String toString() =>
+      'RoutingState(type: $runtimeType, '
+      'routingList: ${routingList.map((e) => e.toString()).join(', ')}, fieldErrors: ${fieldErrors.map((e) => e.toString()).join(', ')}, '
+      'loading: $loading)';
 }
 
 final class _IdleRoutingState extends RoutingState {
@@ -63,7 +89,7 @@ final class _LoadingRoutingState extends RoutingState {
 }
 
 final class _ErrorRoutingState extends RoutingState {
-  final PresentationError exception;
+  final PresentationException exception;
 
   const _ErrorRoutingState({
     required super.routingList,

@@ -1,0 +1,32 @@
+name: adg_share
+description: Native sharing plugin for Android and iOS.
+publish_to: none
+version: 0.0.1
+
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  meta: 1.17.0
+  mime: 2.0.0
+  path: 1.9.1
+  plugin_platform_interface: 2.1.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.adguard.adg_share
+        pluginClass: AdgSharePlugin
+      ios:
+        pluginClass: AdgSharePlugin

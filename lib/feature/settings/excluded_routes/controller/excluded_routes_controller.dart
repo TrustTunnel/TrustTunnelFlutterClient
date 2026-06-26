@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
-import 'package:trusttunnel/common/error/error_utils.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/repository/settings_repository.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/controller/excluded_routes_states.dart';
 
@@ -50,15 +50,19 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
     List<String>? excludedRoutes,
     List<String>? initialExcludedRoutes,
     bool? hasInvalidRules,
-  }) => handle(() {
-    setState(
-      ExcludedRoutesState.idle(
-        excludedRoutes: excludedRoutes ?? state.excludedRoutes,
-        initialExcludedRoutes: initialExcludedRoutes ?? state.initialExcludedRoutes,
-        hasInvalidRoutes: hasInvalidRules ?? state.hasInvalidRoutes,
-      ),
-    );
-  });
+  }) => handle(
+    () {
+      setState(
+        ExcludedRoutesState.idle(
+          excludedRoutes: excludedRoutes ?? state.excludedRoutes,
+          initialExcludedRoutes: initialExcludedRoutes ?? state.initialExcludedRoutes,
+          hasInvalidRoutes: hasInvalidRules ?? state.hasInvalidRoutes,
+        ),
+      );
+    },
+    errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
 
   void submit(VoidCallback onSaved) => handle(
     () async {
@@ -86,7 +90,8 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
     completionHandler: _onCompleted,
   );
 
-  PresentationError _parseException(Object? exception) => ErrorUtils.toPresentationError(exception: exception);
+  PresentationException _parseException(Object? exception) =>
+      ExceptionUtils.toPresentationException(exception: exception);
 
   Future<void> _onError(Object? error, StackTrace _) async {
     final presentationException = _parseException(error);

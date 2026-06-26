@@ -1,4 +1,0 @@
-enum PresentationErrorCode {
-  unknown,
-  notFound,
-}

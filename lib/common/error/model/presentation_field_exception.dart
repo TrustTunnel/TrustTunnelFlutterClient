@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:trusttunnel/common/error/error_utils.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/localization/generated/l10n.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 
-class PresentationFieldError implements PresentationError {
+class PresentationFieldException implements PresentationException {
   final List<PresentationField> fields;
 
-  PresentationFieldError({required this.fields});
+  const PresentationFieldException({required this.fields});
 
   @override
   String toLocalizedString(BuildContext context) {
@@ -21,7 +21,7 @@ class PresentationFieldError implements PresentationError {
       if (index != 0) {
         buffer.writeln();
       }
-      buffer.write(ErrorUtils.getFieldErrorString(field, ln));
+      buffer.write(ExceptionUtils.getFieldExceptionString(field, ln));
     }
 
     return buffer.toString();

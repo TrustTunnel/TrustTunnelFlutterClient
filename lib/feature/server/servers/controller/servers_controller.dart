@@ -1,7 +1,7 @@
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
-import 'package:trusttunnel/common/error/error_utils.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
 import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 
@@ -71,7 +71,11 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     );
   }
 
-  PresentationError _parseException(Object? exception) => ErrorUtils.toPresentationError(exception: exception);
+  PresentationException _parseException(
+    Object? exception,
+  ) => ExceptionUtils.toPresentationException(
+    exception: exception,
+  );
 
   Future<void> _onError(Object? error, StackTrace _) async {
     final presentationException = _parseException(error);

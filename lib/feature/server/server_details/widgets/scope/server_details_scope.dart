@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
@@ -191,7 +191,7 @@ class _InheritedServerDetailsScope extends InheritedModel<ServerDetailsScopeAspe
   List<RoutingProfile> get routingProfiles => [..._state.routingProfiles];
 
   @override
-  PresentationError? get error => _state.error;
+  PresentationException? get error => _state.error;
 
   @override
   bool get loading => _state.loading || routingProfiles.isEmpty;

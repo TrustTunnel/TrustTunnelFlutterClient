@@ -6,11 +6,13 @@ class CustomRadio<T> extends StatelessWidget {
     super.key,
     required this.value,
     required this.groupValue,
+    this.activeColor,
     this.onChanged,
   });
 
   final T value;
   final T groupValue;
+  final Color? activeColor;
   final ValueChanged<T?>? onChanged;
 
   @override
@@ -20,6 +22,7 @@ class CustomRadio<T> extends StatelessWidget {
       dimension: 24 * context.scaleFactor,
       child: Radio<T>(
         value: value,
+        activeColor: activeColor,
         splashRadius: 0,
         groupValue: groupValue,
         onChanged: onChanged,

@@ -1,7 +1,10 @@
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v2.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v3.dart';
+import 'package:trusttunnel/data/database/migrations/migrations_v4.dart';
+
 import 'connection.dart' as impl;
 
 part 'app_database.g.dart';
@@ -19,16 +22,18 @@ class AppDatabase extends _$AppDatabase {
     '192.168.0.0/16',
     '255.255.255.255/32',
   ];
+
   AppDatabase() : super(impl.connect());
+
   AppDatabase.inMemory(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
-      await m.createAll();
+      await _runMigrationStep('create_all', () => m.createAll());
       if (await routingModes.count().getSingle() == 0) {
         await into(routingModes).insert(
           RoutingModesCompanion.insert(
@@ -119,11 +124,22 @@ class AppDatabase extends _$AppDatabase {
     },
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
-        await const MigrationsV2().migrate(this, m);
+        await _runMigrationStep('v2', () => const MigrationsV2().migrate(this, m));
       }
       if (from < 3) {
-        await const MigrationsV3().migrate(this, m);
+        await _runMigrationStep('v3', () => const MigrationsV3().migrate(this, m));
+      }
+      if (from < 4) {
+        await _runMigrationStep('v4', () => const MigrationsV4().migrate(this, m));
       }
     },
   );
+
+  Future<void> _runMigrationStep(String name, Future<void> Function() action) async {
+    await action();
+    logger.logInfo(
+      'DB migration completed: $name',
+      additionalTags: const ['database', 'migration'],
+    );
+  }
 }

@@ -1,4 +1,4 @@
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 
 /// {@template ExcludedRoutes_state}
 /// State representation for ExcludedRoutes-related operations.
@@ -35,13 +35,19 @@ sealed class ExcludedRoutesState {
     required List<String> excludedRoutes,
     required List<String> initialExcludedRoutes,
     required bool hasInvalidRoutes,
-    required PresentationError exception,
+    required PresentationException exception,
   }) = _ErrorExcludedRoutesState;
 
-  PresentationError? get error =>
+  PresentationException? get error =>
       this is _ErrorExcludedRoutesState ? (this as _ErrorExcludedRoutesState).exception : null;
 
   bool get loading => this is _LoadingExcludedRoutesState;
+
+  @override
+  String toString() =>
+      'ExcludedRoutesState(type: $runtimeType, '
+      'excludedRoutes: $excludedRoutes, initialExcludedRoutes: $initialExcludedRoutes, '
+      'hasInvalidRoutes: $hasInvalidRoutes, loading: $loading)';
 }
 
 final class _IdleExcludedRoutesState extends ExcludedRoutesState {
@@ -70,7 +76,7 @@ final class _LoadingExcludedRoutesState extends ExcludedRoutesState {
 }
 
 final class _ErrorExcludedRoutesState extends ExcludedRoutesState {
-  final PresentationError exception;
+  final PresentationException exception;
 
   const _ErrorExcludedRoutesState({
     required super.excludedRoutes,
