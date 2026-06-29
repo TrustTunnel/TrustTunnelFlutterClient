@@ -3,9 +3,7 @@ import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/utils/url_utils.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/app_logging_screen.dart';
-import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/excluded_routes_screen.dart';
-import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/widgets/download_app_logs_tile.dart';
 import 'package:trusttunnel/feature/settings/settings_about/about_screen.dart';
@@ -20,39 +18,35 @@ class SettingsScreen extends StatelessWidget {
     appBar: CustomAppBar(
       title: context.ln.settings,
     ),
-    body: LogsManagerScope(
-      child: Builder(
-        builder: (context) => ListView(
-          children: [
-            CustomArrowListTile(
-              title: context.ln.connectionLog,
-              onTap: () => _pushQueryLogScreen(context),
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.appLogging,
-              onTap: () => _pushAppLoggingScreen(context),
-            ),
-            const Divider(),
-            const DownloadAppLogsTile(),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.excludedRoutes,
-              onTap: () => _pushExcludedRoutesScreen(context),
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.followUsOnGithub,
-              onTap: _openGithubOrganization,
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.about,
-              onTap: () => _pushAboutScreen(context),
-            ),
-          ],
+    body: ListView(
+      children: [
+        CustomArrowListTile(
+          title: context.ln.connectionLog,
+          onTap: () => _pushQueryLogScreen(context),
         ),
-      ),
+        const Divider(),
+        CustomArrowListTile(
+          title: context.ln.appLogging,
+          onTap: () => _pushAppLoggingScreen(context),
+        ),
+        const Divider(),
+        const DownloadAppLogsTile(),
+        const Divider(),
+        CustomArrowListTile(
+          title: context.ln.excludedRoutes,
+          onTap: () => _pushExcludedRoutesScreen(context),
+        ),
+        const Divider(),
+        CustomArrowListTile(
+          title: context.ln.followUsOnGithub,
+          onTap: _openGithubOrganization,
+        ),
+        const Divider(),
+        CustomArrowListTile(
+          title: context.ln.about,
+          onTap: () => _pushAboutScreen(context),
+        ),
+      ],
     ),
   );
 
@@ -61,14 +55,7 @@ class SettingsScreen extends StatelessWidget {
   );
 
   void _pushAppLoggingScreen(BuildContext context) => context.push(
-    LogsManagerProvider(
-      controller: LogsManagerScope.controllerOf(
-        context,
-      ),
-      child: const AppLoggingScope(
-        child: AppLoggingScreen(),
-      ),
-    ),
+    const AppLoggingScreen(),
   );
 
   void _pushExcludedRoutesScreen(BuildContext context) => context.push(
