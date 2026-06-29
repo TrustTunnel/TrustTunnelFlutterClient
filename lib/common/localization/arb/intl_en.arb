@@ -158,5 +158,29 @@
   "exitDialogTitle": "Quit TrustTunnel?",
   "exitDialogDescription": "This will disconnect you from the active server",
   "quit": "Quit",
-  "dontQuit": "Don’t quit"
+  "dontQuit": "Don’t quit",
+  "trayStatus": "Status: {status}",
+  "@trayStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "trayStatusConnected": "Connected",
+  "trayStatusConnecting": "Connecting...",
+  "trayStatusDisconnected": "Disconnected",
+  "connect": "Connect",
+  "disconnect": "Disconnect",
+  "connectTo": "Connect to",
+  "logging": "Logging",
+  "otherServers": "Other servers",
+  "trayQuitApp": "Quit {appName}",
+  "@trayQuitApp": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  }
 }
