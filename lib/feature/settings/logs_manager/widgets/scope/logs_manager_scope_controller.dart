@@ -5,6 +5,7 @@ abstract class LogsManagerScopeController {
 
   abstract final void Function({
     ValueChanged<String>? onArchiveReady,
+    VoidCallback? onCanceled,
     VoidCallback? onError,
   })
   exportLogs;

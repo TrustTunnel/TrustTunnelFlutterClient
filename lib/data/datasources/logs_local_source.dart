@@ -18,6 +18,7 @@ abstract class LogsLocalSource {
   Future<String> saveRawFile({
     required Uint8List data,
     required String path,
+    bool temporary = true,
   });
 
   Future<void> deleteLogs();
