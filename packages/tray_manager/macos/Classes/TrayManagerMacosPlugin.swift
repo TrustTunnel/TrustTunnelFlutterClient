@@ -136,6 +136,9 @@ public class TrayManagerMacosPlugin: NSObject, FlutterPlugin {
   private var trayIconPng: Data?
   private var isTrayIconMonochrome: Bool = false
 
+  private static let trayIconSize = NSSize(width: 18, height: 18)
+  private static let menuItemIconSize = NSSize(width: 16, height: 16)
+
   private static let codec = FlutterStandardMessageCodec.sharedInstance()
 
   private static let trayApiPrefix = "tray_manager/trayApi/"
@@ -277,8 +280,12 @@ public class TrayManagerMacosPlugin: NSObject, FlutterPlugin {
     DispatchQueue.main.async {
       guard let button = self.statusItem?.button else { return }
 
-      if let iconData = self.trayIconPng, let image = NSImage(data: iconData) {
-        image.isTemplate = self.isTrayIconMonochrome
+      if let iconData = self.trayIconPng,
+        let image = self.makeTrayIconImage(
+          from: iconData,
+          isTemplate: self.isTrayIconMonochrome
+        )
+      {
         button.image = image
       } else {
         button.image = self.defaultTrayIcon()
@@ -288,14 +295,42 @@ public class TrayManagerMacosPlugin: NSObject, FlutterPlugin {
   }
 
   private func defaultTrayIcon() -> NSImage? {
+    let image: NSImage?
     if #available(macOS 11.0, *) {
-      return NSImage(
+      image = NSImage(
         systemSymbolName: "shield.lefthalf.filled",
         accessibilityDescription: "TrustTunnel"
       )
     } else {
-      return NSImage(named: NSImage.applicationIconName)
+      image = NSImage(named: NSImage.applicationIconName)
     }
+
+    image?.size = Self.trayIconSize
+    return image
+  }
+
+  private func makeTrayIconImage(from data: Data, isTemplate: Bool) -> NSImage? {
+    makeImage(
+      from: data,
+      size: Self.trayIconSize,
+      isTemplate: isTemplate
+    )
+  }
+
+  private func makeMenuItemImage(from data: Data, isTemplate: Bool) -> NSImage? {
+    makeImage(
+      from: data,
+      size: Self.menuItemIconSize,
+      isTemplate: isTemplate
+    )
+  }
+
+  private func makeImage(from data: Data, size: NSSize, isTemplate: Bool) -> NSImage? {
+    guard let image = NSImage(data: data) else { return nil }
+
+    image.size = size
+    image.isTemplate = isTemplate
+    return image
   }
 
   private func disposeTray() {
@@ -324,8 +359,12 @@ public class TrayManagerMacosPlugin: NSObject, FlutterPlugin {
 
       if let button = item.button {
         // Apply icon that was set via setTrayIcon before initTray
-        if let iconData = self.trayIconPng, let image = NSImage(data: iconData) {
-          image.isTemplate = self.isTrayIconMonochrome
+        if let iconData = self.trayIconPng,
+          let image = self.makeTrayIconImage(
+            from: iconData,
+            isTemplate: self.isTrayIconMonochrome
+          )
+        {
           button.image = image
         } else {
           button.image = self.defaultTrayIcon()
@@ -428,8 +467,12 @@ public class TrayManagerMacosPlugin: NSObject, FlutterPlugin {
     existing.isEnabled = desired.isEnabled ?? true
     existing.state = desired.isChecked ? .on : .off
 
-    if let iconData = desired.iconPng, let image = NSImage(data: iconData) {
-      image.isTemplate = desired.isMonochrome
+    if let iconData = desired.iconPng,
+      let image = makeMenuItemImage(
+        from: iconData,
+        isTemplate: desired.isMonochrome
+      )
+    {
       existing.image = image
     } else {
       existing.image = nil
@@ -491,8 +534,12 @@ public class TrayManagerMacosPlugin: NSObject, FlutterPlugin {
     nsItem.isEnabled = item.isEnabled ?? true
     nsItem.state = item.isChecked ? .on : .off
 
-    if let iconData = item.iconPng, let image = NSImage(data: iconData) {
-      image.isTemplate = item.isMonochrome
+    if let iconData = item.iconPng,
+      let image = makeMenuItemImage(
+        from: iconData,
+        isTemplate: item.isMonochrome
+      )
+    {
       nsItem.image = image
     }
 
