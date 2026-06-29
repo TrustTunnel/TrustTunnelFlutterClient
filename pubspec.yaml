@@ -12,6 +12,8 @@ environment:
 dependencies:
   adg_share:
     path: packages/adg_share
+  downloads_directory_provider:
+    path: packages/downloads_directory_provider
   adguard_logger:
     git:
       url: https://github.com/AdguardTeam/adguard-dart-logger

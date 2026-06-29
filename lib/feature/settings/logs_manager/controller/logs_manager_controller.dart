@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/foundation.dart';
+import 'package:downloads_directory_provider/downloads_directory_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
@@ -11,13 +12,16 @@ import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manage
 
 final class LogsManagerController extends BaseStateController<LogsManagerState> with SequentialControllerHandler {
   final ExportLogsRepository _repository;
+  final DownloadsDirectorySource _downloadsSource;
   final ShareClient _shareClient;
 
   LogsManagerController({
     required ExportLogsRepository repository,
+    DownloadsDirectorySource downloadsSource = const DownloadsDirectorySourceImpl(),
     ShareClient shareClient = const AdgShare(),
     super.initialState = const LogsManagerState.initial(),
   }) : _repository = repository,
+       _downloadsSource = downloadsSource,
        _shareClient = shareClient;
 
   void export({
@@ -30,9 +34,16 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       );
 
       final archive = await _repository.createArchive();
-      final downloadDir = await _getDownloadsDirectory();
-      final downloadPath = '${downloadDir.path}${Platform.pathSeparator}${archive.name}';
 
+      final shareableDir = await getTemporaryDirectory();
+      final shareablePath = '${shareableDir.path}${Platform.pathSeparator}${archive.name}';
+      await _repository.saveRawFile(
+        data: archive.data,
+        path: shareablePath,
+      );
+
+      final downloadDir = await _downloadsSource.getDirectory();
+      final downloadPath = '${downloadDir.path}${Platform.pathSeparator}${archive.name}';
       await _repository.saveRawFile(
         data: archive.data,
         path: downloadPath,
@@ -41,7 +52,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       setState(
         const LogsManagerState.idle(),
       );
-      onArchiveReady?.call(downloadPath);
+      onArchiveReady?.call(shareablePath);
     },
     errorHandler: (error, stackTrace) {
       onError?.call();
@@ -113,22 +124,6 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
     errorHandler: _onError,
     completionHandler: _onCompleted,
   );
-
-  Future<Directory> _getDownloadsDirectory() async {
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return getApplicationDocumentsDirectory();
-    }
-
-    final directory = await getDownloadsDirectory();
-
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      final externalStorageDir = await getExternalStorageDirectory();
-
-      return directory ?? externalStorageDir ?? getTemporaryDirectory();
-    }
-
-    return directory ?? getTemporaryDirectory();
-  }
 
   void _onError(Object? error, StackTrace? stackTrace) => setState(
     LogsManagerState.error(
