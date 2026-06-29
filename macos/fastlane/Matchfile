@@ -1,0 +1,5 @@
+# Type-specific settings (type, git_branch) are passed by lanes in Fastfile.
+
+team_id(ENV.fetch('TEAM_ID'))
+platform("macos")
+app_identifier(ENV.fetch('APP_IDENTIFIERS').split(',').map(&:strip))

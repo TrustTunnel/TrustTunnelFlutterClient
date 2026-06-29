@@ -126,6 +126,23 @@ jobs:
       artifact-name: TrustTunnel.app.zip
       artifact-path: ios/build//TrustTunnel.app.zip
 
+  build-macos-appstore:
+    needs: [meta, build-number]
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      platform: macos
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      channel: ${{ needs.meta.outputs.release-channel }}
+      macos-signing-type: appstore
+      artifact-name: trusttunnel-macos-appstore
+      artifact-path: |
+        macos/build/TrustTunnel.pkg
+        macos/build/AppStoreInfo.plist
+      release: ${{ needs.meta.outputs.release }}
+
   deploy-testflight:
     needs: [meta, build-ios, changelog-public]
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
@@ -161,8 +178,44 @@ jobs:
       note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag || github.ref_name }}'
       environment: ${{ needs.meta.outputs.release-channel }}-appetize
 
+  deploy-macos-testflight:
+    needs: [meta, build-macos-appstore, changelog-public]
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
+    with:
+      team: flutter
+      asset-artifact-name: trusttunnel-macos-appstore
+      changelog-artifact-name: changelog
+      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
+      distribute-external: true
+      submit-beta-review: false
+      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+
+  build-macos-developer-id:
+    needs: [meta, build-number]
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      platform: macos
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      channel: ${{ needs.meta.outputs.release-channel }}
+      macos-signing-type: developer_id
+      artifact-name: trusttunnel-macos-dmg
+      artifact-path: macos/build/TrustTunnel.dmg
+      release: ${{ needs.meta.outputs.release }}
+
+  deploy-macos-ak:
+    needs: [meta, build-macos-developer-id]
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-ak-generic.yml@master
+    with:
+      team: mac
+      ak-repo: ${{ needs.meta.outputs.release-channel == 'release' && 'apple-bin' || 'apple-bin-dev' }}
+      artifact-pattern: trusttunnel-macos-dmg
+    secrets: inherit
+
   notify-slack:
-    needs: [meta, build-android, build-ios, build-simulator]
+    needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore, build-macos-developer-id]
     if: github.event_name == 'push' || inputs.slack-channel != ''
     uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
     with:

@@ -1,0 +1,125 @@
+ensure_bundle_exec
+
+
+lane :build_macos_app do |options|
+    type = options[:type]
+
+    # ── signing configuration per type ──────────────────────────
+    #   appstore      → Apple Distribution   (Mac App Store / TestFlight)
+    #   developer_id  → Developer ID Application (direct distribution)
+    #   development   → Apple Development    (local/CI testing)
+    # ─────────────────────────────────────────────────────────────
+
+    app_store_connect_api_key unless type == "development"
+
+    signing_config = {
+        "appstore"     => { match: "AppStore",     identity: "Apple Distribution" },
+        "developer_id" => { match: "DeveloperId",  identity: "Developer ID Application" },
+        "development"  => { match: "Development",  identity: "Apple Development" },
+    }
+
+    config = signing_config.fetch(type) do
+      UI.user_error!("Unknown signing type: #{type}. Expected: appstore, developer_id, development")
+    end
+
+    signing_targets = ENV.fetch('SIGNING_TARGETS').split(',').map { |pair| pair.split(':', 2) }
+
+    signing_targets.each do |target_name, bundle_id|
+      update_code_signing_settings(
+        path: "Runner.xcodeproj",
+        use_automatic_signing: false,
+        team_id: ENV.fetch('TEAM_ID'),
+        code_sign_identity: config[:identity],
+        profile_name: "match #{config[:match]} #{bundle_id}",
+        targets: [target_name],
+        build_configurations: ["Release"]
+      )
+    end
+
+    if ENV['MATCH_KEYCHAIN_NAME'] && !ENV['MATCH_KEYCHAIN_NAME'].empty?
+      unlock_keychain(
+        path: ENV['MATCH_KEYCHAIN_NAME'],
+        password: ENV.fetch('MATCH_KEYCHAIN_PASSWORD', ''),
+        add_to_search_list: true,
+        set_default: false
+      )
+    end
+
+    export_methods = {
+        "appstore"     => "app-store",
+        "developer_id" => "developer-id",
+        "development"  => "development",
+    }
+
+    build_mac_app(
+        scheme: ENV['CUSTOM_FASTLANE_SCHEMA'],
+        output_directory: ENV['FASTLANE_BUILD_DIRECTORY'],
+        output_name: "#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app",
+        include_symbols: true,
+        archive_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.xcarchive",
+        derived_data_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/derived_data",
+        buildlog_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/logs",
+        build_path: ENV['FASTLANE_BUILD_DIRECTORY'],
+        export_method: export_methods.fetch(type),
+        export_options: type == "appstore" ? {
+            manageAppVersionAndBuildNumber: true,
+            generateAppStoreInformation: true
+        } : {}
+    )
+end
+
+lane :package_dmg do |options|
+    app_path = "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app"
+    dmg_path = "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.dmg"
+
+    sh("hdiutil", "create",
+       "-volname", ENV['CUSTOM_FASTLANE_BUILD_NAME'],
+       "-srcfolder", app_path,
+       "-ov", "-format", "UDZO", dmg_path)
+end
+
+lane :notarize_dmg do |options|
+    dmg_path = "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.dmg"
+
+    notarize(
+      path: dmg_path,
+      bundle_id: ENV.fetch('APP_IDENTIFIERS').split(',').first,
+      print_log: true,
+      verbose: true,
+    )
+end
+
+lane :package_pkg do
+    app_path = "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app"
+    pkg_path = "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.pkg"
+
+    sh("productbuild",
+       "--component", app_path, "/Applications",
+       pkg_path)
+
+    UI.success("Pkg created: #{pkg_path}")
+end
+
+lane :build_and_package do |options|
+    type = options[:type] || "development"
+
+    build_macos_app(type: type)
+
+    case type
+    when "appstore"
+      package_pkg
+      UI.success("App Store build complete → #{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.pkg")
+
+    when "developer_id"
+      package_dmg
+      notarize_dmg
+      UI.success("Developer ID build complete → #{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.dmg")
+
+    when "development"
+      zip(
+        path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app",
+        output_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app.zip"
+      )
+      UI.success("Development build complete → #{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app.zip")
+    end
+end

@@ -6,7 +6,7 @@ on:
       platform:
         type: string
         required: true
-        description: 'android or ios'
+        description: 'android, ios or macos'
       vault-role:
         type: string
         default: 'trusttunnel-app'
@@ -51,6 +51,10 @@ on:
         type: string
         default: ''
         description: 'Release identifier (e.g. "1.2")'
+      macos-signing-type:
+        type: string
+        default: 'development'
+        description: 'macOS signing type: development, developer_id, appstore'
 
 permissions:
   contents: read
@@ -225,6 +229,90 @@ jobs:
           else
             bundle exec fastlane build_ipa type:"${{ inputs.signing-type }}"
           fi
+          cd ..
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: error
+
+  build-macos:
+    needs: [resolve-runner]
+    if: inputs.platform == 'macos'
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-7168
+      - ephemeral-limit-cpu-4
+      - ephemeral-limit-disk-gb-20
+    defaults:
+      run:
+        shell: bash
+    env:
+      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Apply PR overrides
+        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Prepare Ruby environment
+        run: |
+          set -euo pipefail
+          set -x
+          eval "$(rbenv init - bash)"
+          rbenv install 3.3.10 --skip-existing
+          rbenv local 3.3.10
+          rbenv rehash
+          printf '%s\n' "$HOME/.rbenv/bin" "$HOME/.rbenv/shims" >> "$GITHUB_PATH"
+          gem install bundler -v 2.7.2
+          rbenv rehash
+          export BUNDLER_VERSION=2.7.2
+          cd macos
+          bundle config set --local path '.bundle/vendor'
+          bundle install
+          cd ..
+
+      - name: Flutter pub get and code generation
+        run: |
+          set -euo pipefail
+          make init
+
+      - name: Pod install
+        run: |
+          set -euo pipefail
+          cd macos
+          bundle exec pod install --repo-update
+          cd ..
+
+      - name: Load signing env
+        run: |
+          grep -vE '^\s*(#|$)' "macos/fastlane/.env" >> "$GITHUB_ENV"
+
+      - name: Sync macOS signing assets
+        id: signing
+        uses: AdGuardSoftwareLimited/apple-devices/.github/actions/match-sync@master
+        with:
+          vault_url: ${{ vars.VAULT_URL }}
+          type: ${{ inputs.macos-signing-type }}
+          app_id: ${{ env.APP_IDENTIFIERS }}
+          keychain_name: ci-signing
+          readonly: 'true'
+          platform: macos
+          additional_cert_types: ${{ inputs.macos-signing-type == 'appstore' && 'mac_installer_distribution' || '' }}
+
+      - name: Build macOS with Fastlane
+        env:
+          MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
+          MATCH_KEYCHAIN_PASSWORD: ${{ steps.signing.outputs.keychain_password }}
+        run: |
+          set -euo pipefail
+          cd macos
+          bundle exec fastlane build_and_package type:"${{ inputs.macos-signing-type }}"
           cd ..
 
       - name: Upload build artifact
