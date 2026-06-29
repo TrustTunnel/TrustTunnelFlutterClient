@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:adg_share/adg_share.dart';
-import 'package:flutter/foundation.dart';
 import 'package:downloads_directory_provider/downloads_directory_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
