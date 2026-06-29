@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope_controller.dart';
 import 'package:trusttunnel/widgets/common/custom_arrow_list_tile.dart';
@@ -33,6 +34,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     _controller.exportLogs(
       onArchiveReady: _showArchiveReadySnackBar,
       onError: _onExportLogsError,
+      onCancelled: () => context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar),
     );
 
     context.showInfoSnackBar(
@@ -49,7 +51,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
-  void _showArchiveReadySnackBar(String filePath) => context.showInfoSnackBar(
+  void _showArchiveReadySnackBar(ExportLogsArchive archive) => context.showInfoSnackBar(
     message: context.ln.appLogsExportedSnackbar,
     trailingActions: [
       TextButton(
@@ -58,8 +60,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
           _controller.shareLogs(
             subject: context.ln.downloadAppLogs,
             chooserTitle: context.ln.share,
-            filePath: filePath,
-            onDismissed: () => context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar),
+            archive: archive,
             onUnavailable: () => context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar),
           );
         },

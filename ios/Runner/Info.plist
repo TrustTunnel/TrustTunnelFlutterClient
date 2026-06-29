@@ -77,7 +77,7 @@
 	<string>The app need this permission to load files</string>	
 	<key>UIFileSharingEnabled</key>
 	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<key>UISupportsDocumentBrowser</key>
 	<true/>
 </dict>
 </plist>

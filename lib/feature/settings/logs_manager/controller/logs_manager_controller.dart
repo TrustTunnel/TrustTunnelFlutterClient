@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:adg_share/adg_share.dart';
-import 'package:downloads_directory_provider/downloads_directory_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
@@ -9,24 +6,23 @@ import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/data/repository/export_logs_repository.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_state.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
 final class LogsManagerController extends BaseStateController<LogsManagerState> with SequentialControllerHandler {
   final ExportLogsRepository _repository;
-  final DownloadsDirectorySource _downloadsSource;
   final ShareClient _shareClient;
 
   LogsManagerController({
     required ExportLogsRepository repository,
-    DownloadsDirectorySource downloadsSource = const DownloadsDirectorySourceImpl(),
     ShareClient shareClient = const AdgShare(),
     super.initialState = const LogsManagerState.initial(),
   }) : _repository = repository,
-       _downloadsSource = downloadsSource,
        _shareClient = shareClient;
 
   void export({
-    ValueChanged<String>? onArchiveReady,
+    ValueChanged<ExportLogsArchive>? onArchiveReady,
     VoidCallback? onError,
+    VoidCallback? onCancelled,
   }) => handle(
     () async {
       setState(
@@ -35,24 +31,22 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
 
       final archive = await _repository.createArchive();
 
-      final shareableDir = await getTemporaryDirectory();
-      final shareablePath = '${shareableDir.path}${Platform.pathSeparator}${archive.name}';
-      await _repository.saveRawFile(
+      final result = await _repository.pickFilePath(
+        dialogTitle: 'Export app logs and system info',
+        fileName: archive.name,
+        allowedExtensions: ['zip'],
         data: archive.data,
-        path: shareablePath,
       );
 
-      final downloadDir = await _downloadsSource.getDirectory();
-      final downloadPath = '${downloadDir.path}${Platform.pathSeparator}${archive.name}';
-      await _repository.saveRawFile(
-        data: archive.data,
-        path: downloadPath,
-      );
+      if (result != null) {
+        onArchiveReady?.call(archive);
+      } else {
+        onCancelled?.call();
+      }
 
       setState(
         const LogsManagerState.idle(),
       );
-      onArchiveReady?.call(shareablePath);
     },
     errorHandler: (error, stackTrace) {
       onError?.call();
@@ -64,8 +58,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
   void share({
     required String subject,
     required String chooserTitle,
-    required String filePath,
-    VoidCallback? onDismissed,
+    required ExportLogsArchive archive,
     VoidCallback? onUnavailable,
   }) => handle(
     () async {
@@ -73,7 +66,15 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
         const LogsManagerState.loading(),
       );
 
-      final result = await _shareClient.share(
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/${archive.name}';
+
+      await _repository.saveRawFile(
+        data: archive.data,
+        path: filePath,
+      );
+
+      await _shareClient.share(
         ShareRequest(
           content: [
             ShareFile(
@@ -85,19 +86,6 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
           chooserTitle: chooserTitle,
         ),
       );
-
-      switch (result) {
-        case ShareSuccess():
-          setState(const LogsManagerState.idle());
-        case ShareDismissed():
-          setState(const LogsManagerState.idle());
-          onDismissed?.call();
-        case ShareUnavailable():
-          setState(const LogsManagerState.idle());
-          onUnavailable?.call();
-        case ShareFailure(:final error):
-          throw error;
-      }
     },
     errorHandler: (error, stackTrace) {
       onUnavailable?.call();

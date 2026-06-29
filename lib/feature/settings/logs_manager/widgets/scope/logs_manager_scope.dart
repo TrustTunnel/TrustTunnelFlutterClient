@@ -3,6 +3,7 @@ import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_controller.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_state.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope_aspect.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope_controller.dart';
 
@@ -53,24 +54,25 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
   );
 
   void _exportLogs({
-    ValueChanged<String>? onArchiveReady,
+    ValueChanged<ExportLogsArchive>? onArchiveReady,
     VoidCallback? onError,
+    VoidCallback? onCancelled,
   }) => _controller.export(
     onArchiveReady: onArchiveReady,
     onError: onError,
+    onCancelled: onCancelled,
   );
 
   void _shareLogs({
     required String subject,
     required String chooserTitle,
-    required String filePath,
+    required ExportLogsArchive archive,
     VoidCallback? onDismissed,
     VoidCallback? onUnavailable,
   }) => _controller.share(
     subject: subject,
     chooserTitle: chooserTitle,
-    filePath: filePath,
-    onDismissed: onDismissed,
+    archive: archive,
     onUnavailable: onUnavailable,
   );
 
@@ -101,8 +103,9 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
 
   @override
   final void Function({
-    ValueChanged<String>? onArchiveReady,
+    ValueChanged<ExportLogsArchive>? onArchiveReady,
     VoidCallback? onError,
+    VoidCallback? onCancelled,
   })
   exportLogs;
 
@@ -110,8 +113,7 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   final void Function({
     required String subject,
     required String chooserTitle,
-    required String filePath,
-    VoidCallback? onDismissed,
+    required ExportLogsArchive archive,
     VoidCallback? onUnavailable,
   })
   shareLogs;
