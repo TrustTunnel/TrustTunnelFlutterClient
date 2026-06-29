@@ -380,13 +380,11 @@ final class ExcludedRoutesSnapshot {
 final class QueryLogSnapshot {
   final int count;
   final QueryLogTimeRangeSnapshot timeRange;
-  final Map<String, int> actionCounters;
   final List<QueryLogEntrySnapshot>? items;
 
   const QueryLogSnapshot({
     required this.count,
     required this.timeRange,
-    required this.actionCounters,
     required this.items,
   });
 
@@ -394,11 +392,9 @@ final class QueryLogSnapshot {
     List<db.VpnRequest> rows, {
     required bool includeItems,
   }) {
-    final actionCounters = <String, int>{};
     DateTime? from;
     DateTime? to;
     for (final row in rows) {
-      actionCounters.update(row.decision.toString(), (count) => count + 1, ifAbsent: () => 1);
       final date = DateTime.tryParse(row.zonedDateTime);
       if (date == null) {
         continue;
@@ -417,7 +413,6 @@ final class QueryLogSnapshot {
         from: from?.toIso8601String(),
         to: to?.toIso8601String(),
       ),
-      actionCounters: actionCounters,
       items: includeItems ? rows.map(QueryLogEntrySnapshot.fromRow).toList() : null,
     );
   }
@@ -425,7 +420,6 @@ final class QueryLogSnapshot {
   JsonMap toJson() => {
     'count': count,
     'timeRange': timeRange.toJson(),
-    'actionCounters': actionCounters,
     if (items != null) 'items': items!.map((item) => item.toJson()).toList(),
   };
 }
