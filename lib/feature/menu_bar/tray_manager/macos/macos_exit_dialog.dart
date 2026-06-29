@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-enum ExitDialogResult {
+enum MacosExitDialogResult {
   quit,
   dontQuit,
 }
@@ -10,7 +10,7 @@ final class MacosExitDialog {
 
   const MacosExitDialog._();
 
-  static Future<ExitDialogResult> show({
+  static Future<MacosExitDialogResult> show({
     required String title,
     required String message,
     required String quitButtonText,
@@ -27,9 +27,9 @@ final class MacosExitDialog {
         },
       );
 
-      return quit == true ? ExitDialogResult.quit : ExitDialogResult.dontQuit;
+      return quit == true ? MacosExitDialogResult.quit : MacosExitDialogResult.dontQuit;
     } on MissingPluginException {
-      return ExitDialogResult.dontQuit;
+      return MacosExitDialogResult.dontQuit;
     }
   }
 }
