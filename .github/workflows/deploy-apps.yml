@@ -184,7 +184,7 @@ jobs:
     with:
       team: flutter
       asset-artifact-name: trusttunnel-macos-appstore
-      changelog-artifact-name: changelog
+      changelog-artifact-name: changelog.txt
       groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
       distribute-external: true
       submit-beta-review: false

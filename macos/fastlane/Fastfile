@@ -93,8 +93,13 @@ lane :package_pkg do
     app_path = "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app"
     pkg_path = "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.pkg"
 
+    installer_identity = sh("security", "find-identity", "-v", "-p", "macappstore", "|",
+      "grep", "-i", "installer", "|", "head", "-1", "|",
+      "awk", "'{print $2}'").strip
+
     sh("productbuild",
        "--component", app_path, "/Applications",
+       "--sign", installer_identity,
        pkg_path)
 
     UI.success("Pkg created: #{pkg_path}")
