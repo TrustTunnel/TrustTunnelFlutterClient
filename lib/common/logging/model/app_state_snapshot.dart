@@ -259,21 +259,17 @@ final class ServerSnapshot {
 @immutable
 final class CertificateSnapshot {
   final String name;
-  final String data;
 
   const CertificateSnapshot({
     required this.name,
-    required this.data,
   });
 
   factory CertificateSnapshot.fromCertificate(Certificate certificate) => CertificateSnapshot(
     name: certificate.name,
-    data: certificate.data,
   );
 
   JsonMap toJson() => {
     'name': name,
-    'data': data,
   };
 }
 
