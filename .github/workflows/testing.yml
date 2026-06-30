@@ -80,6 +80,6 @@ jobs:
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
-      macos-signing-type: development
+      macos-signing-type: developer_id
       artifact-name: trusttunnel-macos-pr
-      artifact-path: macos/build/TrustTunnel.app.zip
+      artifact-path: macos/build/TrustTunnel.dmg
