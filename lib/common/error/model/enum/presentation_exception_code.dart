@@ -1,0 +1,4 @@
+enum PresentationExceptionCode {
+  unknown,
+  notFound,
+}

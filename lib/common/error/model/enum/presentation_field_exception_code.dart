@@ -1,4 +1,4 @@
-enum PresentationFieldErrorCode {
+enum PresentationFieldExceptionCode {
   fieldWrongValue,
   alreadyExists,
   fieldRequired,

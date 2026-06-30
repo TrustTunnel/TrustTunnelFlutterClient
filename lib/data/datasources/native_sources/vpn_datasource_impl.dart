@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:trusttunnel/common/extensions/model_extensions.dart';
+import 'package:trusttunnel/common/logging/extensions/vpn_logger_extension.dart';
 import 'package:trusttunnel/common/utils/upstream_protocol_encoder.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
@@ -9,6 +11,7 @@ import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
+import 'package:trusttunnel/data/model/vpn_logging_payload.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/vpn/domain/services/vpn_log_converter.dart';
 import 'package:vpn_plugin/models/configuration.dart';
@@ -37,7 +40,37 @@ class VpnDataSourceImpl implements VpnDataSource {
   /// {@macro vpn_data_source_impl}
   VpnDataSourceImpl({
     required VpnPlugin vpnPlugin,
-  }) : _platformApi = vpnPlugin;
+  }) : _platformApi = vpnPlugin {
+    final platformStates = _platformApi.states;
+    final platformQueryLog = _platformApi.queryLog;
+    
+    _loggingVpnObserver = logger.extension<VpnLoggerExtension>();
+
+    final vpnState = platformStates.transform(
+      StreamTransformer<p.VpnManagerState, VpnState>.fromHandlers(
+        handleData: (data, sink) => sink.add(VpnStateFromApi.parse(data)),
+        handleDone: (sink) async {
+          await _platformApi.stop();
+          sink
+            ..add(VpnState.disconnected)
+            ..close();
+        },
+      ),
+    );
+    final vpnLogs = platformQueryLog.transform(
+      StreamTransformer<QueryLogRow, VpnLog>.fromHandlers(
+        handleData: (data, sink) => sink.add(VpnLogConverter().convert(data)),
+        handleDone: (sink) => sink.close(),
+      ),
+    );
+
+    _vpnState = _loggingVpnObserver?.observeStateStream(vpnState) ?? vpnState;
+    _vpnLogs = _loggingVpnObserver?.observeQueryLogStream(vpnLogs) ?? vpnLogs;
+  }
+
+  late final VpnLoggerExtension? _loggingVpnObserver;
+  late final Stream<VpnState> _vpnState;
+  late final Stream<VpnLog> _vpnLogs;
 
   /// {@macro vpn_data_source_state_stream}
   ///
@@ -45,33 +78,13 @@ class VpnDataSourceImpl implements VpnDataSource {
   /// state stream completes, the VPN is explicitly stopped and a final
   /// [VpnState.disconnected] value is emitted before closing the stream.
   @override
-  Stream<VpnState> get vpnState => _platformApi.states.transform(
-    StreamTransformer<p.VpnManagerState, VpnState>.fromHandlers(
-      handleData: (data, sink) => sink.add(
-        VpnStateFromApi.parse(data),
-      ),
-      handleDone: (sink) async {
-        await _platformApi.stop();
-        sink.add(VpnState.disconnected);
-        sink.close();
-      },
-    ),
-  );
+  Stream<VpnState> get vpnState => _vpnState;
 
   /// {@macro vpn_data_source_logs_stream}
   ///
   /// Platform log rows are converted into domain [VpnLog] entries.
   @override
-  Stream<VpnLog> get vpnLogs => _platformApi.queryLog.transform(
-    StreamTransformer<QueryLogRow, VpnLog>.fromHandlers(
-      handleData: (data, sink) => sink.add(
-        VpnLogConverter().convert(data),
-      ),
-      handleDone: (sink) {
-        sink.close();
-      },
-    ),
-  );
+  Stream<VpnLog> get vpnLogs => _vpnLogs;
 
   /// {@macro vpn_data_source_start}
   ///
@@ -84,7 +97,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
-  }) {
+  }) async {
     final exclusions = _getExclusionsByMode(routingProfile);
 
     final endPoint = Endpoint(
@@ -106,7 +119,7 @@ class VpnDataSourceImpl implements VpnDataSource {
       ),
     );
 
-    return _platformApi.start(
+    Future<void> command() => _platformApi.start(
       configuration: Configuration(
         vpnMode: VpnModeEncoder().convert(
           routingProfile.defaultMode,
@@ -118,20 +131,40 @@ class VpnDataSourceImpl implements VpnDataSource {
         socks: const Socks(),
       ),
     );
+
+    if (_loggingVpnObserver != null) {
+      await _loggingVpnObserver.runCommand(
+        'start',
+        command,
+        payloadBuilder: () => VpnLoggingPayload.fromModels(
+          server: server,
+          routingProfile: routingProfile,
+          excludedRoutes: excludedRoutes,
+        ).toJson(),
+      );
+
+      return;
+    }
+
+    await command();
   }
 
   /// {@macro vpn_data_source_stop}
   @override
-  Future<void> stop() => _platformApi.stop();
+  Future<void> stop() => _loggingVpnObserver?.runCommand('stop', _platformApi.stop) ?? _platformApi.stop();
 
   /// {@macro vpn_data_source_request_state}
   ///
   /// The platform state is converted into a domain [VpnState].
   @override
   Future<VpnState> requestState() async {
-    final state = await _platformApi.getCurrentState();
+    Future<VpnState> command() async {
+      final state = await _platformApi.getCurrentState();
 
-    return VpnStateFromApi.parse(state);
+      return VpnStateFromApi.parse(state);
+    }
+
+    return _loggingVpnObserver?.runCommandWithResult('requestState', command) ?? command();
   }
 
   @override
@@ -139,7 +172,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
-  }) {
+  }) async {
     final exclusions = _getExclusionsByMode(routingProfile);
 
     final endPoint = Endpoint(
@@ -161,7 +194,7 @@ class VpnDataSourceImpl implements VpnDataSource {
       clientRandom: server.tlsPrefix ?? '',
     );
 
-    return _platformApi.updateConfiguration(
+    Future<void> command() => _platformApi.updateConfiguration(
       configuration: Configuration(
         vpnMode: VpnModeEncoder().convert(
           routingProfile.defaultMode,
@@ -173,10 +206,31 @@ class VpnDataSourceImpl implements VpnDataSource {
         socks: const Socks(),
       ),
     );
+
+    if (_loggingVpnObserver != null) {
+      await _loggingVpnObserver.runCommand(
+        'updateConfiguration',
+        command,
+        payloadBuilder: () => VpnLoggingPayload.fromModels(
+          server: server,
+          routingProfile: routingProfile,
+          excludedRoutes: excludedRoutes,
+        ).toJson(),
+      );
+
+      return;
+    }
+
+    await command();
   }
 
   @override
-  Future<void> deleteConfiguration() => _platformApi.updateConfiguration(configuration: null);
+  Future<void> deleteConfiguration() =>
+      _loggingVpnObserver?.runCommand(
+        'deleteConfiguration',
+        () => _platformApi.updateConfiguration(configuration: null),
+      ) ??
+      _platformApi.updateConfiguration(configuration: null);
 
   /// Computes the effective exclusion list based on routing mode.
   ///
@@ -200,6 +254,7 @@ class VpnDataSourceImpl implements VpnDataSource {
 
       if (domainValue == null) {
         parsedAddresses.add(exclusion);
+
         continue;
       }
 

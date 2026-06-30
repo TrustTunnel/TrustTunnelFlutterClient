@@ -1,4 +1,4 @@
-import 'package:trusttunnel/common/error/model/enum/presentation_field_error_code.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_exception_code.dart';
 import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
@@ -26,12 +26,12 @@ abstract class RoutingService {
   }
 
   static PresentationField _getRequiredField(PresentationFieldName fieldName) => PresentationField(
-    code: PresentationFieldErrorCode.fieldRequired,
+    code: PresentationFieldExceptionCode.fieldRequired,
     fieldName: fieldName,
   );
 
   static PresentationField _getAlreadyExistsField(PresentationFieldName fieldName) => PresentationField(
-    code: PresentationFieldErrorCode.alreadyExists,
+    code: PresentationFieldExceptionCode.alreadyExists,
     fieldName: fieldName,
   );
 }

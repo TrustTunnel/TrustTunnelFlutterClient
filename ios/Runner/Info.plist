@@ -75,5 +75,9 @@
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>The app need this permission to load files</string>	
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
 </dict>
 </plist>

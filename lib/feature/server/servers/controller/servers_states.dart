@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/model/server.dart';
 
 /// {@template Servers_state}
@@ -27,15 +27,19 @@ sealed class ServersState {
   /// Error state
   const factory ServersState.exception({
     required List<Server> servers,
-    required PresentationError exception,
+    required PresentationException exception,
   }) = _ErrorServersState;
 
   Server? get selectedServer => servers.firstWhereOrNull((e) => e.serverData.selected);
 
-
-  PresentationError? get error => this is _ErrorServersState ? (this as _ErrorServersState).error : null;
+  PresentationException? get error => this is _ErrorServersState ? (this as _ErrorServersState).error : null;
 
   bool get loading => this is _LoadingServersState;
+
+  @override
+  String toString() =>
+      'ServersState(type: $runtimeType, '
+      'count: ${servers.length}, selectedId: ${selectedServer?.id}, loading: $loading)';
 }
 
 final class _IdleServersState extends ServersState {
@@ -58,7 +62,7 @@ final class _LoadingServersState extends ServersState {
 }
 
 final class _ErrorServersState extends ServersState {
-  final PresentationError exception;
+  final PresentationException exception;
 
   const _ErrorServersState({
     required super.servers,

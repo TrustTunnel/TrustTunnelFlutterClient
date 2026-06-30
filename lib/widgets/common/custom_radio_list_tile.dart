@@ -13,8 +13,10 @@ class CustomRadioListTile<T> extends StatelessWidget {
   final String? error;
   final IconData? iconPath;
   final Color? iconColor;
+  final Color? radioColor;
   final ValueChanged<T?>? onChanged;
   final bool enabled;
+
   const CustomRadioListTile({
     super.key,
     required this.value,
@@ -27,6 +29,7 @@ class CustomRadioListTile<T> extends StatelessWidget {
     this.enabled = true,
     this.iconColor,
     this.titleColor,
+    this.radioColor,
   }) : titleWidget = null;
 
   const CustomRadioListTile.titleWidget({
@@ -41,6 +44,7 @@ class CustomRadioListTile<T> extends StatelessWidget {
     this.enabled = true,
     this.iconColor,
     this.titleColor,
+    this.radioColor,
   }) : title = null;
 
   @override
@@ -51,7 +55,7 @@ class CustomRadioListTile<T> extends StatelessWidget {
       color: titleColor ?? (gestureEnabled ? null : context.colors.neutralLight),
     );
     final bodyTextStyle = context.textTheme.bodyMedium?.copyWith(
-      color: gestureEnabled ? null : context.colors.neutralLight,
+      color: gestureEnabled ? context.colors.neutralLight : context.colors.neutralLightDisabled,
     );
 
     return InkWell(
@@ -65,6 +69,7 @@ class CustomRadioListTile<T> extends StatelessWidget {
               CustomRadio<T>(
                 value: value,
                 groupValue: groupValue,
+                activeColor: radioColor,
                 onChanged: onChanged != null ? (_) => onChanged?.call(value) : null,
               ),
               const SizedBox(width: 12),

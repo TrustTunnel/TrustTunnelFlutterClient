@@ -18,6 +18,7 @@ class PopUpRoute<T> extends CustomPageRoute<T> {
   PopUpRoute({
     required WidgetBuilder builder,
     required BuildContext context,
+    super.settings,
     bool fullScreenDialog = true,
     Duration? transitionDuration,
     Duration? reverseTransitionDuration,

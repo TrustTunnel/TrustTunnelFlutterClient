@@ -5,6 +5,7 @@ import 'package:trusttunnel/widgets/buttons/custom_icon_button.dart';
 
 class CustomSnackBar extends SnackBar {
   final bool _showCloseIcon;
+  final List<Widget> _trailingActions;
 
   const CustomSnackBar({
     super.key,
@@ -16,8 +17,10 @@ class CustomSnackBar extends SnackBar {
     super.elevation,
     super.margin,
     super.shape,
+    List<Widget> trailingActions = const [],
     bool showCloseIcon = false,
-  }) : _showCloseIcon = showCloseIcon;
+  }) : _showCloseIcon = showCloseIcon,
+       _trailingActions = trailingActions;
 
   @override
   Color? get backgroundColor => Colors.transparent;
@@ -42,7 +45,7 @@ class CustomSnackBar extends SnackBar {
           padding: EdgeInsets.only(
             left: 16,
             top: 14,
-            right: _showCloseIcon ? 0 : 16,
+            right: _showCloseIcon || _trailingActions.isNotEmpty ? 0 : 16,
             bottom: 14,
           ),
           child: super.content,
@@ -54,30 +57,22 @@ class CustomSnackBar extends SnackBar {
           elevation: snackBarTheme.elevation ?? 0,
           textStyle: snackBarTheme.contentTextStyle,
           shadowColor: context.theme.shadowColor,
-
           child: Row(
             children: [
               Expanded(
                 child: content,
               ),
+              if (_trailingActions.isNotEmpty)
+                Theme(
+                  data: _getActionTheme(context),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _trailingActions,
+                  ),
+                ),
               if (_showCloseIcon)
                 Theme(
-                  data: context.theme.copyWith(
-                    hoverColor: Colors.transparent,
-                    splashColor: Colors.transparent,
-                    disabledColor: Colors.transparent,
-                    focusColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    // TODO: Fix hover color
-                    // Konstantin Gorynin <k.gorynin@adguard.com>, 15 October 2025
-                    iconButtonTheme: const IconButtonThemeData(
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll(
-                          Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
+                  data: _getActionTheme(context),
                   child: CustomIconButton(
                     icon: AssetIcons.close,
                     color: snackBarTheme.closeIconColor,
@@ -99,4 +94,21 @@ class CustomSnackBar extends SnackBar {
 
   @override
   double? get elevation => 0;
+
+  ThemeData _getActionTheme(BuildContext context) => context.theme.copyWith(
+    hoverColor: Colors.transparent,
+    splashColor: Colors.transparent,
+    disabledColor: Colors.transparent,
+    focusColor: Colors.transparent,
+    highlightColor: Colors.transparent,
+    // TODO: Fix hover color
+    // Konstantin Gorynin <k.gorynin@adguard.com>, 15 October 2025
+    iconButtonTheme: const IconButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStatePropertyAll(
+          Colors.transparent,
+        ),
+      ),
+    ),
+  );
 }

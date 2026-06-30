@@ -1,4 +1,4 @@
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
@@ -46,11 +46,11 @@ sealed class ServerDetailsState {
     required ServerData data,
     required ServerData initialData,
     required List<PresentationField> fieldErrors,
-    required PresentationError exception,
+    required PresentationException exception,
     required List<RoutingProfile> routingProfiles,
   }) = _ErrorServerDetailState;
 
-  PresentationError? get error => this is _ErrorServerDetailState ? (this as _ErrorServerDetailState).error : null;
+  PresentationException? get error => this is _ErrorServerDetailState ? (this as _ErrorServerDetailState).error : null;
 
   bool get loading => this is _LoadingServerDetailState;
 
@@ -64,6 +64,12 @@ sealed class ServerDetailsState {
     error,
     loading,
   ]);
+
+  @override
+  String toString() =>
+      'ServerDetailsState(type: $runtimeType, '
+      'data: $data, initialData: $initialData, fieldErrors: ${fieldErrors.map((e) => e.toString()).join(', ')}, '
+      'routingProfiles: ${routingProfiles.map((e) => e.toString()).join(', ')}, loading: $loading)';
 
   @override
   bool operator ==(Object other) =>
@@ -107,7 +113,7 @@ final class _LoadingServerDetailState extends ServerDetailsState {
 }
 
 final class _ErrorServerDetailState extends ServerDetailsState {
-  final PresentationError exception;
+  final PresentationException exception;
 
   const _ErrorServerDetailState({
     required this.exception,

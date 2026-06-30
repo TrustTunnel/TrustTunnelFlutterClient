@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/feature/server/servers/controller/servers_controller.dart';
@@ -80,7 +80,7 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
   Server? get selectedServer => _state.selectedServer;
 
   @override
-  PresentationError? get error => _state.error;
+  PresentationException? get error => _state.error;
 
   @override
   bool get loading => _state.loading;

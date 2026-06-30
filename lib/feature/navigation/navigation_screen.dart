@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/logging/observers/logging_navigator_observer.dart';
+import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/common/utils/navigation_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/deep_link_scope.dart';
 import 'package:trusttunnel/feature/navigation/widgets/custom_navigation_rail.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/routing_screen.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_screen.dart';
+import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/settings/settings_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
@@ -18,8 +22,17 @@ class NavigationScreen extends StatefulWidget {
 class _NavigationScreenState extends State<NavigationScreen> {
   final ValueNotifier<int> _selectedTabNotifier = ValueNotifier(0);
   final _navigatorKey = GlobalKey<NavigatorState>();
+  late final LoggingNavigatorObserver _navigatorObserver;
 
   ServerData? _deepLinkData;
+
+  @override
+  void initState() {
+    super.initState();
+    _navigatorObserver = LoggingNavigatorObserver(
+      navigatorName: 'navigation',
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -35,55 +48,59 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: context.colors.background,
-    child: SafeArea(
-      right: false,
-      bottom: false,
-      left: false,
-      child: Scaffold(
-        primary: false,
-
-        backgroundColor: context.colors.backgroundSystem,
-        body: SafeArea(
-          top: false,
-          child: context.isMobileBreakpoint
-              ? _getContent()
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ValueListenableBuilder(
-                      valueListenable: _selectedTabNotifier,
-                      builder: (context, index, _) => CustomNavigationRail(
+  Widget build(BuildContext context) => LogsManagerScope(
+    child: AppLoggingScope(
+      child: ColoredBox(
+        color: context.colors.background,
+        child: SafeArea(
+          right: false,
+          bottom: false,
+          left: false,
+          child: Scaffold(
+            primary: false,
+      
+            backgroundColor: context.colors.backgroundSystem,
+            body: SafeArea(
+              top: false,
+              child: context.isMobileBreakpoint
+                  ? _getContent()
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ValueListenableBuilder(
+                          valueListenable: _selectedTabNotifier,
+                          builder: (context, index, _) => CustomNavigationRail(
+                            selectedIndex: index,
+                            onDestinationSelected: _onDestinationSelected,
+                            destinations: NavigationUtils.getNavigationRailDestinations(context),
+                          ),
+                        ),
+                        Expanded(
+                          child: _getContent(),
+                        ),
+                      ],
+                    ),
+            ),
+            bottomNavigationBar: context.isMobileBreakpoint
+                ? ValueListenableBuilder(
+                    valueListenable: _selectedTabNotifier,
+                    builder: (context, index, _) => SafeArea(
+                      child: NavigationBar(
                         selectedIndex: index,
                         onDestinationSelected: _onDestinationSelected,
-                        destinations: NavigationUtils.getNavigationRailDestinations(context),
+                        destinations: NavigationUtils.getBottomNavigationDestinations(context),
                       ),
                     ),
-                    Expanded(
-                      child: _getContent(),
-                    ),
-                  ],
-                ),
+                  )
+                : null,
+          ),
         ),
-        bottomNavigationBar: context.isMobileBreakpoint
-            ? ValueListenableBuilder(
-                valueListenable: _selectedTabNotifier,
-                builder: (context, index, _) => SafeArea(
-                  child: NavigationBar(
-                    selectedIndex: index,
-                    onDestinationSelected: _onDestinationSelected,
-                    destinations: NavigationUtils.getBottomNavigationDestinations(context),
-                  ),
-                ),
-              )
-            : null,
       ),
     ),
   );
 
-// TODO: Make navigator works with deeplink in right way
-// Konstantin Gorynin <k.gorynin@adguard.com>, 31 March 2026
+  // TODO: Make navigator works with deeplink in right way
+  // Konstantin Gorynin <k.gorynin@adguard.com>, 31 March 2026
   Widget getScreenByIndex(
     int selectedIndex, {
     ServerData? deepLinkData,
@@ -100,8 +117,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
     onPopWithResult: (_) => _navigatorKey.currentState!.maybePop(),
     child: Navigator(
       key: _navigatorKey,
+      observers: [_navigatorObserver],
       onGenerateInitialRoutes: (_, _) => [
         PageRouteBuilder(
+          settings: AppRoutes.servers.settings,
           pageBuilder: (context, animation, secondaryAnimation) => const ServersScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
@@ -115,6 +134,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       _selectedTabNotifier.value = selectedIndex;
       _navigatorKey.currentState!.pushAndRemoveUntil(
         PageRouteBuilder(
+          settings: AppRoutes.byNavigationIndex(selectedIndex).settings,
           pageBuilder: (context, animation, secondaryAnimation) => getScreenByIndex(
             selectedIndex,
             deepLinkData: deepLinkData,

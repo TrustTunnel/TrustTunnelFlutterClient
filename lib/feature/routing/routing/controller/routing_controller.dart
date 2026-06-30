@@ -3,9 +3,9 @@ import 'dart:ui';
 import 'package:collection/collection.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
-import 'package:trusttunnel/common/error/error_utils.dart';
-import 'package:trusttunnel/common/error/model/presentation_base_error.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
@@ -69,7 +69,7 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
     () async {
       final routingProfile = state.routingList.firstWhereOrNull((element) => element.id == id);
       if (routingProfile == null) {
-        throw PresentationNotFoundError();
+        throw const PresentationNotFoundException();
       }
       final otherProfiles = state.routingList
           .where((element) => element.id != id)
@@ -117,19 +117,24 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
     completionHandler: _onCompleted,
   );
 
-  Future<void> deleteProfile(String profileId, VoidCallback onDeleted) => handle(() async {
-    await _repository.deleteProfile(id: profileId);
-    final updatedRoutingList = state.routingList.where((element) => element.id != profileId).toList();
-    setState(
-      RoutingState.idle(
-        fieldErrors: state.fieldErrors,
-        routingList: updatedRoutingList,
-      ),
-    );
-    onDeleted();
-  });
+  Future<void> deleteProfile(String profileId, VoidCallback onDeleted) => handle(
+    () async {
+      await _repository.deleteProfile(id: profileId);
+      final updatedRoutingList = state.routingList.where((element) => element.id != profileId).toList();
+      setState(
+        RoutingState.idle(
+          fieldErrors: state.fieldErrors,
+          routingList: updatedRoutingList,
+        ),
+      );
+      onDeleted();
+    },
+    errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
 
-  PresentationError _parseException(Object? exception) => ErrorUtils.toPresentationError(exception: exception);
+  PresentationException _parseException(Object? exception) =>
+      ExceptionUtils.toPresentationException(exception: exception);
 
   Future<void> _onError(Object? error, StackTrace _) async {
     final presentationException = _parseException(error);

@@ -1,8 +1,8 @@
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
-import 'package:trusttunnel/common/error/error_utils.dart';
-import 'package:trusttunnel/common/error/model/presentation_base_error.dart';
-import 'package:trusttunnel/common/error/model/presentation_error.dart';
+import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
@@ -74,7 +74,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
         final server = await _repository.getServerById(id: _serverId);
 
         if (server == null) {
-          throw PresentationNotFoundError();
+          throw const PresentationNotFoundException();
         }
 
         setState(
@@ -152,28 +152,32 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     List<String>? dnsServers,
     ValueData<String>? clientRandom,
     ValueData<String>? customSni,
-  }) => handle(() {
-    setState(
-      ServerDetailsState.idle(
-        fieldErrors: state.fieldErrors,
-        initialData: state.initialData,
-        routingProfiles: state.routingProfiles,
-        data: state.data.copyWith(
-          name: serverName ?? state.data.name,
-          ipAddress: (ipAddress ?? state.data.ipAddress).trim(),
-          domain: (domain ?? state.data.domain).trim(),
-          username: (username ?? state.data.username).trim(),
-          password: (password ?? state.data.password).trim(),
-          vpnProtocol: protocol ?? state.data.vpnProtocol,
-          routingProfileId: routingProfileId ?? state.data.routingProfileId,
-          dnsServers: (dnsServers ?? state.data.dnsServers).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-          ipv6: enableIpv6 ?? state.data.ipv6,
-          tlsPrefix: clientRandom == null ? null : ValueData(clientRandom.value?.trim()),
-          customSni: customSni == null ? null : ValueData(customSni.value?.trim()),
+  }) => handle(
+    () {
+      setState(
+        ServerDetailsState.idle(
+          fieldErrors: state.fieldErrors,
+          initialData: state.initialData,
+          routingProfiles: state.routingProfiles,
+          data: state.data.copyWith(
+            name: serverName ?? state.data.name,
+            ipAddress: (ipAddress ?? state.data.ipAddress).trim(),
+            domain: (domain ?? state.data.domain).trim(),
+            username: (username ?? state.data.username).trim(),
+            password: (password ?? state.data.password).trim(),
+            vpnProtocol: protocol ?? state.data.vpnProtocol,
+            routingProfileId: routingProfileId ?? state.data.routingProfileId,
+            dnsServers: (dnsServers ?? state.data.dnsServers).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+            ipv6: enableIpv6 ?? state.data.ipv6,
+            tlsPrefix: clientRandom == null ? null : ValueData(clientRandom.value?.trim()),
+            customSni: customSni == null ? null : ValueData(customSni.value?.trim()),
+          ),
         ),
-      ),
-    );
-  });
+      );
+    },
+    errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
 
   void submit(void Function(String name) onSaved) => handle(
     () async {
@@ -267,7 +271,8 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     completionHandler: _onCompleted,
   );
 
-  PresentationError _parseException(Object? exception) => ErrorUtils.toPresentationError(exception: exception);
+  PresentationException _parseException(Object? exception) =>
+      ExceptionUtils.toPresentationException(exception: exception);
 
   Future<void> _onError(Object? error, StackTrace _) async {
     final presentationException = _parseException(error);
