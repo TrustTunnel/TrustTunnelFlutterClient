@@ -28,7 +28,7 @@ lane :build_macos_app do |options|
         use_automatic_signing: false,
         team_id: ENV.fetch('TEAM_ID'),
         code_sign_identity: config[:identity],
-        profile_name: "match #{config[:match]} #{bundle_id}",
+        profile_name: "match #{config[:match]} #{bundle_id} macos",
         targets: [target_name],
         build_configurations: ["Release"]
       )
