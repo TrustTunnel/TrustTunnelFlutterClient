@@ -53,8 +53,8 @@ on:
         description: 'Release identifier (e.g. "1.2")'
       macos-signing-type:
         type: string
-        default: 'development'
-        description: 'macOS signing type: development, developer_id, appstore'
+        default: 'developer_id'
+        description: 'macOS signing type: developer_id, appstore'
 
 permissions:
   contents: read

@@ -7,19 +7,17 @@ lane :build_macos_app do |options|
     # ── signing configuration per type ──────────────────────────
     #   appstore      → Apple Distribution   (Mac App Store / TestFlight)
     #   developer_id  → Developer ID Application (direct distribution)
-    #   development   → Apple Development    (local/CI testing)
     # ─────────────────────────────────────────────────────────────
 
-    app_store_connect_api_key unless type == "development"
+    app_store_connect_api_key
 
     signing_config = {
         "appstore"     => { match: "AppStore",     identity: "Apple Distribution" },
         "developer_id" => { match: "DeveloperId",  identity: "Developer ID Application" },
-        "development"  => { match: "Development",  identity: "Apple Development" },
     }
 
     config = signing_config.fetch(type) do
-      UI.user_error!("Unknown signing type: #{type}. Expected: appstore, developer_id, development")
+      UI.user_error!("Unknown signing type: #{type}. Expected: appstore, developer_id")
     end
 
     signing_targets = ENV.fetch('SIGNING_TARGETS').split(',').map { |pair| pair.split(':', 2) }
@@ -48,7 +46,6 @@ lane :build_macos_app do |options|
     export_methods = {
         "appstore"     => "app-store",
         "developer_id" => "developer-id",
-        "development"  => "development",
     }
 
     build_mac_app(
@@ -61,10 +58,10 @@ lane :build_macos_app do |options|
         buildlog_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/logs",
         build_path: ENV['FASTLANE_BUILD_DIRECTORY'],
         export_method: export_methods.fetch(type),
-        export_options: type == "appstore" ? {
-            manageAppVersionAndBuildNumber: true,
+        export_options: {
+            manageAppVersionAndBuildNumber: type == "appstore",
             generateAppStoreInformation: true
-        } : {}
+        }
     )
 end
 
@@ -106,7 +103,7 @@ lane :package_pkg do
 end
 
 lane :build_and_package do |options|
-    type = options[:type] || "development"
+    type = options[:type] || "developer_id"
 
     build_macos_app(type: type)
 
@@ -119,12 +116,5 @@ lane :build_and_package do |options|
       package_dmg
       notarize_dmg
       UI.success("Developer ID build complete → #{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.dmg")
-
-    when "development"
-      zip(
-        path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app",
-        output_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app.zip"
-      )
-      UI.success("Development build complete → #{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.app.zip")
     end
 end
