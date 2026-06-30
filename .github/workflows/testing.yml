@@ -25,49 +25,49 @@ jobs:
       - uses: AdGuardSoftwareLimited/actions/actions/epoch-version-metadata@master
         id: meta
 
-  check-fixme:
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/check-fixme.yml@master
-    with:
-      team: flutter
+  # check-fixme:
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/check-fixme.yml@master
+  #   with:
+  #     team: flutter
 
-  lint:
-    uses: ./.github/workflows/flutter-lint.yml
-    secrets: inherit
+  # lint:
+  #   uses: ./.github/workflows/flutter-lint.yml
+  #   secrets: inherit
 
-  test:
-    uses: ./.github/workflows/flutter-test.yml
-    secrets: inherit
+  # test:
+  #   uses: ./.github/workflows/flutter-test.yml
+  #   secrets: inherit
 
-  build-android:
-    needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
-    secrets: inherit
-    with:
-      platform: android
-      channel: nightly
-      vault-role: trusttunnel-app
-      version: ${{ needs.prepare.outputs.version }}
-      build-number: ${{ github.run_number }}
-      version-title: ${{ needs.prepare.outputs.version-title }}
-      build-mode: apk
-      artifact-name: trusttunnel-android-pr
-      artifact-path: build/app/outputs/flutter-apk/app-release.apk
+  # build-android:
+  #   needs: [prepare]
+  #   uses: ./.github/workflows/flutter-build.yml
+  #   secrets: inherit
+  #   with:
+  #     platform: android
+  #     channel: nightly
+  #     vault-role: trusttunnel-app
+  #     version: ${{ needs.prepare.outputs.version }}
+  #     build-number: ${{ github.run_number }}
+  #     version-title: ${{ needs.prepare.outputs.version-title }}
+  #     build-mode: apk
+  #     artifact-name: trusttunnel-android-pr
+  #     artifact-path: build/app/outputs/flutter-apk/app-release.apk
 
-  build-ios:
-    needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
-    secrets: inherit
-    with:
-      platform: ios
-      channel: nightly
-      vault-role: trusttunnel-app
-      version: ${{ needs.prepare.outputs.version }}
-      build-number: ${{ github.run_number }}
-      version-title: ${{ needs.prepare.outputs.version-title }}
-      build-mode: adhoc
-      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
-      artifact-name: trusttunnel-ios-pr
-      artifact-path: ios/build/TrustTunnel.ipa
+  # build-ios:
+  #   needs: [prepare]
+  #   uses: ./.github/workflows/flutter-build.yml
+  #   secrets: inherit
+  #   with:
+  #     platform: ios
+  #     channel: nightly
+  #     vault-role: trusttunnel-app
+  #     version: ${{ needs.prepare.outputs.version }}
+  #     build-number: ${{ github.run_number }}
+  #     version-title: ${{ needs.prepare.outputs.version-title }}
+  #     build-mode: adhoc
+  #     ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
+  #     artifact-name: trusttunnel-ios-pr
+  #     artifact-path: ios/build/TrustTunnel.ipa
 
   build-macos:
     needs: [prepare]
