@@ -52,6 +52,9 @@ class CustomColors extends ThemeExtension<CustomColors> {
 
   final Color staticTransparent;
 
+  final Color appSystemTitleBarBackground;
+  final Color appSystemTitleBarTitle;
+
   const CustomColors({
     required this.accent,
     required this.accentHover,
@@ -91,6 +94,8 @@ class CustomColors extends ThemeExtension<CustomColors> {
     required this.specialStaticWhitePressed,
     required this.specialStaticWhiteDisabled,
     required this.staticTransparent,
+    required this.appSystemTitleBarBackground,
+    required this.appSystemTitleBarTitle,
   });
 
   @override
@@ -133,6 +138,8 @@ class CustomColors extends ThemeExtension<CustomColors> {
     Color? specialStaticWhitePressed,
     Color? specialStaticWhiteDisabled,
     Color? staticTransparent,
+    Color? appSystemTitleBarBackground,
+    Color? appSystemTitleBarTitle,
   }) => CustomColors(
     accent: accent ?? this.accent,
     accentHover: accentHover ?? this.accentHover,
@@ -172,6 +179,8 @@ class CustomColors extends ThemeExtension<CustomColors> {
     specialStaticWhitePressed: specialStaticWhitePressed ?? this.specialStaticWhitePressed,
     specialStaticWhiteDisabled: specialStaticWhiteDisabled ?? this.specialStaticWhiteDisabled,
     staticTransparent: staticTransparent ?? this.staticTransparent,
+    appSystemTitleBarBackground: appSystemTitleBarBackground ?? this.appSystemTitleBarBackground,
+    appSystemTitleBarTitle: appSystemTitleBarTitle ?? this.appSystemTitleBarTitle,
   );
 
   @override
@@ -232,6 +241,12 @@ class CustomColors extends ThemeExtension<CustomColors> {
         t,
       )!,
       staticTransparent: Color.lerp(staticTransparent, other.staticTransparent, t)!,
+      appSystemTitleBarBackground: Color.lerp(
+        appSystemTitleBarBackground,
+        other.appSystemTitleBarBackground,
+        t,
+      )!,
+      appSystemTitleBarTitle: Color.lerp(appSystemTitleBarTitle, other.appSystemTitleBarTitle, t)!,
     );
   }
 }

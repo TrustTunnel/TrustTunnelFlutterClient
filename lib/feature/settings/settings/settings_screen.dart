@@ -4,53 +4,51 @@ import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/utils/url_utils.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/app_logging_screen.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/excluded_routes_screen.dart';
-import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/widgets/download_app_logs_tile.dart';
 import 'package:trusttunnel/feature/settings/settings_about/about_screen.dart';
 import 'package:trusttunnel/widgets/common/custom_arrow_list_tile.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
+import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: CustomAppBar(
-      title: context.ln.settings,
-    ),
-    body: LogsManagerScope(
-      child: Builder(
-        builder: (context) => ListView(
-          children: [
-            CustomArrowListTile(
-              title: context.ln.connectionLog,
-              onTap: () => _pushQueryLogScreen(context),
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.appLogging,
-              onTap: () => _pushAppLoggingScreen(context),
-            ),
-            const Divider(),
-            const DownloadAppLogsTile(),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.excludedRoutes,
-              onTap: () => _pushExcludedRoutesScreen(context),
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.followUsOnGithub,
-              onTap: _openGithubOrganization,
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.about,
-              onTap: () => _pushAboutScreen(context),
-            ),
-          ],
-        ),
+  Widget build(BuildContext context) => ScaffoldWrapper(
+    child: Scaffold(
+      appBar: CustomAppBar(
+        title: context.ln.settings,
+      ),
+      body: ListView(
+        children: [
+          CustomArrowListTile(
+            title: context.ln.connectionLog,
+            onTap: () => _pushQueryLogScreen(context),
+          ),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.appLogging,
+            onTap: () => _pushAppLoggingScreen(context),
+          ),
+          const Divider(),
+          const DownloadAppLogsTile(),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.excludedRoutes,
+            onTap: () => _pushExcludedRoutesScreen(context),
+          ),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.followUsOnGithub,
+            onTap: _openGithubOrganization,
+          ),
+          const Divider(),
+          CustomArrowListTile(
+            title: context.ln.about,
+            onTap: () => _pushAboutScreen(context),
+          ),
+        ],
       ),
     ),
   );

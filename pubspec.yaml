@@ -5,6 +5,11 @@ publish_to: 'none'
 
 version: 1.2.0
 
+workspace:
+  - packages/adg_share
+  - packages/tray_manager
+  - packages/window_manager
+
 environment:
   flutter: 3.38.3
   sdk: 3.10.1
@@ -32,11 +37,16 @@ dependencies:
   path_provider: 2.1.6
   punycoder: 0.2.2
   rxdart: 0.28.0
+  screen_retriever: 0.2.0
   shared_preferences: 2.5.5
   sqlite3_flutter_libs: 0.5.41
   url_launcher: 6.3.2
   vpn_plugin:
     path: plugins/vpn_plugin
+  tray_manager:
+    path: packages/tray_manager
+  window_manager:
+    path: packages/window_manager
 
 dev_dependencies:
   build_runner: 2.10.4
@@ -50,6 +60,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/tray/
   fonts:
     - family: IconFont
       fonts:

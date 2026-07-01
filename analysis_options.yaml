@@ -8,6 +8,7 @@ analyzer:
   plugins:
     - drift
   exclude:
+    - packages/window_manager/**
     - .fvm/**
     - build/**
     - lib/common/localization/generated/**

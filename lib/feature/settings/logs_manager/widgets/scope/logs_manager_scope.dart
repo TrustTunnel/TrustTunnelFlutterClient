@@ -55,12 +55,12 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
 
   void _exportLogs({
     ValueChanged<ExportLogsArchive>? onArchiveReady,
+    VoidCallback? onCanceled,
     VoidCallback? onError,
-    VoidCallback? onCancelled,
   }) => _controller.export(
     onArchiveReady: onArchiveReady,
+    onCanceled: onCanceled,
     onError: onError,
-    onCancelled: onCancelled,
   );
 
   void _shareLogs({
@@ -104,8 +104,8 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   @override
   final void Function({
     ValueChanged<ExportLogsArchive>? onArchiveReady,
+    VoidCallback? onCanceled,
     VoidCallback? onError,
-    VoidCallback? onCancelled,
   })
   exportLogs;
 

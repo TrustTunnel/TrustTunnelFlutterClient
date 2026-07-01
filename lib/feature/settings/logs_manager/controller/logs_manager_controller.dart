@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -6,23 +8,33 @@ import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/data/repository/export_logs_repository.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_state.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
 final class LogsManagerController extends BaseStateController<LogsManagerState> with SequentialControllerHandler {
   final ExportLogsRepository _repository;
   final ShareClient _shareClient;
+  final Future<Directory?> Function() _downloadsDirectoryProvider;
+  final Future<Directory> Function() _documentsDirectoryProvider;
+  final Future<Directory> Function() _temporaryDirectoryProvider;
 
   LogsManagerController({
     required ExportLogsRepository repository,
     ShareClient shareClient = const AdgShare(),
+    Future<Directory?> Function() downloadsDirectoryProvider = getDownloadsDirectory,
+    Future<Directory> Function() documentsDirectoryProvider = getApplicationDocumentsDirectory,
+    Future<Directory> Function() temporaryDirectoryProvider = getTemporaryDirectory,
     super.initialState = const LogsManagerState.initial(),
   }) : _repository = repository,
-       _shareClient = shareClient;
+       _shareClient = shareClient,
+       _downloadsDirectoryProvider = downloadsDirectoryProvider,
+       _documentsDirectoryProvider = documentsDirectoryProvider,
+       _temporaryDirectoryProvider = temporaryDirectoryProvider;
 
   void export({
     ValueChanged<ExportLogsArchive>? onArchiveReady,
+    VoidCallback? onCanceled,
     VoidCallback? onError,
-    VoidCallback? onCancelled,
   }) => handle(
     () async {
       setState(
@@ -30,23 +42,63 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       );
 
       final archive = await _repository.createArchive();
+      final Directory? downloadDirectory;
 
-      final result = await _repository.pickFilePath(
-        dialogTitle: 'Export app logs and system info',
-        fileName: archive.name,
-        allowedExtensions: ['zip'],
-        data: archive.data,
-      );
+      if (defaultTargetPlatform == TargetPlatform.macOS) {
+        downloadDirectory = await _downloadsDirectoryProvider();
+        final archivePath = await _repository.pickFilePath(
+          fileName: archive.name,
+          initialDirectory: downloadDirectory?.path,
+          type: ExportFileType.custom,
+          allowedExtensions: const ['zip'],
+          data: archive.data,
+        );
 
-      if (result != null) {
+        if (archivePath == null) {
+          setState(const LogsManagerState.idle());
+          onCanceled?.call();
+
+          return;
+        }
+
+        await _repository.saveRawFile(
+          data: archive.data,
+          path: archivePath,
+          temporary: false,
+        );
+
+        setState(const LogsManagerState.idle());
         onArchiveReady?.call(archive);
-      } else {
-        onCancelled?.call();
+
+        return;
       }
+
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        downloadDirectory = await _documentsDirectoryProvider();
+      } else {
+        downloadDirectory = await _downloadsDirectoryProvider();
+      }
+
+      if (downloadDirectory != null) {
+        final downloadPath = '${downloadDirectory.path}${Platform.pathSeparator}${archive.name}';
+        await _repository.saveRawFile(
+          data: archive.data,
+          path: downloadPath,
+        );
+      }
+
+      final tempDirectory = await _temporaryDirectoryProvider();
+      final tempPath = '${tempDirectory.path}${Platform.pathSeparator}${archive.name}';
+
+      await _repository.saveRawFile(
+        data: archive.data,
+        path: tempPath,
+      );
 
       setState(
         const LogsManagerState.idle(),
       );
+      onArchiveReady?.call(archive);
     },
     errorHandler: (error, stackTrace) {
       onError?.call();

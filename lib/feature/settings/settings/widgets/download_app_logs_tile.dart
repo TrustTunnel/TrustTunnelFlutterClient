@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
@@ -33,8 +34,8 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
   void _onExportLogsPressed() {
     _controller.exportLogs(
       onArchiveReady: _showArchiveReadySnackBar,
+      onCanceled: _onExportLogsCanceled,
       onError: _onExportLogsError,
-      onCancelled: () => context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar),
     );
 
     context.showInfoSnackBar(
@@ -51,26 +52,36 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
+  void _onExportLogsCanceled() {
+    if (!mounted) {
+      return;
+    }
+
+    context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar);
+  }
+
   void _showArchiveReadySnackBar(ExportLogsArchive archive) => context.showInfoSnackBar(
     message: context.ln.appLogsExportedSnackbar,
-    trailingActions: [
-      TextButton(
-        onPressed: () {
-          context.closeCurrentSnackBar();
-          _controller.shareLogs(
-            subject: context.ln.downloadAppLogs,
-            chooserTitle: context.ln.share,
-            archive: archive,
-            onUnavailable: () => context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar),
-          );
-        },
-        child: Text(
-          context.ln.share,
-          style: context.textTheme.labelLarge?.copyWith(
-            color: context.colors.accent,
-          ),
-        ),
-      ),
-    ],
+    trailingActions: defaultTargetPlatform == TargetPlatform.macOS
+        ? const []
+        : [
+            TextButton(
+              onPressed: () {
+                context.closeCurrentSnackBar();
+                _controller.shareLogs(
+                  subject: context.ln.downloadAppLogs,
+                  chooserTitle: context.ln.share,
+                  archive: archive,
+                  onUnavailable: () => context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar),
+                );
+              },
+              child: Text(
+                context.ln.share,
+                style: context.textTheme.labelLarge?.copyWith(
+                  color: context.colors.accent,
+                ),
+              ),
+            ),
+          ],
   );
 }

@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,7 @@ import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/logging/observers/logging_controller_observer.dart';
 import 'package:trusttunnel/common/logging/sanitizer/log_sanitizer.dart';
 import 'package:trusttunnel/common/logging/utils/containment_file_util.dart';
+import 'package:trusttunnel/common/utils/macos_app_window_utils.dart';
 import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/initialization_result.dart';
@@ -32,6 +34,14 @@ class InitializationHelperIo extends InitializationHelper {
     final bindings = WidgetsFlutterBinding.ensureInitialized();
     FlutterNativeSplash.preserve(widgetsBinding: bindings);
     await _updateDeviceOrientation();
+
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      await MacOSAppWindowUtils.configureMainWindow(
+        minimumWindowSize: const Size(905, 680),
+        defaultWindowSize: const Size(1024, 768),
+        isDebugMode: kDebugMode,
+      );
+    }
 
     BaseController.observer = const LoggingControllerObserver();
 

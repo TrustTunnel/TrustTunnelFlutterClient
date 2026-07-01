@@ -52,6 +52,9 @@ class LightTheme {
   static const _specialStaticWhiteDisabled = Color(0x80FFFFFF);
   static const _staticTransparent = Colors.transparent;
 
+  static const _appSystemTitleBarBackground = Color(0xFFFFFFFF);
+  static const _appSystemTitleBarTitle = Color(0xFF3D3D3D);
+
   static const _borderColor = Color(0xFF73859D);
   static const _focusedBorderColor = Color(0xFF74869C);
 
@@ -94,6 +97,8 @@ class LightTheme {
     specialStaticWhitePressed: _specialStaticWhitePressed,
     specialStaticWhiteDisabled: _specialStaticWhiteDisabled,
     staticTransparent: _staticTransparent,
+    appSystemTitleBarBackground: _appSystemTitleBarBackground,
+    appSystemTitleBarTitle: _appSystemTitleBarTitle,
   );
 
   late final _colorScheme = ColorScheme.fromSeed(
