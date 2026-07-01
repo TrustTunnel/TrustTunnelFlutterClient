@@ -214,18 +214,18 @@ jobs:
       artifact-pattern: trusttunnel-macos-dmg
     secrets: inherit
 
-  notify-slack:
-    needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore, build-macos-developer-id]
-    if: github.event_name == 'push' || inputs.slack-channel != ''
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
-    with:
-      team: flutter
-      channel: ${{ inputs.slack-channel || '#build-trusttunnel' }}
-      product: TrustTunnel
-      version-title: ${{ needs.meta.outputs.version-title }}
-      metadata: >-
-        {
-          "Channel": "${{ needs.meta.outputs.release-channel }}",
-          "Version": "${{ needs.meta.outputs.version }}",
-          "Tag": "${{ inputs.tag || github.ref_name }}"
-        }
+  # notify-slack:
+  #   needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore, build-macos-developer-id]
+  #   if: github.event_name == 'push' || inputs.slack-channel != ''
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
+  #   with:
+  #     team: flutter
+  #     channel: ${{ inputs.slack-channel || '#build-trusttunnel' }}
+  #     product: TrustTunnel
+  #     version-title: ${{ needs.meta.outputs.version-title }}
+  #     metadata: >-
+  #       {
+  #         "Channel": "${{ needs.meta.outputs.release-channel }}",
+  #         "Version": "${{ needs.meta.outputs.version }}",
+  #         "Tag": "${{ inputs.tag || github.ref_name }}"
+  #       }
