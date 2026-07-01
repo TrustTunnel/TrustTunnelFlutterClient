@@ -240,6 +240,7 @@ jobs:
           set -euo pipefail
           PODS_DIR="ios/Pods"
           test -d "$PODS_DIR" || { echo "Pods directory not found at $PODS_DIR"; exit 1; }
+
           changed=0
           while IFS= read -r -d '' plist; do
             for key in CFBundleShortVersionString CFBundleVersion; do
@@ -253,7 +254,10 @@ jobs:
               fi
             done
           done < <(find "$PODS_DIR" -type f -name Info.plist -path '*.framework/*' -print0)
-          [ "$changed" -eq 0 ] && echo "No pre-release framework versions found — nothing to sanitize."
+
+          if [ "$changed" -eq 0 ]; then
+            echo "No pre-release framework versions found — nothing to sanitize."
+          fi
 
       - name: Build iOS with Fastlane
         env:
@@ -363,6 +367,7 @@ jobs:
           set -euo pipefail
           PODS_DIR="macos/Pods"
           test -d "$PODS_DIR" || { echo "Pods directory not found at $PODS_DIR"; exit 1; }
+
           changed=0
           while IFS= read -r -d '' plist; do
             for key in CFBundleShortVersionString CFBundleVersion; do
@@ -376,7 +381,10 @@ jobs:
               fi
             done
           done < <(find "$PODS_DIR" -type f -name Info.plist -path '*.framework/*' -print0)
-          [ "$changed" -eq 0 ] && echo "No pre-release framework versions found — nothing to sanitize."
+
+          if [ "$changed" -eq 0 ]; then
+            echo "No pre-release framework versions found — nothing to sanitize."
+          fi
 
       - name: Build macOS with Fastlane
         env:
