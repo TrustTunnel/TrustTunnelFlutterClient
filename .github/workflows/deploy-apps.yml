@@ -55,26 +55,26 @@ jobs:
           increment: |
             BUILD_NUMBER=trusttunnel-flutter/v${{ needs.meta.outputs.version }}
 
-    params:
-      needs: [meta]
-      runs-on: [team-flutter]
-      outputs:
-        play-store-track: ${{ steps.ps.outputs.track }}
-        play-store-rollout: ${{ steps.ps.outputs.rollout }}
-      steps:
-        - name: Compute Play Store parameters
-          id: ps
-          shell: bash
-          env:
-            CHANNEL: ${{ needs.meta.outputs.release-channel }}
-          run: |
-            case "$CHANNEL" in
-              nightly)  echo "track=alpha"      >> "$GITHUB_OUTPUT"; echo "rollout=100" >> "$GITHUB_OUTPUT" ;;
-              beta)     echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
-              rc)       echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
-              release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
-              *)        echo "::error::Unknown channel: $CHANNEL"; exit 1 ;;
-            esac
+  params:
+    needs: [meta]
+    runs-on: [team-flutter]
+    outputs:
+      play-store-track: ${{ steps.ps.outputs.track }}
+      play-store-rollout: ${{ steps.ps.outputs.rollout }}
+    steps:
+      - name: Compute Play Store parameters
+        id: ps
+        shell: bash
+        env:
+          CHANNEL: ${{ needs.meta.outputs.release-channel }}
+        run: |
+          case "$CHANNEL" in
+            nightly)  echo "track=alpha"      >> "$GITHUB_OUTPUT"; echo "rollout=100" >> "$GITHUB_OUTPUT" ;;
+            beta)     echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+            rc)       echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+            release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+            *)        echo "::error::Unknown channel: $CHANNEL"; exit 1 ;;
+          esac
 
   changelog-qa:
     needs: [meta]
