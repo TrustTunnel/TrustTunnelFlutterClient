@@ -182,5 +182,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "launchAndConnection": "Launch and connection",
+  "launch": "Launch",
+  "launchAppAtSystemLogin": "Launch app at system login",
+  "openHomeScreenAutomatically": "Open Home screen automatically",
+  "connection": "Connection",
+  "autoConnectOnAppLaunch": "Auto-connect on app launch",
+  "autoConnectNoServersAdded": "No servers added. To apply the setting, add a server"
 }
