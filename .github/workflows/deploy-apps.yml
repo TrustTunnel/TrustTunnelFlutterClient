@@ -55,6 +55,27 @@ jobs:
           increment: |
             BUILD_NUMBER=trusttunnel-flutter/v${{ needs.meta.outputs.version }}
 
+    params:
+      needs: [meta]
+      runs-on: [team-flutter]
+      outputs:
+        play-store-track: ${{ steps.ps.outputs.track }}
+        play-store-rollout: ${{ steps.ps.outputs.rollout }}
+      steps:
+        - name: Compute Play Store parameters
+          id: ps
+          shell: bash
+          env:
+            CHANNEL: ${{ needs.meta.outputs.release-channel }}
+          run: |
+            case "$CHANNEL" in
+              nightly)  echo "track=alpha"      >> "$GITHUB_OUTPUT"; echo "rollout=100" >> "$GITHUB_OUTPUT" ;;
+              beta)     echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+              rc)       echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+              release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+              *)        echo "::error::Unknown channel: $CHANNEL"; exit 1 ;;
+            esac
+
   changelog-qa:
     needs: [meta]
     uses: AdGuardSoftwareLimited/actions/.github/workflows/collect-changelog.yml@master
@@ -93,23 +114,23 @@ jobs:
       artifact-path: build/app/outputs/bundle/release/app-release.aab
       release: ${{ needs.meta.outputs.release }}
 
-  build-ios:
-    needs: [meta, build-number]
-    uses: ./.github/workflows/flutter-build.yml
-    secrets: inherit
-    with:
-      platform: ios
-      version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
-      version-title: ${{ needs.meta.outputs.version-title }}
-      channel: ${{ needs.meta.outputs.release-channel }}
-      signing-type: appstore
-      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
-      artifact-name: trusttunnel-ios-ipa
-      artifact-path: |
-        ios/build/TrustTunnel.ipa
-        ios/build/AppStoreInfo.plist
-      release: ${{ needs.meta.outputs.release }}
+  # build-ios:
+  #   needs: [meta, build-number]
+  #   uses: ./.github/workflows/flutter-build.yml
+  #   secrets: inherit
+  #   with:
+  #     platform: ios
+  #     version: ${{ needs.meta.outputs.version }}
+  #     build-number: ${{ needs.build-number.outputs.build-number }}
+  #     version-title: ${{ needs.meta.outputs.version-title }}
+  #     channel: ${{ needs.meta.outputs.release-channel }}
+  #     signing-type: appstore
+  #     ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
+  #     artifact-name: trusttunnel-ios-ipa
+  #     artifact-path: |
+  #       ios/build/TrustTunnel.ipa
+  #       ios/build/AppStoreInfo.plist
+  #     release: ${{ needs.meta.outputs.release }}
 
   build-simulator:
     needs: [meta, build-number]
@@ -143,25 +164,26 @@ jobs:
         macos/build/AppStoreInfo.plist
       release: ${{ needs.meta.outputs.release }}
 
-  deploy-testflight:
-    needs: [meta, build-ios, changelog-public]
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
-    with:
-      team: flutter
-      asset-artifact-name: trusttunnel-ios-ipa
-      changelog-artifact-name: changelog.txt
-      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
-      distribute-external: true
-      submit-beta-review: false
-      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+  # deploy-testflight:
+  #   needs: [meta, build-ios, changelog-public]
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
+  #   with:
+  #     team: flutter
+  #     asset-artifact-name: trusttunnel-ios-ipa
+  #     changelog-artifact-name: changelog.txt
+  #     groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
+  #     distribute-external: true
+  #     submit-beta-review: false
+  #     environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
   deploy-google-play:
-    needs: [meta, build-number, build-android, changelog-public]
+    needs: [meta, params, build-number, build-android, changelog-public]
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
     with:
       team: flutter
       package-name: com.adguard.trusttunnel
-      track: ${{ needs.meta.outputs.release-channel == 'release' && 'production' || needs.meta.outputs.release-channel }}
+      track: ${{ needs.params.outputs.play-store-track }}
+      rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
       release-name: ${{ needs.meta.outputs.version-title }}
       artifact-pattern: trusttunnel-android-aab
       version-codes: ${{ needs.build-number.outputs.build-number }}
@@ -209,7 +231,7 @@ jobs:
     needs: [meta, build-macos-developer-id]
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-ak-generic.yml@master
     with:
-      team: mac
+      team: flutter
       ak-repo: ${{ needs.meta.outputs.release-channel == 'release' && 'apple-bin' || 'apple-bin-dev' }}
       artifact-pattern: trusttunnel-macos-dmg
     secrets: inherit
