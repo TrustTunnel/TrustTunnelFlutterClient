@@ -235,6 +235,26 @@ jobs:
             --no-pub \
             --config-only
 
+      - name: Sanitize vendored framework versions
+        run: |
+          set -euo pipefail
+          PODS_DIR="ios/Pods"
+          test -d "$PODS_DIR" || { echo "Pods directory not found at $PODS_DIR"; exit 1; }
+          changed=0
+          while IFS= read -r -d '' plist; do
+            for key in CFBundleShortVersionString CFBundleVersion; do
+              value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)"
+              [ -z "$value" ] && continue
+              clean="${value%%[-+]*}"
+              if [ "$clean" != "$value" ]; then
+                echo "Sanitizing $key '$value' -> '$clean' in $plist"
+                /usr/libexec/PlistBuddy -c "Set :$key $clean" "$plist"
+                changed=1
+              fi
+            done
+          done < <(find "$PODS_DIR" -type f -name Info.plist -path '*.framework/*' -print0)
+          [ "$changed" -eq 0 ] && echo "No pre-release framework versions found — nothing to sanitize."
+
       - name: Build iOS with Fastlane
         env:
           MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
@@ -337,6 +357,26 @@ jobs:
             --build-number="$BUILD_NUMBER" \
             --no-pub \
             --config-only
+
+      - name: Sanitize vendored framework versions
+        run: |
+          set -euo pipefail
+          PODS_DIR="macos/Pods"
+          test -d "$PODS_DIR" || { echo "Pods directory not found at $PODS_DIR"; exit 1; }
+          changed=0
+          while IFS= read -r -d '' plist; do
+            for key in CFBundleShortVersionString CFBundleVersion; do
+              value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)"
+              [ -z "$value" ] && continue
+              clean="${value%%[-+]*}"
+              if [ "$clean" != "$value" ]; then
+                echo "Sanitizing $key '$value' -> '$clean' in $plist"
+                /usr/libexec/PlistBuddy -c "Set :$key $clean" "$plist"
+                changed=1
+              fi
+            done
+          done < <(find "$PODS_DIR" -type f -name Info.plist -path '*.framework/*' -print0)
+          [ "$changed" -eq 0 ] && echo "No pre-release framework versions found — nothing to sanitize."
 
       - name: Build macOS with Fastlane
         env:
