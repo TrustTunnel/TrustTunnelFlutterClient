@@ -5,6 +5,7 @@ import 'package:trusttunnel/common/extensions/theme_extensions.dart';
 import 'package:trusttunnel/widgets/custom_icon.dart';
 
 class LightTheme {
+  // Legacy colors
   static const _accent = Color(0xFF3972AA);
   static const _accentHover = Color(0xFF336699);
   static const _accentPressed = Color(0xFF2D5986);
@@ -58,6 +59,45 @@ class LightTheme {
   static const _borderColor = Color(0xFF73859D);
   static const _focusedBorderColor = Color(0xFF74869C);
 
+  // New colors (VPN OSS Library)
+  static const _primary1 = Color(0xFF67B279);
+  static const _primary2 = Color(0xFF5B9F6B);
+  static const _primary3 = Color(0xFF4E8C5D);
+  static const _primary4 = Color(0xFFA2D0AD);
+  static const _blend1 = Color(0xFFD9ECDE);
+  static const _blend2 = Color(0xFFBEDFC6);
+  static const _blend3 = Color(0xFFA2D0AD);
+  static const _orange1 = Color(0xFFD58500);
+  static const _orange2 = Color(0xFFC77901);
+  static const _orange3 = Color(0xFFB76C01);
+  static const _orange4 = Color(0xFFE5B460);
+  static const _red1 = Color(0xFFE9653A);
+  static const _red2 = Color(0xFFE75727);
+  static const _red3 = Color(0xFFDC4918);
+  static const _red4 = Color(0xFFEF9071);
+  static const _background1 = Color(0xFFFFFFFF);
+  static const _background2 = Color(0xFFF6F6F6);
+  static const _background3 = Color(0xFFE4E4E4);
+  static const _gray1 = Color(0xFFA4A4A4);
+  static const _gray2 = Color(0xFF7F7F7F);
+  static const _gray3 = Color(0xFF5B5B5B);
+  static const _gray4 = Color(0xFFE4E4E4);
+  static const _contrast1 = Color(0xFF3D3D3D);
+  static const _contrast2 = Color(0xFF5B5B5B);
+  static const _contrast3 = Color(0xFF7F7F7F);
+  static const _contrast4 = Color(0xFFA4A4A4);
+  static const _staticBlack1 = Color(0xFF0A0A0A);
+  static const _staticBlack2 = Color(0xFF1F1F1F);
+  static const _staticBlack3 = Color(0xFF3D3D3D);
+  static const _staticWhite = Color(0xFFF6F6F6);
+  static const _purple1 = Color(0xFFA870B2);
+  static const _purple2 = Color(0xFF9F61AA);
+  static const _purple3 = Color(0xFF92549C);
+  static const _purple4 = Color(0xFFC096C7);
+
+  // New colors (Colors and styles Library)
+  static const _accentMainDefault = Color(0xFF3972AA);
+
   late final _customColors = const CustomColors(
     accent: _accent,
     accentHover: _accentHover,
@@ -99,6 +139,41 @@ class LightTheme {
     staticTransparent: _staticTransparent,
     appSystemTitleBarBackground: _appSystemTitleBarBackground,
     appSystemTitleBarTitle: _appSystemTitleBarTitle,
+    primary1: _primary1,
+    primary2: _primary2,
+    primary3: _primary3,
+    primary4: _primary4,
+    blend1: _blend1,
+    blend2: _blend2,
+    blend3: _blend3,
+    orange1: _orange1,
+    orange2: _orange2,
+    orange3: _orange3,
+    orange4: _orange4,
+    red1: _red1,
+    red2: _red2,
+    red3: _red3,
+    red4: _red4,
+    background1: _background1,
+    background2: _background2,
+    background3: _background3,
+    gray1: _gray1,
+    gray2: _gray2,
+    gray3: _gray3,
+    gray4: _gray4,
+    contrast1: _contrast1,
+    contrast2: _contrast2,
+    contrast3: _contrast3,
+    contrast4: _contrast4,
+    staticBlack1: _staticBlack1,
+    staticBlack2: _staticBlack2,
+    staticBlack3: _staticBlack3,
+    staticWhite: _staticWhite,
+    purple1: _purple1,
+    purple2: _purple2,
+    purple3: _purple3,
+    purple4: _purple4,
+    accentMainDefault: _accentMainDefault,
   );
 
   late final _colorScheme = ColorScheme.fromSeed(
@@ -215,20 +290,17 @@ class LightTheme {
   late final _switchThemeData = SwitchThemeData(
     trackColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (!states.contains(WidgetState.disabled) && states.contains(WidgetState.pressed)) return _accentPressed;
-        if (!states.contains(WidgetState.selected)) return _backgroundSystem;
+        if (states.contains(WidgetState.selected)) return _accentMainDefault;
 
-        return _accent;
+        return _background2;
       },
     ),
     thumbColor: WidgetStateProperty.resolveWith(
       (states) {
-        if (states.contains(WidgetState.selected)) return _specialStaticWhite;
-        if (states.contains(WidgetState.disabled)) return _neutralDarkDisabled.withValues(alpha: 0.3);
-        if (states.contains(WidgetState.pressed)) return _neutralDarkPressed;
-        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _neutralDark;
+        if (states.contains(WidgetState.selected)) return _staticWhite;
+        if (states.contains(WidgetState.disabled)) return _contrast4;
 
-        return _neutralBlack;
+        return _contrast1;
       },
     ),
     overlayColor: const WidgetStatePropertyAll(_staticTransparent),
@@ -243,12 +315,9 @@ class LightTheme {
       (states) {
         if (states.contains(WidgetState.selected)) return null;
 
-        if (states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.focused) ||
-            states.contains(WidgetState.disabled))
-          return _neutralDark;
+        if (states.contains(WidgetState.disabled)) return _gray1;
 
-        return _neutralBlack;
+        return _contrast1;
       },
     ),
   );
