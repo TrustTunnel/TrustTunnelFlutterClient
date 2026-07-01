@@ -116,7 +116,9 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
 
     await _sharedPreferences.remove(_logTempKey);
 
-    await _filePicker.clearTemporaryFiles();
+    if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
+      await _filePicker.clearTemporaryFiles();
+    }
   }
 
   String _generateArchiveName() {
