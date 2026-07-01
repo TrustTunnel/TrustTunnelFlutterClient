@@ -224,7 +224,11 @@ jobs:
           readonly: 'true'
 
       - name: Generate Flutter iOS config files
-        run: flutter build ios --config-only --no-pub
+        run: flutter build ios --release \
+            --build-name="$PROJECT_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --no-pub \
+            --config-only
 
       - name: Build iOS with Fastlane
         env:
@@ -318,7 +322,11 @@ jobs:
           additional_cert_types: ${{ inputs.macos-signing-type == 'appstore' && 'mac_installer_distribution' || '' }}
 
       - name: Generate Flutter macOS config files
-        run: flutter build macos --config-only --no-pub
+        run: flutter build macos --release \
+            --build-name="$PROJECT_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --no-pub \
+            --config-only
 
       - name: Build macOS with Fastlane
         env:
