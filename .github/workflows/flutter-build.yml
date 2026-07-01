@@ -227,7 +227,9 @@ jobs:
         env:
           PROJECT_VERSION: ${{ inputs.version }}
           BUILD_NUMBER: ${{ inputs.build-number }}
-        run: flutter build ios --release \
+        run: |
+          set -euo pipefail
+          flutter build ios --release \
             --build-name="$PROJECT_VERSION" \
             --build-number="$BUILD_NUMBER" \
             --no-pub \
@@ -328,7 +330,9 @@ jobs:
         env:
           PROJECT_VERSION: ${{ inputs.version }}
           BUILD_NUMBER: ${{ inputs.build-number }}
-        run: flutter build macos --release \
+        run: |
+          set -euo pipefail 
+          flutter build macos --release \
             --build-name="$PROJECT_VERSION" \
             --build-number="$BUILD_NUMBER" \
             --no-pub \
