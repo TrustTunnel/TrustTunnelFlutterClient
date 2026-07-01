@@ -68,3 +68,18 @@ jobs:
       ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       artifact-name: trusttunnel-ios-pr
       artifact-path: ios/build/TrustTunnel.ipa
+
+  build-macos:
+    needs: [prepare]
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      platform: macos
+      channel: nightly
+      vault-role: trusttunnel-app
+      version: ${{ needs.prepare.outputs.version }}
+      build-number: ${{ github.run_number }}
+      version-title: ${{ needs.prepare.outputs.version-title }}
+      macos-signing-type: developer_id
+      artifact-name: trusttunnel-macos-pr
+      artifact-path: macos/build/TrustTunnel.dmg

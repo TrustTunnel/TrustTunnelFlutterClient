@@ -4,7 +4,7 @@
         ci-setup-ruby ci-setup-gpr \
         ci-fastlane-build-ipa ci-fastlane-build-simulator \
         ci-fastlane-build-ios ci-fastlane-build-ios-simulator \
-        ci-fastlane-build-macos
+        ci-setup-ruby-macos
 
 gen:
 	@echo "* Starting code generation... *"
@@ -106,6 +106,11 @@ ci-setup-ruby:
 	@cd ios && bundle config set --local path '.bundle/vendor' && bundle install
 	@echo "* Ruby setup done *"
 
+ci-setup-ruby-macos:
+	@echo "* Setting up Ruby gems (macos/) *"
+	@cd macos && bundle config set --local path '.bundle/vendor' && bundle install
+	@echo "* Ruby setup done *"
+
 ci-build-android-apk: .dart_tool/build/entrypoint/build.dart
 	@if [ -z "$$PROJECT_VERSION" ]; then \
 		echo "ERROR: PROJECT_VERSION env var is not set"; exit 1; \
@@ -146,6 +151,7 @@ ci-fastlane-build-ios: ci-fastlane-build-ipa
 
 ci-fastlane-build-ios-simulator: ci-fastlane-build-simulator
 
-ci-fastlane-build-macos:
-	@echo "* macOS build is not configured yet *"
-	@exit 1
+ci-fastlane-build-macos: ci-setup-gpr ci-setup-ruby-macos
+	@echo "* Building macOS app via fastlane *"
+	@cd macos && bundle exec fastlane build_and_package type:"$${BUILD_TYPE:-developer_id}"
+	@echo "* macOS build done *"

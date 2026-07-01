@@ -1,0 +1,85 @@
+ensure_bundle_exec
+
+
+lane :build_macos_app do |options|
+    type = options[:type]
+
+    app_store_connect_api_key
+
+    signing_config = {
+        "appstore"     => { match: "AppStore", identity: "Apple Distribution" },
+        "developer_id" => { match: "Direct",   identity: "Developer ID Application" },
+    }
+
+    config = signing_config.fetch(type) do
+      UI.user_error!("Unknown signing type: #{type}. Expected: appstore, developer_id")
+    end
+
+    signing_targets = ENV.fetch('SIGNING_TARGETS').split(',').map { |pair| pair.split(':', 2) }
+
+    provisioning_profiles = signing_targets.each_with_object({}) do |(_target_name, bundle_id), mapping|
+      mapping[bundle_id] = "match #{config[:match]} #{bundle_id} macos"
+    end
+
+    export_methods = {
+        "appstore"     => "app-store",
+        "developer_id" => "developer-id",
+    }
+
+    signing_targets.each do |target_name, bundle_id|
+      update_code_signing_settings(
+        path: "Runner.xcodeproj",
+        use_automatic_signing: false,
+        team_id: ENV.fetch('TEAM_ID'),
+        code_sign_identity: config[:identity],
+        profile_name: provisioning_profiles.fetch(bundle_id),
+        targets: [target_name],
+        build_configurations: ["Release"]
+      )
+    end
+
+    if ENV['MATCH_KEYCHAIN_NAME'] && !ENV['MATCH_KEYCHAIN_NAME'].empty?
+      unlock_keychain(
+        path: ENV['MATCH_KEYCHAIN_NAME'],
+        password: ENV.fetch('MATCH_KEYCHAIN_PASSWORD', ''),
+        add_to_search_list: true,
+        set_default: false
+      )
+    end
+
+    build_mac_app(
+        scheme: ENV['CUSTOM_FASTLANE_SCHEMA'],
+        output_directory: ENV['FASTLANE_BUILD_DIRECTORY'],
+        output_name: ENV['CUSTOM_FASTLANE_BUILD_NAME'],
+        include_symbols: true,
+        archive_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/#{ENV['CUSTOM_FASTLANE_BUILD_NAME']}.xcarchive",
+        derived_data_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/derived_data",
+        buildlog_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/logs",
+        build_path: ENV['FASTLANE_BUILD_DIRECTORY'],
+        export_method: export_methods.fetch(type),
+        export_options: {
+            manageAppVersionAndBuildNumber: type == "appstore",
+            generateAppStoreInformation: type == "appstore",
+            signingStyle: "manual",
+            signingCertificate: config[:identity],
+            provisioningProfiles: provisioning_profiles
+        }
+    )
+end
+
+
+lane :update_macos_entitlements do |options|
+      values = ENV['SYSTEM_EXTENSION_ENTITLEMENTS']&.split(',')&.map(&:strip) || []
+
+      entitlements_files = ENV['SYSTEM_EXTENSION_ENTITLEMENTS_FILES']&.split(',')&.map(&:strip) || []
+
+      entitlements_files = entitlements_files.map { |f| File.join(__dir__, '..', f) }
+
+      values.each do |value|
+        entitlements_files.each do |file|
+          if system("grep", "-q", ">#{value}<", file)
+            sh("sed", "-i", "", "s/>#{value}</>#{value}-systemextension</g", file)
+          end
+        end
+      end
+end

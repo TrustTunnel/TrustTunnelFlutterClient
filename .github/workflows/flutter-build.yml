@@ -6,7 +6,7 @@ on:
       platform:
         type: string
         required: true
-        description: 'android or ios'
+        description: 'android, ios or macos'
       vault-role:
         type: string
         default: 'trusttunnel-app'
@@ -51,6 +51,10 @@ on:
         type: string
         default: ''
         description: 'Release identifier (e.g. "1.2")'
+      macos-signing-type:
+        type: string
+        default: 'developer_id'
+        description: 'macOS signing type: developer_id, appstore'
 
 permissions:
   contents: read
@@ -114,6 +118,9 @@ jobs:
         run: |
           set -euo pipefail
           make init
+
+      - name: Precache Flutter Android artifacts
+        run: flutter precache --android
 
       - name: Build Android APK
         if: inputs.build-mode == 'apk'
@@ -190,6 +197,9 @@ jobs:
           set -euo pipefail
           make init
 
+      - name: Precache Flutter iOS artifacts
+        run: flutter precache --ios
+
       - name: Pod install
         run: |
           set -euo pipefail
@@ -213,6 +223,9 @@ jobs:
           keychain_name: ci-signing
           readonly: 'true'
 
+      - name: Generate Flutter iOS config files
+        run: flutter build ios --config-only --no-pub
+
       - name: Build iOS with Fastlane
         env:
           MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
@@ -226,6 +239,122 @@ jobs:
             bundle exec fastlane build_ipa type:"${{ inputs.signing-type }}"
           fi
           cd ..
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: error
+
+  build-macos:
+    needs: [resolve-runner]
+    if: inputs.platform == 'macos'
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-7168
+      - ephemeral-limit-cpu-4
+      - ephemeral-limit-disk-gb-20
+    defaults:
+      run:
+        shell: bash
+    env:
+      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Apply PR overrides
+        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Load signing env
+        run: |
+          grep -vE '^\s*(#|$)' "macos/fastlane/.env" >> "$GITHUB_ENV"
+      
+      - name: Prepare Ruby environment
+        run: |
+          set -euo pipefail
+          set -x
+          eval "$(rbenv init - bash)"
+          rbenv install 3.3.10 --skip-existing
+          rbenv local 3.3.10
+          rbenv rehash
+          printf '%s\n' "$HOME/.rbenv/bin" "$HOME/.rbenv/shims" >> "$GITHUB_PATH"
+          gem install bundler -v 2.7.2
+          rbenv rehash
+          export BUNDLER_VERSION=2.7.2
+          cd macos
+          bundle config set --local path '.bundle/vendor'
+          bundle install
+          cd ..
+
+      - name: Flutter pub get and code generation
+        run: |
+          set -euo pipefail
+          cd macos
+          bundle exec fastlane update_macos_entitlements type:"${{ inputs.macos-signing-type }}"
+          cd ..
+          make init
+
+      - name: Pod install
+        run: |
+          set -euo pipefail
+          cd macos
+          bundle exec pod install --repo-update
+          cd ..
+
+      - name: Sync macOS signing assets
+        id: signing
+        uses: AdGuardSoftwareLimited/apple-devices/.github/actions/match-sync@master
+        with:
+          vault_url: ${{ vars.VAULT_URL }}
+          type: ${{ inputs.macos-signing-type }}
+          app_id: ${{ env.APP_IDENTIFIERS }}
+          keychain_name: ci-signing
+          readonly: 'true'
+          platform: macos
+          additional_cert_types: ${{ inputs.macos-signing-type == 'appstore' && 'mac_installer_distribution' || '' }}
+
+      - name: Generate Flutter macOS config files
+        run: flutter build macos --config-only --no-pub
+
+      - name: Build macOS with Fastlane
+        env:
+          MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
+          MATCH_KEYCHAIN_PASSWORD: ${{ steps.signing.outputs.keychain_password }}
+        run: |
+          set -euo pipefail
+          cd macos
+          bundle exec fastlane build_macos_app type:"${{ inputs.macos-signing-type }}"
+          cd ..
+      
+      - name: Package into DMG
+        if: inputs.macos-signing-type == 'developer_id'
+        run: |
+          set -euo pipefail
+          cd macos
+          APP_PATH="${FASTLANE_BUILD_DIRECTORY}/${CUSTOM_FASTLANE_BUILD_NAME}.app"
+          DMG_PATH="${FASTLANE_BUILD_DIRECTORY}/${CUSTOM_FASTLANE_BUILD_NAME}.dmg"
+          test -d "$APP_PATH" || { echo "App bundle not found at $APP_PATH"; ls -la "$FASTLANE_BUILD_DIRECTORY"; exit 1; }
+
+          STAGING_DIR="$(mktemp -d)"
+          cp -R "$APP_PATH" "$STAGING_DIR/"
+          ln -s /Applications "$STAGING_DIR/Applications"
+
+          hdiutil create -volname "$CUSTOM_FASTLANE_BUILD_NAME" \
+            -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
+
+          rm -rf "$STAGING_DIR"
+
+      - name: Notarize DMG
+        if: inputs.macos-signing-type == 'developer_id'
+        uses: AdGuardSoftwareLimited/actions/actions/notarize-macos-app@master
+        with:
+          bundle_path: ${{ github.workspace }}/macos/build/TrustTunnel.dmg
+          vault_url: ${{ vars.VAULT_URL }}
+     
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
