@@ -1,5 +1,7 @@
 ensure_bundle_exec
 
+require 'fileutils'
+require 'tmpdir'
 
 lane :build_macos_app do |options|
     type = options[:type]
@@ -65,6 +67,22 @@ lane :build_macos_app do |options|
             provisioningProfiles: provisioning_profiles
         }
     )
+
+    if type == "appstore"
+      out_dir = ENV.fetch('FASTLANE_BUILD_DIRECTORY')
+      dest    = File.join(out_dir, "AppStoreInfo.plist")
+
+      unless File.exist?(dest)
+        candidates = Dir.glob(File.join(Dir.tmpdir, "**", "AppStoreInfo.plist"))
+        UI.user_error!("AppStoreInfo.plist was not produced by gym — cannot upload .pkg to TestFlight") if candidates.empty?
+
+        source = candidates.max_by { |f| File.mtime(f) }
+        FileUtils.cp(source, dest)
+        UI.success("Copied AppStoreInfo.plist: #{source} -> #{dest}")
+      end
+
+      UI.message("AppStoreInfo.plist contents:\n#{File.read(dest)}")
+    end
 end
 
 
