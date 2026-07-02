@@ -59,6 +59,7 @@ lane :build_macos_app do |options|
         buildlog_path: "#{ENV['FASTLANE_BUILD_DIRECTORY']}/logs",
         build_path: ENV['FASTLANE_BUILD_DIRECTORY'],
         export_method: export_methods.fetch(type),
+        generate_appstore_info: type == "appstore",
         export_options: {
             manageAppVersionAndBuildNumber: type == "appstore",
             generateAppStoreInformation: type == "appstore",
