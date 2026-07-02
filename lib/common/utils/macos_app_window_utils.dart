@@ -10,10 +10,18 @@ final class MacOSAppWindowUtils {
 
   static Future<void> showMainWindow() async {
     if (defaultTargetPlatform != TargetPlatform.macOS) {
-      throw UnsupportedError('MacOSAppWindowUtils is only supported on macOS');
+      _throwUnsupportedError();
     }
 
     await _mainWindowChannel.invokeMethod<void>('show');
+  }
+
+  static Future<void> hideMainWindow() async {
+    if (defaultTargetPlatform != TargetPlatform.macOS) {
+      _throwUnsupportedError();
+    }
+
+    await _mainWindowChannel.invokeMethod<void>('hide');
   }
 
   /// Configure the main window for macOS.
@@ -28,10 +36,13 @@ final class MacOSAppWindowUtils {
     required bool isDebugMode,
   }) async {
     if (defaultTargetPlatform != TargetPlatform.macOS) {
-      throw UnsupportedError('MacOSAppWindowUtils is only supported on macOS');
+      _throwUnsupportedError();
     }
 
+    final shouldShowMainWindowOnLaunch = await MacOSAppWindowUtils._shouldShowMainWindowOnLaunch();
+
     await windowManager.ensureInitialized();
+    await windowManager.setPreventClose(true);
 
     final display = await screenRetriever.getPrimaryDisplay();
     final visibleSize = display.visibleSize ?? display.size;
@@ -62,10 +73,23 @@ final class MacOSAppWindowUtils {
       windowOptions,
       () async {
         await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+
+        if (!shouldShowMainWindowOnLaunch) {
+          return;
+        }
+
         await windowManager.show();
         await windowManager.focus();
       },
     );
+  }
+
+  static Future<bool> _shouldShowMainWindowOnLaunch() async {
+    if (defaultTargetPlatform != TargetPlatform.macOS) {
+      _throwUnsupportedError();
+    }
+
+    return await _mainWindowChannel.invokeMethod<bool>('shouldShowMainWindowOnLaunch') ?? true;
   }
 
   static double _clampWindowDimension({
@@ -78,4 +102,6 @@ final class MacOSAppWindowUtils {
         math.max(minimumDimension, visibleDimension),
       )
       .toDouble();
+
+  static Never _throwUnsupportedError() => throw UnsupportedError('MacOSAppWindowUtils is only supported on macOS');
 }
