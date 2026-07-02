@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/utils/url_utils.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/app_logging_screen.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/excluded_routes_screen.dart';
+import 'package:trusttunnel/feature/settings/launch_and_connection/widgets/launch_and_connection_screen.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/widgets/download_app_logs_tile.dart';
 import 'package:trusttunnel/feature/settings/settings_about/about_screen.dart';
@@ -35,6 +36,11 @@ class SettingsScreen extends StatelessWidget {
           const DownloadAppLogsTile(),
           const Divider(),
           CustomArrowListTile(
+            title: context.ln.launchAndConnection,
+            onTap: () => _pushLaunchAndConnectionScreen(context),
+          ),
+          const Divider(),
+          CustomArrowListTile(
             title: context.ln.excludedRoutes,
             onTap: () => _pushExcludedRoutesScreen(context),
           ),
@@ -55,6 +61,10 @@ class SettingsScreen extends StatelessWidget {
 
   void _pushQueryLogScreen(BuildContext context) => context.push(
     const QueryLogScreen(),
+  );
+
+  void _pushLaunchAndConnectionScreen(BuildContext context) => context.push(
+    const LaunchAndConnectionScreen(),
   );
 
   void _pushAppLoggingScreen(BuildContext context) => context.push(
