@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
@@ -68,7 +66,7 @@ class _ServersScopeState extends State<ServersScope> {
   );
 
   void _selectServer(String? serverId) {
-    unawaited(_autoConnectOnLaunchSettingsController.setLastServerId(serverId));
+    _autoConnectOnLaunchSettingsController.setLastServerId(serverId);
     _controller.selectServer(serverId);
   }
 

@@ -25,6 +25,7 @@ class AutoConnectOnLaunchSettingsScope extends StatefulWidget {
 
 class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSettingsScope> {
   late final AutoConnectOnLaunchSettingsController _controller;
+  Future<void>? _connectToLastServerFuture;
 
   @override
   void initState() {
@@ -40,16 +41,30 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    unawaited(_connectToLastServerIfNeeded());
+    _scheduleConnectToLastServerIfNeeded();
   }
 
   @override
   Widget build(BuildContext context) => StateConsumer<AutoConnectOnLaunchSettingsController, AutoConnectOnLaunchState>(
     controller: _controller,
-    listener: (_, _, _, _) => unawaited(_connectToLastServerIfNeeded()),
+    listener: (_, _, _, _) => _scheduleConnectToLastServerIfNeeded(),
     builder: (_, _, child) => child!,
     child: widget.child,
   );
+
+  void _scheduleConnectToLastServerIfNeeded() {
+    if (_connectToLastServerFuture != null) {
+      return;
+    }
+
+    final future = _connectToLastServerIfNeeded();
+    _connectToLastServerFuture = future;
+    unawaited(
+      future.whenComplete(() {
+        _connectToLastServerFuture = null;
+      }),
+    );
+  }
 
   Future<void> _connectToLastServerIfNeeded() async {
     final state = _controller.state;
@@ -60,7 +75,7 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
     final serversController = ServersScope.controllerOf(context);
     if (!state.enabled || state.lastServerId == null || serversController.servers.isEmpty) {
       if (!serversController.loading) {
-        await _controller.markConnectOnLaunchHandled();
+        _controller.markConnectOnLaunchHandled();
       }
 
       return;
@@ -70,7 +85,7 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
       (server) => server.id == state.lastServerId,
     );
     if (server == null) {
-      await _controller.markConnectOnLaunchHandled();
+      _controller.markConnectOnLaunchHandled();
 
       return;
     }
@@ -83,7 +98,7 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
           (profile) => profile.id == server.serverData.routingProfileId,
         );
     if (routingProfile == null) {
-      await _controller.markConnectOnLaunchHandled();
+      _controller.markConnectOnLaunchHandled();
 
       return;
     }
@@ -94,7 +109,7 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
     ).excludedRoutes;
     final vpnController = VpnScope.vpnControllerOf(context, listen: false);
 
-    await _controller.markConnectOnLaunchHandled();
+    _controller.markConnectOnLaunchHandled();
     await vpnController.start(
       server: server,
       routingProfile: routingProfile,
