@@ -25,7 +25,6 @@ class ServersCard extends StatefulWidget {
 
 class _ServersCardState extends State<ServersCard> {
   late VpnState _vpnStatus;
-
   late Server? _pickedServer;
 
   @override
@@ -68,8 +67,11 @@ class _ServersCardState extends State<ServersCard> {
     );
   }
 
-  void _changeServer(BuildContext context, String? serverId) =>
-      ServersScope.controllerOf(context, listen: false).pickServer(serverId);
+  void _changeServer(BuildContext context, String? serverId) {
+    final controller = ServersScope.controllerOf(context, listen: false);
+
+    controller.pickServer(serverId);
+  }
 
   Future<void> _disconnectFromVpn(BuildContext context) {
     final controller = VpnScope.vpnControllerOf(context);
@@ -81,12 +83,14 @@ class _ServersCardState extends State<ServersCard> {
     BuildContext context,
     Server server,
   ) async {
+    final serversController = ServersScope.controllerOf(context, listen: false);
     final controller = VpnScope.vpnControllerOf(context, listen: false);
     final excludedRoutes = ExcludedRoutesScope.controllerOf(context, listen: false).excludedRoutes;
     final routingProfile = RoutingScope.controllerOf(context, listen: false).routingList.firstWhere(
       (element) => element.id == server.serverData.routingProfileId,
     );
 
+    serversController.pickServer(server.id);
     await controller.start(
       server: server,
       routingProfile: routingProfile,
