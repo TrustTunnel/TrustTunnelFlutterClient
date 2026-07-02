@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/font_families.dart';
 import 'package:trusttunnel/common/constants/app_constants.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/utils/macos_app_window_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
 class AppCustomMacOSTitleBar extends StatefulWidget {
@@ -70,9 +71,8 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
   }
 
   @override
-  void dispose() {
-    windowManager.removeListener(this);
-    super.dispose();
+  void onWindowClose() {
+    unawaited(MacOSAppWindowUtils.hideMainWindow());
   }
 
   Future<void> _syncFullScreenState() async {
@@ -97,5 +97,11 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
     setState(() {
       _isFullScreen = isFullScreen;
     });
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
   }
 }

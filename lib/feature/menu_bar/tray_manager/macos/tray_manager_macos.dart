@@ -17,7 +17,6 @@ final class TrayManagerMacOS {
 
   TrayIcons? _trayIcons;
   bool _isTrayInitialized = false;
-  bool _isTrayAvailable = true;
 
   TrayManagerMacOS({
     TrayManagerApi? trayManager,
@@ -31,32 +30,22 @@ final class TrayManagerMacOS {
     required TrayMenuData data,
     required TrayMenuCallbacks callbacks,
   }) async {
-    if (!_isTrayAvailable) {
-      return;
+    final trayIcons = await _ensureTrayIcons();
+    final trayItems = _buildTrayItems(
+      data,
+      callbacks: callbacks,
+    );
+
+    if (!_isTrayInitialized) {
+      await _trayManagerApi.initTray(trayItems);
+      _isTrayInitialized = true;
+    } else {
+      await _trayManagerApi.updateMenu(trayItems);
     }
 
-    try {
-      final trayIcons = await _ensureTrayIcons();
-      final trayItems = _buildTrayItems(
-        data,
-        callbacks: callbacks,
-      );
-
-      if (!_isTrayInitialized) {
-        await _trayManagerApi.initTray(trayItems);
-        _isTrayInitialized = true;
-      } else {
-        await _trayManagerApi.updateMenu(trayItems);
-      }
-
-      await _trayManagerApi.setTrayIcon(
-        trayIcons.iconFor(data.connectionState),
-      );
-    } catch (error) {
-      _isTrayAvailable = false;
-
-      rethrow;
-    }
+    await _trayManagerApi.setTrayIcon(
+      trayIcons.iconFor(data.connectionState),
+    );
   }
 
   Future<void> dispose() => _trayManagerApi.dispose();
