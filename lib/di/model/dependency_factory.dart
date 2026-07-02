@@ -6,8 +6,11 @@ import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
+import 'package:trusttunnel/data/datasources/auto_connect_on_launch_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
+import 'package:trusttunnel/data/datasources/launch_at_login_datasource.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/auto_connect_on_launch_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_export_destination_datasource_impl.dart';
@@ -18,7 +21,10 @@ import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_i
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
+import 'package:trusttunnel/data/datasources/native_sources/launch_at_login_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/native_sources/open_main_window_on_login_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/open_main_window_on_login_datasource.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
@@ -56,6 +62,12 @@ abstract class DependencyFactory {
   LogsLocalSource get exportLogsLocalSource;
 
   LogsExportDestinationDataSource get logsExportDestinationDataSource;
+
+  LaunchAtLoginDataSource get launchAtLoginDataSource;
+
+  OpenMainWindowOnLoginDataSource get openMainWindowOnLoginDataSource;
+
+  AutoConnectOnLaunchSettingsDataSource get autoConnectOnLaunchSettingsDataSource;
 
   db.AppDatabase get database;
 }
@@ -99,6 +111,12 @@ class DependencyFactoryImpl implements DependencyFactory {
   LogsLocalSource? _exportLogsLocalSource;
 
   LogsExportDestinationDataSource? _logsExportDestinationDataSource;
+
+  LaunchAtLoginDataSource? _launchAtLoginDataSource;
+
+  OpenMainWindowOnLoginDataSource? _openMainWindowOnLoginDataSource;
+
+  AutoConnectOnLaunchSettingsDataSource? _autoConnectOnLaunchSettingsDataSource;
 
   db.AppDatabase? _database;
 
@@ -166,6 +184,19 @@ class DependencyFactoryImpl implements DependencyFactory {
   LogsExportDestinationDataSource get logsExportDestinationDataSource =>
       _logsExportDestinationDataSource ??= LogsExportDestinationDataSourceImpl(
         filePicker: FilePicker.platform,
+      );
+
+  @override
+  LaunchAtLoginDataSource get launchAtLoginDataSource => _launchAtLoginDataSource ??= LaunchAtLoginDataSourceImpl();
+
+  @override
+  OpenMainWindowOnLoginDataSource get openMainWindowOnLoginDataSource =>
+      _openMainWindowOnLoginDataSource ??= OpenMainWindowOnLoginDataSourceImpl();
+
+  @override
+  AutoConnectOnLaunchSettingsDataSource get autoConnectOnLaunchSettingsDataSource =>
+      _autoConnectOnLaunchSettingsDataSource ??= AutoConnectOnLaunchSettingsDataSourceImpl(
+        preferences: sharedPreferences,
       );
 
   @override
