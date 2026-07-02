@@ -13,7 +13,7 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
     super.initialState = const AutoConnectOnLaunchState.initial(),
   }) : _repository = repository;
 
-  Future<void> fetch() => handle(
+  void fetch() => handle(
     () async {
       setState(
         AutoConnectOnLaunchState.loading(
@@ -38,7 +38,11 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
     completionHandler: _onCompleted,
   );
 
-  Future<void> enable() => handle(
+  void enable() => _applyEnabled(enabled: true);
+
+  void disable() => _applyEnabled(enabled: false);
+
+  void _applyEnabled({required bool enabled}) => handle(
     () async {
       setState(
         AutoConnectOnLaunchState.loading(
@@ -48,7 +52,11 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
         ),
       );
 
-      await _repository.enable();
+      if (enabled) {
+        await _repository.enable();
+      } else {
+        await _repository.disable();
+      }
 
       setState(
         AutoConnectOnLaunchState.idle(
@@ -62,31 +70,7 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
     completionHandler: _onCompleted,
   );
 
-  Future<void> disable() => handle(
-    () async {
-      setState(
-        AutoConnectOnLaunchState.loading(
-          enabled: state.enabled,
-          lastServerId: state.lastServerId,
-          connectOnLaunchHandled: state.connectOnLaunchHandled,
-        ),
-      );
-
-      await _repository.disable();
-
-      setState(
-        AutoConnectOnLaunchState.idle(
-          enabled: await _repository.isEnabled(),
-          lastServerId: await _repository.getLastServerId(),
-          connectOnLaunchHandled: state.connectOnLaunchHandled,
-        ),
-      );
-    },
-    errorHandler: _onError,
-    completionHandler: _onCompleted,
-  );
-
-  Future<void> setLastServerId(String? serverId) => handle(
+  void setLastServerId(String? serverId) => handle(
     () async {
       setState(
         AutoConnectOnLaunchState.loading(
@@ -110,7 +94,7 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
     completionHandler: _onCompleted,
   );
 
-  Future<void> markConnectOnLaunchHandled() => handle(
+  void markConnectOnLaunchHandled() => handle(
     () async {
       setState(
         AutoConnectOnLaunchState.idle(
