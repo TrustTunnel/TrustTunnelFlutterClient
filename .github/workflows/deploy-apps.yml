@@ -202,7 +202,7 @@ jobs:
 
   deploy-macos-testflight:
     needs: [meta, build-macos-appstore, changelog-public]
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@feat/update-testflight-deployer-image-version
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
       asset-artifact-name: trusttunnel-macos-appstore
