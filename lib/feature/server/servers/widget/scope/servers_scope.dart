@@ -8,6 +8,7 @@ import 'package:trusttunnel/feature/server/servers/controller/servers_controller
 import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
+import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_controller.dart';
 
 /// {@template products_scope_template}
 /// Provides Products controller to the widget tree
@@ -22,8 +23,15 @@ class ServersScope extends StatefulWidget {
   });
 
   /// Get the controller from context
-  static ServersScopeController controllerOf(BuildContext context, {bool listen = true, ServersScopeAspect? aspect}) =>
-      _InheritedServersScope.serversControllerOf(context, listen: listen, aspect: aspect);
+  static ServersScopeController controllerOf(
+    BuildContext context, {
+    bool listen = true,
+    ServersScopeAspect? aspect,
+  }) => _InheritedServersScope.serversControllerOf(
+    context,
+    listen: listen,
+    aspect: aspect,
+  );
 
   @override
   State<ServersScope> createState() => _ServersScopeState();
@@ -31,11 +39,18 @@ class ServersScope extends StatefulWidget {
 
 class _ServersScopeState extends State<ServersScope> {
   late final ServersController _controller;
+  late final AutoConnectOnLaunchSettingsController _autoConnectOnLaunchSettingsController;
 
   @override
   void initState() {
     super.initState();
-    _controller = ServersController(repository: context.repositoryFactory.serverRepository);
+
+    final repositoryFactory = context.repositoryFactory;
+    _controller = ServersController(repository: repositoryFactory.serverRepository);
+    _autoConnectOnLaunchSettingsController = AutoConnectOnLaunchSettingsController(
+      repository: repositoryFactory.autoConnectOnLaunchSettingsRepository,
+    );
+
     _controller.fetchServers();
   }
 
@@ -44,14 +59,20 @@ class _ServersScopeState extends State<ServersScope> {
     controller: _controller,
     builder: (context, state, _) => _InheritedServersScope(
       state: state,
-      pickServer: _controller.selectServer,
+      pickServer: _selectServer,
       fetchServers: _controller.fetchServers,
       child: widget.child,
     ),
   );
 
+  void _selectServer(String? serverId) {
+    _autoConnectOnLaunchSettingsController.setLastServerId(serverId);
+    _controller.selectServer(serverId);
+  }
+
   @override
   void dispose() {
+    _autoConnectOnLaunchSettingsController.dispose();
     _controller.dispose();
     super.dispose();
   }

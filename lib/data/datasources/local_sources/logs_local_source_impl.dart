@@ -125,12 +125,10 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
 
     await _sharedPreferences.remove(_logTempKey);
 
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
-      return;
+    if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
+      // This method is not available on desktop platforms (only Android and iOS)
+      await _filePicker.clearTemporaryFiles();
     }
-
-    // This method is not available on desktop platforms (only Android and iOS)
-    await _filePicker.clearTemporaryFiles();
   }
 
   String _generateArchiveName() {

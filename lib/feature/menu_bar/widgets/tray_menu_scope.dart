@@ -25,6 +25,7 @@ import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/exclu
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
+import 'package:window_manager/window_manager.dart';
 
 class TrayMenuScope extends StatefulWidget {
   final Widget child;
@@ -145,7 +146,6 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       return;
     }
 
-    _serversController.pickServer(targetServer.id);
     await _connectToServer(targetServer);
   }
 
@@ -159,7 +159,6 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       return;
     }
 
-    _serversController.pickServer(serverId);
     await _connectToServer(server);
   }
 
@@ -228,6 +227,10 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       }
     }
 
+    if (_isMacOS) {
+      await windowManager.setPreventClose(false);
+    }
+
     await SystemNavigator.pop();
   }
 
@@ -243,14 +246,15 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       return;
     }
 
-    _lastConnectedServerId = server.id;
-    _enqueueSync();
-
     final excludedRoutes = ExcludedRoutesScope.controllerOf(
       context,
       listen: false,
     ).excludedRoutes;
 
+    _lastConnectedServerId = server.id;
+    _enqueueSync();
+
+    _serversController.pickServer(server.id);
     await _vpnController.start(
       server: server,
       routingProfile: routingProfile,
