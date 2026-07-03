@@ -202,15 +202,45 @@ jobs:
 
   deploy-macos-testflight:
     needs: [meta, build-macos-appstore, changelog-public]
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
-    with:
-      team: flutter
-      asset-artifact-name: trusttunnel-macos-appstore
-      changelog-artifact-name: changelog.txt
-      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
-      distribute-external: true
-      submit-beta-review: false
-      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+    runs-on: team-flutter
+    environment: ${{ needs.meta.outputs.release-channel }}-testflight
+    steps:
+      - name: Fetch App Store Connect API key from Vault
+        id: vault
+        uses: hashicorp/vault-action@v4
+        with:
+          url: ${{ vars.VAULT_URL }}
+          method: jwt
+          path: jwt
+          role: testflight-deployer
+          secrets: |
+            secret/data/ci-secrets/testflight-deployer auth-json | AUTH_JSON ;
+
+      - name: Download asset artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-macos-appstore
+          path: ctx
+
+      - name: Download changelog artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog.txt
+          path: ctx
+
+      - name: Upload to TestFlight
+        uses: AdGuardSoftwareLimited/actions/actions/docker-build@master
+        with:
+          content: |
+            FROM registry.int.agrd.dev/library/testflight-deployer:2.233.1--4
+          context: ctx
+          build-args: |
+            AUTH_JSON=${{ steps.vault.outputs.AUTH_JSON }}
+            GROUPS=${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
+            DISTRIBUTE_EXTERNAL=true
+            SUBMIT_BETA_REVIEW=false
+            SKIP_WAIT=false
+            WAIT_INTERVAL=15
 
   # build-macos-developer-id:
   #   needs: [meta, build-number]
