@@ -6,15 +6,19 @@ on:
       vault-role:
         type: string
         default: 'trusttunnel-app'
+        description: 'Vault JWT auth role for signing secrets'
       version:
         type: string
         default: '0.0.0'
+        description: 'Version string for build'
       build-number:
         type: string
         default: '1'
+        description: 'Build number'
       version-title:
         type: string
         default: ''
+        description: 'Human-readable version title'
       build-mode:
         type: string
         default: 'apk'
@@ -22,15 +26,15 @@ on:
       channel:
         type: string
         required: true
-      release:
-        type: string
-        default: ''
+        description: 'Build channel (nightly, beta, rc, release)'
       artifact-name:
         type: string
         default: ''
+        description: 'Name for uploaded build artifact'
       artifact-path:
         type: string
         default: ''
+        description: 'Path to build output file(s)'
 
 permissions:
   contents: read
@@ -62,6 +66,9 @@ jobs:
     env:
       GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
     steps:
+      - name: Fix Flutter git safe directory
+        run: git config --global --add safe.directory /opt/flutter
+
       - name: Fetch secrets from Vault
         uses: hashicorp/vault-action@v4
         with:
@@ -74,9 +81,6 @@ jobs:
             secret/data/ci-secrets/${{ inputs.vault-role }} keyAlias         | ORG_GRADLE_PROJECT_signingConfigKeyAlias ;
             secret/data/ci-secrets/${{ inputs.vault-role }} keyPassword      | ORG_GRADLE_PROJECT_signingConfigKeyPassword ;
             secret/data/ci-secrets/${{ inputs.vault-role }} keystorePassword | ORG_GRADLE_PROJECT_signingConfigKeyStorePassword
-
-      - name: Fix Flutter git safe directory
-        run: git config --global --add safe.directory /opt/flutter
 
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -91,9 +95,7 @@ jobs:
           echo "ORG_GRADLE_PROJECT_signingConfigKeyStorePath=/tmp/trusttunnel.keystore" >> "$GITHUB_ENV"
 
       - name: Flutter pub get and code generation
-        run: |
-          set -euo pipefail
-          make init
+        run: make init
 
       - name: Precache Flutter Android artifacts
         run: flutter precache --android

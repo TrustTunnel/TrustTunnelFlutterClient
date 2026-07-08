@@ -6,12 +6,15 @@ on:
       version:
         type: string
         default: '0.0.0'
+        description: 'Version string for build'
       build-number:
         type: string
         default: '1'
+        description: 'Build number'
       version-title:
         type: string
         default: ''
+        description: 'Human-readable version title'
       build-mode:
         type: string
         default: 'ipa'
@@ -19,18 +22,19 @@ on:
       signing-type:
         type: string
         default: 'adhoc'
+        description: 'iOS signing type: adhoc, appstore, development'
       channel:
         type: string
         required: true
-      release:
-        type: string
-        default: ''
+        description: 'Build channel (nightly, beta, rc, release)'
       artifact-name:
         type: string
         default: ''
+        description: 'Name for uploaded build artifact'
       artifact-path:
         type: string
         default: ''
+        description: 'Path to build output file(s)'
       fastlane-env-path:
         type: string
         default: 'ios/fastlane/.env'
@@ -65,6 +69,9 @@ jobs:
     env:
       GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
     steps:
+      - name: Fix Flutter git safe directory
+        run: git config --global --add safe.directory /opt/flutter
+
       - name: Checkout repository
         uses: actions/checkout@v5
 
@@ -89,9 +96,7 @@ jobs:
           cd ..
 
       - name: Flutter pub get and code generation
-        run: |
-          set -euo pipefail
-          make init
+        run: make init
 
       - name: Precache Flutter iOS artifacts
         run: flutter precache --ios

@@ -25,6 +25,24 @@ jobs:
       - uses: AdGuardSoftwareLimited/actions/actions/epoch-version-metadata@master
         id: meta
 
+  darwin-native-changes:
+    runs-on: [team-flutter]
+    outputs:
+      ios: ${{ steps.filter.outputs.ios }}
+      macos: ${{ steps.filter.outputs.macos }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: filter
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
+          echo "ios=$(grep -qE '^ios/'   <<< "$CHANGED" && echo true || echo false)"   >> "$GITHUB_OUTPUT"
+          echo "macos=$(grep -qE '^macos/' <<< "$CHANGED" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   check-fixme:
     uses: AdGuardSoftwareLimited/actions/.github/workflows/check-fixme.yml@master
     with:
@@ -53,7 +71,10 @@ jobs:
       artifact-path: build/app/outputs/flutter-apk/app-release.apk
 
   build-ios:
-    needs: [prepare]
+    needs: [prepare, darwin-native-changes]
+    if: >-
+      github.event.pull_request.draft == false ||
+      needs.darwin-native-changes.outputs.ios == 'true'
     uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
@@ -66,7 +87,10 @@ jobs:
       artifact-path: ios/build/TrustTunnel.ipa
 
   build-macos:
-    needs: [prepare]
+    needs: [prepare, darwin-native-changes]
+    if: >-
+      github.event.pull_request.draft == false ||
+      needs.darwin-native-changes.outputs.macos == 'true'
     uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
