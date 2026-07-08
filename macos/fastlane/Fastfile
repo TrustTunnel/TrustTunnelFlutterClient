@@ -40,6 +40,21 @@ lane :build_macos_app do |options|
       )
     end
 
+    no_profile_targets = ENV.fetch('SIGNING_TARGETS_NO_PROFILE', '')
+                            .split(',').map(&:strip).reject(&:empty?)
+
+    no_profile_targets.each do |target_name|
+      update_code_signing_settings(
+        path: "Runner.xcodeproj",
+        use_automatic_signing: false,
+        team_id: ENV.fetch('TEAM_ID'),
+        code_sign_identity: config[:identity],
+        profile_name: "",
+        targets: [target_name],
+        build_configurations: ["Release"]
+      )
+    end
+
     if ENV['MATCH_KEYCHAIN_NAME'] && !ENV['MATCH_KEYCHAIN_NAME'].empty?
       unlock_keychain(
         path: ENV['MATCH_KEYCHAIN_NAME'],
