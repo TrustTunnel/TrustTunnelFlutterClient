@@ -212,29 +212,29 @@ jobs:
       submit-beta-review: false
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
-  build-macos-developer-id:
-    needs: [meta, build-number]
-    uses: ./.github/workflows/flutter-build.yml
-    secrets: inherit
-    with:
-      platform: macos
-      version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
-      version-title: ${{ needs.meta.outputs.version-title }}
-      channel: ${{ needs.meta.outputs.release-channel }}
-      macos-signing-type: developer_id
-      artifact-name: trusttunnel-macos-dmg
-      artifact-path: macos/build/TrustTunnel.dmg
-      release: ${{ needs.meta.outputs.release }}
+  # build-macos-developer-id:
+  #   needs: [meta, build-number]
+  #   uses: ./.github/workflows/flutter-build.yml
+  #   secrets: inherit
+  #   with:
+  #     platform: macos
+  #     version: ${{ needs.meta.outputs.version }}
+  #     build-number: ${{ needs.build-number.outputs.build-number }}
+  #     version-title: ${{ needs.meta.outputs.version-title }}
+  #     channel: ${{ needs.meta.outputs.release-channel }}
+  #     macos-signing-type: developer_id
+  #     artifact-name: trusttunnel-macos-dmg
+  #     artifact-path: macos/build/TrustTunnel.dmg
+  #     release: ${{ needs.meta.outputs.release }}
 
-  deploy-macos-ak:
-    needs: [meta, build-macos-developer-id]
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-ak-generic.yml@master
-    with:
-      team: flutter
-      ak-repo: ${{ needs.meta.outputs.release-channel == 'release' && 'apple-bin' || 'apple-bin-dev' }}
-      artifact-pattern: trusttunnel-macos-dmg
-    secrets: inherit
+  # deploy-macos-ak:
+  #   needs: [meta, build-macos-developer-id]
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-ak-generic.yml@master
+  #   with:
+  #     team: flutter
+  #     ak-repo: ${{ needs.meta.outputs.release-channel == 'release' && 'apple-bin' || 'apple-bin-dev' }}
+  #     artifact-pattern: trusttunnel-macos-dmg
+  #   secrets: inherit
 
   notify-slack:
     needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore]
