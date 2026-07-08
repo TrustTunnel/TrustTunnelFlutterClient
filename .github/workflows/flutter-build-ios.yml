@@ -19,9 +19,6 @@ on:
       signing-type:
         type: string
         default: 'adhoc'
-      ios-app-identifiers:
-        type: string
-        default: ''
       channel:
         type: string
         required: true
@@ -34,6 +31,9 @@ on:
       artifact-path:
         type: string
         default: ''
+      fastlane-env-path:
+        type: string
+        default: 'ios/fastlane/.env'
 
 permissions:
   contents: read
@@ -100,13 +100,13 @@ jobs:
         run: |
           set -euo pipefail
           cd ios
-          bundle exec pod install --repo-update
+          bundle exec pod install
           cd ..
 
-      - name: Load signing env
+      - name: Load fastlane env
         if: inputs.build-mode != 'simulator'
         run: |
-          grep -vE '^\s*(#|$)' "ios/fastlane/.env" >> "$GITHUB_ENV"
+          grep -vE '^\s*(#|$)' "${{ inputs.fastlane-env-path }}" >> "$GITHUB_ENV"
 
       - name: Sync iOS signing assets
         if: inputs.build-mode != 'simulator'
@@ -131,6 +131,24 @@ jobs:
             --no-pub \
             --config-only
 
+      # CocoaPods vendored .framework bundles sometimes carry pre-release version
+      # strings in their Info.plist (e.g. "1.2.3-beta.4" or "5.0.0+abc123").
+      # Apple's code-signing and App Store validation reject any version that
+      # contains a hyphen (-) or plus (+) — it must be a strict SemVer core
+      # (MAJOR.MINOR.PATCH).
+      #
+      # This step walks every Info.plist inside ios/Pods/**/*.framework/ and
+      # strips the pre-release/build-metadata suffix from two keys:
+      #
+      #   CFBundleShortVersionString  (the user-visible version, e.g. "1.2.3")
+      #   CFBundleVersion             (the build number)
+      #
+      # The shell parameter expansion ${value%%[-+]*} greedily removes
+      # everything from the first '-' or '+' onward, leaving only the clean
+      # core version.  PlistBuddy writes the sanitized value back in-place.
+      #
+      # If no pre-release versions are found the step prints a message and
+      # exits successfully — it is a no-op for clean dependency trees.
       - name: Sanitize vendored framework versions
         run: |
           set -euo pipefail

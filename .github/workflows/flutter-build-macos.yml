@@ -28,6 +28,9 @@ on:
       artifact-path:
         type: string
         default: ''
+      fastlane-env-path:
+        type: string
+        default: 'macos/fastlane/.env'
 
 permissions:
   contents: read
@@ -67,7 +70,7 @@ jobs:
 
       - name: Load signing env
         run: |
-          grep -vE '^\s*(#|$)' "macos/fastlane/.env" >> "$GITHUB_ENV"
+          grep -vE '^\s*(#|$)' "${{ inputs.fastlane-env-path }}" >> "$GITHUB_ENV"
 
       - name: Prepare Ruby environment
         run: |
@@ -130,6 +133,25 @@ jobs:
             --no-pub \
             --config-only
 
+
+      # CocoaPods vendored .framework bundles sometimes carry pre-release version
+      # strings in their Info.plist (e.g. "1.2.3-beta.4" or "5.0.0+abc123").
+      # Apple's code-signing and notarization reject any version that contains
+      # a hyphen (-) or plus (+) — it must be a strict SemVer core
+      # (MAJOR.MINOR.PATCH).
+      #
+      # This step walks every Info.plist inside macos/Pods/**/*.framework/ and
+      # strips the pre-release/build-metadata suffix from two keys:
+      #
+      #   CFBundleShortVersionString  (the user-visible version, e.g. "1.2.3")
+      #   CFBundleVersion             (the build number)
+      #
+      # The shell parameter expansion ${value%%[-+]*} greedily removes
+      # everything from the first '-' or '+' onward, leaving only the clean
+      # core version.  PlistBuddy writes the sanitized value back in-place.
+      #
+      # If no pre-release versions are found the step prints a message and
+      # exits successfully — it is a no-op for clean dependency trees.
       - name: Sanitize vendored framework versions
         run: |
           set -euo pipefail

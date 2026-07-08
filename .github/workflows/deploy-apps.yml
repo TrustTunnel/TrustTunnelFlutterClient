@@ -142,7 +142,7 @@ jobs:
       build-mode: simulator
       ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       artifact-name: TrustTunnel.app.zip
-      artifact-path: ios/build//TrustTunnel.app.zip
+      artifact-path: ios/build/TrustTunnel.app.zip
 
   build-macos-appstore:
     needs: [meta, build-number]
@@ -208,6 +208,36 @@ jobs:
       submit-beta-review: false
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
+  notify-slack:
+    needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore]
+    if: github.event_name == 'push' || inputs.slack-channel != ''
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
+    with:
+      team: flutter
+      channel: ${{ inputs.slack-channel || '#build-trusttunnel' }}
+      product: TrustTunnel
+      version-title: ${{ needs.meta.outputs.version-title }}
+      metadata: >-
+        {
+          "Channel": "${{ needs.meta.outputs.release-channel }}",
+          "Version": "${{ needs.meta.outputs.version }}",
+          "Tag": "${{ inputs.tag || github.ref_name }}"
+        }
+  # ===========================================================================
+  # build-macos-developer-id & deploy-macos-ak are commented out because macOS
+  # Direct Distribution (Developer ID) outside the App Store is not currently
+  # needed.  The app is distributed exclusively through TestFlight / App Store
+  # for now.
+  #
+  # If a .dmg deployment is ever required, uncomment both jobs below:
+  #   1. build-macos-developer-id  — signs with "Developer ID Application" and
+  #      produces a notarized .dmg artifact.
+  #   2. deploy-macos-ak           — uploads the .dmg to the AdGuard Knowledge
+  #      (AK) binary repository for public download.
+  #
+  # Don't forget to add "build-macos-developer-id" to the notify-slack needs list
+  # as well, so the Slack notification waits for it.
+  # ===========================================================================
   # build-macos-developer-id:
   #   needs: [meta, build-number]
   #   uses: ./.github/workflows/flutter-build-macos.yml
@@ -230,19 +260,3 @@ jobs:
   #     ak-repo: ${{ needs.meta.outputs.release-channel == 'release' && 'apple-bin' || 'apple-bin-dev' }}
   #     artifact-pattern: trusttunnel-macos-dmg
   #   secrets: inherit
-
-  notify-slack:
-    needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore]
-    if: github.event_name == 'push' || inputs.slack-channel != ''
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
-    with:
-      team: flutter
-      channel: ${{ inputs.slack-channel || '#build-trusttunnel' }}
-      product: TrustTunnel
-      version-title: ${{ needs.meta.outputs.version-title }}
-      metadata: >-
-        {
-          "Channel": "${{ needs.meta.outputs.release-channel }}",
-          "Version": "${{ needs.meta.outputs.version }}",
-          "Tag": "${{ inputs.tag || github.ref_name }}"
-        }
