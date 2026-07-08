@@ -38,7 +38,7 @@ jobs:
     uses: ./.github/workflows/flutter-test.yml
     secrets: inherit
 
-build-android:
+  build-android:
     needs: [prepare]
     uses: ./.github/workflows/flutter-build-android.yml
     secrets: inherit
