@@ -124,6 +124,17 @@ abstract class IVpnManager {
   /// {@endtemplate}
   @TaskQueue(type: TaskQueueType.serialBackgroundThread)
   List<String> exportLogs();
+
+  /// {@template i_vpn_manager_clear_logs}
+  /// Clears all the VPN platform logs written to disk.
+  ///
+  /// Safe to be called during running VPN.
+  ///
+  /// This call is executed on a serial background task queue to avoid blocking
+  /// the platform UI thread, as it performs blocking disk I/O.
+  /// {@endtemplate}
+  @TaskQueue(type: TaskQueueType.serialBackgroundThread)
+  void clearLogs();
 }
 
 /// {@template vpn_manager_state}
