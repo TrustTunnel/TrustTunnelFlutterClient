@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
           BASE="${{ github.event.pull_request.base.sha }}"
           HEAD="${{ github.event.pull_request.head.sha }}"
-          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
+          CHANGED="$(git diff --name-only "$BASE"..."$HEAD")"
           echo "ios=$(grep -qE '^ios/'   <<< "$CHANGED" && echo true || echo false)"   >> "$GITHUB_OUTPUT"
           echo "macos=$(grep -qE '^macos/' <<< "$CHANGED" && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
