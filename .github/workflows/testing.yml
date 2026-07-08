@@ -62,7 +62,6 @@ jobs:
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
       build-mode: adhoc
-      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       artifact-name: trusttunnel-ios-pr
       artifact-path: ios/build/TrustTunnel.ipa
 

@@ -123,7 +123,6 @@ jobs:
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       signing-type: appstore
-      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       artifact-name: trusttunnel-ios-ipa
       artifact-path: |
         ios/build/TrustTunnel.ipa
@@ -140,7 +139,6 @@ jobs:
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       build-mode: simulator
-      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       artifact-name: TrustTunnel.app.zip
       artifact-path: ios/build/TrustTunnel.app.zip
 
