@@ -38,12 +38,11 @@ jobs:
     uses: ./.github/workflows/flutter-test.yml
     secrets: inherit
 
-  build-android:
+build-android:
     needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-android.yml
     secrets: inherit
     with:
-      platform: android
       channel: nightly
       vault-role: trusttunnel-app
       version: ${{ needs.prepare.outputs.version }}
@@ -55,12 +54,10 @@ jobs:
 
   build-ios:
     needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
-      platform: ios
       channel: nightly
-      vault-role: trusttunnel-app
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
@@ -71,12 +68,10 @@ jobs:
 
   build-macos:
     needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
-      platform: macos
       channel: nightly
-      vault-role: trusttunnel-app
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}

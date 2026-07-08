@@ -101,10 +101,9 @@ jobs:
 
   build-android:
     needs: [meta, build-number]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-android.yml
     secrets: inherit
     with:
-      platform: android
       version: ${{ needs.meta.outputs.version }}
       build-number: ${{ needs.build-number.outputs.build-number }}
       version-title: ${{ needs.meta.outputs.version-title }}
@@ -116,10 +115,9 @@ jobs:
 
   build-ios:
     needs: [meta, build-number]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
-      platform: ios
       version: ${{ needs.meta.outputs.version }}
       build-number: ${{ needs.build-number.outputs.build-number }}
       version-title: ${{ needs.meta.outputs.version-title }}
@@ -134,10 +132,9 @@ jobs:
 
   build-simulator:
     needs: [meta, build-number]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
-      platform: ios
       version: ${{ needs.meta.outputs.version }}
       build-number: ${{ needs.build-number.outputs.build-number }}
       version-title: ${{ needs.meta.outputs.version-title }}
@@ -149,10 +146,9 @@ jobs:
 
   build-macos-appstore:
     needs: [meta, build-number]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
-      platform: macos
       version: ${{ needs.meta.outputs.version }}
       build-number: ${{ needs.build-number.outputs.build-number }}
       version-title: ${{ needs.meta.outputs.version-title }}
@@ -214,10 +210,9 @@ jobs:
 
   # build-macos-developer-id:
   #   needs: [meta, build-number]
-  #   uses: ./.github/workflows/flutter-build.yml
+  #   uses: ./.github/workflows/flutter-build-macos.yml
   #   secrets: inherit
   #   with:
-  #     platform: macos
   #     version: ${{ needs.meta.outputs.version }}
   #     build-number: ${{ needs.build-number.outputs.build-number }}
   #     version-title: ${{ needs.meta.outputs.version-title }}

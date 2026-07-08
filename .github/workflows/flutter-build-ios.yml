@@ -1,0 +1,177 @@
+name: Flutter Build iOS
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        default: '0.0.0'
+      build-number:
+        type: string
+        default: '1'
+      version-title:
+        type: string
+        default: ''
+      build-mode:
+        type: string
+        default: 'ipa'
+        description: 'ipa | simulator'
+      signing-type:
+        type: string
+        default: 'adhoc'
+      ios-app-identifiers:
+        type: string
+        default: ''
+      channel:
+        type: string
+        required: true
+      release:
+        type: string
+        default: ''
+      artifact-name:
+        type: string
+        default: ''
+      artifact-path:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  resolve-runner:
+    runs-on: [team-flutter]
+    outputs:
+      image: ${{ steps.kv.outputs.value }}
+    steps:
+      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
+        id: kv
+        with:
+          key: build-images/macos
+
+  build:
+    needs: [resolve-runner]
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-7168
+      - ephemeral-limit-cpu-4
+      - ephemeral-limit-disk-gb-20
+    defaults:
+      run:
+        shell: bash
+    env:
+      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Apply PR overrides
+        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Prepare Ruby environment
+        run: |
+          set -euo pipefail
+          set -x
+          eval "$(rbenv init - bash)"
+          rbenv install 3.3.10 --skip-existing
+          rbenv local 3.3.10
+          rbenv rehash
+          printf '%s\n' "$HOME/.rbenv/bin" "$HOME/.rbenv/shims" >> "$GITHUB_PATH"
+          gem install bundler -v 2.7.2
+          rbenv rehash
+          export BUNDLER_VERSION=2.7.2
+          cd ios
+          bundle config set --local path '.bundle/vendor'
+          bundle install
+          cd ..
+
+      - name: Flutter pub get and code generation
+        run: |
+          set -euo pipefail
+          make init
+
+      - name: Precache Flutter iOS artifacts
+        run: flutter precache --ios
+
+      - name: Pod install
+        run: |
+          set -euo pipefail
+          cd ios
+          bundle exec pod install --repo-update
+          cd ..
+
+      - name: Load signing env
+        if: inputs.build-mode != 'simulator'
+        run: |
+          grep -vE '^\s*(#|$)' "ios/fastlane/.env" >> "$GITHUB_ENV"
+
+      - name: Sync iOS signing assets
+        if: inputs.build-mode != 'simulator'
+        id: signing
+        uses: AdGuardSoftwareLimited/apple-devices/.github/actions/match-sync@master
+        with:
+          vault_url: ${{ vars.VAULT_URL }}
+          type: ${{ inputs.signing-type }}
+          app_id: ${{ env.APP_IDENTIFIERS }}
+          keychain_name: ci-signing
+          readonly: 'true'
+
+      - name: Generate Flutter iOS config files
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build-number }}
+        run: |
+          set -euo pipefail
+          flutter build ios --release \
+            --build-name="$PROJECT_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --no-pub \
+            --config-only
+
+      - name: Sanitize vendored framework versions
+        run: |
+          set -euo pipefail
+          PODS_DIR="ios/Pods"
+          test -d "$PODS_DIR" || { echo "Pods directory not found at $PODS_DIR"; exit 1; }
+
+          changed=0
+          while IFS= read -r -d '' plist; do
+            for key in CFBundleShortVersionString CFBundleVersion; do
+              value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)"
+              [ -z "$value" ] && continue
+              clean="${value%%[-+]*}"
+              if [ "$clean" != "$value" ]; then
+                echo "Sanitizing $key '$value' -> '$clean' in $plist"
+                /usr/libexec/PlistBuddy -c "Set :$key $clean" "$plist"
+                changed=1
+              fi
+            done
+          done < <(find "$PODS_DIR" -type f -name Info.plist -path '*.framework/*' -print0)
+
+          if [ "$changed" -eq 0 ]; then
+            echo "No pre-release framework versions found — nothing to sanitize."
+          fi
+
+      - name: Build iOS with Fastlane
+        env:
+          MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
+          MATCH_KEYCHAIN_PASSWORD: ${{ steps.signing.outputs.keychain_password }}
+        run: |
+          set -euo pipefail
+          cd ios
+          if [ "${{ inputs.build-mode }}" = "simulator" ]; then
+            bundle exec fastlane build_simulator_app_and_zip
+          else
+            bundle exec fastlane build_ipa type:"${{ inputs.signing-type }}"
+          fi
+          cd ..
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: error

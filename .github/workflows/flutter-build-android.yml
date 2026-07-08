@@ -1,0 +1,130 @@
+name: Flutter Build Android
+
+on:
+  workflow_call:
+    inputs:
+      vault-role:
+        type: string
+        default: 'trusttunnel-app'
+      version:
+        type: string
+        default: '0.0.0'
+      build-number:
+        type: string
+        default: '1'
+      version-title:
+        type: string
+        default: ''
+      build-mode:
+        type: string
+        default: 'apk'
+        description: 'apk | appbundle'
+      channel:
+        type: string
+        required: true
+      release:
+        type: string
+        default: ''
+      artifact-name:
+        type: string
+        default: ''
+      artifact-path:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  resolve-runner:
+    runs-on: [team-flutter]
+    outputs:
+      image: ${{ steps.kv.outputs.value }}
+    steps:
+      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
+        id: kv
+        with:
+          key: build-images/macos
+
+  build:
+    needs: [resolve-runner]
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-5120
+      - ephemeral-limit-cpu-2
+      - ephemeral-limit-disk-gb-20
+    defaults:
+      run:
+        shell: bash
+    env:
+      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
+    steps:
+      - name: Fetch secrets from Vault
+        uses: hashicorp/vault-action@v4
+        with:
+          url: ${{ vars.VAULT_URL }}
+          method: jwt
+          path: jwt
+          role: ${{ inputs.vault-role }}
+          secrets: |
+            secret/data/ci-secrets/${{ inputs.vault-role }} keystore         | KEYSTORE_BASE64 ;
+            secret/data/ci-secrets/${{ inputs.vault-role }} keyAlias         | ORG_GRADLE_PROJECT_signingConfigKeyAlias ;
+            secret/data/ci-secrets/${{ inputs.vault-role }} keyPassword      | ORG_GRADLE_PROJECT_signingConfigKeyPassword ;
+            secret/data/ci-secrets/${{ inputs.vault-role }} keystorePassword | ORG_GRADLE_PROJECT_signingConfigKeyStorePassword
+
+      - name: Fix Flutter git safe directory
+        run: git config --global --add safe.directory /opt/flutter
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Apply PR overrides
+        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Prepare Android signing
+        run: |
+          set -euo pipefail
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/trusttunnel.keystore
+          echo "ORG_GRADLE_PROJECT_signingConfigKeyStorePath=/tmp/trusttunnel.keystore" >> "$GITHUB_ENV"
+
+      - name: Flutter pub get and code generation
+        run: |
+          set -euo pipefail
+          make init
+
+      - name: Precache Flutter Android artifacts
+        run: flutter precache --android
+
+      - name: Build Android APK
+        if: inputs.build-mode == 'apk'
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build-number }}
+        run: |
+          set -euo pipefail
+          flutter build apk --release \
+            --build-name="$PROJECT_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --no-pub
+
+      - name: Build Android AAB
+        if: inputs.build-mode == 'appbundle'
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build-number }}
+        run: |
+          set -euo pipefail
+          flutter build appbundle --release \
+            --build-name="$PROJECT_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --no-pub
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: error
