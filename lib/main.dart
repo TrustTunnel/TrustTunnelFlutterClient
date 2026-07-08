@@ -25,7 +25,6 @@ Future<void> main() async {
       DBLoggerExtension(),
     ],
   );
-  
 
   void dispatchError(Object error, StackTrace? stackTrace) =>
       logger.extension<GlobalErrorLoggerExtension>()?.onUncaughtError(error, stackTrace);
