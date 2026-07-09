@@ -73,7 +73,7 @@ class NativeVpnImpl(
     }
 
     override fun onConnectionInfo(info: String) {
-        log.info("onConnectionInfo")
+        log.debug("onConnectionInfo")
         queryLogHandler.onQueryLog(info)
     }
 
