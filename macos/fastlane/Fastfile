@@ -40,6 +40,22 @@ lane :build_macos_app do |options|
       )
     end
 
+    # Some Xcode targets (e.g., system extensions, helper apps, or bundled
+    # frameworks) do not use a provisioning profile.  Attempting to set one
+    # causes a build error ("Provisioning profile has app ID … which does not
+    # match the bundle ID …").
+    #
+    # SIGNING_TARGETS_NO_PROFILE is a comma-separated list of these target names.
+    # When populated, this loop runs update_code_signing_settings for each target
+    # with an EMPTY profile_name string.  This tells Xcode to use manual signing
+    # with the specified certificate identity but NO provisioning profile.
+    #
+    # Environment variables consumed:
+    #   SIGNING_TARGETS_NO_PROFILE – comma-separated target names (e.g. "Extension")
+    #
+    # Example GitHub Actions usage:
+    #   env:
+    #     SIGNING_TARGETS_NO_PROFILE: "PacketTunnelProvider"
     no_profile_targets = ENV.fetch('SIGNING_TARGETS_NO_PROFILE', '')
                             .split(',').map(&:strip).reject(&:empty?)
 
@@ -85,6 +101,37 @@ lane :build_macos_app do |options|
 end
 
 
+# =============================================================================
+# update_macos_entitlements
+# =============================================================================
+# macOS system extensions require a special entitlement suffix to pass App
+# Review and notarization.  Certain entitlement keys must be rewritten from:
+#
+#     com.apple.security.XYZ
+#
+# to:
+#
+#     com.apple.security.XYZ-systemextension
+#
+# This lane reads two comma-separated environment variables:
+#
+#   SYSTEM_EXTENSION_ENTITLEMENTS
+#       The entitlement *values* to search for (e.g.
+#       "com.apple.developer.networking.networkextension").
+#       The lane looks for these values inside the entitlement files and
+#       appends "-systemextension" to each occurrence.
+#
+#   SYSTEM_EXTENSION_ENTITLEMENTS_FILES
+#       Comma-separated paths (relative to the fastlane/ directory) of the
+#       .entitlements plist files to modify.
+#
+# The lane is only invoked for developer_id (Direct Distribution) builds,
+# because App Store builds automatically receive the correct entitlements
+# through the provisioning profile.
+#
+# Invoked from CI:
+#   bundle exec fastlane update_macos_entitlements type:"developer_id"
+# =============================================================================
 lane :update_macos_entitlements do |options|
       values = ENV['SYSTEM_EXTENSION_ENTITLEMENTS']&.split(',')&.map(&:strip) || []
 

@@ -68,9 +68,3 @@ lane :build_ipa do |options|
         }
     )
 end
-
-lane :generate_migration_id do |options|
-    time_in_ms_string = DateTime.now.strftime("%Q")
-    hash = (Digest::SHA1.hexdigest time_in_ms_string)[0, 10]
-    puts("Generated ID: #{hash}")
-end
