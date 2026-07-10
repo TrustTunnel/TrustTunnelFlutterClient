@@ -32,7 +32,8 @@ jobs:
 
   lint:
     uses: ./.github/workflows/flutter-lint.yml
-    prepare-script: make init
+    with:
+      prepare-script: make init
     secrets: inherit
 
   test:
