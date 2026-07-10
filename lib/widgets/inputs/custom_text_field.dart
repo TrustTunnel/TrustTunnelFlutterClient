@@ -18,7 +18,7 @@ class CustomTextField extends StatefulWidget {
   final bool showClearButton;
   final Widget? suffixIcon;
   final int? maxLength;
-    final bool obscureText;
+  final bool obscureText;
   final bool autofocus;
   final List<TextInputFormatter>? inputFormatters;
   final TextInputType? keyboardType;

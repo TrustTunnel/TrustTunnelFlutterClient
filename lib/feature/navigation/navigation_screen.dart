@@ -58,7 +58,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           left: false,
           child: Scaffold(
             primary: false,
-      
+
             backgroundColor: context.colors.backgroundSystem,
             body: SafeArea(
               top: false,
