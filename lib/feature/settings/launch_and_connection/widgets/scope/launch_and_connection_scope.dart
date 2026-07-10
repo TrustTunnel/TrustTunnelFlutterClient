@@ -1,13 +1,9 @@
 import 'package:flutter/widgets.dart';
-import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_controller.dart';
-import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_state.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/controller/launch_at_login_controller.dart';
-import 'package:trusttunnel/feature/settings/launch_and_connection/controller/launch_at_login_state.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/controller/open_main_window_on_login_controller.dart';
-import 'package:trusttunnel/feature/settings/launch_and_connection/controller/open_main_window_on_login_state.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/widgets/scope/launch_and_connection_scope_aspect.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/widgets/scope/launch_and_connection_scope_controller.dart';
 
@@ -37,6 +33,7 @@ class _LaunchAndConnectionScopeState extends State<LaunchAndConnectionScope> {
   late final LaunchAtLoginController _launchAtLoginController;
   late final OpenMainWindowOnLoginController _openMainWindowOnLoginController;
   late final AutoConnectOnLaunchSettingsController _autoConnectOnLaunchSettingsController;
+  late final Listenable _controllersMergedListenable;
 
   @override
   void initState() {
@@ -53,49 +50,48 @@ class _LaunchAndConnectionScopeState extends State<LaunchAndConnectionScope> {
       repository: repositoryFactory.autoConnectOnLaunchSettingsRepository,
     );
 
+    _controllersMergedListenable = Listenable.merge(
+      [
+        _launchAtLoginController,
+        _openMainWindowOnLoginController,
+        _autoConnectOnLaunchSettingsController,
+      ],
+    )..addListener(_showErrorSnackBarIfNeeded);
+
     _launchAtLoginController.fetch();
     _openMainWindowOnLoginController.fetch();
     _autoConnectOnLaunchSettingsController.fetch();
   }
 
   @override
-  Widget build(BuildContext context) => StateConsumer<LaunchAtLoginController, LaunchAtLoginState>(
-    controller: _launchAtLoginController,
-    listener: _showErrorSnackBarIfNeeded,
-    builder: (context, launchAtLoginState, _) =>
-        StateConsumer<AutoConnectOnLaunchSettingsController, AutoConnectOnLaunchState>(
-          controller: _autoConnectOnLaunchSettingsController,
-          listener: _showErrorSnackBarIfNeeded,
-          builder: (context, autoConnectState, _) =>
-              StateConsumer<OpenMainWindowOnLoginController, OpenMainWindowOnLoginState>(
-                controller: _openMainWindowOnLoginController,
-                listener: _showErrorSnackBarIfNeeded,
-                builder: (context, openMainWindowState, _) => _InheritedLaunchAndConnectionScope(
-                  launchAtLoginState: launchAtLoginState,
-                  openMainWindowOnLoginState: openMainWindowState,
-                  autoConnectOnLaunchState: autoConnectState,
-                  setLaunchAtLoginEnabled: _setLaunchAtLoginEnabled,
-                  setOpenMainWindowOnLoginEnabled: _setOpenMainWindowOnLoginEnabled,
-                  setAutoConnectOnLaunchEnabled: _setAutoConnectOnLaunchEnabled,
-                  child: widget.child,
-                ),
-              ),
-        ),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _controllersMergedListenable,
+    builder: (BuildContext context, Widget? child) => _InheritedLaunchAndConnectionScope(
+      isLaunchAtLoginEnabled: _launchAtLoginController.state.enabled,
+      isLaunchAtLoginLoading: _launchAtLoginController.state.loading,
+      isOpenMainWindowOnLoginEnabled: _openMainWindowOnLoginController.state.enabled,
+      isOpenMainWindowOnLoginLoading: _openMainWindowOnLoginController.state.loading,
+      isAutoConnectOnLaunchEnabled: _autoConnectOnLaunchSettingsController.state.enabled,
+      isAutoConnectOnLaunchLoading: _autoConnectOnLaunchSettingsController.state.loading,
+      setLaunchAtLoginEnabled: _setLaunchAtLoginEnabled,
+      setOpenMainWindowOnLoginEnabled: _setOpenMainWindowOnLoginEnabled,
+      setAutoConnectOnLaunchEnabled: _setAutoConnectOnLaunchEnabled,
+      child: widget.child,
+    ),
   );
 
   /// Show error snack bar if there is an error in the state of one of the controllers.
-  void _showErrorSnackBarIfNeeded(
-    BuildContext context,
-    Object _,
-    Object _,
-    Object currentState,
-  ) {
-    final hasError = switch (currentState) {
-      LaunchAtLoginState(:final error) => error != null,
-      OpenMainWindowOnLoginState(:final error) => error != null,
-      AutoConnectOnLaunchState(:final error) => error != null,
-      _ => false,
-    };
+  void _showErrorSnackBarIfNeeded() {
+    final bool hasError;
+
+    if (_launchAtLoginController.state.error != null ||
+        _openMainWindowOnLoginController.state.error != null ||
+        _autoConnectOnLaunchSettingsController.state.error != null) {
+      hasError = true;
+    } else {
+      hasError = false;
+    }
+
     if (!hasError) {
       return;
     }
@@ -145,21 +141,36 @@ class _LaunchAndConnectionScopeState extends State<LaunchAndConnectionScope> {
 
 class _InheritedLaunchAndConnectionScope extends InheritedModel<LaunchAndConnectionScopeAspect>
     implements LaunchAndConnectionScopeController {
-  final LaunchAtLoginState _launchAtLoginState;
-  final OpenMainWindowOnLoginState _openMainWindowOnLoginState;
-  final AutoConnectOnLaunchState _autoConnectOnLaunchState;
-
   const _InheritedLaunchAndConnectionScope({
-    required LaunchAtLoginState launchAtLoginState,
-    required OpenMainWindowOnLoginState openMainWindowOnLoginState,
-    required AutoConnectOnLaunchState autoConnectOnLaunchState,
+    required this.isLaunchAtLoginEnabled,
+    required this.isLaunchAtLoginLoading,
+    required this.isOpenMainWindowOnLoginEnabled,
+    required this.isOpenMainWindowOnLoginLoading,
+    required this.isAutoConnectOnLaunchEnabled,
+    required this.isAutoConnectOnLaunchLoading,
     required this.setLaunchAtLoginEnabled,
     required this.setOpenMainWindowOnLoginEnabled,
     required this.setAutoConnectOnLaunchEnabled,
     required super.child,
-  }) : _launchAtLoginState = launchAtLoginState,
-       _openMainWindowOnLoginState = openMainWindowOnLoginState,
-       _autoConnectOnLaunchState = autoConnectOnLaunchState;
+  });
+
+  @override
+  final bool isLaunchAtLoginEnabled;
+
+  @override
+  final bool isLaunchAtLoginLoading;
+
+  @override
+  final bool isOpenMainWindowOnLoginEnabled;
+
+  @override
+  final bool isOpenMainWindowOnLoginLoading;
+
+  @override
+  final bool isAutoConnectOnLaunchEnabled;
+
+  @override
+  final bool isAutoConnectOnLaunchLoading;
 
   @override
   final void Function(bool enabled) setLaunchAtLoginEnabled;
@@ -171,28 +182,16 @@ class _InheritedLaunchAndConnectionScope extends InheritedModel<LaunchAndConnect
   final void Function(bool enabled) setAutoConnectOnLaunchEnabled;
 
   @override
-  bool get isLaunchAtLoginEnabled => _launchAtLoginState.enabled;
-
-  @override
-  bool get isLaunchAtLoginLoading => _launchAtLoginState.loading;
-
-  @override
-  bool get isOpenMainWindowOnLoginEnabled => _openMainWindowOnLoginState.enabled;
-
-  @override
-  bool get isOpenMainWindowOnLoginLoading => _openMainWindowOnLoginState.loading;
-
-  @override
-  bool get isAutoConnectOnLaunchEnabled => _autoConnectOnLaunchState.enabled;
-
-  @override
-  bool get isAutoConnectOnLaunchLoading => _autoConnectOnLaunchState.loading;
-
-  @override
   bool updateShouldNotify(_InheritedLaunchAndConnectionScope oldWidget) =>
-      _launchAtLoginState != oldWidget._launchAtLoginState ||
-      _openMainWindowOnLoginState != oldWidget._openMainWindowOnLoginState ||
-      _autoConnectOnLaunchState != oldWidget._autoConnectOnLaunchState;
+      isLaunchAtLoginEnabled != oldWidget.isLaunchAtLoginEnabled ||
+      isLaunchAtLoginLoading != oldWidget.isLaunchAtLoginLoading ||
+      isOpenMainWindowOnLoginEnabled != oldWidget.isOpenMainWindowOnLoginEnabled ||
+      isOpenMainWindowOnLoginLoading != oldWidget.isOpenMainWindowOnLoginLoading ||
+      isAutoConnectOnLaunchEnabled != oldWidget.isAutoConnectOnLaunchEnabled ||
+      isAutoConnectOnLaunchLoading != oldWidget.isAutoConnectOnLaunchLoading ||
+      setLaunchAtLoginEnabled != oldWidget.setLaunchAtLoginEnabled ||
+      setOpenMainWindowOnLoginEnabled != oldWidget.setOpenMainWindowOnLoginEnabled ||
+      setAutoConnectOnLaunchEnabled != oldWidget.setAutoConnectOnLaunchEnabled;
 
   @override
   bool updateShouldNotifyDependent(
