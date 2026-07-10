@@ -5,7 +5,6 @@ import 'package:trusttunnel/common/extensions/theme_extensions.dart';
 import 'package:trusttunnel/widgets/custom_icon.dart';
 
 class LightTheme {
-  // Legacy colors
   static const _accent = Color(0xFF3972AA);
   static const _accentHover = Color(0xFF336699);
   static const _accentPressed = Color(0xFF2D5986);
@@ -59,7 +58,7 @@ class LightTheme {
   static const _borderColor = Color(0xFF73859D);
   static const _focusedBorderColor = Color(0xFF74869C);
 
-  // New colors (VPN OSS Library)
+  // Legacy colors
   static const _primary1 = Color(0xFF67B279);
   static const _primary2 = Color(0xFF5B9F6B);
   static const _primary3 = Color(0xFF4E8C5D);
