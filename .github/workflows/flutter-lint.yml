@@ -11,9 +11,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  cancel-in-progress: true
-
 jobs:
   resolve-runner:
     runs-on: [team-flutter]
