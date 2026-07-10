@@ -80,7 +80,7 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
     final link = _deepLinkSource.link;
     if (link != null) {
       if (defaultTargetPlatform == TargetPlatform.macOS) {
-        unawaited(MacOSAppWindowUtils.showMainWindow());
+        unawaited(MacOSAppWindowUtils().showMainWindow());
       }
       _controller.onDeepLinkReceived(link);
     }

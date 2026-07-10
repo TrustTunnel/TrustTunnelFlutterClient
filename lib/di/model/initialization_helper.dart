@@ -36,7 +36,7 @@ class InitializationHelperIo extends InitializationHelper {
     await _updateDeviceOrientation();
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
-      await MacOSAppWindowUtils.configureMainWindow(
+      await MacOSAppWindowUtils().configureMainWindow(
         minimumWindowSize: const Size(905, 680),
         defaultWindowSize: const Size(1024, 768),
         isDebugMode: kDebugMode,

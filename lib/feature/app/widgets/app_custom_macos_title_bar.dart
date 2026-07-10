@@ -15,6 +15,8 @@ class AppCustomMacOSTitleBar extends StatefulWidget {
 }
 
 class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with WindowListener {
+  final MacOSAppWindowUtils _appWindowUtils = MacOSAppWindowUtils();
+
   bool _isFullScreen = false;
 
   @override
@@ -72,7 +74,7 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
 
   @override
   void onWindowClose() {
-    unawaited(MacOSAppWindowUtils.hideMainWindow());
+    unawaited(_appWindowUtils.hideMainWindow());
   }
 
   Future<void> _syncFullScreenState() async {

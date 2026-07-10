@@ -6,23 +6,17 @@ import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 
 final class MacOSAppWindowUtils {
-  static const _mainWindowChannel = MethodChannel('trusttunnel/macos_main_window');
+  final MethodChannel _mainWindowChannel = const MethodChannel('trusttunnel/macos_main_window');
 
-  static Future<void> showMainWindow() async {
+  MacOSAppWindowUtils() {
     if (defaultTargetPlatform != TargetPlatform.macOS) {
       _throwUnsupportedError();
     }
-
-    await _mainWindowChannel.invokeMethod<void>('show');
   }
 
-  static Future<void> hideMainWindow() async {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
-      _throwUnsupportedError();
-    }
+  Future<void> showMainWindow() async => await _mainWindowChannel.invokeMethod<void>('show');
 
-    await _mainWindowChannel.invokeMethod<void>('hide');
-  }
+  Future<void> hideMainWindow() async => await _mainWindowChannel.invokeMethod<void>('hide');
 
   /// Configure the main window for macOS.
   ///
@@ -30,16 +24,12 @@ final class MacOSAppWindowUtils {
   /// - [defaultWindowSize] is the default size of the window.
   /// - [isDebugMode] is a flag to indicate if the app is running in debug mode.
   /// If true, the window will be configured without minimum size.
-  static Future<void> configureMainWindow({
+  Future<void> configureMainWindow({
     required Size minimumWindowSize,
     required Size defaultWindowSize,
     required bool isDebugMode,
   }) async {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
-      _throwUnsupportedError();
-    }
-
-    final shouldShowMainWindowOnLaunch = await MacOSAppWindowUtils._shouldShowMainWindowOnLaunch();
+    final shouldShowMainWindowOnLaunch = await _shouldShowMainWindowOnLaunch();
 
     await windowManager.ensureInitialized();
     await windowManager.setPreventClose(true);
@@ -84,15 +74,10 @@ final class MacOSAppWindowUtils {
     );
   }
 
-  static Future<bool> _shouldShowMainWindowOnLaunch() async {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
-      _throwUnsupportedError();
-    }
+  Future<bool> _shouldShowMainWindowOnLaunch() async =>
+      await _mainWindowChannel.invokeMethod<bool>('shouldShowMainWindowOnLaunch') ?? true;
 
-    return await _mainWindowChannel.invokeMethod<bool>('shouldShowMainWindowOnLaunch') ?? true;
-  }
-
-  static double _clampWindowDimension({
+  double _clampWindowDimension({
     required double defaultDimension,
     required double minimumDimension,
     required double visibleDimension,
@@ -103,5 +88,7 @@ final class MacOSAppWindowUtils {
       )
       .toDouble();
 
-  static Never _throwUnsupportedError() => throw UnsupportedError('MacOSAppWindowUtils is only supported on macOS');
+  Never _throwUnsupportedError() => throw UnsupportedError(
+    'MacOSAppWindowUtils is only supported on macOS',
+  );
 }

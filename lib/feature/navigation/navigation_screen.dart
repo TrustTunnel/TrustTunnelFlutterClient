@@ -156,7 +156,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Future<void> _openRouteFromTray(AppRoute route) async {
-    await MacOSAppWindowUtils.showMainWindow();
+    await MacOSAppWindowUtils().showMainWindow();
 
     switch (route) {
       case final requestedRoute when requestedRoute == AppRoutes.servers:
