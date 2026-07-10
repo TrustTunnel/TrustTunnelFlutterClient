@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  cancel-in-progress: true
+
 jobs:
   resolve-runner:
     runs-on: [team-flutter]
@@ -41,18 +44,15 @@ jobs:
       - name: Apply PR overrides
         uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
       
+      - name: Initialize dependencies
+        run: flutter pub get
+        
       - name: Check formatting issues
         run: dart format -o none --set-exit-if-changed .
 
       - name: Prepare environment
-        env:
-          PREPARE_SCRIPT: ${{ inputs.prepare-script }}
-        run: |
-          if [ -z "$PREPARE_SCRIPT" ]; then
-            flutter pub get
-          else
-            eval "$PREPARE_SCRIPT"
-          fi
+        if: inputs.prepare-script != ''
+        run: ${{ inputs.prepare-script }}
 
       - name: Flutter analyze
         run: flutter analyze --no-pub
