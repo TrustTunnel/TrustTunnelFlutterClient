@@ -2,6 +2,11 @@ name: Flutter Lint
 
 on:
   workflow_call:
+    inputs:
+      prepare-script:
+        type: string
+        default: ''
+        description: 'Shell commands to run after checkout (e.g. keystore setup, env config). Vault secrets are available as env vars. Empty = skip'
 
 permissions:
   contents: read
@@ -40,8 +45,14 @@ jobs:
         run: dart format -o none --set-exit-if-changed .
 
       - name: Prepare environment
-        if: inputs.prepare-script != ''
-        run: ${{ inputs.prepare-script }}
+        env:
+          PREPARE_SCRIPT: ${{ inputs.prepare-script }}
+        run: |
+          if [ -z "$PREPARE_SCRIPT" ]; then
+            flutter pub get
+          else
+            eval "$PREPARE_SCRIPT"
+          fi
 
       - name: Flutter analyze
         run: flutter analyze --no-pub
