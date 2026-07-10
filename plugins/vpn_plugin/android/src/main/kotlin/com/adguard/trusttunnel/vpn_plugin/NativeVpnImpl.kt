@@ -43,6 +43,11 @@ class NativeVpnImpl(
         return VpnService.exportLogs(appContext)
     }
 
+    fun clearLogs() {
+        Log.i("VPN_PLUGIN", "clearLogs()")
+        VpnService.clearLogs()
+    }
+
     fun getCurrentState(): VpnManagerState = currentState
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {

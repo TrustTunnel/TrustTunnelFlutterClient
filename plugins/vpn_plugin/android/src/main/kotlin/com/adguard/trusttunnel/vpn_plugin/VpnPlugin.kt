@@ -128,4 +128,8 @@ class VpnPlugin :
     override fun exportLogs(): List<String> {
         return vpnImpl.exportLogs()
     }
+
+    override fun clearLogs() {
+        vpnImpl.clearLogs()
+    }
 }

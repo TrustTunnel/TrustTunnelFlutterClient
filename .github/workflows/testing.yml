@@ -40,10 +40,9 @@ jobs:
 
   build-android:
     needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
+    uses: ./.github/workflows/flutter-build-android.yml
     secrets: inherit
     with:
-      platform: android
       channel: nightly
       vault-role: trusttunnel-app
       version: ${{ needs.prepare.outputs.version }}
@@ -55,28 +54,27 @@ jobs:
 
   build-ios:
     needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
+    if: >-
+      github.event.pull_request.draft == false
+    uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
-      platform: ios
       channel: nightly
-      vault-role: trusttunnel-app
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
       build-mode: adhoc
-      ios-app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       artifact-name: trusttunnel-ios-pr
       artifact-path: ios/build/TrustTunnel.ipa
 
   build-macos:
     needs: [prepare]
-    uses: ./.github/workflows/flutter-build.yml
+    if: >-
+      github.event.pull_request.draft == false
+    uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
-      platform: macos
       channel: nightly
-      vault-role: trusttunnel-app
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
