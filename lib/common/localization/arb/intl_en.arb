@@ -168,7 +168,7 @@
     }
   },
   "trayStatusConnected": "Connected",
-  "trayStatusConnecting": "Connecting...",
+  "trayStatusConnecting": "Connecting…",
   "trayStatusDisconnected": "Disconnected",
   "connect": "Connect",
   "disconnect": "Disconnect",
