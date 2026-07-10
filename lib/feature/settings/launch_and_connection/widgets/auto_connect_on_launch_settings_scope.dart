@@ -11,6 +11,7 @@ import 'package:trusttunnel/feature/settings/launch_and_connection/controller/au
 import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_state.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 
+/// Restores the last VPN connection when automatic connection on launch is enabled.
 class AutoConnectOnLaunchSettingsScope extends StatefulWidget {
   final Widget child;
 
@@ -52,6 +53,7 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
     child: widget.child,
   );
 
+  /// Starts at most one connection attempt while dependencies update.
   void _scheduleConnectToLastServerIfNeeded() {
     if (_connectToLastServerFuture != null) {
       return;
@@ -66,12 +68,16 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
     );
   }
 
+  /// Connects once to the saved server after settings and server data are ready.
+  /// Invalid saved configuration is marked as handled without connecting.
   Future<void> _connectToLastServerIfNeeded() async {
+    // Wait until settings are loaded and skip an already handled launch.
     final state = _controller.state;
     if (state.initial || state.loading || state.connectOnLaunchHandled) {
       return;
     }
 
+    // Wait for servers, or finish when auto-connect has no usable target.
     final serversController = ServersScope.controllerOf(context);
     if (!state.enabled || state.lastServerId == null || serversController.servers.isEmpty) {
       if (!serversController.loading) {
@@ -81,6 +87,7 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
       return;
     }
 
+    // Resolve the server saved by the previous successful selection.
     final server = serversController.servers.firstWhereOrNull(
       (server) => server.id == state.lastServerId,
     );
@@ -90,6 +97,7 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
       return;
     }
 
+    // Resolve the routing profile required by the saved server.
     final routingProfile =
         RoutingScope.controllerOf(
           context,
@@ -103,12 +111,14 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
       return;
     }
 
+    // Read the remaining connection settings without subscribing to updates.
     final excludedRoutes = ExcludedRoutesScope.controllerOf(
       context,
       listen: false,
     ).excludedRoutes;
     final vpnController = VpnScope.vpnControllerOf(context, listen: false);
 
+    // Mark the launch handled before handing the connection to the VPN controller.
     _controller.markConnectOnLaunchHandled();
     await vpnController.start(
       server: server,

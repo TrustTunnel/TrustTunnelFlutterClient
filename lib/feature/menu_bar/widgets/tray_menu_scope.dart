@@ -27,6 +27,7 @@ import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:window_manager/window_manager.dart';
 
+/// Keeps the tray menu (currently only macOS) in sync with the app state and handles its actions.
 class TrayMenuScope extends StatefulWidget {
   final Widget child;
   final Future<void> Function(AppRoute route) onRouteRequested;
@@ -79,6 +80,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
   @override
   Widget build(BuildContext context) => widget.child;
 
+  /// Queues a menu snapshot so asynchronous updates run in order.
   void _enqueueSync() {
     if (!_isMacOS || !mounted) {
       return;
@@ -88,6 +90,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     _syncQueue = _syncQueue.then((_) => _syncTrayMenu(data));
   }
 
+  /// Builds a tray menu snapshot from the current controllers and localization.
   TrayMenuData _prepareTrayMenuData() {
     final vpnState = _vpnController.state;
     final servers = _serversController.servers;
@@ -110,6 +113,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     );
   }
 
+  /// Applies a prepared snapshot and binds tray actions to scope callbacks.
   Future<void> _syncTrayMenu(TrayMenuData data) async {
     if (_isDisposed) {
       return;
@@ -234,6 +238,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     await SystemNavigator.pop();
   }
 
+  /// Connects to [server] with its routing profile and current exclusions.
   Future<void> _connectToServer(Server server) async {
     final routingController = RoutingScope.controllerOf(
       context,
@@ -272,6 +277,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     );
   }
 
+  /// Resolves the server shown by the tray, preserving the active server across states.
   Server? _resolveActiveServer({
     required ConnectionStateInTrayMenuMacOS connectionState,
     required List<Server> servers,
@@ -314,6 +320,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
+  /// Maps detailed VPN recovery states to the tray's simplified connection state.
   ConnectionStateInTrayMenuMacOS _mapConnectionStateForTray(VpnState state) => switch (state) {
     VpnState.connected => ConnectionStateInTrayMenuMacOS.connected,
     VpnState.disconnected => ConnectionStateInTrayMenuMacOS.disconnected,
