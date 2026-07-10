@@ -16,5 +16,3 @@ jobs:
     with:
       team: flutter
       target_repo: git@github.com:TrustTunnel/TrustTunnelFlutterClient.git
-      disable_workflows_target: all
-      disable_workflows_source: none
