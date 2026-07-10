@@ -35,12 +35,13 @@ jobs:
 
       - name: Apply PR overrides
         uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+      
+      - name: Check formatting issues
+        run: dart format -o none --set-exit-if-changed .
 
-      - name: initialize project
-        run: make init
-
-      - name: Flutter pub get
-        run: flutter pub get
+      - name: Prepare environment
+        if: inputs.prepare-script != ''
+        run: ${{ inputs.prepare-script }}
 
       - name: Flutter analyze
-        run: flutter analyze
+        run: flutter analyze --no-pub
