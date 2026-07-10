@@ -3,8 +3,6 @@ description: "Mobile VPN client for Android and iOS, built with Flutter"
 
 publish_to: 'none'
 
-version: 1.2.0
-
 environment:
   flutter: 3.38.3
   sdk: 3.10.1
