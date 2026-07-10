@@ -7,27 +7,27 @@ sealed class LaunchAtLoginState {
     required this.enabled,
   });
 
-  const factory LaunchAtLoginState.initial() = LaunchAtLoginInitialState;
+  const factory LaunchAtLoginState.initial() = _LaunchAtLoginInitialState;
 
   const factory LaunchAtLoginState.idle({
     required bool enabled,
-  }) = LaunchAtLoginIdleState;
+  }) = _LaunchAtLoginIdleState;
 
   const factory LaunchAtLoginState.loading({
     required bool enabled,
-  }) = LaunchAtLoginLoadingState;
+  }) = _LaunchAtLoginLoadingState;
 
   const factory LaunchAtLoginState.error({
     required bool enabled,
     required PresentationException error,
-  }) = LaunchAtLoginErrorState;
+  }) = _LaunchAtLoginErrorState;
 
   PresentationException? get error => switch (this) {
-    LaunchAtLoginErrorState(:final error) => error,
+    _LaunchAtLoginErrorState(:final error) => error,
     _ => null,
   };
 
-  bool get loading => this is LaunchAtLoginLoadingState;
+  bool get loading => this is _LaunchAtLoginLoadingState;
 
   @override
   int get hashCode => Object.hash(
@@ -49,27 +49,27 @@ sealed class LaunchAtLoginState {
   String toString() => 'LaunchAtLoginState(type: $runtimeType, enabled: $enabled, loading: $loading)';
 }
 
-final class LaunchAtLoginInitialState extends LaunchAtLoginIdleState {
-  const LaunchAtLoginInitialState() : super(enabled: false);
+final class _LaunchAtLoginInitialState extends _LaunchAtLoginIdleState {
+  const _LaunchAtLoginInitialState() : super(enabled: false);
 }
 
-final class LaunchAtLoginIdleState extends LaunchAtLoginState {
-  const LaunchAtLoginIdleState({
+final class _LaunchAtLoginIdleState extends LaunchAtLoginState {
+  const _LaunchAtLoginIdleState({
     required super.enabled,
   });
 }
 
-final class LaunchAtLoginLoadingState extends LaunchAtLoginState {
-  const LaunchAtLoginLoadingState({
+final class _LaunchAtLoginLoadingState extends LaunchAtLoginState {
+  const _LaunchAtLoginLoadingState({
     required super.enabled,
   });
 }
 
-final class LaunchAtLoginErrorState extends LaunchAtLoginState {
+final class _LaunchAtLoginErrorState extends LaunchAtLoginState {
   @override
   final PresentationException error;
 
-  const LaunchAtLoginErrorState({
+  const _LaunchAtLoginErrorState({
     required super.enabled,
     required this.error,
   });

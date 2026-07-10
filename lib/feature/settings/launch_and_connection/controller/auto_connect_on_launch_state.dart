@@ -11,35 +11,35 @@ sealed class AutoConnectOnLaunchState {
     required this.connectOnLaunchHandled,
   });
 
-  const factory AutoConnectOnLaunchState.initial() = AutoConnectOnLaunchInitialState;
+  const factory AutoConnectOnLaunchState.initial() = _AutoConnectOnLaunchInitialState;
 
   const factory AutoConnectOnLaunchState.idle({
     required bool enabled,
     required String? lastServerId,
     required bool connectOnLaunchHandled,
-  }) = AutoConnectOnLaunchIdleState;
+  }) = _AutoConnectOnLaunchIdleState;
 
   const factory AutoConnectOnLaunchState.loading({
     required bool enabled,
     required String? lastServerId,
     required bool connectOnLaunchHandled,
-  }) = AutoConnectOnLaunchLoadingState;
+  }) = _AutoConnectOnLaunchLoadingState;
 
   const factory AutoConnectOnLaunchState.error({
     required bool enabled,
     required String? lastServerId,
     required bool connectOnLaunchHandled,
     required PresentationException error,
-  }) = AutoConnectOnLaunchErrorState;
+  }) = _AutoConnectOnLaunchErrorState;
 
   PresentationException? get error => switch (this) {
-    AutoConnectOnLaunchErrorState(:final error) => error,
+    _AutoConnectOnLaunchErrorState(:final error) => error,
     _ => null,
   };
 
-  bool get loading => this is AutoConnectOnLaunchLoadingState;
+  bool get loading => this is _AutoConnectOnLaunchLoadingState;
 
-  bool get initial => this is AutoConnectOnLaunchInitialState;
+  bool get initial => this is _AutoConnectOnLaunchInitialState;
 
   @override
   int get hashCode => Object.hash(
@@ -67,8 +67,8 @@ sealed class AutoConnectOnLaunchState {
       'connectOnLaunchHandled: $connectOnLaunchHandled, loading: $loading)';
 }
 
-final class AutoConnectOnLaunchInitialState extends AutoConnectOnLaunchIdleState {
-  const AutoConnectOnLaunchInitialState()
+final class _AutoConnectOnLaunchInitialState extends _AutoConnectOnLaunchIdleState {
+  const _AutoConnectOnLaunchInitialState()
     : super(
         enabled: false,
         lastServerId: null,
@@ -76,27 +76,27 @@ final class AutoConnectOnLaunchInitialState extends AutoConnectOnLaunchIdleState
       );
 }
 
-final class AutoConnectOnLaunchIdleState extends AutoConnectOnLaunchState {
-  const AutoConnectOnLaunchIdleState({
+final class _AutoConnectOnLaunchIdleState extends AutoConnectOnLaunchState {
+  const _AutoConnectOnLaunchIdleState({
     required super.enabled,
     required super.lastServerId,
     required super.connectOnLaunchHandled,
   });
 }
 
-final class AutoConnectOnLaunchLoadingState extends AutoConnectOnLaunchState {
-  const AutoConnectOnLaunchLoadingState({
+final class _AutoConnectOnLaunchLoadingState extends AutoConnectOnLaunchState {
+  const _AutoConnectOnLaunchLoadingState({
     required super.enabled,
     required super.lastServerId,
     required super.connectOnLaunchHandled,
   });
 }
 
-final class AutoConnectOnLaunchErrorState extends AutoConnectOnLaunchState {
+final class _AutoConnectOnLaunchErrorState extends AutoConnectOnLaunchState {
   @override
   final PresentationException error;
 
-  const AutoConnectOnLaunchErrorState({
+  const _AutoConnectOnLaunchErrorState({
     required super.enabled,
     required super.lastServerId,
     required super.connectOnLaunchHandled,

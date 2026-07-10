@@ -14,22 +14,13 @@ import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_arch
 final class LogsManagerController extends BaseStateController<LogsManagerState> with SequentialControllerHandler {
   final ExportLogsRepository _repository;
   final ShareClient _shareClient;
-  final Future<Directory?> Function() _downloadsDirectoryProvider;
-  final Future<Directory> Function() _documentsDirectoryProvider;
-  final Future<Directory> Function() _temporaryDirectoryProvider;
 
   LogsManagerController({
     required ExportLogsRepository repository,
     ShareClient shareClient = const AdgShare(),
-    Future<Directory?> Function() downloadsDirectoryProvider = getDownloadsDirectory,
-    Future<Directory> Function() documentsDirectoryProvider = getApplicationDocumentsDirectory,
-    Future<Directory> Function() temporaryDirectoryProvider = getTemporaryDirectory,
     super.initialState = const LogsManagerState.initial(),
   }) : _repository = repository,
-       _shareClient = shareClient,
-       _downloadsDirectoryProvider = downloadsDirectoryProvider,
-       _documentsDirectoryProvider = documentsDirectoryProvider,
-       _temporaryDirectoryProvider = temporaryDirectoryProvider;
+       _shareClient = shareClient;
 
   void export({
     ValueChanged<ExportLogsArchive>? onArchiveReady,
@@ -45,7 +36,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       final Directory? downloadDirectory;
 
       if (defaultTargetPlatform == TargetPlatform.macOS) {
-        downloadDirectory = await _downloadsDirectoryProvider();
+        downloadDirectory = await getDownloadsDirectory();
         final archivePath = await _repository.pickFilePath(
           fileName: archive.name,
           initialDirectory: downloadDirectory?.path,
@@ -74,9 +65,9 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       }
 
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        downloadDirectory = await _documentsDirectoryProvider();
+        downloadDirectory = await getApplicationDocumentsDirectory();
       } else {
-        downloadDirectory = await _downloadsDirectoryProvider();
+        downloadDirectory = await getDownloadsDirectory();
       }
 
       if (downloadDirectory != null) {
@@ -87,7 +78,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
         );
       }
 
-      final tempDirectory = await _temporaryDirectoryProvider();
+      final tempDirectory = await getTemporaryDirectory();
       final tempPath = '${tempDirectory.path}${Platform.pathSeparator}${archive.name}';
 
       await _repository.saveRawFile(

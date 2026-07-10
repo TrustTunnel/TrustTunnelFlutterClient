@@ -7,27 +7,27 @@ sealed class OpenMainWindowOnLoginState {
     required this.enabled,
   });
 
-  const factory OpenMainWindowOnLoginState.initial() = OpenMainWindowOnLoginInitialState;
+  const factory OpenMainWindowOnLoginState.initial() = _OpenMainWindowOnLoginInitialState;
 
   const factory OpenMainWindowOnLoginState.idle({
     required bool enabled,
-  }) = OpenMainWindowOnLoginIdleState;
+  }) = _OpenMainWindowOnLoginIdleState;
 
   const factory OpenMainWindowOnLoginState.loading({
     required bool enabled,
-  }) = OpenMainWindowOnLoginLoadingState;
+  }) = _OpenMainWindowOnLoginLoadingState;
 
   const factory OpenMainWindowOnLoginState.error({
     required bool enabled,
     required PresentationException error,
-  }) = OpenMainWindowOnLoginErrorState;
+  }) = _OpenMainWindowOnLoginErrorState;
 
   PresentationException? get error => switch (this) {
-    OpenMainWindowOnLoginErrorState(:final error) => error,
+    _OpenMainWindowOnLoginErrorState(:final error) => error,
     _ => null,
   };
 
-  bool get loading => this is OpenMainWindowOnLoginLoadingState;
+  bool get loading => this is _OpenMainWindowOnLoginLoadingState;
 
   @override
   int get hashCode => Object.hash(
@@ -49,27 +49,27 @@ sealed class OpenMainWindowOnLoginState {
   String toString() => 'OpenMainWindowOnLoginState(type: $runtimeType, enabled: $enabled, loading: $loading)';
 }
 
-final class OpenMainWindowOnLoginInitialState extends OpenMainWindowOnLoginIdleState {
-  const OpenMainWindowOnLoginInitialState() : super(enabled: false);
+final class _OpenMainWindowOnLoginInitialState extends _OpenMainWindowOnLoginIdleState {
+  const _OpenMainWindowOnLoginInitialState() : super(enabled: false);
 }
 
-final class OpenMainWindowOnLoginIdleState extends OpenMainWindowOnLoginState {
-  const OpenMainWindowOnLoginIdleState({
+final class _OpenMainWindowOnLoginIdleState extends OpenMainWindowOnLoginState {
+  const _OpenMainWindowOnLoginIdleState({
     required super.enabled,
   });
 }
 
-final class OpenMainWindowOnLoginLoadingState extends OpenMainWindowOnLoginState {
-  const OpenMainWindowOnLoginLoadingState({
+final class _OpenMainWindowOnLoginLoadingState extends OpenMainWindowOnLoginState {
+  const _OpenMainWindowOnLoginLoadingState({
     required super.enabled,
   });
 }
 
-final class OpenMainWindowOnLoginErrorState extends OpenMainWindowOnLoginState {
+final class _OpenMainWindowOnLoginErrorState extends OpenMainWindowOnLoginState {
   @override
   final PresentationException error;
 
-  const OpenMainWindowOnLoginErrorState({
+  const _OpenMainWindowOnLoginErrorState({
     required super.enabled,
     required this.error,
   });

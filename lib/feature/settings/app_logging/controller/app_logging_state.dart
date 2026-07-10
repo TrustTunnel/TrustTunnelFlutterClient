@@ -11,30 +11,30 @@ sealed class AppLoggingState {
     required this.level,
   });
 
-  const factory AppLoggingState.initial() = AppLoggingInitialState;
+  const factory AppLoggingState.initial() = _AppLoggingInitialState;
 
   const factory AppLoggingState.idle({
     required LoggingSecurityType securityType,
     required LoggingLevel level,
-  }) = AppLoggingIdleState;
+  }) = _AppLoggingIdleState;
 
   const factory AppLoggingState.loading({
     required LoggingSecurityType securityType,
     required LoggingLevel level,
-  }) = AppLoggingLoadingState;
+  }) = _AppLoggingLoadingState;
 
   const factory AppLoggingState.error({
     required LoggingSecurityType securityType,
     required LoggingLevel level,
     required PresentationException error,
-  }) = AppLoggingErrorState;
+  }) = _AppLoggingErrorState;
 
   PresentationException? get error => switch (this) {
-    AppLoggingErrorState(:final error) => error,
+    _AppLoggingErrorState(:final error) => error,
     _ => null,
   };
 
-  bool get loading => this is AppLoggingLoadingState;
+  bool get loading => this is _AppLoggingLoadingState;
 
   @override
   int get hashCode => Object.hash(
@@ -59,33 +59,33 @@ sealed class AppLoggingState {
       'AppLoggingState(type: $runtimeType, securityType: $securityType, level: $level, loading: $loading)';
 }
 
-final class AppLoggingInitialState extends AppLoggingIdleState {
-  const AppLoggingInitialState()
+final class _AppLoggingInitialState extends _AppLoggingIdleState {
+  const _AppLoggingInitialState()
     : super(
         securityType: LoggingSecurityType.stripped,
         level: LoggingLevel.defaultLevel,
       );
 }
 
-final class AppLoggingIdleState extends AppLoggingState {
-  const AppLoggingIdleState({
+final class _AppLoggingIdleState extends AppLoggingState {
+  const _AppLoggingIdleState({
     required super.securityType,
     required super.level,
   });
 }
 
-final class AppLoggingLoadingState extends AppLoggingState {
-  const AppLoggingLoadingState({
+final class _AppLoggingLoadingState extends AppLoggingState {
+  const _AppLoggingLoadingState({
     required super.securityType,
     required super.level,
   });
 }
 
-final class AppLoggingErrorState extends AppLoggingState {
+final class _AppLoggingErrorState extends AppLoggingState {
   @override
   final PresentationException error;
 
-  const AppLoggingErrorState({
+  const _AppLoggingErrorState({
     required super.securityType,
     required super.level,
     required this.error,

@@ -3,44 +3,44 @@ import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 sealed class LogsManagerState {
   const LogsManagerState();
 
-  const factory LogsManagerState.initial() = LogsManagerInitialState;
+  const factory LogsManagerState.initial() = _LogsManagerInitialState;
 
-  const factory LogsManagerState.idle() = LogsManagerIdleState;
+  const factory LogsManagerState.idle() = _LogsManagerIdleState;
 
-  const factory LogsManagerState.loading() = LogsManagerLoadingState;
+  const factory LogsManagerState.loading() = _LogsManagerLoadingState;
 
   const factory LogsManagerState.error(
     PresentationException error,
-  ) = LogsManagerErrorState;
+  ) = _LogsManagerErrorState;
 
   PresentationException? get error => switch (this) {
-    LogsManagerErrorState(:final error) => error,
+    _LogsManagerErrorState(:final error) => error,
     _ => null,
   };
 
-  bool get loading => this is LogsManagerLoadingState;
+  bool get loading => this is _LogsManagerLoadingState;
 
   @override
   String toString() => 'LogsManagerState(type: $runtimeType, loading: $loading)';
 }
 
-final class LogsManagerInitialState extends LogsManagerIdleState {
-  const LogsManagerInitialState() : super();
+final class _LogsManagerInitialState extends _LogsManagerIdleState {
+  const _LogsManagerInitialState() : super();
 }
 
-final class LogsManagerIdleState extends LogsManagerState {
-  const LogsManagerIdleState();
+final class _LogsManagerIdleState extends LogsManagerState {
+  const _LogsManagerIdleState();
 }
 
-final class LogsManagerLoadingState extends LogsManagerState {
-  const LogsManagerLoadingState();
+final class _LogsManagerLoadingState extends LogsManagerState {
+  const _LogsManagerLoadingState();
 }
 
-final class LogsManagerErrorState extends LogsManagerState {
+final class _LogsManagerErrorState extends LogsManagerState {
   @override
   final PresentationException error;
 
-  const LogsManagerErrorState(
+  const _LogsManagerErrorState(
     this.error,
   );
 }
