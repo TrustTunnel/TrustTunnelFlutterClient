@@ -39,6 +39,7 @@ class LightTheme {
   static const _neutralLightPressed = Color(0xFF74869C);
   static const _neutralLightDisabled = Color(0x3330353B);
   static const _neutralDark = Color(0xFF74869C);
+  static const _neutralDarkDefault = Color(0xFF74869C);
   static const _neutralDarkHover = Color(0xFF5C6E84);
   static const _neutralDarkPressed = Color(0xFF465567);
   static const _neutralDarkDisabled = Color(0x4D30353B);
@@ -51,9 +52,6 @@ class LightTheme {
   static const _specialStaticWhitePressed = Color(0xFFE6EAEF);
   static const _specialStaticWhiteDisabled = Color(0x80FFFFFF);
   static const _staticTransparent = Colors.transparent;
-
-  static const _borderColor = Color(0xFF73859D);
-  static const _focusedBorderColor = Color(0xFF74869C);
 
   late final _customColors = const CustomColors(
     accent: _accent,
@@ -576,9 +574,14 @@ class LightTheme {
     errorBorder: const OutlineInputBorder(
       borderSide: BorderSide(color: _error),
     ),
+    enabledBorder: const OutlineInputBorder(
+      borderSide: BorderSide(
+        color: _neutralDarkDefault,
+      ),
+    ),
     focusedBorder: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _focusedBorderColor,
+        color: _neutralDarkDefault,
         width: 3,
       ),
     ),
@@ -586,11 +589,11 @@ class LightTheme {
       borderSide: BorderSide(color: _error, width: 3),
     ),
     outlineBorder: const BorderSide(
-      color: _borderColor,
+      color: _neutralDarkDefault,
     ),
     border: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _borderColor,
+        color: _neutralDarkDefault,
       ),
     ),
     floatingLabelStyle: WidgetStateTextStyle.resolveWith(
