@@ -39,7 +39,6 @@ class LightTheme {
   static const _neutralLightPressed = Color(0xFF74869C);
   static const _neutralLightDisabled = Color(0x3330353B);
   static const _neutralDark = Color(0xFF74869C);
-  static const _neutralDarkDefault = Color(0xFF74869C);
   static const _neutralDarkHover = Color(0xFF5C6E84);
   static const _neutralDarkPressed = Color(0xFF465567);
   static const _neutralDarkDisabled = Color(0x4D30353B);
@@ -576,12 +575,12 @@ class LightTheme {
     ),
     enabledBorder: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _neutralDarkDefault,
+        color: _neutralDark,
       ),
     ),
     focusedBorder: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _neutralDarkDefault,
+        color: _neutralDark,
         width: 3,
       ),
     ),
@@ -589,11 +588,11 @@ class LightTheme {
       borderSide: BorderSide(color: _error, width: 3),
     ),
     outlineBorder: const BorderSide(
-      color: _neutralDarkDefault,
+      color: _neutralDark,
     ),
     border: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _neutralDarkDefault,
+        color: _neutralDark,
       ),
     ),
     floatingLabelStyle: WidgetStateTextStyle.resolveWith(
