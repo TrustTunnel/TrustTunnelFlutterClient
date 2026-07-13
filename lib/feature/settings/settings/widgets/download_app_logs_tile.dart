@@ -34,8 +34,8 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
   void _onExportLogsPressed() {
     _controller.exportLogs(
       onArchiveReady: _showArchiveReadySnackBar,
-      onCanceled: _onExportLogsCanceled,
       onError: _onExportLogsError,
+      onCancelled: _onExportLogsCancelled,
     );
 
     context.showInfoSnackBar(
@@ -52,7 +52,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
-  void _onExportLogsCanceled() {
+  void _onExportLogsCancelled() {
     if (!mounted) {
       return;
     }

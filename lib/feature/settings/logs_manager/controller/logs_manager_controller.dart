@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,8 +22,8 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
 
   void export({
     ValueChanged<ExportLogsArchive>? onArchiveReady,
-    VoidCallback? onCanceled,
     VoidCallback? onError,
+    VoidCallback? onCancelled,
   }) => handle(
     () async {
       setState(
@@ -33,63 +31,53 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       );
 
       final archive = await _repository.createArchive();
-      final Directory? downloadDirectory;
 
-      if (defaultTargetPlatform == TargetPlatform.macOS) {
-        downloadDirectory = await getDownloadsDirectory();
-        final archivePath = await _repository.pickFilePath(
-          fileName: archive.name,
-          initialDirectory: downloadDirectory?.path,
-          type: ExportFileType.custom,
-          allowedExtensions: const ['zip'],
-          data: archive.data,
-        );
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.macOS:
+          final downloadDirectory = await getDownloadsDirectory();
+          final archivePath = await _repository.pickFilePath(
+            fileName: archive.name,
+            initialDirectory: downloadDirectory?.path,
+            type: ExportFileType.custom,
+            allowedExtensions: const ['zip'],
+            data: archive.data,
+          );
 
-        if (archivePath == null) {
+          if (archivePath == null) {
+            setState(const LogsManagerState.idle());
+            onCancelled?.call();
+
+            return;
+          }
+
+          await _repository.saveRawFile(
+            data: archive.data,
+            path: archivePath,
+            temporary: false,
+          );
+
           setState(const LogsManagerState.idle());
-          onCanceled?.call();
+          onArchiveReady?.call(archive);
+        case TargetPlatform.android || TargetPlatform.iOS:
+          final result = await _repository.pickFilePath(
+            dialogTitle: 'Export app logs and system info',
+            fileName: archive.name,
+            allowedExtensions: ['zip'],
+            data: archive.data,
+          );
 
-          return;
-        }
+          if (result != null) {
+            onArchiveReady?.call(archive);
+          } else {
+            onCancelled?.call();
+          }
 
-        await _repository.saveRawFile(
-          data: archive.data,
-          path: archivePath,
-          temporary: false,
-        );
-
-        setState(const LogsManagerState.idle());
-        onArchiveReady?.call(archive);
-
-        return;
+          setState(
+            const LogsManagerState.idle(),
+          );
+        default:
+          break;
       }
-
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        downloadDirectory = await getApplicationDocumentsDirectory();
-      } else {
-        downloadDirectory = await getDownloadsDirectory();
-      }
-
-      if (downloadDirectory != null) {
-        final downloadPath = '${downloadDirectory.path}${Platform.pathSeparator}${archive.name}';
-        await _repository.saveRawFile(
-          data: archive.data,
-          path: downloadPath,
-        );
-      }
-
-      final tempDirectory = await getTemporaryDirectory();
-      final tempPath = '${tempDirectory.path}${Platform.pathSeparator}${archive.name}';
-
-      await _repository.saveRawFile(
-        data: archive.data,
-        path: tempPath,
-      );
-
-      setState(
-        const LogsManagerState.idle(),
-      );
-      onArchiveReady?.call(archive);
     },
     errorHandler: (error, stackTrace) {
       onError?.call();
