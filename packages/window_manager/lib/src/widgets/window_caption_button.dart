@@ -362,11 +362,14 @@ class WindowCaptionButton extends StatefulWidget {
     disabled: Colors.black.withOpacity(0.3628),
   );
 
-  _ButtonBgColorScheme get buttonBgColorScheme =>
-      brightness != Brightness.dark ? _lightButtonBgColorScheme : _darkButtonBgColorScheme;
+  _ButtonBgColorScheme get buttonBgColorScheme => brightness != Brightness.dark
+      ? _lightButtonBgColorScheme
+      : _darkButtonBgColorScheme;
 
   _ButtonIconColorScheme get buttonIconColorScheme =>
-      brightness != Brightness.dark ? _lightButtonIconColorScheme : _darkButtonIconColorScheme;
+      brightness != Brightness.dark
+          ? _lightButtonIconColorScheme
+          : _darkButtonIconColorScheme;
 
   @override
   State<WindowCaptionButton> createState() => _WindowCaptionButtonState();

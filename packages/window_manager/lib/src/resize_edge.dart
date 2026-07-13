@@ -1,1 +1,10 @@
-enum ResizeEdge { top, left, right, bottom, topLeft, bottomLeft, topRight, bottomRight }
+enum ResizeEdge {
+  top,
+  left,
+  right,
+  bottom,
+  topLeft,
+  bottomLeft,
+  topRight,
+  bottomRight
+}

@@ -57,7 +57,9 @@ class DragToResizeArea extends StatelessWidget {
         cursor: cursor,
         child: GestureDetector(
           onPanStart: (_) => windowManager.startResizing(resizeEdge),
-          onDoubleTap: () => (Platform.isWindows && (resizeEdge == ResizeEdge.top || resizeEdge == ResizeEdge.bottom))
+          onDoubleTap: () => (Platform.isWindows &&
+                  (resizeEdge == ResizeEdge.top ||
+                      resizeEdge == ResizeEdge.bottom))
               ? windowManager.maximize(vertically: true)
               : null,
         ),
