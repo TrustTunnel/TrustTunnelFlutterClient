@@ -6,7 +6,7 @@ on:
       prepare-script:
         type: string
         default: ''
-        description: 'Shell commands to run after checkout (e.g. keystore setup, env config). Vault secrets are available as env vars. Empty = skip'
+        description: 'Shell commands to run after checkout (e.g. dart run build_runner build)'
 
 permissions:
   contents: read
@@ -37,9 +37,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      - name: Apply PR overrides
-        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
       
       - name: Initialize dependencies
         run: flutter pub get
