@@ -2,6 +2,11 @@ name: Flutter Lint
 
 on:
   workflow_call:
+    inputs:
+      prepare-script:
+        type: string
+        default: ''
+        description: 'Shell commands to run after checkout (e.g. keystore setup, env config). Vault secrets are available as env vars. Empty = skip'
 
 permissions:
   contents: read
@@ -35,12 +40,16 @@ jobs:
 
       - name: Apply PR overrides
         uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
-
-      - name: initialize project
-        run: make init
-
-      - name: Flutter pub get
+      
+      - name: Initialize dependencies
         run: flutter pub get
+        
+      - name: Check formatting issues
+        run: dart format -o none --set-exit-if-changed .
+
+      - name: Prepare environment
+        if: inputs.prepare-script != ''
+        run: ${{ inputs.prepare-script }}
 
       - name: Flutter analyze
-        run: flutter analyze
+        run: flutter analyze --no-pub

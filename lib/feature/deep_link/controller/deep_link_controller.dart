@@ -48,7 +48,8 @@ final class DeepLinkController extends BaseStateController<DeepLinkState> with S
     completionHandler: _onCompleted,
   );
 
-  PresentationException _parseException(Object? exception) => ExceptionUtils.toPresentationException(exception: exception);
+  PresentationException _parseException(Object? exception) =>
+      ExceptionUtils.toPresentationException(exception: exception);
 
   Future<void> _onError(Object? error, StackTrace _) async {
     final presentationException = _parseException(error);

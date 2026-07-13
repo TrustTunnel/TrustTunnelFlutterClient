@@ -10,7 +10,8 @@ enum LocaleType {
   ru(Locale('ru')),
   ja(Locale('ja')),
   zh(Locale('zh')),
-  ko(Locale('ko'));
+  ko(Locale('ko'))
+  ;
 
   final Locale? value;
 

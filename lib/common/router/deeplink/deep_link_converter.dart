@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-
 abstract class DeepLinkConverter extends Converter<Uri, String> {
   const DeepLinkConverter();
 }

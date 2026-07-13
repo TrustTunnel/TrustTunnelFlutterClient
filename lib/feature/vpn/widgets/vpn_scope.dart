@@ -228,7 +228,7 @@ class _VpnScopeState extends State<VpnScope> {
     required List<String> excludedRoutes,
   }) async {
     await _stop();
-    
+
     final newServerStream = await widget.vpnRepository.startListenToStates(
       server: server,
       routingProfile: routingProfile,
