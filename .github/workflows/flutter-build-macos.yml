@@ -69,7 +69,7 @@ jobs:
         run: git config --global --add safe.directory /opt/flutter
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Apply PR overrides
         uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master

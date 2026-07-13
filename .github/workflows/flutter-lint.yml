@@ -34,7 +34,7 @@ jobs:
         shell: bash
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       
       - name: Initialize dependencies
         run: flutter pub get

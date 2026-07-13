@@ -83,7 +83,7 @@ jobs:
             secret/data/ci-secrets/${{ inputs.vault-role }} keystorePassword | ORG_GRADLE_PROJECT_signingConfigKeyStorePassword
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Apply PR overrides
         uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
