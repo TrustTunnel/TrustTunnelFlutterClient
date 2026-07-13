@@ -108,11 +108,11 @@ SPEC CHECKSUMS:
   sqlite3: 8d708bc63e9f4ce48f0ad9d6269e478c5ced1d9b
   sqlite3_flutter_libs: d13b8b3003f18f596e542bcb9482d105577eff41
   tray_manager: 061091258370a059b7e7e271491d4532b58278e7
-  TrustTunnelClient: ca552f5820e7b4fe54e2c4390f856c1f3311967d
+  TrustTunnelClient: 2e7e180f615071bf8945fdf8130bd19f64a43ced
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
-  vpn_plugin: 68505970ab4a7b03f1ba059bf3a9db7193147f32
+  vpn_plugin: fe6f1796a2b921d01d9bd75d72a06a7e4aebb2b1
   window_manager: 1d01fa7ac65a6e6f83b965471b1a7fdd3f06166c
 
-PODFILE CHECKSUM: 8208ff5892e592702dfcf31ac6e950b0cf06b057
+PODFILE CHECKSUM: 20c50133fd7ee116d47fa2996cc72255bfc23c50
 
 COCOAPODS: 1.16.2
