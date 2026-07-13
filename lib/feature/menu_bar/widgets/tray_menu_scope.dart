@@ -168,41 +168,33 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
 
   Future<void> _onOtherServersPressed() => widget.onRouteRequested(AppRoutes.servers);
 
-  Future<void> _onLoggingLevelPressed(LoggingLevel level) {
+  Future<void> _onLoggingLevelPressed(LoggingLevel level) async {
     if (_appLoggingController.loggingLevel == level) {
-      return Future<void>.value();
+      return;
     }
 
     _appLoggingController.updateLoggingLevel(level: level);
-
-    return Future<void>.value();
   }
 
   Future<void> _onLoggingSecurityTypePressed(
     LoggingSecurityType type,
-  ) {
+  ) async {
     if (_appLoggingController.securityType == type) {
-      return Future<void>.value();
+      return;
     }
 
     _appLoggingController.updateSecurityType(securityType: type);
-
-    return Future<void>.value();
   }
 
-  Future<void> _onDeleteLogsPressed() {
+  Future<void> _onDeleteLogsPressed() async {
     LogsManagerScope.controllerOf(context, listen: false).deleteLogs();
-
-    return Future<void>.value();
   }
 
-  Future<void> _onExportLogsPressed() {
+  Future<void> _onExportLogsPressed() async {
     LogsManagerScope.controllerOf(context, listen: false).exportLogs(
-      onCanceled: _showExportCanceledSnackBar,
+      onCancelled: _showExportCanceledSnackBar,
       onError: _showExportErrorSnackBar,
     );
-
-    return Future<void>.value();
   }
 
   Future<void> _onQuitPressed() async {
