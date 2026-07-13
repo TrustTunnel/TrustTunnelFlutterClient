@@ -3,19 +3,22 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_retriever/screen_retriever.dart';
+import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:window_manager/window_manager.dart';
 
-final class MacOSAppWindowUtils {
+final class MacOSAppWindowController implements AppWindowController {
   final MethodChannel _mainWindowChannel = const MethodChannel('trusttunnel/macos_main_window');
 
-  MacOSAppWindowUtils() {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
-      _throwUnsupportedError();
-    }
-  }
+  MacOSAppWindowController()
+    : assert(
+        defaultTargetPlatform == TargetPlatform.macOS,
+        'MacOSAppWindowController is only supported on macOS',
+      );
 
+  @override
   Future<void> showMainWindow() async => await _mainWindowChannel.invokeMethod<void>('show');
 
+  @override
   Future<void> hideMainWindow() async => await _mainWindowChannel.invokeMethod<void>('hide');
 
   /// Configure the main window for macOS.
@@ -24,6 +27,7 @@ final class MacOSAppWindowUtils {
   /// - [defaultWindowSize] is the default size of the window.
   /// - [isDebugMode] is a flag to indicate if the app is running in debug mode.
   /// If true, the window will be configured without minimum size.
+  @override
   Future<void> configureMainWindow({
     required Size minimumWindowSize,
     required Size defaultWindowSize,
@@ -87,8 +91,4 @@ final class MacOSAppWindowUtils {
         math.max(minimumDimension, visibleDimension),
       )
       .toDouble();
-
-  Never _throwUnsupportedError() => throw UnsupportedError(
-    'MacOSAppWindowUtils is only supported on macOS',
-  );
 }

@@ -6,7 +6,6 @@ import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/logging/observers/logging_navigator_observer.dart';
 import 'package:trusttunnel/common/router/app_route.dart';
 import 'package:trusttunnel/common/router/app_routes.dart';
-import 'package:trusttunnel/common/utils/macos_app_window_utils.dart';
 import 'package:trusttunnel/common/utils/navigation_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/deep_link_scope.dart';
@@ -156,7 +155,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Future<void> _openRouteFromTray(AppRoute route) async {
-    await MacOSAppWindowUtils().showMainWindow();
+    await context.dependencyFactory.appWindowController.showMainWindow();
 
     switch (route) {
       case final requestedRoute when requestedRoute == AppRoutes.servers:

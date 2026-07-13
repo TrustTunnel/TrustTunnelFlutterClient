@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/router/deeplink/deep_link_source.dart';
-import 'package:trusttunnel/common/utils/macos_app_window_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/controller/deep_link_controller.dart';
 
@@ -80,7 +79,7 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
     final link = _deepLinkSource.link;
     if (link != null) {
       if (defaultTargetPlatform == TargetPlatform.macOS) {
-        unawaited(MacOSAppWindowUtils().showMainWindow());
+        unawaited(context.dependencyFactory.appWindowController.showMainWindow());
       }
       _controller.onDeepLinkReceived(link);
     }

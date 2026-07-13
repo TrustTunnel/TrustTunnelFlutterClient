@@ -1,5 +1,6 @@
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
@@ -29,6 +30,8 @@ import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
+import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
+import 'package:trusttunnel/feature/app/controller/macos_app_window_controller.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
 import 'package:vpn_plugin/vpn_plugin.dart';
 
@@ -68,6 +71,8 @@ abstract class DependencyFactory {
   OpenMainWindowOnLoginDataSource get openMainWindowOnLoginDataSource;
 
   AutoConnectOnLaunchSettingsDataSource get autoConnectOnLaunchSettingsDataSource;
+
+  AppWindowController get appWindowController;
 
   db.AppDatabase get database;
 }
@@ -117,6 +122,8 @@ class DependencyFactoryImpl implements DependencyFactory {
   OpenMainWindowOnLoginDataSource? _openMainWindowOnLoginDataSource;
 
   AutoConnectOnLaunchSettingsDataSource? _autoConnectOnLaunchSettingsDataSource;
+
+  AppWindowController? _appWindowController;
 
   db.AppDatabase? _database;
 
@@ -198,6 +205,12 @@ class DependencyFactoryImpl implements DependencyFactory {
       _autoConnectOnLaunchSettingsDataSource ??= AutoConnectOnLaunchSettingsDataSourceImpl(
         preferences: sharedPreferences,
       );
+
+  @override
+  AppWindowController get appWindowController => _appWindowController ??= switch (defaultTargetPlatform) {
+    TargetPlatform.macOS => MacOSAppWindowController(),
+    _ => throw UnsupportedError('AppWindowController is not supported on ${defaultTargetPlatform.name}'),
+  };
 
   @override
   db.AppDatabase get database => _database ??= db.AppDatabase();
