@@ -43,7 +43,7 @@ class VpnDataSourceImpl implements VpnDataSource {
   }) : _platformApi = vpnPlugin {
     final platformStates = _platformApi.states;
     final platformQueryLog = _platformApi.queryLog;
-    
+
     _loggingVpnObserver = logger.extension<VpnLoggerExtension>();
 
     final vpnState = platformStates.transform(
