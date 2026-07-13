@@ -3,6 +3,10 @@ name: Flutter Lint
 on:
   workflow_call:
     inputs:
+      team:
+        description: 'Team name for the self-hosted Docker-capable Linux runner (e.g. mobile, infra, platform). Resolves to the team-<name> runner label.'
+        type: string
+        default: 'flutter'
       prepare-script:
         type: string
         default: ''
@@ -13,7 +17,7 @@ permissions:
 
 jobs:
   resolve-runner:
-    runs-on: [team-flutter]
+    runs-on: team-${{ inputs.team }}
     outputs:
       image: ${{ steps.kv.outputs.value }}
     steps:
@@ -24,13 +28,7 @@ jobs:
 
   lint:
     needs: [resolve-runner]
-    runs-on:
-      - ephemeral
-      - ephemeral-mac
-      - ${{ needs.resolve-runner.outputs.image }}
-      - ephemeral-limit-memory-5120
-      - ephemeral-limit-cpu-2
-      - ephemeral-limit-disk-gb-20
+    runs-on: team-${{ inputs.team }}
     defaults:
       run:
         shell: bash
