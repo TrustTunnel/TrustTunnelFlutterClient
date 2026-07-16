@@ -59,7 +59,7 @@ sealed class AppLoggingState {
       'AppLoggingState(type: $runtimeType, securityType: $securityType, level: $level, loading: $loading)';
 }
 
-final class _AppLoggingInitialState extends _AppLoggingIdleState {
+final class _AppLoggingInitialState extends _AppLoggingLoadingState {
   const _AppLoggingInitialState()
     : super(
         securityType: LoggingSecurityType.stripped,

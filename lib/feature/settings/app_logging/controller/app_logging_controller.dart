@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
@@ -68,7 +70,7 @@ final class AppLoggingController extends BaseStateController<AppLoggingState> wi
 
   void setSecurityType(
     LoggingSecurityType securityType, {
-    ValueChanged<LoggingSecurityType>? onUpdated,
+    FutureOr<void> Function(LoggingSecurityType)? onUpdated,
   }) => handle(
     () async {
       setState(
@@ -87,7 +89,7 @@ final class AppLoggingController extends BaseStateController<AppLoggingState> wi
         ),
       );
 
-      onUpdated?.call(securityType);
+      await onUpdated?.call(securityType);
     },
     errorHandler: _onError,
     completionHandler: _onCompleted,

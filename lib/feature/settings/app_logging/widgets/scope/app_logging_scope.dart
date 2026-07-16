@@ -1,4 +1,6 @@
 import 'package:adguard_logger/adguard_logger.dart';
+import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
@@ -6,10 +8,15 @@ import 'package:trusttunnel/common/logging/app_logger.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/logging/sanitizer/log_sanitizer.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/settings/app_logging/controller/app_logging_controller.dart';
 import 'package:trusttunnel/feature/settings/app_logging/controller/app_logging_state.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope_aspect.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope_controller.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 
 /// {@template routing_scope_template}
 /// Provides Routing controller to the widget tree
@@ -68,11 +75,14 @@ class _AppLoggingScopeState extends State<AppLoggingScope> {
 
   void _updateSecurityLevel({required LoggingSecurityType securityType}) => _controller.setSecurityType(
     securityType,
-    onUpdated: (value) => _onLoggerUpdated(
-      sanitizer: LogSanitizer(
-        securityType: value,
-      ),
-    ),
+    onUpdated: (value) async {
+      _onLoggerUpdated(
+        sanitizer: LogSanitizer(
+          securityType: value,
+        ),
+      );
+      await _applyVpnConfigurationLogLevel();
+    },
   );
 
   void _onLoggerUpdated({
@@ -82,6 +92,46 @@ class _AppLoggingScopeState extends State<AppLoggingScope> {
     loggingLevel: loggingLevel,
     sanitizer: sanitizer,
   );
+
+  /// Applies the selected sensitive-data mode to the current VPN configuration.
+  Future<void> _applyVpnConfigurationLogLevel() async {
+    if (!mounted) {
+      return;
+    }
+
+    final server = ServersScope.controllerOf(context, listen: false).selectedServer;
+    if (server == null) {
+      return;
+    }
+
+    final routingProfile = RoutingScope.controllerOf(context, listen: false).routingList.firstWhereOrNull(
+      (profile) => profile.id == server.serverData.routingProfileId,
+    );
+    if (routingProfile == null) {
+      return;
+    }
+
+    final excludedRoutes = ExcludedRoutesScope.controllerOf(context, listen: false).excludedRoutes;
+    final vpnController = VpnScope.vpnControllerOf(context, listen: false);
+
+    if (vpnController.state != VpnState.disconnected) {
+      await vpnController.start(
+        server: server,
+        routingProfile: routingProfile,
+        excludedRoutes: excludedRoutes,
+      );
+
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
+      await vpnController.updateConfiguration(
+        server: server,
+        routingProfile: routingProfile,
+        excludedRoutes: excludedRoutes,
+      );
+    }
+  }
 
   @override
   void dispose() {
