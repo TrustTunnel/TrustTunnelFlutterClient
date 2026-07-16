@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
+import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 
@@ -30,10 +33,13 @@ abstract class VpnRepository {
 
 class VpnRepositoryImpl implements VpnRepository {
   final VpnDataSource _vpnDataSource;
+  final LoggingSettingsDataSource _loggingSettingsDataSource;
 
   VpnRepositoryImpl({
     required VpnDataSource vpnDataSource,
-  }) : _vpnDataSource = vpnDataSource;
+    required LoggingSettingsDataSource loggingSettingsDataSource,
+  }) : _vpnDataSource = vpnDataSource,
+       _loggingSettingsDataSource = loggingSettingsDataSource;
 
   @override
   Future<Stream<VpnState>> startListenToStates({
@@ -41,10 +47,13 @@ class VpnRepositoryImpl implements VpnRepository {
     required List<String> excludedRoutes,
     required RoutingProfile routingProfile,
   }) async {
+    final logLevel = await _getConfigurationLogLevel();
+
     await _vpnDataSource.start(
       server: server.serverData,
       routingProfile: routingProfile.data,
       excludedRoutes: excludedRoutes,
+      logLevel: logLevel,
     );
 
     return _vpnDataSource.vpnState;
@@ -64,12 +73,26 @@ class VpnRepositoryImpl implements VpnRepository {
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
-  }) => _vpnDataSource.updateConfiguration(
-    server: server.serverData,
-    routingProfile: routingProfile.data,
-    excludedRoutes: excludedRoutes,
-  );
+  }) async {
+    final logLevel = await _getConfigurationLogLevel();
+
+    await _vpnDataSource.updateConfiguration(
+      server: server.serverData,
+      routingProfile: routingProfile.data,
+      excludedRoutes: excludedRoutes,
+      logLevel: logLevel,
+    );
+  }
 
   @override
   Future<void> deleteConfiguration() => _vpnDataSource.deleteConfiguration();
+
+  Future<VpnConfigurationLogLevel> _getConfigurationLogLevel() async {
+    final securityType = await _loggingSettingsDataSource.getSecurityType();
+
+    return switch (securityType) {
+      LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
+      LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
+    };
+  }
 }

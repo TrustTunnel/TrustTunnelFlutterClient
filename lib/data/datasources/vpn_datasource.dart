@@ -1,5 +1,6 @@
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 
@@ -51,17 +52,18 @@ abstract class VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
   });
 
   /// {@template vpn_data_source_update_configuration}
   /// Updates the VPN configuration of an existing system VPN profile.
   ///
-  /// This method has effect **only on iOS**. On other platforms it is expected
-  /// to be a no-op.
+  /// This method has effect **only on iOS/macOS**. On other platforms it is
+  /// expected to be a no-op.
   ///
   /// The update is applied to the **system-level VPN configuration** associated
   /// with the provided [server]. As a result, the changes become visible in the
-  /// iOS Settings app under the selected VPN profile.
+  /// system Settings app under the selected VPN profile.
   ///
   /// Implementations are responsible for:
   /// - mapping domain models to the platform-specific configuration format,
@@ -72,17 +74,18 @@ abstract class VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
   });
 
   /// {@template vpn_data_source_delete_configuration}
   /// Deletes an existing system VPN configuration.
   ///
-  /// This method has effect **only on iOS**. On other platforms it is expected
-  /// to be a no-op.
+  /// This method has effect **only on iOS/macOS**. On other platforms it is
+  /// expected to be a no-op.
   ///
   /// The call removes the **system-level VPN profile** previously created or
   /// updated by this data source. As a result, the corresponding VPN entry
-  /// disappears from the iOS Settings app.
+  /// disappears from the system Settings app.
   ///
   /// This method does not implicitly manage the VPN session lifecycle. If the
   /// VPN tunnel is currently running, implementations are expected to stop the
