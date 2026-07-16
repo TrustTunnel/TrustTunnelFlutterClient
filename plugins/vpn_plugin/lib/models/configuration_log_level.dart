@@ -4,7 +4,8 @@ import 'package:meta/meta.dart';
 /// Defines the available log levels for VPN configuration.
 ///
 /// Log levels control the verbosity of logging in the VPN system:
-/// - [info]: Standard information messages (lowest verbosity)
+/// - [error]: Error messages only (lowest enabled verbosity)
+/// - [info]: Standard information messages
 /// - [debug]: Detailed information for debugging purposes
 /// - [trace]: Extremely detailed tracing information (highest verbosity)
 ///
@@ -13,10 +14,15 @@ import 'package:meta/meta.dart';
 /// {@endtemplate}
 @immutable
 enum ConfigurationLogLevel {
+  /// Error logging level.
+  ///
+  /// Includes only error messages. This is the least verbose enabled logging
+  /// level.
+  error('error'),
+
   /// Standard information logging level.
   ///
   /// Includes important operational messages and significant events.
-  /// This is the least verbose logging level.
   info('info'),
 
   /// Debug logging level.

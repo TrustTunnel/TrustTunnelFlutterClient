@@ -48,16 +48,17 @@ abstract class VpnPlugin {
   Future<VpnManagerState> getCurrentState();
 
   /// {@template vpn_plugin_update_configuration}
-  /// Updates the VPN configuration for an existing VPN profile on iOS.
+  /// Updates the VPN configuration for an existing VPN profile on iOS/macOS.
   ///
-  /// This method has effect **only on iOS**. On other platforms it performs no
-  /// changes.
+  /// This method has effect **only on iOS/macOS**. On other platforms it performs
+  /// no changes.
   ///
-  /// The platform implementation should update the iOS system VPN profile
+  /// The platform implementation should update the system VPN profile
   /// if the [config] is specified or delete the profile
-  /// entirely it is `null`.
+  /// entirely if it is `null`.
   ///
-  /// Throws a [PlatformException] if the configuration cannot be updated on iOS.
+  /// Throws a [PlatformException] if the configuration cannot be updated on
+  /// iOS/macOS.
   /// {@endtemplate}
   Future<void> updateConfiguration({required Configuration? configuration});
 
