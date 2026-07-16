@@ -1,11 +1,11 @@
 abstract class AssetImages {
-  static const server = '${_path}server.png';
+  static const server = '${_path}server.webp';
 
-  static const about = '${_path}about.png';
+  static const about = '${_path}about.webp';
 
-  static const connectionLogDesktop = '${_path}connection_log_desktop.png';
+  static const connectionLogDesktop = '${_path}connection_log_desktop.webp';
 
-  static const connectionLogMobile = '${_path}connection_log_mobile.png';
+  static const connectionLogMobile = '${_path}connection_log_mobile.webp';
 
   static const _path = 'assets/images/';
 }
