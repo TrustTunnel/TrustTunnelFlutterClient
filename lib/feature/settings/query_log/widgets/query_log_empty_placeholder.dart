@@ -10,42 +10,48 @@ class QueryLogEmptyPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final Size imageSize = context.isMobileBreakpoint ? const Size(270, 270) : const Size(400, 300);
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: context.isMobileBreakpoint ? const BoxConstraints() : const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              context.isMobileBreakpoint ? AssetImages.connectionLogMobile : AssetImages.connectionLogDesktop,
-              width: imageSize.width,
-              height: imageSize.height,
-              fit: BoxFit.contain,
-            ),
-            Padding(
-              padding: context.isMobileBreakpoint
-                  ? const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 12)
-                  : const EdgeInsets.only(left: 44, right: 44, top: 8, bottom: 12),
-              child: Text(
-                context.ln.connectionLogEmptyTitle,
-                textAlign: TextAlign.center,
-                style: context.textTheme.headlineMedium,
+    return CustomScrollView(
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: context.isMobileBreakpoint ? const BoxConstraints() : const BoxConstraints(maxWidth: 400),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    context.isMobileBreakpoint ? AssetImages.connectionLogMobile : AssetImages.connectionLogDesktop,
+                    width: imageSize.width,
+                    height: imageSize.height,
+                    fit: BoxFit.contain,
+                  ),
+                  Padding(
+                    padding: context.isMobileBreakpoint
+                        ? const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 12)
+                        : const EdgeInsets.only(left: 44, right: 44, top: 8, bottom: 12),
+                    child: Text(
+                      context.ln.connectionLogEmptyTitle,
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.headlineMedium,
+                    ),
+                  ),
+                  Padding(
+                    padding: context.isMobileBreakpoint
+                        ? const EdgeInsets.only(left: 24, right: 24, bottom: 16)
+                        : const EdgeInsets.only(left: 44, right: 44, bottom: 16),
+                    child: Text(
+                      context.ln.connectionLogEmptyDescription,
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Padding(
-              padding: context.isMobileBreakpoint
-                  ? const EdgeInsets.only(left: 24, right: 24, bottom: 16)
-                  : const EdgeInsets.only(left: 44, right: 44, bottom: 16),
-              child: Text(
-                context.ln.connectionLogEmptyDescription,
-                textAlign: TextAlign.center,
-                style: context.textTheme.bodyMedium,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
