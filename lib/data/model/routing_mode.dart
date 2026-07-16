@@ -9,7 +9,8 @@ enum RoutingMode {
   bypass._(1),
 
   /// Traffic matching the associated rule set should be routed via VPN.
-  vpn._(2);
+  vpn._(2)
+  ;
 
   /// {@template routing_mode_value}
   /// Stable numeric identifier used for persistence/interop.

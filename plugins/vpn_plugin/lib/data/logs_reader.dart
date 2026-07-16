@@ -12,9 +12,5 @@ class LogsReader {
   );
 
   Future<List<LogRecord>> _readLogsFromFile(String path) =>
-      File(path)
-          .openRead()
-          .transform(LogDecoder.stringSplitter)
-          .map(LogDecoder.parseLine) 
-          .toList();
+      File(path).openRead().transform(LogDecoder.stringSplitter).map(LogDecoder.parseLine).toList();
 }

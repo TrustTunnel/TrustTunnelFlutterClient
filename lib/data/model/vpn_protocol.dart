@@ -12,7 +12,8 @@ enum VpnProtocol {
   quic._(1),
 
   /// HTTP/2-based transport.
-  http2._(2);
+  http2._(2)
+  ;
 
   /// {@template vpn_protocol_value}
   /// Stable numeric identifier used for persistence/interop.
