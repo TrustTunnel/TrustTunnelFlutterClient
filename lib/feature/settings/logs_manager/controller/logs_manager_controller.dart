@@ -32,52 +32,23 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
 
       final archive = await _repository.createArchive();
 
-      switch (defaultTargetPlatform) {
-        case TargetPlatform.macOS:
-          final downloadDirectory = await getDownloadsDirectory();
-          final archivePath = await _repository.pickFilePath(
-            fileName: archive.name,
-            initialDirectory: downloadDirectory?.path,
-            type: ExportFileType.custom,
-            allowedExtensions: const ['zip'],
-            data: archive.data,
-          );
+      final result = await _repository.pickFilePath(
+        dialogTitle: 'Export app logs and system info',
+        fileName: archive.name,
+        type: ExportFileType.custom,
+        allowedExtensions: ['zip'],
+        data: archive.data,
+      );
 
-          if (archivePath == null) {
-            setState(const LogsManagerState.idle());
-            onCancelled?.call();
-
-            return;
-          }
-
-          await _repository.saveRawFile(
-            data: archive.data,
-            path: archivePath,
-            temporary: false,
-          );
-
-          setState(const LogsManagerState.idle());
-          onArchiveReady?.call(archive);
-        case TargetPlatform.android || TargetPlatform.iOS:
-          final result = await _repository.pickFilePath(
-            dialogTitle: 'Export app logs and system info',
-            fileName: archive.name,
-            allowedExtensions: ['zip'],
-            data: archive.data,
-          );
-
-          if (result != null) {
-            onArchiveReady?.call(archive);
-          } else {
-            onCancelled?.call();
-          }
-
-          setState(
-            const LogsManagerState.idle(),
-          );
-        default:
-          break;
+      if (result != null) {
+        onArchiveReady?.call(archive);
+      } else {
+        onCancelled?.call();
       }
+
+      setState(
+        const LogsManagerState.idle(),
+      );
     },
     errorHandler: (error, stackTrace) {
       onError?.call();

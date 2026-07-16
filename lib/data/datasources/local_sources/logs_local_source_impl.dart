@@ -72,21 +72,14 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     ExportFileType type = ExportFileType.any,
     List<String>? allowedExtensions,
     Uint8List? data,
-  }) async {
-    final isMobile = switch (defaultTargetPlatform) {
-      TargetPlatform.android || TargetPlatform.iOS => true,
-      _ => false,
-    };
-
-    return _filePicker.saveFile(
-      dialogTitle: dialogTitle,
-      fileName: fileName,
-      initialDirectory: initialDirectory,
-      type: _mapExportFileType(type),
-      allowedExtensions: allowedExtensions,
-      bytes: isMobile ? data : null,
-    );
-  }
+  }) => _filePicker.saveFile(
+    dialogTitle: dialogTitle,
+    fileName: fileName,
+    initialDirectory: initialDirectory,
+    type: _mapExportFileType(type),
+    allowedExtensions: allowedExtensions,
+    bytes: data,
+  );
 
   @override
   Future<String> saveRawFile({
