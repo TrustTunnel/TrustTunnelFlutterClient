@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_aspect.dart';
@@ -34,8 +35,8 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
   Server? _selectedServer;
   RoutingProfile? _selectedRoutingProfile;
   List<String>? _excludedRoutes;
-  bool _initialLogConfigurationSynced = false;
-  bool _isInitialLogConfigurationSyncInProgress = false;
+  LoggingSecurityType? _appliedLogSecurityType;
+  bool _isLogConfigurationSyncInProgress = false;
 
   @override
   void didChangeDependencies() {
@@ -68,6 +69,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     );
 
     final loggingScope = AppLoggingScope.controllerOf(context);
+    final logLevel = _mapSecurityTypeToLogLevel(loggingScope.securityType);
 
     _selectedServer ??= updatedServer;
 
@@ -82,7 +84,6 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     }
 
     if (wasDeleted && serverScope.servers.isEmpty && _selectedServer != updatedServer) {
-      _initialLogConfigurationSynced = true;
       unawaited(_deleteStoredConfiguration(controller: vpnController));
 
       return;
@@ -118,30 +119,33 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
       return;
     }
 
+    if (loggingScope.loading) {
+      return;
+    }
+
     final shouldRefreshConfiguration =
         _selectedServer != updatedServer ||
         _selectedRoutingProfile != updatedRoutingProfile ||
         !listEquals(_excludedRoutes, updatedExcludedRoutes);
 
     if (shouldRefreshConfiguration) {
-      _initialLogConfigurationSynced = true;
-
       _refreshConfiguration(
         vpnController: vpnController,
         updatedServer: updatedServer,
         updatedRoutingProfile: updatedRoutingProfile,
         updatedExcludedRoutes: updatedExcludedRoutes,
         wasSelectedServerDeleted: wasDeleted,
+        logLevel: logLevel,
       );
 
+      if (!_isLogConfigurationSyncInProgress) {
+        _appliedLogSecurityType = loggingScope.securityType;
+      }
+
       return;
     }
 
-    if (loggingScope.loading) {
-      return;
-    }
-
-    _syncInitialLogConfigurationIfNeeded(
+    _syncLogConfigurationIfNeeded(
       securityType: loggingScope.securityType,
       server: updatedServer,
       routingProfile: updatedRoutingProfile,
@@ -158,6 +162,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
   }) async {
     _selectedServer = server;
     _selectedRoutingProfile = routingProfile;
@@ -168,6 +173,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
+      logLevel: logLevel,
     );
   }
 
@@ -187,6 +193,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
     required VpnController controller,
+    required VpnConfigurationLogLevel logLevel,
   }) async {
     _selectedServer = server;
     _selectedRoutingProfile = routingProfile;
@@ -195,6 +202,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
+      logLevel: logLevel,
     );
   }
 
@@ -206,6 +214,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
     required RoutingProfile updatedRoutingProfile,
     required List<String> updatedExcludedRoutes,
     required bool wasSelectedServerDeleted,
+    required VpnConfigurationLogLevel logLevel,
   }) {
     final shouldUpdateStoredConfiguration =
         (_selectedServer?.id == updatedServer.id && vpnController.state == VpnState.disconnected) ||
@@ -218,6 +227,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
           server: updatedServer,
           routingProfile: updatedRoutingProfile,
           excludedRoutes: updatedExcludedRoutes,
+          logLevel: logLevel,
         ),
       );
     } else {
@@ -227,64 +237,105 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
           server: updatedServer,
           routingProfile: updatedRoutingProfile,
           excludedRoutes: updatedExcludedRoutes,
+          logLevel: logLevel,
         ),
       );
     }
   }
 
-  /// Starts one-time synchronization of the existing VPN profile when needed.
-  void _syncInitialLogConfigurationIfNeeded({
+  /// Applies a changed sensitive-data setting to the current VPN configuration.
+  void _syncLogConfigurationIfNeeded({
     required LoggingSecurityType securityType,
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
   }) {
-    if (_initialLogConfigurationSynced || _isInitialLogConfigurationSyncInProgress) {
+    if (_isLogConfigurationSyncInProgress || _appliedLogSecurityType == securityType) {
       return;
     }
 
-    _isInitialLogConfigurationSyncInProgress = true;
+    if (_appliedLogSecurityType == null && securityType == LoggingSecurityType.full) {
+      _appliedLogSecurityType = securityType;
+
+      return;
+    }
+
+    _isLogConfigurationSyncInProgress = true;
     unawaited(
-      _syncInitialLogConfiguration(
+      _syncLogConfiguration(
         securityType: securityType,
         server: server,
         routingProfile: routingProfile,
         excludedRoutes: excludedRoutes,
-      ).whenComplete(() {
-        _isInitialLogConfigurationSyncInProgress = false;
-      }),
+      ),
     );
   }
 
-  /// Applies error-only logging to the existing VPN profile in stripped mode.
-  Future<void> _syncInitialLogConfiguration({
+  void _syncLatestLogConfigurationIfNeeded({
+    required LoggingSecurityType synchronizedSecurityType,
+  }) {
+    if (!mounted) {
+      return;
+    }
+
+    final securityType = AppLoggingScope.controllerOf(context, listen: false).securityType;
+    final server = _selectedServer;
+    final routingProfile = _selectedRoutingProfile;
+    final excludedRoutes = _excludedRoutes;
+
+    if (securityType == synchronizedSecurityType ||
+        server == null ||
+        routingProfile == null ||
+        excludedRoutes == null) {
+      return;
+    }
+
+    _syncLogConfigurationIfNeeded(
+      securityType: securityType,
+      server: server,
+      routingProfile: routingProfile,
+      excludedRoutes: excludedRoutes,
+    );
+  }
+
+  /// Reapplies the VPN configuration with the requested logging level.
+  Future<void> _syncLogConfiguration({
     required LoggingSecurityType securityType,
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
   }) async {
-    if (_initialLogConfigurationSynced || !mounted) {
-      return;
-    }
+    try {
+      if (mounted) {
+        final controller = VpnScope.vpnControllerOf(context, listen: false);
+        final logLevel = _mapSecurityTypeToLogLevel(securityType);
 
-    if (securityType == LoggingSecurityType.stripped) {
-      final controller = VpnScope.vpnControllerOf(context, listen: false);
-
-      if (controller.state != VpnState.disconnected) {
-        await controller.start(
-          server: server,
-          routingProfile: routingProfile,
-          excludedRoutes: excludedRoutes,
-        );
-      } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-        await controller.updateConfiguration(
-          server: server,
-          routingProfile: routingProfile,
-          excludedRoutes: excludedRoutes,
-        );
+        if (controller.state != VpnState.disconnected) {
+          await controller.start(
+            server: server,
+            routingProfile: routingProfile,
+            excludedRoutes: excludedRoutes,
+            logLevel: logLevel,
+          );
+        } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
+          await controller.updateConfiguration(
+            server: server,
+            routingProfile: routingProfile,
+            excludedRoutes: excludedRoutes,
+            logLevel: logLevel,
+          );
+        }
       }
-    }
 
-    _initialLogConfigurationSynced = true;
+      _appliedLogSecurityType = securityType;
+    } finally {
+      _isLogConfigurationSyncInProgress = false;
+      _syncLatestLogConfigurationIfNeeded(synchronizedSecurityType: securityType);
+    }
   }
+
+  VpnConfigurationLogLevel _mapSecurityTypeToLogLevel(LoggingSecurityType securityType) => switch (securityType) {
+    LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
+    LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
+  };
 }
