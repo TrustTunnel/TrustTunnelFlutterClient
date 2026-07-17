@@ -42,14 +42,14 @@ Future<void> main() async {
         DependencyScope(
           dependenciesFactory: initializationHelper.dependenciesFactory,
           repositoryFactory: initializationHelper.repositoryFactory,
-          child: RoutingScope(
-            child: ExcludedRoutesScope(
-              child: VpnScope(
-                vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
-                initialState: initializationHelper.initialVpnState,
-                child: const ServersScope(
-                  child: AutoConnectOnLaunchSettingsScope(
-                    child: AppLoggingScope(
+          child: AppLoggingScope(
+            child: RoutingScope(
+              child: ExcludedRoutesScope(
+                child: VpnScope(
+                  vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
+                  initialState: initializationHelper.initialVpnState,
+                  child: const ServersScope(
+                    child: AutoConnectOnLaunchSettingsScope(
                       child: VpnUpdateManager(
                         child: DeepLinkScope(
                           child: App(),

@@ -11,6 +11,7 @@ import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/router/app_route.dart';
 import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/macos_exit_dialog.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/tray_manager_macos.dart';
@@ -19,7 +20,6 @@ import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
-import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope_aspect.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope_controller.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
@@ -67,11 +67,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     if (_isMacOS) {
       _vpnController = VpnScope.vpnControllerOf(context);
       _serversController = ServersScope.controllerOf(context);
-      _appLoggingController = AppLoggingScope.controllerOf(
-        context,
-        aspect: AppLoggingScopeAspect.loggingLevel,
-      );
-      AppLoggingScope.controllerOf(context, aspect: AppLoggingScopeAspect.securityType);
+      _appLoggingController = AppLoggingScope.controllerOf(context);
 
       _enqueueSync();
     }
@@ -232,6 +228,10 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
 
   /// Connects to [server] with its routing profile and current exclusions.
   Future<void> _connectToServer(Server server) async {
+    if (_appLoggingController.loading) {
+      return;
+    }
+
     final routingController = RoutingScope.controllerOf(
       context,
       listen: false,
@@ -256,6 +256,10 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
+      logLevel: switch (_appLoggingController.securityType) {
+        LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
+        LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
+      },
     );
   }
 

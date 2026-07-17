@@ -4,8 +4,11 @@ import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_controller.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_state.dart';
@@ -77,6 +80,11 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
       return;
     }
 
+    final loggingController = AppLoggingScope.controllerOf(context);
+    if (loggingController.loading) {
+      return;
+    }
+
     // Wait for servers, or finish when auto-connect has no usable target.
     final serversController = ServersScope.controllerOf(context);
     if (!state.enabled || state.lastServerId == null || serversController.servers.isEmpty) {
@@ -124,6 +132,10 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
+      logLevel: switch (loggingController.securityType) {
+        LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
+        LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
+      },
     );
   }
 
