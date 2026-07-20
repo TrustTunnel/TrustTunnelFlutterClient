@@ -158,25 +158,22 @@ class _NavigationScreenState extends State<NavigationScreen> {
     await context.dependencyFactory.appWindowController.showMainWindow();
 
     switch (route) {
-      case final requestedRoute when requestedRoute == AppRoutes.servers:
+      case AppRoutes.servers:
         await _setTabRoute(
           0,
           force: true,
         );
-        return;
-      case final requestedRoute when requestedRoute == AppRoutes.routing:
+      case AppRoutes.routing:
         await _setTabRoute(
           1,
           force: true,
         );
-        return;
-      case final requestedRoute when requestedRoute == AppRoutes.settings:
+      case AppRoutes.settings:
         await _setTabRoute(
           2,
           force: true,
         );
-        return;
-      case final requestedRoute when requestedRoute == AppRoutes.serverDetails:
+      case AppRoutes.serverDetails:
         await _setTabRoute(
           0,
           force: true,
@@ -185,8 +182,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           const ServerDetailsPopUp(),
           route: AppRoutes.serverDetails,
         );
-        return;
-      case final requestedRoute when requestedRoute == AppRoutes.queryLog:
+      case AppRoutes.queryLog:
         await _setTabRoute(
           2,
           force: true,
@@ -195,7 +191,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
           const QueryLogScreen(),
           route: AppRoutes.queryLog,
         );
-        return;
       default:
         return;
     }
