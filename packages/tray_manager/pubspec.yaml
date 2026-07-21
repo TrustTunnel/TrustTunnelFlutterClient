@@ -7,8 +7,8 @@ resolution: workspace
 description: "TrustTunnel macOS status bar tray API and menu models."
 
 environment:
-  sdk: 3.10.1
-  flutter: 3.38.3
+  sdk: ^3.10.1
+  flutter: ^3.38.3
 
 dependencies:
   flutter:

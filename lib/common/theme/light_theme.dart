@@ -217,6 +217,13 @@ class LightTheme {
 
   late final _iconButtonThemeData = IconButtonThemeData(
     style: ButtonStyle(
+      mouseCursor: WidgetStateMouseCursor.resolveWith(
+        (states) {
+          if (states.contains(WidgetState.disabled)) return SystemMouseCursors.basic;
+
+          return SystemMouseCursors.click;
+        },
+      ),
       shape: const WidgetStatePropertyAll(
         CircleBorder(),
       ),
@@ -227,13 +234,6 @@ class LightTheme {
         (states) {
           if (states.contains(WidgetState.pressed) || states.contains(WidgetState.focused)) return _backgroundHover;
           if (states.contains(WidgetState.hovered)) return _backgroundPressed;
-
-          return null;
-        },
-      ),
-      mouseCursor: WidgetStateProperty.resolveWith(
-        (states) {
-          if (states.contains(WidgetState.disabled)) return SystemMouseCursors.basic;
 
           return null;
         },
@@ -454,6 +454,13 @@ class LightTheme {
 
   late final _filledButtonTheme = FilledButtonThemeData(
     style: ButtonStyle(
+      mouseCursor: WidgetStateMouseCursor.resolveWith(
+        (states) {
+          if (states.contains(WidgetState.disabled)) return SystemMouseCursors.basic;
+
+          return SystemMouseCursors.click;
+        },
+      ),
       shape: WidgetStatePropertyAll(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100),
@@ -986,6 +993,13 @@ class LightTheme {
   final _customFilledIconButtonTheme = CustomFilledIconButtonTheme(
     iconButton: IconButtonThemeData(
       style: ButtonStyle(
+        mouseCursor: WidgetStateMouseCursor.resolveWith(
+          (states) {
+            if (states.contains(WidgetState.disabled)) return SystemMouseCursors.basic;
+
+            return SystemMouseCursors.click;
+          },
+        ),
         foregroundColor: const WidgetStatePropertyAll(_specialStaticWhite),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) {
@@ -1000,6 +1014,13 @@ class LightTheme {
     ),
     iconButtonInProgress: IconButtonThemeData(
       style: ButtonStyle(
+        mouseCursor: WidgetStateMouseCursor.resolveWith(
+          (states) {
+            if (states.contains(WidgetState.disabled)) return SystemMouseCursors.basic;
+
+            return SystemMouseCursors.click;
+          },
+        ),
         foregroundColor: const WidgetStatePropertyAll(_specialStaticWhite),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) {
