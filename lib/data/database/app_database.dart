@@ -1,7 +1,6 @@
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
-import 'package:trusttunnel/data/database/database_key_manager.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v2.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v3.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v4.dart';
@@ -24,7 +23,7 @@ class AppDatabase extends _$AppDatabase {
     '255.255.255.255/32',
   ];
 
-  AppDatabase({required DatabaseKeyManager keyManager}) : super(impl.connect(keyManager));
+  AppDatabase() : super(impl.connect());
 
   AppDatabase.inMemory(super.e);
 

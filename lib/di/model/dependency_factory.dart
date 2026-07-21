@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
-import 'package:trusttunnel/data/database/database_key_manager.dart';
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/auto_connect_on_launch_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
@@ -214,9 +213,5 @@ class DependencyFactoryImpl implements DependencyFactory {
   };
 
   @override
-  db.AppDatabase get database => _database ??= db.AppDatabase(
-    keyManager: DatabaseKeyManager(
-      preferences: sharedPreferences,
-    ),
-  );
+  db.AppDatabase get database => _database ??= db.AppDatabase();
 }
