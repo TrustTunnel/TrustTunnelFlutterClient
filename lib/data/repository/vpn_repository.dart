@@ -7,11 +7,13 @@ import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 
 abstract class VpnRepository {
-  Future<Stream<VpnState>> startListenToStates({
+  Future<void> start({
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
   });
+
+  Future<Stream<VpnState>> listenToStates();
 
   Future<void> updateConfiguration({
     required Server server,
@@ -36,19 +38,18 @@ class VpnRepositoryImpl implements VpnRepository {
   }) : _vpnDataSource = vpnDataSource;
 
   @override
-  Future<Stream<VpnState>> startListenToStates({
+  Future<void> start({
     required Server server,
     required List<String> excludedRoutes,
     required RoutingProfile routingProfile,
-  }) async {
-    await _vpnDataSource.start(
-      server: server.serverData,
-      routingProfile: routingProfile.data,
-      excludedRoutes: excludedRoutes,
-    );
+  }) => _vpnDataSource.start(
+    server: server.serverData,
+    routingProfile: routingProfile.data,
+    excludedRoutes: excludedRoutes,
+  );
 
-    return _vpnDataSource.vpnState;
-  }
+  @override
+  Future<Stream<VpnState>> listenToStates() async => _vpnDataSource.vpnState;
 
   @override
   Future<void> stop() => _vpnDataSource.stop();
