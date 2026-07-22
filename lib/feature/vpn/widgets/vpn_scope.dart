@@ -57,16 +57,18 @@ typedef UpdateVpnCallback =
 ///
 /// ## VPN lifecycle and state
 /// `VpnScope` maintains a current [VpnState] value and updates it by subscribing
-/// to a state stream produced by [VpnRepository.startListenToStates].
+/// to a state stream produced by [VpnRepository.listenToStates].
 ///
 /// Calling [VpnController.start] will:
 /// 1) stop any existing session (by calling [VpnController.stop]),
-/// 2) start listening to the new state stream,
-/// 3) update [VpnController.state] as new states arrive.
+/// 2) start a new VPN session.
+///
+/// State observation starts with the scope itself and remains active for the
+/// scope's entire lifetime, including when VPN changes are initiated outside
+/// the app.
 ///
 /// Calling [VpnController.stop] will:
 /// - call [VpnRepository.stop],
-/// - cancel any active VPN state subscription,
 /// - reset [VpnController.state] to [VpnState.disconnected].
 ///
 /// ## Logs collection
@@ -181,20 +183,29 @@ class VpnScope extends StatefulWidget {
 }
 
 class _VpnScopeState extends State<VpnScope> {
+  static const _logLimit = 500;
+
   late final ValueNotifier<VpnState> _stateNotifier;
   late final ValueNotifier<List<VpnLog>> _logsNotifier;
-  late final StreamSubscription<VpnLog> _logStreamSub;
-  static const _logLimit = 500;
+  late final AppLifecycleListener _appLifecycleListener;
+
+  StreamSubscription<VpnLog>? _logStreamSub;
+  StreamSubscription<VpnState>? _vpnStreamSub;
+
+  // Tracks state updates so a delayed request cannot overwrite a newer VPN state.
+  int _vpnStateRevision = 0;
 
   @override
   void initState() {
     super.initState();
     _stateNotifier = ValueNotifier(widget.initialState);
     _logsNotifier = ValueNotifier(<VpnLog>[]);
-    widget.vpnRepository.listenToLogs().then((stream) => _logStreamSub = stream.listen(_onLogCollected));
+    _appLifecycleListener = AppLifecycleListener(
+      onResume: _onAppResumed,
+    );
+    unawaited(_listenToVpnStates());
+    unawaited(_listenToLogs());
   }
-
-  StreamSubscription<VpnState>? _vpnStreamSub;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -229,13 +240,11 @@ class _VpnScopeState extends State<VpnScope> {
   }) async {
     await _stop();
 
-    final newServerStream = await widget.vpnRepository.startListenToStates(
+    await widget.vpnRepository.start(
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
     );
-
-    _vpnStreamSub = newServerStream.listen(_onVpnStateChanged);
   }
 
   Future<void> _updateConfiguration({
@@ -250,13 +259,21 @@ class _VpnScopeState extends State<VpnScope> {
 
   Future<void> _stop() async {
     await widget.vpnRepository.stop();
-    await _vpnStreamSub?.cancel();
-    _stateNotifier.value = VpnState.disconnected;
-    _vpnStreamSub = null;
+    _setVpnState(VpnState.disconnected);
   }
 
-  void _onVpnStateChanged(VpnState state) {
+  void _setVpnState(VpnState state) {
+    _vpnStateRevision++;
     _stateNotifier.value = state;
+  }
+
+  Future<void> _listenToVpnStates() async {
+    final stream = await widget.vpnRepository.listenToStates();
+    if (!mounted) {
+      return;
+    }
+
+    _vpnStreamSub = stream.listen(_setVpnState);
   }
 
   void _onLogCollected(VpnLog log) {
@@ -269,11 +286,34 @@ class _VpnScopeState extends State<VpnScope> {
     _logsNotifier.value = [...trimmedList, log];
   }
 
+  Future<void> _listenToLogs() async {
+    final stream = await widget.vpnRepository.listenToLogs();
+    if (!mounted) {
+      return;
+    }
+
+    _logStreamSub = stream.listen(_onLogCollected);
+  }
+
+  Future<void> _refreshState() async {
+    final revisionBeforeRequest = _vpnStateRevision;
+    final state = await widget.vpnRepository.requestState();
+    if (!mounted || revisionBeforeRequest != _vpnStateRevision) {
+      return;
+    }
+
+    _setVpnState(state);
+  }
+
+  void _onAppResumed() => unawaited(_refreshState());
+
   @override
   void dispose() {
-    _stop().ignore();
-    _logStreamSub.cancel().ignore();
+    _appLifecycleListener.dispose();
+    _logStreamSub?.cancel().ignore();
     _vpnStreamSub?.cancel().ignore();
+    _stateNotifier.dispose();
+    _logsNotifier.dispose();
     super.dispose();
   }
 }
