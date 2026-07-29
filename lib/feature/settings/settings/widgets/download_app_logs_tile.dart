@@ -78,7 +78,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
               child: Text(
                 context.ln.share,
                 style: context.textTheme.labelLarge?.copyWith(
-                  color: context.colors.accent,
+                  color: context.theme.snackBarTheme.actionTextColor,
                 ),
               ),
             ),

@@ -41,7 +41,7 @@ PODS:
     - sqlite3/session
   - tray_manager (0.1.0):
     - FlutterMacOS
-  - TrustTunnelClient (1.1.5-beta.13)
+  - TrustTunnelClient (1.1.5-rc.2)
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
   - vpn_plugin (0.0.1):

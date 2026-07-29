@@ -55,6 +55,12 @@ class _ServersCardState extends State<ServersCard> {
       trailing: ServersCardConnectionButton(
         vpnManagerState: vpnManagerState,
         onPressed: () {
+          if (_pickedServer?.id == null) {
+            _connectToVpn(context, widget.server);
+
+            return;
+          }
+
           if (widget.server.id == _pickedServer?.id) {
             if (vpnManagerState != VpnState.disconnected) {
               _disconnectFromVpn(context);
@@ -98,6 +104,7 @@ class _ServersCardState extends State<ServersCard> {
       LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
       LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
     };
+
     final routingProfile = RoutingScope.controllerOf(context, listen: false).routingList.firstWhere(
       (element) => element.id == server.serverData.routingProfileId,
     );
