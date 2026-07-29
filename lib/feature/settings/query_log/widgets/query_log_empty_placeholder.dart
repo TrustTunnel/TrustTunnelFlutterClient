@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/assets_images.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
@@ -9,6 +10,10 @@ class QueryLogEmptyPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size imageSize = context.isMobileBreakpoint ? const Size(270, 270) : const Size(400, 300);
+    final String imageAsset = switch (defaultTargetPlatform) {
+      TargetPlatform.android || TargetPlatform.iOS => AssetImages.connectionLogMobile,
+      _ => AssetImages.connectionLogDesktop,
+    };
 
     return CustomScrollView(
       slivers: [
@@ -21,7 +26,7 @@ class QueryLogEmptyPlaceholder extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Image.asset(
-                    context.isMobileBreakpoint ? AssetImages.connectionLogMobile : AssetImages.connectionLogDesktop,
+                    imageAsset,
                     width: imageSize.width,
                     height: imageSize.height,
                     fit: BoxFit.contain,
