@@ -191,6 +191,8 @@ class VpnPluginImpl implements VpnPlugin {
 
   @override
   Future<void> clearLogs() async {
+    await _api.clearLogs();
+
     _storage ??= await SharedPreferences.getInstance();
     final logPaths = _storage?.getStringList('logs_paths_vpn_plugin');
     if (logPaths?.isEmpty ?? true) {

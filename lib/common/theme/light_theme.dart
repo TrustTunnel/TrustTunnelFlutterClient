@@ -330,7 +330,6 @@ class LightTheme {
     elevation: 3,
     contentTextStyle: _textTheme.bodyMedium?.copyWith(color: _specialStaticWhite),
     actionTextColor: _accentAdditional,
-
     closeIconColor: _specialStaticWhite,
   );
 
