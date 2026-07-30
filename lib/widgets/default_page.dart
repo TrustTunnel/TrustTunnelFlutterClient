@@ -43,7 +43,7 @@ class DefaultPage extends StatelessWidget {
     final Size imageSize;
 
     switch (defaultTargetPlatform) {
-      case TargetPlatform.iOS && TargetPlatform.android when _desktopImagePath != null:
+      case TargetPlatform.macOS || TargetPlatform.windows || TargetPlatform.linux when _desktopImagePath != null:
         imagePath = _desktopImagePath;
       default:
         imagePath = this.imagePath;
