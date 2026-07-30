@@ -10,14 +10,12 @@ class ServersEmptyPlaceholder extends StatelessWidget {
   const ServersEmptyPlaceholder({super.key});
 
   @override
-  Widget build(BuildContext context) => DefaultPage(
+  Widget build(BuildContext context) => DefaultPage.responsive(
     title: context.ln.serversEmptyTitle,
     descriptionText: context.ln.serversEmptyDescription,
     imagePath: AssetImages.server,
-    imageSize: const Size.square(248),
     buttonText: context.ln.create,
     onButtonPressed: () => _pushServerDetailsScreen(context),
-    alignment: Alignment.center,
   );
 
   void _pushServerDetailsScreen(BuildContext context) async {

@@ -3,6 +3,8 @@ abstract class AssetImages {
 
   static const about = '${_path}about.webp';
 
+  static const aboutDesktop = '${_path}about_desktop.webp';
+
   static const connectionLogDesktop = '${_path}connection_log_desktop.png';
 
   static const connectionLogMobile = '${_path}connection_log_mobile.png';
