@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_card.dart';
+import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_empty_placeholder.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
 import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
@@ -23,8 +24,11 @@ class _QueryLogScreenViewState extends State<QueryLogScreenView> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
     });
   }
 
@@ -32,6 +36,7 @@ class _QueryLogScreenViewState extends State<QueryLogScreenView> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final logController = VpnScope.logsControllerOf(context);
+
     if (!listEquals(logController.logs, _logs)) {
       _logs = [...logController.logs];
     }
@@ -43,10 +48,12 @@ class _QueryLogScreenViewState extends State<QueryLogScreenView> {
       appBar: CustomAppBar(
         title: context.ln.connectionLog,
       ),
-      body: QueryLogListView(
-        logs: _logs,
-        controller: _scrollController,
-      ),
+      body: _logs.isEmpty
+          ? const QueryLogEmptyPlaceholder()
+          : _QueryLogListView(
+              logs: _logs,
+              controller: _scrollController,
+            ),
     ),
   );
 
@@ -57,12 +64,11 @@ class _QueryLogScreenViewState extends State<QueryLogScreenView> {
   }
 }
 
-class QueryLogListView extends StatelessWidget {
+class _QueryLogListView extends StatelessWidget {
   final ScrollController? controller;
   final List<VpnLog> logs;
 
-  const QueryLogListView({
-    super.key,
+  const _QueryLogListView({
     this.controller,
     required this.logs,
   });
@@ -72,7 +78,6 @@ class QueryLogListView extends StatelessWidget {
     controller: controller,
     reverse: true,
     shrinkWrap: logs.length < 50,
-
     itemBuilder: (context, index) {
       final log = logs[index];
 

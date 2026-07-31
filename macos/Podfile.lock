@@ -37,7 +37,7 @@ PODS:
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
     - sqlite3/session
-  - TrustTunnelClient (1.1.5-beta.13)
+  - TrustTunnelClient (1.1.5-rc.2)
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
   - vpn_plugin (0.0.1):
