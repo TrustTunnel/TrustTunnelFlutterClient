@@ -52,6 +52,8 @@ class LightTheme {
   static const _specialStaticWhiteDisabled = Color(0x80FFFFFF);
   static const _staticTransparent = Colors.transparent;
 
+  static const _dumInputDecorationIdleColor = Color(0xFF73859D);
+
   late final _customColors = const CustomColors(
     accent: _accent,
     accentHover: _accentHover,
@@ -574,7 +576,7 @@ class LightTheme {
     ),
     enabledBorder: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _neutralDark,
+        color: _dumInputDecorationIdleColor,
       ),
     ),
     focusedBorder: const OutlineInputBorder(
@@ -587,11 +589,11 @@ class LightTheme {
       borderSide: BorderSide(color: _error, width: 3),
     ),
     outlineBorder: const BorderSide(
-      color: _neutralDark,
+      color: _dumInputDecorationIdleColor,
     ),
     border: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _neutralDark,
+        color: _dumInputDecorationIdleColor,
       ),
     ),
     floatingLabelStyle: WidgetStateTextStyle.resolveWith(
@@ -653,7 +655,7 @@ class LightTheme {
         if (states.contains(WidgetState.disabled)) {
           textColor = _neutralDarkDisabled.withValues(alpha: 0.4);
         } else {
-          textColor = _neutralDark;
+          textColor = _dumInputDecorationIdleColor;
         }
 
         return _textTheme.bodyLarge!.copyWith(color: textColor);
