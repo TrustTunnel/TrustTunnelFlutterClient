@@ -278,6 +278,7 @@ class VpnDataSourceImpl implements VpnDataSource {
 
   ConfigurationLogLevel _convertLogLevel(VpnConfigurationLogLevel logLevel) => switch (logLevel) {
     VpnConfigurationLogLevel.error => ConfigurationLogLevel.error,
+    VpnConfigurationLogLevel.info => ConfigurationLogLevel.info,
     VpnConfigurationLogLevel.debug => ConfigurationLogLevel.debug,
   };
 }

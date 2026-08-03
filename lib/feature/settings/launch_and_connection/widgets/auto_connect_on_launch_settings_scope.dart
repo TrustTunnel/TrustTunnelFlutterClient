@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
@@ -134,7 +135,10 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
       excludedRoutes: excludedRoutes,
       logLevel: switch (loggingController.securityType) {
         LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
-        LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
+        LoggingSecurityType.full => switch (loggingController.loggingLevel) {
+          LoggingLevel.defaultLevel => VpnConfigurationLogLevel.info,
+          LoggingLevel.debug => VpnConfigurationLogLevel.debug,
+        },
       },
     );
   }
