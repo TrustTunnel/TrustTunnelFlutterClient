@@ -258,7 +258,10 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       excludedRoutes: excludedRoutes,
       logLevel: switch (_appLoggingController.securityType) {
         LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
-        LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
+        LoggingSecurityType.full => switch (_appLoggingController.loggingLevel) {
+          LoggingLevel.defaultLevel => VpnConfigurationLogLevel.info,
+          LoggingLevel.debug => VpnConfigurationLogLevel.debug,
+        },
       },
     );
   }

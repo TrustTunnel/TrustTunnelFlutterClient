@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
@@ -102,7 +103,10 @@ class _ServersCardState extends State<ServersCard> {
 
     final logLevel = switch (loggingController.securityType) {
       LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
-      LoggingSecurityType.full => VpnConfigurationLogLevel.debug,
+      LoggingSecurityType.full => switch (loggingController.loggingLevel) {
+        LoggingLevel.defaultLevel => VpnConfigurationLogLevel.info,
+        LoggingLevel.debug => VpnConfigurationLogLevel.debug,
+      },
     };
 
     final routingProfile = RoutingScope.controllerOf(context, listen: false).routingList.firstWhere(

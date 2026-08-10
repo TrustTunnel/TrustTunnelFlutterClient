@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
@@ -45,11 +46,14 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
 
     final updatedServer = serverScope.selectedServer;
 
-    final currentLoggingSecurityType = AppLoggingScope.controllerOf(context).securityType;
-
-    final currentNeededVpnConfigurationLogLevel = currentLoggingSecurityType == LoggingSecurityType.stripped
-        ? VpnConfigurationLogLevel.error
-        : VpnConfigurationLogLevel.debug;
+    final loggingController = AppLoggingScope.controllerOf(context);
+    final currentNeededVpnConfigurationLogLevel = switch (loggingController.securityType) {
+      LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
+      LoggingSecurityType.full => switch (loggingController.loggingLevel) {
+        LoggingLevel.defaultLevel => VpnConfigurationLogLevel.info,
+        LoggingLevel.debug => VpnConfigurationLogLevel.debug,
+      },
+    };
 
     _selectedLogLevel ??= currentNeededVpnConfigurationLogLevel;
 
