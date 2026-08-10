@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/assets/font_families.dart';
 import 'package:trusttunnel/common/extensions/theme_extensions.dart';
@@ -550,10 +551,18 @@ class LightTheme {
     ),
   );
 
+  late final appSystemUiOverlayStyle = const SystemUiOverlayStyle(
+    statusBarColor: _background,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemStatusBarContrastEnforced: false,
+  );
+
   late final _appBarTheme = AppBarTheme(
     backgroundColor: _staticTransparent,
     surfaceTintColor: _staticTransparent,
     shadowColor: _staticTransparent,
+    systemOverlayStyle: appSystemUiOverlayStyle,
     elevation: 0,
     scrolledUnderElevation: 0,
     titleTextStyle: _textTheme.titleLarge,
