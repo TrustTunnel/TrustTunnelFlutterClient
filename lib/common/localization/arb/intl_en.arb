@@ -155,6 +155,8 @@
   "appLogsDeletedSnackbar": "App logs deleted",
   "appLogsExportedSnackbar": "App logs exported",
   "exportingLogs": "Exporting logs…",
+  "connectionLogEmptyTitle": "No connections yet",
+  "connectionLogEmptyDescription": "Connection log shows where your traffic goes and how it’s routed. Connect to your server and open a website to add the first record",
   "exitDialogTitle": "Quit TrustTunnel?",
   "exitDialogDescription": "This will disconnect you from the active server",
   "quit": "Quit",
