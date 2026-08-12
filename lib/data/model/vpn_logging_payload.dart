@@ -36,10 +36,10 @@ final class VpnLoggingServerPayload {
   final String? customSni;
   final String username;
   final List<String> dnsServers;
-  final String? tlsPrefix;
+  final String? clientRandom;
   final String? certificate;
   final String vpnProtocol;
-  final bool ipv6;
+  final bool allowIpv6Connections;
 
   const VpnLoggingServerPayload({
     required this.name,
@@ -48,10 +48,10 @@ final class VpnLoggingServerPayload {
     required this.customSni,
     required this.username,
     required this.dnsServers,
-    required this.tlsPrefix,
+    required this.clientRandom,
     required this.certificate,
     required this.vpnProtocol,
-    required this.ipv6,
+    required this.allowIpv6Connections,
   });
 
   factory VpnLoggingServerPayload.fromModel(ServerData server) => VpnLoggingServerPayload(
@@ -61,10 +61,10 @@ final class VpnLoggingServerPayload {
     customSni: server.customSni,
     username: server.username,
     dnsServers: List.unmodifiable(server.dnsServers),
-    tlsPrefix: server.tlsPrefix,
+    clientRandom: server.tlsPrefix,
     certificate: server.certificate?.data,
     vpnProtocol: server.vpnProtocol.name,
-    ipv6: server.ipv6,
+    allowIpv6Connections: server.ipv6,
   );
 
   Map<String, Object?> toJson() => {
@@ -74,10 +74,10 @@ final class VpnLoggingServerPayload {
     'customSni': customSni,
     'username': username,
     'dnsServers': dnsServers,
-    'tlsPrefix': tlsPrefix,
+    'clientRandom': clientRandom,
     'certificate': certificate,
     'vpnProtocol': vpnProtocol,
-    'ipv6': ipv6,
+    'allowIpv6Connections': allowIpv6Connections,
   };
 }
 
