@@ -72,25 +72,27 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     ExportFileType type = ExportFileType.any,
     List<String>? allowedExtensions,
     Uint8List? data,
-  }) async {
-    final isMobile = switch (defaultTargetPlatform) {
-      TargetPlatform.android || TargetPlatform.iOS => true,
-      _ => false,
-    };
-
-    return _filePicker.saveFile(
-      fileName: fileName,
-      bytes: isMobile ? data : null,
-    );
-  }
+  }) => _filePicker.saveFile(
+    dialogTitle: dialogTitle,
+    fileName: fileName,
+    initialDirectory: initialDirectory,
+    type: _mapExportFileType(type),
+    allowedExtensions: allowedExtensions,
+    bytes: data,
+  );
 
   @override
   Future<String> saveRawFile({
     required Uint8List data,
     required String path,
+    bool temporary = true,
   }) async {
     final file = await File(path).create(recursive: true);
     await file.writeAsBytes(data, mode: FileMode.writeOnly, flush: true);
+    if (!temporary) {
+      return path;
+    }
+
     final tempLogs = _sharedPreferences.getStringList(_logTempKey);
     await _sharedPreferences.setStringList(_logTempKey, [...?tempLogs, path]);
 
@@ -117,6 +119,7 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     await _sharedPreferences.remove(_logTempKey);
 
     if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
+      // This method is not available on desktop platforms (only Android and iOS)
       await _filePicker.clearTemporaryFiles();
     }
   }
@@ -126,4 +129,9 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
 
     return 'trusttunnel_${defaultTargetPlatform.name}_logs_$timestamp.zip';
   }
+
+  FileType _mapExportFileType(ExportFileType type) => switch (type) {
+    ExportFileType.any => FileType.any,
+    ExportFileType.custom => FileType.custom,
+  };
 }

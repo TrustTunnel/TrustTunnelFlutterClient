@@ -156,5 +156,40 @@
   "appLogsExportedSnackbar": "App logs exported",
   "exportingLogs": "Exporting logs…",
   "connectionLogEmptyTitle": "No connections yet",
-  "connectionLogEmptyDescription": "Connection log shows where your traffic goes and how it’s routed. Connect to your server and open a website to add the first record"
+  "connectionLogEmptyDescription": "Connection log shows where your traffic goes and how it’s routed. Connect to your server and open a website to add the first record",
+  "exitDialogTitle": "Quit TrustTunnel?",
+  "exitDialogDescription": "This will disconnect you from the active server",
+  "quit": "Quit",
+  "dontQuit": "Don’t quit",
+  "trayStatus": "Status: {status}",
+  "@trayStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "trayStatusConnected": "Connected",
+  "trayStatusConnecting": "Connecting…",
+  "trayStatusDisconnected": "Disconnected",
+  "connect": "Connect",
+  "disconnect": "Disconnect",
+  "connectTo": "Connect to",
+  "logging": "Logging",
+  "otherServers": "Other servers",
+  "trayQuitApp": "Quit {appName}",
+  "@trayQuitApp": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
+  "launchAndConnection": "Launch and connection",
+  "launch": "Launch",
+  "launchAppAtSystemLogin": "Launch app at system login",
+  "openHomeScreenAutomatically": "Open Home screen automatically",
+  "connection": "Connection",
+  "autoConnectOnAppLaunch": "Auto-connect on app launch",
+  "autoConnectNoServersAdded": "No servers added. To apply the setting, add a server"
 }

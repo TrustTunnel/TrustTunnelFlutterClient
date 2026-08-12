@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
@@ -75,6 +78,9 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   void _onDeepLinkReceived() {
     final link = _deepLinkSource.link;
     if (link != null) {
+      if (defaultTargetPlatform == TargetPlatform.macOS) {
+        unawaited(context.dependencyFactory.appWindowController.showMainWindow());
+      }
       _controller.onDeepLinkReceived(link);
     }
   }

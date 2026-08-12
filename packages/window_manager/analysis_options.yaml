@@ -1,0 +1,7 @@
+include: package:flutter_lints/flutter.yaml
+
+# This is a forked package. Keep analyzing it, but do not fail the application
+# analysis because its Flutter API usage is deprecated in newer SDK versions.
+analyzer:
+  errors:
+    deprecated_member_use: ignore

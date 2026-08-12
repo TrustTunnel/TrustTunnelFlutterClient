@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/logging/enum/logging_level.dart';
+import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card_connection_button.dart';
+import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/widgets/common/custom_list_tile_separated.dart';
@@ -25,7 +29,6 @@ class ServersCard extends StatefulWidget {
 
 class _ServersCardState extends State<ServersCard> {
   late VpnState _vpnStatus;
-
   late Server? _pickedServer;
 
   @override
@@ -74,8 +77,11 @@ class _ServersCardState extends State<ServersCard> {
     );
   }
 
-  void _changeServer(BuildContext context, String? serverId) =>
-      ServersScope.controllerOf(context, listen: false).pickServer(serverId);
+  void _changeServer(BuildContext context, String? serverId) {
+    final controller = ServersScope.controllerOf(context, listen: false);
+
+    controller.pickServer(serverId);
+  }
 
   Future<void> _disconnectFromVpn(BuildContext context) {
     final controller = VpnScope.vpnControllerOf(context);
@@ -87,19 +93,32 @@ class _ServersCardState extends State<ServersCard> {
     BuildContext context,
     Server server,
   ) async {
+    final serversController = ServersScope.controllerOf(context, listen: false);
     final controller = VpnScope.vpnControllerOf(context, listen: false);
     final excludedRoutes = ExcludedRoutesScope.controllerOf(context, listen: false).excludedRoutes;
+    final loggingController = AppLoggingScope.controllerOf(context, listen: false);
+    if (loggingController.loading) {
+      return;
+    }
+
+    final logLevel = switch (loggingController.securityType) {
+      LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
+      LoggingSecurityType.full => switch (loggingController.loggingLevel) {
+        LoggingLevel.defaultLevel => VpnConfigurationLogLevel.info,
+        LoggingLevel.debug => VpnConfigurationLogLevel.debug,
+      },
+    };
+
     final routingProfile = RoutingScope.controllerOf(context, listen: false).routingList.firstWhere(
       (element) => element.id == server.serverData.routingProfileId,
     );
-    final serversController = ServersScope.controllerOf(context, listen: false);
 
     serversController.pickServer(server.id);
-
     await controller.start(
       server: server,
       routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
+      logLevel: logLevel,
     );
   }
 

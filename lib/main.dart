@@ -13,7 +13,9 @@ import 'package:trusttunnel/feature/app/app.dart';
 import 'package:trusttunnel/feature/deep_link/deep_link_scope.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/settings/launch_and_connection/widgets/auto_connect_on_launch_settings_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_update_manager.dart';
 
@@ -40,15 +42,19 @@ Future<void> main() async {
         DependencyScope(
           dependenciesFactory: initializationHelper.dependenciesFactory,
           repositoryFactory: initializationHelper.repositoryFactory,
-          child: ServersScope(
+          child: AppLoggingScope(
             child: RoutingScope(
               child: ExcludedRoutesScope(
                 child: VpnScope(
                   vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
                   initialState: initializationHelper.initialVpnState,
-                  child: const VpnUpdateManager(
-                    child: DeepLinkScope(
-                      child: App(),
+                  child: const ServersScope(
+                    child: AutoConnectOnLaunchSettingsScope(
+                      child: VpnUpdateManager(
+                        child: DeepLinkScope(
+                          child: App(),
+                        ),
+                      ),
                     ),
                   ),
                 ),

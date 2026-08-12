@@ -7,5 +7,13 @@ abstract class AssetImages {
 
   static const connectionLogMobile = '${_path}connection_log_mobile.png';
 
+  static const trayLoading = '${_trayPath}loading.png';
+
+  static const trayOff = '${_trayPath}off.png';
+
+  static const trayOn = '${_trayPath}on.png';
+
   static const _path = 'assets/images/';
+
+  static const _trayPath = '${_path}tray/';
 }

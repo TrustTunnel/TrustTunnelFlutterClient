@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,6 +63,14 @@ class InitializationHelperIo extends InitializationHelper {
       fileLogAppender: fileAppender,
       logStorage: logStorage,
     );
+
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      await dependenciesFactory.appWindowController.configureMainWindow(
+        minimumWindowSize: const Size(905, 680),
+        defaultWindowSize: const Size(1024, 768),
+        isDebugMode: kDebugMode,
+      );
+    }
 
     final repositoryFactory = RepositoryFactoryImpl(
       dependencyFactory: dependenciesFactory,

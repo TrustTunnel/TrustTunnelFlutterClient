@@ -41,8 +41,8 @@ def getSigningProp = { String name ->
 
 android {
     namespace = "com.adguard.trusttunnel"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.1.13356709"
+    compileSdk = 36
+    ndkVersion = "29.0.14206865"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
@@ -34,7 +35,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     _controller.exportLogs(
       onArchiveReady: _showArchiveReadySnackBar,
       onError: _onExportLogsError,
-      onCancelled: () => context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar),
+      onCancelled: _onExportLogsCancelled,
     );
 
     context.showInfoSnackBar(
@@ -51,26 +52,36 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
+  void _onExportLogsCancelled() {
+    if (!mounted) {
+      return;
+    }
+
+    context.showInfoSnackBar(message: context.ln.exportCanceledSnackbar);
+  }
+
   void _showArchiveReadySnackBar(ExportLogsArchive archive) => context.showInfoSnackBar(
     message: context.ln.appLogsExportedSnackbar,
-    trailingActions: [
-      TextButton(
-        onPressed: () {
-          context.closeCurrentSnackBar();
-          _controller.shareLogs(
-            subject: context.ln.downloadAppLogs,
-            chooserTitle: context.ln.share,
-            archive: archive,
-            onUnavailable: () => context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar),
-          );
-        },
-        child: Text(
-          context.ln.share,
-          style: context.textTheme.labelLarge?.copyWith(
-            color: context.theme.snackBarTheme.actionTextColor,
-          ),
-        ),
-      ),
-    ],
+    trailingActions: defaultTargetPlatform == TargetPlatform.macOS
+        ? const []
+        : [
+            TextButton(
+              onPressed: () {
+                context.closeCurrentSnackBar();
+                _controller.shareLogs(
+                  subject: context.ln.downloadAppLogs,
+                  chooserTitle: context.ln.share,
+                  archive: archive,
+                  onUnavailable: () => context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar),
+                );
+              },
+              child: Text(
+                context.ln.share,
+                style: context.textTheme.labelLarge?.copyWith(
+                  color: context.theme.snackBarTheme.actionTextColor,
+                ),
+              ),
+            ),
+          ],
   );
 }

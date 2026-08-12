@@ -6,6 +6,7 @@ import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/data/repository/export_logs_repository.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_state.dart';
+import 'package:trusttunnel/feature/settings/logs_manager/model/export_file_type.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
 
 final class LogsManagerController extends BaseStateController<LogsManagerState> with SequentialControllerHandler {
@@ -34,6 +35,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       final result = await _repository.pickFilePath(
         dialogTitle: 'Export app logs and system info',
         fileName: archive.name,
+        type: ExportFileType.custom,
         allowedExtensions: ['zip'],
         data: archive.data,
       );
