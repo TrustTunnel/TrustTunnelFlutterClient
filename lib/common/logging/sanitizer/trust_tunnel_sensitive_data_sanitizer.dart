@@ -12,7 +12,7 @@ class TrustTunnelSensitiveDataSanitizer {
   static const _customDnsState = 'Custom';
 
   /// Rules that are masked in all logging modes.
-  static const Set<String> alwaysMaskedKeys = {
+  static const Set<String> _alwaysMaskedKeys = {
     'password',
     'pass',
     'subscription',
@@ -27,7 +27,7 @@ class TrustTunnelSensitiveDataSanitizer {
   };
 
   /// Rules that are additionally masked in stripped logging mode.
-  static const Set<String> strippedMaskedKeys = {
+  static const Set<String> _strippedMaskedKeys = {
     'address',
     'serverAddress',
     'server_address',
@@ -54,7 +54,7 @@ class TrustTunnelSensitiveDataSanitizer {
   };
 
   /// Rules whose values are reduced to an empty/filled placeholder in stripped logging mode.
-  static const Set<String> strippedPresenceKeys = {
+  static const Set<String> _strippedPresenceKeys = {
     'clientRandom',
     'client_random',
     'tlsPrefix',
@@ -68,7 +68,7 @@ class TrustTunnelSensitiveDataSanitizer {
   };
 
   /// DNS address rules whose values are reduced to a default/custom placeholder in stripped logging mode.
-  static const Set<String> strippedDnsStateKeys = {
+  static const Set<String> _strippedDnsStateKeys = {
     'dnsServers',
     'dns_servers',
     'dnsUpStreams',
@@ -99,7 +99,7 @@ class TrustTunnelSensitiveDataSanitizer {
   String _sanitizeText(String value, LoggingSecurityType securityType) {
     final alwaysSanitized = _sanitizeTextByRules(
       value,
-      keys: alwaysMaskedKeys,
+      keys: _alwaysMaskedKeys,
       textPatterns: alwaysMaskedTextPatterns,
     );
 
@@ -109,18 +109,19 @@ class TrustTunnelSensitiveDataSanitizer {
 
     final presenceSanitized = _sanitizeKeyValues(
       alwaysSanitized,
-      _SensitiveKeyMatcher(strippedPresenceKeys),
+      _SensitiveKeyMatcher(_strippedPresenceKeys),
       replacement: _textPresencePlaceholder,
     );
+
     final dnsStateSanitized = _sanitizeKeyValues(
       presenceSanitized,
-      _SensitiveKeyMatcher(strippedDnsStateKeys),
+      _SensitiveKeyMatcher(_strippedDnsStateKeys),
       replacement: _textDnsStatePlaceholder,
     );
 
     return _sanitizeTextByRules(
       dnsStateSanitized,
-      keys: strippedMaskedKeys,
+      keys: _strippedMaskedKeys,
       textPatterns: strippedMaskedTextPatterns,
     );
   }
@@ -185,26 +186,25 @@ class TrustTunnelSensitiveDataSanitizer {
     Set<Object> visited,
   ) {
     final result = <String, Object?>{};
-    final presenceKeyMatcher = securityType == LoggingSecurityType.stripped
-        ? _SensitiveKeyMatcher(strippedPresenceKeys)
-        : null;
-    final dnsStateKeyMatcher = securityType == LoggingSecurityType.stripped
-        ? _SensitiveKeyMatcher(strippedDnsStateKeys)
-        : null;
+    final presenceKeyMatcher = _SensitiveKeyMatcher(_strippedPresenceKeys);
+    final dnsStateKeyMatcher = _SensitiveKeyMatcher(_strippedDnsStateKeys);
 
     for (final MapEntry(:key, :value) in value.entries) {
       final stringKey = key.toString();
-      result[stringKey] = switch (securityType) {
-        LoggingSecurityType.stripped when presenceKeyMatcher!.matches(stringKey) => _presencePlaceholder(value),
-        LoggingSecurityType.stripped when dnsStateKeyMatcher!.matches(stringKey) => _dnsStatePlaceholder(value),
-        _ when _masksKey(stringKey, keyMatchers) => mask,
-        _ => _sanitizePayload(
+      if (securityType == LoggingSecurityType.stripped && presenceKeyMatcher.matches(stringKey)) {
+        result[stringKey] = _presencePlaceholder(value);
+      } else if (securityType == LoggingSecurityType.stripped && dnsStateKeyMatcher.matches(stringKey)) {
+        result[stringKey] = _dnsStatePlaceholder(value);
+      } else if (_masksKey(stringKey, keyMatchers)) {
+        result[stringKey] = mask;
+      } else {
+        result[stringKey] = _sanitizePayload(
           value,
           securityType,
           keyMatchers,
           visited,
-        ),
-      };
+        );
+      }
     }
 
     return result;
@@ -254,8 +254,8 @@ class TrustTunnelSensitiveDataSanitizer {
   }
 
   List<_SensitiveKeyMatcher> _keyMatchersFor(LoggingSecurityType securityType) => [
-    _SensitiveKeyMatcher(alwaysMaskedKeys),
-    if (securityType == LoggingSecurityType.stripped) _SensitiveKeyMatcher(strippedMaskedKeys),
+    _SensitiveKeyMatcher(_alwaysMaskedKeys),
+    if (securityType == LoggingSecurityType.stripped) _SensitiveKeyMatcher(_strippedMaskedKeys),
   ];
 
   bool _masksKey(String key, Iterable<_SensitiveKeyMatcher> keyMatchers) =>
