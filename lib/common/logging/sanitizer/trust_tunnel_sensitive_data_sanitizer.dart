@@ -6,6 +6,10 @@ import 'package:trusttunnel/common/logging/sanitizer/text_scanner/sensitive_valu
 /// Sanitizes log payloads and free-form text before they are written or exported.
 class TrustTunnelSensitiveDataSanitizer {
   static const mask = '*****';
+  static const _emptyState = 'empty';
+  static const _filledState = 'filled';
+  static const _defaultDnsState = 'Default: AdGuard DNS Non-filtering';
+  static const _customDnsState = 'Custom';
 
   /// Rules that are masked in all logging modes.
   static const Set<String> alwaysMaskedKeys = {
@@ -39,25 +43,35 @@ class TrustTunnelSensitiveDataSanitizer {
     'username',
     'userName',
     'login',
-    'dnsServers',
-    'dns_servers',
-    'dnsUpStreams',
+    'bypassRules',
+    'bypass_rules',
+    'vpnRules',
+    'vpn_rules',
+    'queryLog',
+    'query_log',
+    'source',
+    'destination',
+  };
+
+  /// Rules whose values are reduced to an empty/filled placeholder in stripped logging mode.
+  static const Set<String> strippedPresenceKeys = {
     'clientRandom',
     'client_random',
     'tlsPrefix',
     'tls_prefix',
     'certificate',
     'pem',
-    'bypassRules',
-    'bypass_rules',
-    'vpnRules',
-    'vpn_rules',
     'excludedRoutes',
     'excluded_routes',
-    'queryLog',
-    'query_log',
-    'source',
-    'destination',
+    'initialExcludedRoutes',
+    'initial_excluded_routes',
+  };
+
+  /// DNS address rules whose values are reduced to a default/custom placeholder in stripped logging mode.
+  static const Set<String> strippedDnsStateKeys = {
+    'dnsServers',
+    'dns_servers',
+    'dnsUpStreams',
   };
 
   /// Text patterns that are masked in all logging modes.
@@ -93,8 +107,19 @@ class TrustTunnelSensitiveDataSanitizer {
       return alwaysSanitized;
     }
 
-    return _sanitizeTextByRules(
+    final presenceSanitized = _sanitizeKeyValues(
       alwaysSanitized,
+      _SensitiveKeyMatcher(strippedPresenceKeys),
+      replacement: _textPresencePlaceholder,
+    );
+    final dnsStateSanitized = _sanitizeKeyValues(
+      presenceSanitized,
+      _SensitiveKeyMatcher(strippedDnsStateKeys),
+      replacement: _textDnsStatePlaceholder,
+    );
+
+    return _sanitizeTextByRules(
+      dnsStateSanitized,
       keys: strippedMaskedKeys,
       textPatterns: strippedMaskedTextPatterns,
     );
@@ -160,17 +185,26 @@ class TrustTunnelSensitiveDataSanitizer {
     Set<Object> visited,
   ) {
     final result = <String, Object?>{};
+    final presenceKeyMatcher = securityType == LoggingSecurityType.stripped
+        ? _SensitiveKeyMatcher(strippedPresenceKeys)
+        : null;
+    final dnsStateKeyMatcher = securityType == LoggingSecurityType.stripped
+        ? _SensitiveKeyMatcher(strippedDnsStateKeys)
+        : null;
 
     for (final MapEntry(:key, :value) in value.entries) {
       final stringKey = key.toString();
-      result[stringKey] = _masksKey(stringKey, keyMatchers)
-          ? mask
-          : _sanitizePayload(
-              value,
-              securityType,
-              keyMatchers,
-              visited,
-            );
+      result[stringKey] = switch (securityType) {
+        LoggingSecurityType.stripped when presenceKeyMatcher!.matches(stringKey) => _presencePlaceholder(value),
+        LoggingSecurityType.stripped when dnsStateKeyMatcher!.matches(stringKey) => _dnsStatePlaceholder(value),
+        _ when _masksKey(stringKey, keyMatchers) => mask,
+        _ => _sanitizePayload(
+          value,
+          securityType,
+          keyMatchers,
+          visited,
+        ),
+      };
     }
 
     return result;
@@ -190,7 +224,11 @@ class TrustTunnelSensitiveDataSanitizer {
     return result;
   }
 
-  String _sanitizeKeyValues(String value, _SensitiveKeyMatcher keyMatcher) {
+  String _sanitizeKeyValues(
+    String value,
+    _SensitiveKeyMatcher keyMatcher, {
+    String Function(String value)? replacement,
+  }) {
     final result = StringBuffer();
     final scanner = SensitiveValueScanner(value, nextKeyPattern: keyMatcher.pattern);
     var offset = 0;
@@ -206,7 +244,7 @@ class TrustTunnelSensitiveDataSanitizer {
       result
         ..write(value.substring(offset, match.start))
         ..write(match.group(0))
-        ..write(mask);
+        ..write(replacement?.call(value.substring(valueStart, valueEnd)) ?? mask);
       offset = valueEnd > valueStart ? valueEnd : valueStart;
     }
 
@@ -222,6 +260,43 @@ class TrustTunnelSensitiveDataSanitizer {
 
   bool _masksKey(String key, Iterable<_SensitiveKeyMatcher> keyMatchers) =>
       keyMatchers.any((matcher) => matcher.matches(key));
+
+  String _presencePlaceholder(Object? value) => switch (value) {
+    null => _emptyState,
+    String() when value.isEmpty => _emptyState,
+    Iterable<Object?>() when value.isEmpty => _emptyState,
+    Map<Object?, Object?>() when value.isEmpty => _emptyState,
+    _ => _filledState,
+  };
+
+  String _dnsStatePlaceholder(Object? value) => switch (value) {
+    null => _defaultDnsState,
+    String() when value.isEmpty => _defaultDnsState,
+    Iterable<Object?>() when value.isEmpty => _defaultDnsState,
+    _ => _customDnsState,
+  };
+
+  String _textPresencePlaceholder(String value) {
+    final trimmed = value.trim();
+
+    return trimmed.isEmpty ||
+            trimmed == 'null' ||
+            trimmed == _emptyState ||
+            trimmed == '[]' ||
+            trimmed == '{}' ||
+            trimmed == "''" ||
+            trimmed == '""'
+        ? _emptyState
+        : _filledState;
+  }
+
+  String _textDnsStatePlaceholder(String value) {
+    final trimmed = value.trim();
+
+    return trimmed.isEmpty || trimmed == 'null' || trimmed == '[]' || trimmed == _defaultDnsState
+        ? _defaultDnsState
+        : _customDnsState;
+  }
 }
 
 /// Matches sensitive keys in maps and in serialized `key: value` text.
