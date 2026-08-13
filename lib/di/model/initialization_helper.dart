@@ -55,6 +55,7 @@ class InitializationHelperIo extends InitializationHelper {
         containmentDaysDuration: 7,
         rotationSizeLimit: 1024 * 1024 * 30,
         rotationFileLimit: 1024 * 1024 * 3,
+        rotationPrefixDateFormat: 'yyyy_MM_dd',
       ),
     );
 
