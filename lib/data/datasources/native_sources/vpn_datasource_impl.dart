@@ -10,11 +10,13 @@ import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_logging_payload.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/vpn/domain/services/vpn_log_converter.dart';
 import 'package:vpn_plugin/models/configuration.dart';
+import 'package:vpn_plugin/models/configuration_log_level.dart';
 import 'package:vpn_plugin/models/endpoint.dart';
 import 'package:vpn_plugin/models/query_log_row.dart';
 import 'package:vpn_plugin/models/socks.dart';
@@ -97,6 +99,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
   }) async {
     final exclusions = _getExclusionsByMode(routingProfile);
 
@@ -121,6 +124,7 @@ class VpnDataSourceImpl implements VpnDataSource {
 
     Future<void> command() => _platformApi.start(
       configuration: Configuration(
+        logLevel: _convertLogLevel(logLevel),
         vpnMode: VpnModeEncoder().convert(
           routingProfile.defaultMode,
         ),
@@ -172,6 +176,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required ServerData server,
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
   }) async {
     final exclusions = _getExclusionsByMode(routingProfile);
 
@@ -196,6 +201,7 @@ class VpnDataSourceImpl implements VpnDataSource {
 
     Future<void> command() => _platformApi.updateConfiguration(
       configuration: Configuration(
+        logLevel: _convertLogLevel(logLevel),
         vpnMode: VpnModeEncoder().convert(
           routingProfile.defaultMode,
         ),
@@ -269,4 +275,10 @@ class VpnDataSourceImpl implements VpnDataSource {
       ...parsedDomains,
     }.toList();
   }
+
+  ConfigurationLogLevel _convertLogLevel(VpnConfigurationLogLevel logLevel) => switch (logLevel) {
+    VpnConfigurationLogLevel.error => ConfigurationLogLevel.error,
+    VpnConfigurationLogLevel.info => ConfigurationLogLevel.info,
+    VpnConfigurationLogLevel.debug => ConfigurationLogLevel.debug,
+  };
 }

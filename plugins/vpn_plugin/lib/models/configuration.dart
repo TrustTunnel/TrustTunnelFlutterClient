@@ -25,7 +25,7 @@ final class Configuration {
   /// Verbosity of the VPN client logs.
   ///
   /// This value is typically forwarded to the backend as a string (for example
-  /// `debug`, `info`, `trace`) and affects the amount of diagnostic output.
+  /// `error`, `debug`, `info`, `trace`) and affects the amount of diagnostic output.
   /// {@endtemplate}
   final ConfigurationLogLevel logLevel;
 

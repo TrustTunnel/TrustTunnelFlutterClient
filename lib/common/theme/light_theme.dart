@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/assets/font_families.dart';
 import 'package:trusttunnel/common/extensions/theme_extensions.dart';
@@ -55,8 +56,7 @@ class LightTheme {
   static const _appSystemTitleBarBackground = Color(0xFFFFFFFF);
   static const _appSystemTitleBarTitle = Color(0xFF3D3D3D);
 
-  static const _borderColor = Color(0xFF73859D);
-  static const _focusedBorderColor = Color(0xFF74869C);
+  static const _dumInputDecorationIdleColor = Color(0xFF73859D);
 
   // Legacy colors
   static const _primary1 = Color(0xFF67B279);
@@ -551,10 +551,18 @@ class LightTheme {
     ),
   );
 
+  late final appSystemUiOverlayStyle = const SystemUiOverlayStyle(
+    statusBarColor: _background,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemStatusBarContrastEnforced: false,
+  );
+
   late final _appBarTheme = AppBarTheme(
     backgroundColor: _staticTransparent,
     surfaceTintColor: _staticTransparent,
     shadowColor: _staticTransparent,
+    systemOverlayStyle: appSystemUiOverlayStyle,
     elevation: 0,
     scrolledUnderElevation: 0,
     titleTextStyle: _textTheme.titleLarge,
@@ -648,9 +656,14 @@ class LightTheme {
     errorBorder: const OutlineInputBorder(
       borderSide: BorderSide(color: _error),
     ),
+    enabledBorder: const OutlineInputBorder(
+      borderSide: BorderSide(
+        color: _dumInputDecorationIdleColor,
+      ),
+    ),
     focusedBorder: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _focusedBorderColor,
+        color: _neutralDark,
         width: 3,
       ),
     ),
@@ -658,11 +671,11 @@ class LightTheme {
       borderSide: BorderSide(color: _error, width: 3),
     ),
     outlineBorder: const BorderSide(
-      color: _borderColor,
+      color: _dumInputDecorationIdleColor,
     ),
     border: const OutlineInputBorder(
       borderSide: BorderSide(
-        color: _borderColor,
+        color: _dumInputDecorationIdleColor,
       ),
     ),
     floatingLabelStyle: WidgetStateTextStyle.resolveWith(
@@ -724,7 +737,7 @@ class LightTheme {
         if (states.contains(WidgetState.disabled)) {
           textColor = _neutralDarkDisabled.withValues(alpha: 0.4);
         } else {
-          textColor = _neutralDark;
+          textColor = _dumInputDecorationIdleColor;
         }
 
         return _textTheme.bodyLarge!.copyWith(color: textColor);

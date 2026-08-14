@@ -14,7 +14,6 @@ import 'package:trusttunnel/feature/navigation/widgets/custom_navigation_rail.da
 import 'package:trusttunnel/feature/routing/routing/widgets/routing_screen.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_screen.dart';
-import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/settings_screen.dart';
@@ -63,52 +62,50 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   Widget build(BuildContext context) => LogsManagerScope(
-    child: AppLoggingScope(
-      child: TrayMenuScope(
-        onRouteRequested: _openRouteFromTray,
-        child: ColoredBox(
-          color: context.colors.background,
-          child: SafeArea(
-            right: false,
-            bottom: false,
-            left: false,
-            child: Scaffold(
-              primary: false,
-              backgroundColor: context.colors.backgroundSystem,
-              body: SafeArea(
-                top: false,
-                child: context.isMobileBreakpoint
-                    ? _getContent()
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ValueListenableBuilder(
-                            valueListenable: _selectedTabNotifier,
-                            builder: (context, index, _) => CustomNavigationRail(
-                              selectedIndex: index,
-                              onDestinationSelected: _onDestinationSelected,
-                              destinations: NavigationUtils.getNavigationRailDestinations(context),
-                            ),
+    child: TrayMenuScope(
+      onRouteRequested: _openRouteFromTray,
+      child: ColoredBox(
+        color: context.colors.background,
+        child: SafeArea(
+          right: false,
+          bottom: false,
+          left: false,
+          child: Scaffold(
+            primary: false,
+            backgroundColor: context.colors.backgroundSystem,
+            body: SafeArea(
+              top: false,
+              child: context.isMobileBreakpoint
+                  ? _getContent()
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ValueListenableBuilder(
+                          valueListenable: _selectedTabNotifier,
+                          builder: (context, index, _) => CustomNavigationRail(
+                            selectedIndex: index,
+                            onDestinationSelected: _onDestinationSelected,
+                            destinations: NavigationUtils.getNavigationRailDestinations(context),
                           ),
-                          Expanded(
-                            child: _getContent(),
-                          ),
-                        ],
-                      ),
-              ),
-              bottomNavigationBar: context.isMobileBreakpoint
-                  ? ValueListenableBuilder(
-                      valueListenable: _selectedTabNotifier,
-                      builder: (context, index, _) => SafeArea(
-                        child: NavigationBar(
-                          selectedIndex: index,
-                          onDestinationSelected: _onDestinationSelected,
-                          destinations: NavigationUtils.getBottomNavigationDestinations(context),
                         ),
-                      ),
-                    )
-                  : null,
+                        Expanded(
+                          child: _getContent(),
+                        ),
+                      ],
+                    ),
             ),
+            bottomNavigationBar: context.isMobileBreakpoint
+                ? ValueListenableBuilder(
+                    valueListenable: _selectedTabNotifier,
+                    builder: (context, index, _) => SafeArea(
+                      child: NavigationBar(
+                        selectedIndex: index,
+                        onDestinationSelected: _onDestinationSelected,
+                        destinations: NavigationUtils.getBottomNavigationDestinations(context),
+                      ),
+                    ),
+                  )
+                : null,
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 
@@ -11,6 +12,7 @@ abstract class VpnRepository {
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
   });
 
   Future<Stream<VpnState>> listenToStates();
@@ -19,6 +21,7 @@ abstract class VpnRepository {
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
   });
 
   Future<void> deleteConfiguration();
@@ -42,10 +45,12 @@ class VpnRepositoryImpl implements VpnRepository {
     required Server server,
     required List<String> excludedRoutes,
     required RoutingProfile routingProfile,
+    required VpnConfigurationLogLevel logLevel,
   }) => _vpnDataSource.start(
     server: server.serverData,
     routingProfile: routingProfile.data,
     excludedRoutes: excludedRoutes,
+    logLevel: logLevel,
   );
 
   @override
@@ -65,11 +70,15 @@ class VpnRepositoryImpl implements VpnRepository {
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
-  }) => _vpnDataSource.updateConfiguration(
-    server: server.serverData,
-    routingProfile: routingProfile.data,
-    excludedRoutes: excludedRoutes,
-  );
+    required VpnConfigurationLogLevel logLevel,
+  }) async {
+    await _vpnDataSource.updateConfiguration(
+      server: server.serverData,
+      routingProfile: routingProfile.data,
+      excludedRoutes: excludedRoutes,
+      logLevel: logLevel,
+    );
+  }
 
   @override
   Future<void> deleteConfiguration() => _vpnDataSource.deleteConfiguration();

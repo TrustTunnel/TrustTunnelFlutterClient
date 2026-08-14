@@ -193,7 +193,6 @@ final class ServerSnapshot {
   final String domain;
   final String? customSni;
   final String username;
-  final String password;
   final String vpnProtocol;
   final List<String> dnsServers;
   final String routingProfileId;
@@ -209,7 +208,6 @@ final class ServerSnapshot {
     required this.domain,
     required this.customSni,
     required this.username,
-    required this.password,
     required this.vpnProtocol,
     required this.dnsServers,
     required this.routingProfileId,
@@ -226,7 +224,6 @@ final class ServerSnapshot {
     domain: server.serverData.domain,
     customSni: server.serverData.customSni,
     username: server.serverData.username,
-    password: server.serverData.password,
     vpnProtocol: server.serverData.vpnProtocol.name,
     dnsServers: server.serverData.dnsServers,
     routingProfileId: server.serverData.routingProfileId,
@@ -245,7 +242,6 @@ final class ServerSnapshot {
     'domain': domain,
     'customSni': customSni,
     'username': username,
-    'password': password,
     'vpnProtocol': vpnProtocol,
     'dnsServers': dnsServers,
     'routingProfileId': routingProfileId,
