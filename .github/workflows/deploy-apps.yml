@@ -305,10 +305,10 @@ jobs:
   #
   # Don't forget to add "build-macos-developer-id" to the notify-slack needs list
   # as well, so the Slack notification waits for it.
-  # When uncommenting, gate both jobs with: if: inputs.deploy-macos != 'false'
   # ===========================================================================
   # build-macos-developer-id:
   #   needs: [meta, build-number]
+  #   if: inputs.deploy-macos == 'true'
   #   uses: ./.github/workflows/flutter-build-macos.yml
   #   secrets: inherit
   #   with:
@@ -323,6 +323,7 @@ jobs:
 
   # deploy-macos-ak:
   #   needs: [meta, build-macos-developer-id]
+  #   if: inputs.deploy-macos == 'true'
   #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-ak-generic.yml@master
   #   with:
   #     team: flutter
