@@ -146,7 +146,6 @@ jobs:
       build-mode: appbundle
       artifact-name: trusttunnel-android-aab
       artifact-path: build/app/outputs/bundle/release/app-release.aab
-      release: ${{ needs.meta.outputs.release }}
 
   build-ios:
     needs: [meta, build-number]
@@ -163,7 +162,6 @@ jobs:
       artifact-path: |
         ios/build/TrustTunnel.ipa
         ios/build/AppStoreInfo.plist
-      release: ${{ needs.meta.outputs.release }}
 
   build-simulator:
     needs: [meta, build-number]
@@ -194,7 +192,6 @@ jobs:
       artifact-path: |
         macos/build/TrustTunnel.pkg
         macos/build/AppStoreInfo.plist
-      release: ${{ needs.meta.outputs.release }}
 
   deploy-testflight:
     needs: [meta, build-ios, changelog-public]
@@ -329,7 +326,6 @@ jobs:
   #     macos-signing-type: developer_id
   #     artifact-name: trusttunnel-macos-dmg
   #     artifact-path: macos/build/TrustTunnel.dmg
-  #     release: ${{ needs.meta.outputs.release }}
 
   # deploy-macos-ak:
   #   needs: [meta, build-macos-developer-id]
