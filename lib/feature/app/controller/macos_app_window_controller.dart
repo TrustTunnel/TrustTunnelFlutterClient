@@ -1,13 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:window_manager/window_manager.dart';
 
 final class MacOSAppWindowController implements AppWindowController {
-  final MethodChannel _mainWindowChannel = const MethodChannel('trusttunnel/macos_main_window');
+  static const MethodChannel _mainWindowChannel = MethodChannel('trusttunnel/macos_main_window');
 
   MacOSAppWindowController()
     : assert(
@@ -72,8 +73,10 @@ final class MacOSAppWindowController implements AppWindowController {
           return;
         }
 
-        await windowManager.show();
-        await windowManager.focus();
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await windowManager.show();
+          await windowManager.focus();
+        });
       },
     );
   }

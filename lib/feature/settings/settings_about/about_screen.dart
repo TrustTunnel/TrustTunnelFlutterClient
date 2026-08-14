@@ -17,12 +17,11 @@ class AboutScreen extends StatelessWidget {
       ),
       body: FutureBuilder<String>(
         future: _getPackageVersion(),
-        builder: (context, snapshot) => DefaultPage(
+        builder: (context, snapshot) => DefaultPage.responsive(
           title: 'TrustTunnel',
           descriptionText: snapshot.data,
           imagePath: AssetImages.about,
-          imageSize: const Size.square(248),
-          alignment: Alignment.center,
+          desktopImagePath: AssetImages.aboutDesktop,
         ),
       ),
     ),

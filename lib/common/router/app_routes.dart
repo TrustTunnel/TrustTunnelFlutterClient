@@ -1,12 +1,12 @@
 import 'package:trusttunnel/common/router/app_route.dart';
 
 abstract final class AppRoutes {
-  static final AppRoute servers = AppRoute('ServersScreen');
-  static final AppRoute routing = AppRoute('RoutingScreen');
-  static final AppRoute settings = AppRoute('SettingsScreen');
-  static final AppRoute serverDetails = AppRoute('ServerDetailsPopUp');
-  static final AppRoute queryLog = AppRoute('QueryLogScreen');
-  static final AppRoute unknown = AppRoute('UnknownScreen');
+  static const AppRoute serverDetails = AppRoute('ServerDetailsPopUp');
+  static const AppRoute servers = AppRoute('ServersScreen');
+  static const AppRoute routing = AppRoute('RoutingScreen');
+  static const AppRoute settings = AppRoute('SettingsScreen');
+  static const AppRoute queryLog = AppRoute('QueryLogScreen');
+  static const AppRoute unknown = AppRoute('UnknownScreen');
 
   static AppRoute byNavigationIndex(int selectedIndex) => switch (selectedIndex) {
     0 => servers,
