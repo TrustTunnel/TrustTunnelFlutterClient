@@ -51,6 +51,20 @@ jobs:
             exit 1
           fi
 
+          # Reject leading/trailing commas BEFORE splitting: `read -a` silently
+          # drops a terminal empty field, so "android," would otherwise bypass
+          # the empty-entry check below.
+          case "$raw" in
+            ,*)
+              echo "::error::Empty platform entry in '$raw' (leading comma)"
+              exit 1
+              ;;
+            *,)
+              echo "::error::Empty platform entry in '$raw' (trailing comma)"
+              exit 1
+              ;;
+          esac
+
           IFS=',' read -r -a items <<< "$raw"
 
           declare -A seen
@@ -60,9 +74,9 @@ jobs:
             # Trim whitespace around each item
             item="$(printf '%s' "$item" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
-            # Reject empty entries (e.g. "android,,ios" or trailing comma)
+            # Reject empty entries (e.g. "android,,ios")
             if [ -z "$item" ]; then
-              echo "::error::Empty platform entry in '$raw' (trailing comma or double comma?)"
+              echo "::error::Empty platform entry in '$raw' (double comma)"
               exit 1
             fi
 

@@ -82,6 +82,9 @@ jobs:
     outputs:
       play-store-track: ${{ steps.ps.outputs.track }}
       play-store-rollout: ${{ steps.ps.outputs.rollout }}
+      # Shared Slack payload: identical for every platform, so it is composed
+      # once here instead of being duplicated in each notify-slack-* job.
+      slack-metadata: ${{ steps.slack.outputs.metadata }}
     steps:
       - name: Compute Play Store parameters
         id: ps
@@ -96,6 +99,18 @@ jobs:
             release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
             *)        echo "::error::Unknown channel: $CHANNEL"; exit 1 ;;
           esac
+
+      - name: Compose Slack metadata
+        id: slack
+        shell: bash
+        env:
+          CHANNEL: ${{ needs.meta.outputs.release-channel }}
+          VERSION: ${{ needs.meta.outputs.version }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          printf 'metadata={"Channel":"%s","Version":"%s","Tag":"%s"}\n' \
+            "$CHANNEL" "$VERSION" "$TAG" >> "$GITHUB_OUTPUT"
 
   changelog-qa:
     needs: [meta]
@@ -122,7 +137,7 @@ jobs:
 
   build-android:
     needs: [meta, build-number]
-    if: inputs.deploy-android == 'true'
+    if: inputs.deploy-android
     uses: ./.github/workflows/flutter-build-android.yml
     secrets: inherit
     with:
@@ -137,7 +152,7 @@ jobs:
 
   build-ios:
     needs: [meta, build-number]
-    if: inputs.deploy-ios == 'true'
+    if: inputs.deploy-ios
     uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
@@ -154,7 +169,7 @@ jobs:
 
   build-simulator:
     needs: [meta, build-number]
-    if: inputs.deploy-ios == 'true'
+    if: inputs.deploy-ios
     uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
@@ -168,7 +183,7 @@ jobs:
 
   build-macos-appstore:
     needs: [meta, build-number]
-    if: inputs.deploy-macos == 'true'
+    if: inputs.deploy-macos
     uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
@@ -185,7 +200,7 @@ jobs:
 
   deploy-testflight:
     needs: [meta, build-ios, changelog-public]
-    if: inputs.deploy-ios == 'true'
+    if: inputs.deploy-ios
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
@@ -198,7 +213,7 @@ jobs:
 
   deploy-google-play:
     needs: [meta, params, build-number, build-android, changelog-public]
-    if: inputs.deploy-android == 'true'
+    if: inputs.deploy-android
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
     with:
       team: flutter
@@ -213,7 +228,7 @@ jobs:
 
   deploy-appetize:
     needs: [meta, build-simulator]
-    if: inputs.deploy-ios == 'true'
+    if: inputs.deploy-ios
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
     with:
       team: flutter
@@ -224,7 +239,7 @@ jobs:
 
   deploy-macos-testflight:
     needs: [meta, build-macos-appstore, changelog-public]
-    if: inputs.deploy-macos == 'true'
+    if: inputs.deploy-macos
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
@@ -235,62 +250,59 @@ jobs:
       submit-beta-review: false
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
-  deployed-platforms:
-    needs: [build-android, build-ios, build-macos-appstore]
-    runs-on: [team-flutter]
-    outputs:
-      platforms: ${{ steps.list.outputs.platforms }}
-    steps:
-      - name: Collect deployed platforms
-        id: list
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          platforms=""
-
-          if [ "${{ needs.build-android.result }}" = "success" ]; then
-            platforms="${platforms:+$platforms,}android"
-          fi
-          if [ "${{ needs.build-ios.result }}" = "success" ]; then
-            platforms="${platforms:+$platforms,}ios"
-          fi
-          if [ "${{ needs.build-macos-appstore.result }}" = "success" ]; then
-            platforms="${platforms:+$platforms,}macos"
-          fi
-
-          [ -z "$platforms" ] && platforms="none"
-
-          echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
-          echo "Deployed platforms: $platforms"
-
-  notify-slack:
-    needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore, deployed-platforms]
-    if: inputs.slack-channel != '' && contains(needs.deployed-platforms.outputs.platforms, matrix.platform)
-    strategy:
-      matrix:
-        include:
-          - platform: android
-            display-name: Android
-            emoji: ':aaandroid:'
-          - platform: ios
-            display-name: iOS
-            emoji: ':apple-grey:'
-          - platform: macos
-            display-name: macOS
-            emoji: ':macan:'
+  # ===========================================================================
+  # Slack notifications — one job per platform.
+  #
+  # There is deliberately NO matrix and NO "collect deployed platforms" job:
+  #   * the `matrix` context is not available in a job-level `if`, so a matrix
+  #     job cannot be filtered per platform;
+  #   * a dynamically generated matrix fails outright when it resolves to an
+  #     empty list (i.e. when nothing was deployed).
+  #
+  # Instead each notification simply `needs` the deploy jobs of its own
+  # platform. GitHub's default gating then does all the work for free:
+  # a notification runs only when its platform was actually deployed, and it is
+  # skipped automatically when the platform was deselected, failed or was
+  # cancelled — without affecting the other platforms.
+  #
+  # The only per-platform difference is `product`; everything else comes from
+  # `needs.params.outputs.slack-metadata`.
+  # ===========================================================================
+  notify-slack-android:
+    needs: [meta, params, deploy-google-play]
+    if: inputs.slack-channel != ''
     uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
     with:
       team: flutter
-      channel: ${{ inputs.slack-channel || '#build-trusttunnel' }}
-      product: ${{ format('{0} {1} TrustTunnel', matrix.emoji, matrix.display-name) }}
+      channel: ${{ inputs.slack-channel }}
+      product: 'TrustTunnel Android'
       version-title: ${{ needs.meta.outputs.version-title }}
-      metadata: >-
-        {
-          "Channel": "${{ needs.meta.outputs.release-channel }}",
-          "Version": "${{ needs.meta.outputs.version }}",
-          "Tag": "${{ inputs.tag }}"
-        }
+      metadata: ${{ needs.params.outputs.slack-metadata }}
+
+  # iOS ships two artifacts, so both deployments must succeed:
+  # deploy-testflight (App Store IPA) and deploy-appetize (simulator build).
+  notify-slack-ios:
+    needs: [meta, params, deploy-testflight]
+    if: inputs.slack-channel != ''
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
+    with:
+      team: flutter
+      channel: ${{ inputs.slack-channel }}
+      product: 'TrustTunnel iOS'
+      version-title: ${{ needs.meta.outputs.version-title }}
+      metadata: ${{ needs.params.outputs.slack-metadata }}
+
+  notify-slack-macos:
+    needs: [meta, params, deploy-macos-testflight]
+    if: inputs.slack-channel != ''
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
+    with:
+      team: flutter
+      channel: ${{ inputs.slack-channel }}
+      product: 'TrustTunnel macOS'
+      version-title: ${{ needs.meta.outputs.version-title }}
+      metadata: ${{ needs.params.outputs.slack-metadata }}
+
   # ===========================================================================
   # build-macos-developer-id & deploy-macos-ak are commented out because macOS
   # Direct Distribution (Developer ID) outside the App Store is not currently
@@ -303,12 +315,12 @@ jobs:
   #   2. deploy-macos-ak           — uploads the .dmg to the AdGuard Knowledge
   #      (AK) binary repository for public download.
   #
-  # Don't forget to add "build-macos-developer-id" to the notify-slack needs list
-  # as well, so the Slack notification waits for it.
+  # Don't forget to add "deploy-macos-ak" to the notify-slack-macos needs list
+  # as well, so the macOS Slack notification waits for it.
   # ===========================================================================
   # build-macos-developer-id:
   #   needs: [meta, build-number]
-  #   if: inputs.deploy-macos == 'true'
+  #   if: inputs.deploy-macos
   #   uses: ./.github/workflows/flutter-build-macos.yml
   #   secrets: inherit
   #   with:
@@ -323,7 +335,7 @@ jobs:
 
   # deploy-macos-ak:
   #   needs: [meta, build-macos-developer-id]
-  #   if: inputs.deploy-macos == 'true'
+  #   if: inputs.deploy-macos
   #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-ak-generic.yml@master
   #   with:
   #     team: flutter
