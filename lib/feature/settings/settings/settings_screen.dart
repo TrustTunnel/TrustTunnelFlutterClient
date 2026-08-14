@@ -18,44 +18,46 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ScaffoldWrapper(
-    child: Scaffold(
-      appBar: CustomAppBar(
-        title: context.ln.settings,
-      ),
-      body: ListView(
-        children: [
-          CustomArrowListTile(
-            title: context.ln.connectionLog,
-            onTap: () => _pushQueryLogScreen(context),
-          ),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.appLogging,
-            onTap: () => _pushAppLoggingScreen(context),
-          ),
-          const Divider(),
-          const DownloadAppLogsTile(),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.launchAndConnection,
-            onTap: () => _pushLaunchAndConnectionScreen(context),
-          ),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.excludedRoutes,
-            onTap: () => _pushExcludedRoutesScreen(context),
-          ),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.followUsOnGithub,
-            onTap: _openGithubOrganization,
-          ),
-          const Divider(),
-          CustomArrowListTile(
-            title: context.ln.about,
-            onTap: () => _pushAboutScreen(context),
-          ),
-        ],
+    child: ScaffoldMessenger(
+      child: Scaffold(
+        appBar: CustomAppBar(
+          title: context.ln.settings,
+        ),
+        body: ListView(
+          children: [
+            CustomArrowListTile(
+              title: context.ln.connectionLog,
+              onTap: () => _pushQueryLogScreen(context),
+            ),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.appLogging,
+              onTap: () => _pushAppLoggingScreen(context),
+            ),
+            const Divider(),
+            const DownloadAppLogsTile(),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.launchAndConnection,
+              onTap: () => _pushLaunchAndConnectionScreen(context),
+            ),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.excludedRoutes,
+              onTap: () => _pushExcludedRoutesScreen(context),
+            ),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.followUsOnGithub,
+              onTap: _openGithubOrganization,
+            ),
+            const Divider(),
+            CustomArrowListTile(
+              title: context.ln.about,
+              onTap: () => _pushAboutScreen(context),
+            ),
+          ],
+        ),
       ),
     ),
   );

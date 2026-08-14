@@ -6,9 +6,10 @@ import 'package:flutter/widgets.dart';
 @immutable
 final class AppRoute {
   final String name;
-  final RouteSettings settings;
 
-  AppRoute(this.name) : settings = RouteSettings(name: name);
+  const AppRoute(this.name);
+
+  RouteSettings get settings => RouteSettings(name: name);
 
   @override
   int get hashCode => name.hashCode;
