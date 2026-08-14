@@ -82,8 +82,6 @@ jobs:
     outputs:
       play-store-track: ${{ steps.ps.outputs.track }}
       play-store-rollout: ${{ steps.ps.outputs.rollout }}
-      # Shared Slack payload: identical for every platform, so it is composed
-      # once here instead of being duplicated in each notify-slack-* job.
       slack-metadata: ${{ steps.slack.outputs.metadata }}
     steps:
       - name: Compute Play Store parameters
@@ -280,7 +278,7 @@ jobs:
       metadata: ${{ needs.params.outputs.slack-metadata }}
 
   # iOS ships two artifacts, so both deployments must succeed:
-  # deploy-testflight (App Store IPA) and deploy-appetize (simulator build).
+  # deploy-testflight (App Store IPA)
   notify-slack-ios:
     needs: [meta, params, deploy-testflight]
     if: inputs.slack-channel != ''
