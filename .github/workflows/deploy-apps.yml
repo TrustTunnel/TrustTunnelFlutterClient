@@ -1,10 +1,7 @@
 name: Build & Deploy
-run-name: 'Deploy ${{ inputs.tag || github.ref_name }}'
+run-name: 'Deploy ${{ inputs.tag }}'
 
 on:
-  push:
-    tags: ['v[0-9]*.[0-9]*.[0-9]*']
-
   workflow_dispatch:
     inputs:
       tag:
@@ -15,6 +12,18 @@ on:
         description: 'Slack channel for build notification'
         type: string
         default: '#build-trusttunnel'
+      deploy-android:
+        description: 'Build and deploy the Android app'
+        type: boolean
+        default: true
+      deploy-ios:
+        description: 'Build and deploy the iOS app (incl. simulator/Appetize)'
+        type: boolean
+        default: true
+      deploy-macos:
+        description: 'Build and deploy the macOS app'
+        type: boolean
+        default: true
 
   workflow_call:
     inputs:
@@ -26,6 +35,18 @@ on:
         type: string
         default: '#build-trusttunnel'
         description: 'Slack channel for build notification'
+      deploy-android:
+        type: boolean
+        default: true
+        description: 'Build and deploy the Android app'
+      deploy-ios:
+        type: boolean
+        default: true
+        description: 'Build and deploy the iOS app (incl. simulator/Appetize)'
+      deploy-macos:
+        type: boolean
+        default: true
+        description: 'Build and deploy the macOS app'
 
 permissions:
   contents: read
@@ -33,7 +54,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: deploy-${{ inputs.tag || github.ref_name }}
+  group: deploy-${{ inputs.tag }}
   cancel-in-progress: true
 
 jobs:
@@ -41,7 +62,7 @@ jobs:
     uses: AdGuardSoftwareLimited/actions/.github/workflows/version-metadata.yml@master
     with:
       team: flutter
-      tag: ${{ inputs.tag || github.ref_name }}
+      tag: ${{ inputs.tag }}
 
   build-number:
     needs: [meta]
@@ -101,6 +122,7 @@ jobs:
 
   build-android:
     needs: [meta, build-number]
+    if: inputs.deploy-android == 'true'
     uses: ./.github/workflows/flutter-build-android.yml
     secrets: inherit
     with:
@@ -115,6 +137,7 @@ jobs:
 
   build-ios:
     needs: [meta, build-number]
+    if: inputs.deploy-ios == 'true'
     uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
@@ -131,6 +154,7 @@ jobs:
 
   build-simulator:
     needs: [meta, build-number]
+    if: inputs.deploy-ios == 'true'
     uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
@@ -144,6 +168,7 @@ jobs:
 
   build-macos-appstore:
     needs: [meta, build-number]
+    if: inputs.deploy-macos == 'true'
     uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
@@ -160,6 +185,7 @@ jobs:
 
   deploy-testflight:
     needs: [meta, build-ios, changelog-public]
+    if: inputs.deploy-ios == 'true'
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
@@ -172,6 +198,7 @@ jobs:
 
   deploy-google-play:
     needs: [meta, params, build-number, build-android, changelog-public]
+    if: inputs.deploy-android == 'true'
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
     with:
       team: flutter
@@ -186,16 +213,18 @@ jobs:
 
   deploy-appetize:
     needs: [meta, build-simulator]
+    if: inputs.deploy-ios == 'true'
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
     with:
       team: flutter
       artifact-name: TrustTunnel.app.zip
       platform: ios
-      note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag || github.ref_name }}'
+      note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
       environment: ${{ needs.meta.outputs.release-channel }}-appetize
 
   deploy-macos-testflight:
     needs: [meta, build-macos-appstore, changelog-public]
+    if: inputs.deploy-macos == 'true'
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
@@ -206,20 +235,61 @@ jobs:
       submit-beta-review: false
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
+  deployed-platforms:
+    needs: [build-android, build-ios, build-macos-appstore]
+    runs-on: [team-flutter]
+    outputs:
+      platforms: ${{ steps.list.outputs.platforms }}
+    steps:
+      - name: Collect deployed platforms
+        id: list
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          platforms=""
+
+          if [ "${{ needs.build-android.result }}" = "success" ]; then
+            platforms="${platforms:+$platforms,}android"
+          fi
+          if [ "${{ needs.build-ios.result }}" = "success" ]; then
+            platforms="${platforms:+$platforms,}ios"
+          fi
+          if [ "${{ needs.build-macos-appstore.result }}" = "success" ]; then
+            platforms="${platforms:+$platforms,}macos"
+          fi
+
+          [ -z "$platforms" ] && platforms="none"
+
+          echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
+          echo "Deployed platforms: $platforms"
+
   notify-slack:
-    needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore]
-    if: github.event_name == 'push' || inputs.slack-channel != ''
+    needs: [meta, build-android, build-ios, build-simulator, build-macos-appstore, deployed-platforms]
+    if: inputs.slack-channel != '' && contains(needs.deployed-platforms.outputs.platforms, matrix.platform)
+    strategy:
+      matrix:
+        include:
+          - platform: android
+            display-name: Android
+            emoji: ':aaandroid:'
+          - platform: ios
+            display-name: iOS
+            emoji: ':apple-grey:'
+          - platform: macos
+            display-name: macOS
+            emoji: ':macan:'
     uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
     with:
       team: flutter
       channel: ${{ inputs.slack-channel || '#build-trusttunnel' }}
-      product: TrustTunnel
+      product: ${{ format('{0} {1} TrustTunnel', matrix.emoji, matrix.display-name) }}
       version-title: ${{ needs.meta.outputs.version-title }}
       metadata: >-
         {
           "Channel": "${{ needs.meta.outputs.release-channel }}",
           "Version": "${{ needs.meta.outputs.version }}",
-          "Tag": "${{ inputs.tag || github.ref_name }}"
+          "Tag": "${{ inputs.tag }}"
         }
   # ===========================================================================
   # build-macos-developer-id & deploy-macos-ak are commented out because macOS
@@ -235,6 +305,7 @@ jobs:
   #
   # Don't forget to add "build-macos-developer-id" to the notify-slack needs list
   # as well, so the Slack notification waits for it.
+  # When uncommenting, gate both jobs with: if: inputs.deploy-macos != 'false'
   # ===========================================================================
   # build-macos-developer-id:
   #   needs: [meta, build-number]

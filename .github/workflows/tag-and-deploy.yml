@@ -8,6 +8,11 @@ on:
         description: 'Semver version tag to create, for example v1.3.0-beta.1 or v1.3.0'
         required: true
         type: string
+      platforms:
+        description: 'Target platforms to deploy to. Comma-separated list of: android,ios,macos'
+        required: true
+        type: string
+        default: 'android,ios,macos'
       slack-channel:
         description: 'Slack channel for build notification'
         type: string
@@ -23,7 +28,71 @@ permissions:
   actions: read
 
 jobs:
+  validate-inputs:
+    runs-on: [team-flutter]
+    outputs:
+      platforms: ${{ steps.validate-platforms.outputs.platforms }}
+    steps:
+      - name: Validate platforms input
+        id: validate-platforms
+        shell: bash
+        env:
+          PLATFORMS_RAW: ${{ inputs.platforms }}
+        run: |
+          set -euo pipefail
+
+          raw="$PLATFORMS_RAW"
+
+          # Trim surrounding whitespace
+          raw="$(printf '%s' "$raw" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+          if [ -z "$raw" ]; then
+            echo "::error::platforms input is empty. Expected a comma-separated list of: android,ios,macos"
+            exit 1
+          fi
+
+          IFS=',' read -r -a items <<< "$raw"
+
+          declare -A seen
+          valid=""
+          invalid=""
+          for item in "${items[@]}"; do
+            # Trim whitespace around each item
+            item="$(printf '%s' "$item" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+            # Reject empty entries (e.g. "android,,ios" or trailing comma)
+            if [ -z "$item" ]; then
+              echo "::error::Empty platform entry in '$raw' (trailing comma or double comma?)"
+              exit 1
+            fi
+
+            # Normalize case: ANDROID / Android -> android
+            item="$(printf '%s' "$item" | tr '[:upper:]' '[:lower:]')"
+
+            case "$item" in
+              android|ios|macos)
+                # De-duplicate while keeping the original order
+                if [ -z "${seen[$item]:-}" ]; then
+                  seen[$item]=1
+                  valid="${valid:+$valid,}$item"
+                fi
+                ;;
+              *)
+                invalid="${invalid:+$invalid,}$item"
+                ;;
+            esac
+          done
+
+          if [ -n "$invalid" ]; then
+            echo "::error::Unsupported platform(s) '$invalid' in '$raw'. Allowed values: android,ios,macos"
+            exit 1
+          fi
+
+          echo "platforms=$valid" >> "$GITHUB_OUTPUT"
+          echo "Validated platforms: $valid"
+
   tag:
+    needs: validate-inputs
     uses: AdGuardSoftwareLimited/actions/.github/workflows/validate-and-tag.yml@master
     with:
       team: flutter
@@ -31,9 +100,12 @@ jobs:
       ref: ${{ inputs.ref }}
 
   deploy:
-    needs: tag
+    needs: [validate-inputs, tag]
     uses: ./.github/workflows/deploy-apps.yml
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
       slack-channel: ${{ inputs.slack-channel }}
+      deploy-android: ${{ contains(needs.validate-inputs.outputs.platforms, 'android') }}
+      deploy-ios: ${{ contains(needs.validate-inputs.outputs.platforms, 'ios') }}
+      deploy-macos: ${{ contains(needs.validate-inputs.outputs.platforms, 'macos') }}
