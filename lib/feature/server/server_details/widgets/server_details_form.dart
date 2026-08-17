@@ -246,6 +246,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
           CustomTextField.customSuffixIcon(
             value: _formData.certificate?.name,
             label: context.ln.pemLabel,
+            hint: context.ln.importHint,
             readOnly: true,
             suffixIcon: _formData.certificate != null
                 ? CustomIconButton(
