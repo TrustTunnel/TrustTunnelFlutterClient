@@ -327,7 +327,7 @@ private extension MacosExitDialog {
     )
 
     let iconView = DraggableImageView(frame: iconShadowView.bounds)
-    iconView.image = NSImage(named: "ExitDialogIcon") ?? Self.makePlaceholderIcon()
+    iconView.image = NSApp.applicationIconImage ?? Self.makePlaceholderIcon()
     iconView.imageScaling = .scaleProportionallyUpOrDown
     iconShadowView.addSubview(iconView)
 
