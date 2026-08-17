@@ -440,11 +440,12 @@ private extension MacosExitDialog {
   }
 
   func roundedPath(in rect: NSRect, cornerRadius: CGFloat) -> CGPath {
-    NSBezierPath(
+    CGPath(
       roundedRect: rect,
-      xRadius: cornerRadius,
-      yRadius: cornerRadius
-    ).cgPath
+      cornerWidth: cornerRadius,
+      cornerHeight: cornerRadius,
+      transform: nil
+    )
   }
 }
 
