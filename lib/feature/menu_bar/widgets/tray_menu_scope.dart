@@ -219,6 +219,10 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       }
     }
 
+    if (_vpnController.state != VpnState.disconnected) {
+      await _vpnController.stop();
+    }
+
     if (_isMacOS) {
       await windowManager.setPreventClose(false);
     }
