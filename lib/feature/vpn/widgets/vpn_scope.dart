@@ -69,7 +69,7 @@ typedef UpdateVpnCallback =
 /// the app.
 ///
 /// Calling [VpnController.stop] will:
-/// - call [VpnRepository.stop],
+/// - call [VpnRepository.stop] when the VPN is not already disconnected,
 /// - reset [VpnController.state] to [VpnState.disconnected].
 ///
 /// ## Logs collection
@@ -263,6 +263,10 @@ class _VpnScopeState extends State<VpnScope> {
   );
 
   Future<void> _stop() async {
+    if (_stateNotifier.value == VpnState.disconnected) {
+      return;
+    }
+
     await widget.vpnRepository.stop();
     _setVpnState(VpnState.disconnected);
   }
