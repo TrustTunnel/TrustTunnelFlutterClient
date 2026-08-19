@@ -67,22 +67,19 @@ final class MacOSAppWindowController implements AppWindowController {
             size: defaultSize,
           );
 
-    await windowManager.waitUntilReadyToShow(
-      windowOptions,
-      () async {
-        await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    await windowManager.waitUntilReadyToShow(windowOptions);
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
 
-        if (!shouldShowMainWindowOnLaunch) {
-          return;
-        }
+    if (shouldShowMainWindowOnLaunch) {
+      await showMainWindow();
+    }
 
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await windowManager.show();
-          await windowManager.focus();
-        });
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _completeLaunch();
+    });
   }
+
+  Future<void> _completeLaunch() async => await _mainWindowChannel.invokeMethod<void>('completeLaunch');
 
   Future<bool> _shouldShowMainWindowOnLaunch() async =>
       await _mainWindowChannel.invokeMethod<bool>('shouldShowMainWindowOnLaunch') ?? true;
