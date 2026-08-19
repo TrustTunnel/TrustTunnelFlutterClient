@@ -46,6 +46,7 @@ Future<void> main() async {
             child: RoutingScope(
               child: ExcludedRoutesScope(
                 child: VpnScope(
+                  appWindowController: initializationHelper.dependenciesFactory.appWindowController,
                   vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
                   initialState: initializationHelper.initialVpnState,
                   child: const ServersScope(

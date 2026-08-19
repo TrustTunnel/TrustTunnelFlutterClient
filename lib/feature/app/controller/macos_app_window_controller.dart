@@ -22,6 +22,9 @@ final class MacOSAppWindowController implements AppWindowController {
   @override
   Future<void> hideMainWindow() async => await _mainWindowChannel.invokeMethod<void>('hide');
 
+  @override
+  Future<void> setPreventClose(bool preventClose) async => await windowManager.setPreventClose(preventClose);
+
   /// Configure the main window for macOS.
   ///
   /// - [minimumWindowSize] is the minimum size of the window.
@@ -37,7 +40,7 @@ final class MacOSAppWindowController implements AppWindowController {
     final shouldShowMainWindowOnLaunch = await _shouldShowMainWindowOnLaunch();
 
     await windowManager.ensureInitialized();
-    await windowManager.setPreventClose(true);
+    await setPreventClose(true);
 
     final display = await screenRetriever.getPrimaryDisplay();
     final visibleSize = display.visibleSize ?? display.size;
