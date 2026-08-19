@@ -103,7 +103,7 @@ typedef UpdateVpnCallback =
 /// `*MaybeOf` variants if you want a nullable result instead.
 /// {@endtemplate}
 class VpnScope extends StatefulWidget {
-  final AppWindowController appWindowController;
+  final AppWindowController? appWindowController;
 
   /// Repository used to start/stop the VPN and to listen for state/log updates.
   final VpnRepository vpnRepository;
@@ -354,6 +354,10 @@ class _VpnScopeState extends State<VpnScope> {
     if (defaultTargetPlatform != TargetPlatform.macOS) {
       return AppExitResponse.exit;
     }
+    final appWindowController = widget.appWindowController;
+    if (appWindowController == null) {
+      throw StateError('AppWindowController must be provided on macOS');
+    }
 
     final shouldShowExitDialog = switch (_stateNotifier.value) {
       VpnState.connected || VpnState.connecting => true,
@@ -377,7 +381,7 @@ class _VpnScopeState extends State<VpnScope> {
     }
 
     await _stopAndWaitUntilDisconnected();
-    await widget.appWindowController.setPreventClose(false);
+    await appWindowController.setPreventClose(false);
 
     return AppExitResponse.exit;
   }

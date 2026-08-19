@@ -46,7 +46,9 @@ Future<void> main() async {
             child: RoutingScope(
               child: ExcludedRoutesScope(
                 child: VpnScope(
-                  appWindowController: initializationHelper.dependenciesFactory.appWindowController,
+                  appWindowController: defaultTargetPlatform == TargetPlatform.macOS
+                      ? initializationHelper.dependenciesFactory.appWindowController
+                      : null,
                   vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
                   initialState: initializationHelper.initialVpnState,
                   child: const ServersScope(
