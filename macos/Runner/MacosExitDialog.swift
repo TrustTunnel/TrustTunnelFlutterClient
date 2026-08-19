@@ -58,6 +58,8 @@ final class MacosExitDialog: NSWindowController {
   private typealias Properties = DialogStyleProperties
   private typealias Constants = DialogStyleConstants
 
+  private static var activeController: MacosExitDialog?
+
   private struct Configuration {
     let title: String
     let message: String
@@ -130,15 +132,32 @@ final class MacosExitDialog: NSWindowController {
   private weak var parentWindow: NSWindow?
 
   static func show(arguments: [String: Any], parentWindow: NSWindow?) -> Bool {
+    if let activeController {
+      activeController.bringToFront()
+
+      return false
+    }
+
+    let previousActivationPolicy = NSApp.activationPolicy()
+    let activationPolicyWasChanged =
+      previousActivationPolicy != .regular && NSApp.setActivationPolicy(.regular)
+
     let controller = MacosExitDialog(
       configuration: Configuration(arguments: arguments),
       parentWindow: parentWindow
     )
+    activeController = controller
+    defer {
+      activeController = nil
+      if activationPolicyWasChanged {
+        NSApp.setActivationPolicy(previousActivationPolicy)
+      }
+    }
+
     controller.centerOverParentWindow()
 
     let window = controller.window!
-    NSApp.activate(ignoringOtherApps: true)
-    window.makeKeyAndOrderFront(nil)
+    controller.bringToFront()
     NSApp.runModal(for: window)
     window.close()
 
@@ -148,7 +167,7 @@ final class MacosExitDialog: NSWindowController {
   private init(configuration: Configuration, parentWindow: NSWindow?) {
     self.parentWindow = parentWindow
 
-    let panel = DialogPanel(
+    let panel = DialogWindow(
       contentRect: NSRect(x: 0, y: 0, width: Properties.windowWidth, height: Properties.windowHeight),
       styleMask: [.borderless],
       backing: .buffered,
@@ -174,16 +193,16 @@ final class MacosExitDialog: NSWindowController {
 }
 
 private extension MacosExitDialog {
-  static func configure(_ panel: DialogPanel) {
+  static func configure(_ panel: DialogWindow) {
     panel.isOpaque = false
     panel.backgroundColor = .clear
     panel.hasShadow = false
-    panel.isFloatingPanel = true
     panel.isMovable = true
     panel.isMovableByWindowBackground = true
+    panel.hidesOnDeactivate = false
     panel.level = .modalPanel
     panel.animationBehavior = .alertPanel
-    panel.collectionBehavior = [.transient]
+    panel.collectionBehavior = [.managed, .fullScreenNone]
     panel.appearance = Constants.lightAppearance
   }
 
@@ -197,6 +216,27 @@ private extension MacosExitDialog {
     } else {
       window.center()
     }
+  }
+
+  func bringToFront() {
+    guard let window else {
+      return
+    }
+
+    NSApp.unhide(nil)
+    window.orderFrontRegardless()
+    Self.activateApplication()
+    window.makeKeyAndOrderFront(nil)
+
+    if let initialFirstResponder = window.initialFirstResponder {
+      window.makeFirstResponder(initialFirstResponder)
+    }
+  }
+
+  static func activateApplication() {
+    // NSApp.activate() uses cooperative activation on modern macOS and does
+    // not reliably bring windows of menu bar apps in front of another app.
+    NSApp.activate(ignoringOtherApps: true)
   }
 
   func closeDialog(shouldQuit: Bool) {
@@ -449,7 +489,7 @@ private extension MacosExitDialog {
   }
 }
 
-private final class DialogPanel: NSPanel {
+private final class DialogWindow: NSWindow {
   override var canBecomeKey: Bool { true }
   override var canBecomeMain: Bool { true }
 }
