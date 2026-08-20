@@ -140,7 +140,7 @@ jobs:
     secrets: inherit
     with:
       version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
+      build-number: '6402' # TODO: ${{ needs.build-number.outputs.build-number }} (temporarily hardcoded to avoid Play Store rejection due to version code regression)
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       build-mode: appbundle
@@ -217,7 +217,7 @@ jobs:
       rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
       release-name: ${{ needs.meta.outputs.version-title }}
       artifact-pattern: trusttunnel-android-aab
-      version-codes: ${{ needs.build-number.outputs.build-number }}
+      version-codes: '6402' # TODO: ${{ needs.build-number.outputs.build-number }} (temporarily hardcoded to avoid Play Store rejection due to version code regression)
       changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
       environment: ${{ needs.meta.outputs.release-channel }}-google-play
 
