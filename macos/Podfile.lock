@@ -41,7 +41,7 @@ PODS:
     - sqlite3/session
   - tray_manager (0.1.0):
     - FlutterMacOS
-  - TrustTunnelClient (1.1.5-rc.3)
+  - TrustTunnelClient (1.1.5-rc.6)
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
   - vpn_plugin (0.0.1):
@@ -108,7 +108,7 @@ SPEC CHECKSUMS:
   sqlite3: 8d708bc63e9f4ce48f0ad9d6269e478c5ced1d9b
   sqlite3_flutter_libs: d13b8b3003f18f596e542bcb9482d105577eff41
   tray_manager: 061091258370a059b7e7e271491d4532b58278e7
-  TrustTunnelClient: 3eb01441a91ae7a3e4083149567a389fa8e67473
+  TrustTunnelClient: db6bb0e410b527d0bd6724c3dab4715075c1b172
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   vpn_plugin: fe6f1796a2b921d01d9bd75d72a06a7e4aebb2b1
   window_manager: 1d01fa7ac65a6e6f83b965471b1a7fdd3f06166c
