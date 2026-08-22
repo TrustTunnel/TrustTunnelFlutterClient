@@ -92,9 +92,9 @@ jobs:
         run: |
           case "$CHANNEL" in
             nightly)  echo "track=alpha"      >> "$GITHUB_OUTPUT"; echo "rollout=100" >> "$GITHUB_OUTPUT" ;;
-            beta)     echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
-            rc)       echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
-            release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+            beta)     echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=30"   >> "$GITHUB_OUTPUT" ;;
+            rc)       echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=30"   >> "$GITHUB_OUTPUT" ;;
+            release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=30"   >> "$GITHUB_OUTPUT" ;;
             *)        echo "::error::Unknown channel: $CHANNEL"; exit 1 ;;
           esac
 
