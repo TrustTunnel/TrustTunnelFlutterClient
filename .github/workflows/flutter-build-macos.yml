@@ -95,13 +95,13 @@ jobs:
           bundle install
           cd ..
 
-      - name: macOS system-extension entitlements update
-        if: inputs.macos-signing-type == 'developer_id'
-        run: |
-          set -euo pipefail
-          cd macos
-          bundle exec fastlane update_macos_entitlements type:"${{ inputs.macos-signing-type }}"
-          cd ..
+      # - name: macOS system-extension entitlements update
+      #   if: inputs.macos-signing-type == 'developer_id'
+      #   run: |
+      #     set -euo pipefail
+      #     cd macos
+      #     bundle exec fastlane update_macos_entitlements type:"${{ inputs.macos-signing-type }}"
+      #     cd ..
 
       - name: Flutter pub get and code generation
         run: make init
