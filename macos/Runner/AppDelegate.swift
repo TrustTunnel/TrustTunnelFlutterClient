@@ -151,6 +151,8 @@ final class MacOSMainWindowController {
         return
       }
 
+      (window as? MainFlutterWindow)?.allowPresentation()
+
       if window.isMiniaturized {
         window.deminiaturize(nil)
       }
@@ -158,6 +160,12 @@ final class MacOSMainWindowController {
       window.orderFrontRegardless()
       window.makeKeyAndOrderFront(nil)
       NSApp.activate(ignoringOtherApps: true)
+    }
+  }
+
+  func completeLaunch() {
+    DispatchQueue.main.async {
+      (self.mainWindow as? MainFlutterWindow)?.completeLaunch()
     }
   }
 

@@ -5,6 +5,8 @@ abstract interface class AppWindowController {
 
   Future<void> hideMainWindow();
 
+  Future<void> setPreventClose(bool preventClose);
+
   Future<void> configureMainWindow({
     required Size minimumWindowSize,
     required Size defaultWindowSize,

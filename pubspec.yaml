@@ -1,5 +1,5 @@
 name: trusttunnel
-description: "Mobile VPN client for Android and iOS, built with Flutter"
+description: "VPN client for Android, iOS and MacOS, built with Flutter"
 
 publish_to: 'none'
 

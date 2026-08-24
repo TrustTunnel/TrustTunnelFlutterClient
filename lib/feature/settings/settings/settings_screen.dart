@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
@@ -37,11 +38,13 @@ class SettingsScreen extends StatelessWidget {
             const Divider(),
             const DownloadAppLogsTile(),
             const Divider(),
-            CustomArrowListTile(
-              title: context.ln.launchAndConnection,
-              onTap: () => _pushLaunchAndConnectionScreen(context),
-            ),
-            const Divider(),
+            if (defaultTargetPlatform == TargetPlatform.macOS) ...[
+              CustomArrowListTile(
+                title: context.ln.launchAndConnection,
+                onTap: () => _pushLaunchAndConnectionScreen(context),
+              ),
+              const Divider(),
+            ],
             CustomArrowListTile(
               title: context.ln.excludedRoutes,
               onTap: () => _pushExcludedRoutesScreen(context),

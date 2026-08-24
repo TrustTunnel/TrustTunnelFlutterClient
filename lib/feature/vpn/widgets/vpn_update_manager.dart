@@ -98,7 +98,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
 
     _selectedRoutingProfile ??= updatedRoutingProfile;
 
-    if (_selectedRoutingProfile == null) {
+    if (updatedRoutingProfile == null) {
       serverScope.fetchServers();
 
       return;
@@ -129,7 +129,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
         _updateStoredConfiguration(
           controller: vpnController,
           server: updatedServer!,
-          routingProfile: updatedRoutingProfile!,
+          routingProfile: updatedRoutingProfile,
           excludedRoutes: updatedExcludedRoutes,
           logLevel: currentNeededVpnConfigurationLogLevel,
         );
@@ -137,7 +137,7 @@ class _VpnUpdateManagerState extends State<VpnUpdateManager> {
         _restartVpnService(
           controller: vpnController,
           server: updatedServer!,
-          routingProfile: updatedRoutingProfile!,
+          routingProfile: updatedRoutingProfile,
           excludedRoutes: updatedExcludedRoutes,
           logLevel: currentNeededVpnConfigurationLogLevel,
         );

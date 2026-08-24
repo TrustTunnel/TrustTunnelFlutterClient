@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/data/repository/vpn_repository.dart';
+import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
+import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/macos_exit_dialog.dart';
 import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_aspect.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
@@ -69,7 +73,7 @@ typedef UpdateVpnCallback =
 /// the app.
 ///
 /// Calling [VpnController.stop] will:
-/// - call [VpnRepository.stop],
+/// - call [VpnRepository.stop] when the VPN is not already disconnected,
 /// - reset [VpnController.state] to [VpnState.disconnected].
 ///
 /// ## Logs collection
@@ -99,6 +103,8 @@ typedef UpdateVpnCallback =
 /// `*MaybeOf` variants if you want a nullable result instead.
 /// {@endtemplate}
 class VpnScope extends StatefulWidget {
+  final AppWindowController? appWindowController;
+
   /// Repository used to start/stop the VPN and to listen for state/log updates.
   final VpnRepository vpnRepository;
 
@@ -112,6 +118,7 @@ class VpnScope extends StatefulWidget {
 
   /// {@macro vpn_scope}
   const VpnScope({
+    required this.appWindowController,
     required this.child,
     required this.vpnRepository,
     this.initialState = VpnState.disconnected,
@@ -188,6 +195,9 @@ class _VpnScopeState extends State<VpnScope> {
 
   late final ValueNotifier<VpnState> _stateNotifier;
   late final ValueNotifier<List<VpnLog>> _logsNotifier;
+
+  /// Listens to app lifecycle events (resume and exit requested).
+  /// Handles macOS exit requests by showing a dialog if the VPN is connected or connecting.
   late final AppLifecycleListener _appLifecycleListener;
 
   StreamSubscription<VpnLog>? _logStreamSub;
@@ -203,6 +213,7 @@ class _VpnScopeState extends State<VpnScope> {
     _logsNotifier = ValueNotifier(<VpnLog>[]);
     _appLifecycleListener = AppLifecycleListener(
       onResume: _onAppResumed,
+      onExitRequested: _onExitRequested,
     );
     unawaited(_listenToVpnStates());
     unawaited(_listenToLogs());
@@ -262,9 +273,36 @@ class _VpnScopeState extends State<VpnScope> {
     logLevel: logLevel,
   );
 
+  /// Stops the VPN and immediately changes the state to disconnected.
   Future<void> _stop() async {
+    if (_stateNotifier.value == VpnState.disconnected) {
+      return;
+    }
+
     await widget.vpnRepository.stop();
     _setVpnState(VpnState.disconnected);
+  }
+
+  /// Stops the VPN and waits for the native side to report disconnection.
+  Future<void> _stopAndWaitUntilDisconnected() async {
+    if (_stateNotifier.value == VpnState.disconnected) {
+      return;
+    }
+
+    final disconnectedCompleter = Completer<void>();
+    void disconnectedStateListener() {
+      if (_stateNotifier.value == VpnState.disconnected && !disconnectedCompleter.isCompleted) {
+        disconnectedCompleter.complete();
+      }
+    }
+
+    _stateNotifier.addListener(disconnectedStateListener);
+    try {
+      await widget.vpnRepository.stop();
+      await disconnectedCompleter.future;
+    } finally {
+      _stateNotifier.removeListener(disconnectedStateListener);
+    }
   }
 
   void _setVpnState(VpnState state) {
@@ -311,6 +349,42 @@ class _VpnScopeState extends State<VpnScope> {
   }
 
   void _onAppResumed() => unawaited(_refreshState());
+
+  Future<AppExitResponse> _onExitRequested() async {
+    if (defaultTargetPlatform != TargetPlatform.macOS) {
+      return AppExitResponse.exit;
+    }
+    final appWindowController = widget.appWindowController;
+    if (appWindowController == null) {
+      throw StateError('AppWindowController must be provided on macOS');
+    }
+
+    final shouldShowExitDialog = switch (_stateNotifier.value) {
+      VpnState.connected || VpnState.connecting => true,
+      VpnState.disconnected ||
+      VpnState.waitingForRecovery ||
+      VpnState.recovering ||
+      VpnState.waitingForNetwork => false,
+    };
+
+    if (shouldShowExitDialog) {
+      final localization = Localization.ln;
+      final result = await MacosExitDialog.show(
+        title: localization.exitDialogTitle,
+        message: localization.exitDialogDescription,
+        quitButtonText: localization.quit,
+        dontQuitButtonText: localization.dontQuit,
+      );
+      if (!mounted || result != MacosExitDialogResult.quit) {
+        return AppExitResponse.cancel;
+      }
+    }
+
+    await _stopAndWaitUntilDisconnected();
+    await appWindowController.setPreventClose(false);
+
+    return AppExitResponse.exit;
+  }
 
   @override
   void dispose() {

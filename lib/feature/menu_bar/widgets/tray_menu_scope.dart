@@ -13,7 +13,6 @@ import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/macos_exit_dialog.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/tray_manager_macos.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/tray_menu_data.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
@@ -25,7 +24,6 @@ import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/exclu
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
-import 'package:window_manager/window_manager.dart';
 
 /// Keeps the tray menu (currently only macOS) in sync with the app state and handles its actions.
 class TrayMenuScope extends StatefulWidget {
@@ -193,38 +191,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     );
   }
 
-  Future<void> _onQuitPressed() async {
-    if (!mounted) {
-      return;
-    }
-
-    final vpnState = _vpnController.state;
-    final shouldShowExitDialog = switch (vpnState) {
-      VpnState.connected || VpnState.connecting => true,
-      VpnState.disconnected ||
-      VpnState.waitingForRecovery ||
-      VpnState.recovering ||
-      VpnState.waitingForNetwork => false,
-    };
-
-    if (shouldShowExitDialog) {
-      final result = await MacosExitDialog.show(
-        title: context.ln.exitDialogTitle,
-        message: context.ln.exitDialogDescription,
-        quitButtonText: context.ln.quit,
-        dontQuitButtonText: context.ln.dontQuit,
-      );
-      if (!mounted || result != MacosExitDialogResult.quit) {
-        return;
-      }
-    }
-
-    if (_isMacOS) {
-      await windowManager.setPreventClose(false);
-    }
-
-    await SystemNavigator.pop();
-  }
+  Future<void> _onQuitPressed() => SystemNavigator.pop();
 
   /// Connects to [server] with its routing profile and current exclusions.
   Future<void> _connectToServer(Server server) async {

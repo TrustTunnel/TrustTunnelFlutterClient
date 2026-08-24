@@ -92,9 +92,9 @@ jobs:
         run: |
           case "$CHANNEL" in
             nightly)  echo "track=alpha"      >> "$GITHUB_OUTPUT"; echo "rollout=100" >> "$GITHUB_OUTPUT" ;;
-            beta)     echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
-            rc)       echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
-            release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=5"   >> "$GITHUB_OUTPUT" ;;
+            beta)     echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=30"   >> "$GITHUB_OUTPUT" ;;
+            rc)       echo "track=beta"       >> "$GITHUB_OUTPUT"; echo "rollout=30"   >> "$GITHUB_OUTPUT" ;;
+            release)  echo "track=production" >> "$GITHUB_OUTPUT"; echo "rollout=30"   >> "$GITHUB_OUTPUT" ;;
             *)        echo "::error::Unknown channel: $CHANNEL"; exit 1 ;;
           esac
 
@@ -140,7 +140,7 @@ jobs:
     secrets: inherit
     with:
       version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
+      build-number: '6403' # TODO: ${{ needs.build-number.outputs.build-number }} (temporarily hardcoded to avoid Play Store rejection due to version code regression)
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       build-mode: appbundle
@@ -217,7 +217,7 @@ jobs:
       rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
       release-name: ${{ needs.meta.outputs.version-title }}
       artifact-pattern: trusttunnel-android-aab
-      version-codes: ${{ needs.build-number.outputs.build-number }}
+      version-codes: '6403' # TODO: ${{ needs.build-number.outputs.build-number }} (temporarily hardcoded to avoid Play Store rejection due to version code regression)
       changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
       environment: ${{ needs.meta.outputs.release-channel }}-google-play
 
