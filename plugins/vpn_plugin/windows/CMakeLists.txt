@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 3.14)
 # Project-level configuration.
 set(PROJECT_NAME "vpn_plugin")
 project(${PROJECT_NAME} LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -18,8 +19,14 @@ set(PLUGIN_NAME "vpn_plugin_plugin")
 
 # Any new source files that you add to the plugin should be added here.
 list(APPEND PLUGIN_SOURCES
+  "background_worker.cpp"
+  "background_worker.h"
+  "runner/platform_api.g.cpp"
+  "runner/platform_api.g.h"
   "vpn_plugin.cpp"
   "vpn_plugin.h"
+  "ui_thread_dispatcher.cpp"
+  "ui_thread_dispatcher.h"
 )
 
 # Define the plugin library target. Its name must not be changed (see comment
@@ -47,12 +54,78 @@ target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL)
 target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
+target_link_libraries(${PLUGIN_NAME} PRIVATE Shell32 Ole32)
 
-# List of absolute paths to libraries that should be bundled with the plugin.
-# This list could contain prebuilt libraries, or libraries created by an
-# external build triggered from this build file.
+# === Download and use prebuilt TrustTunnelClientWindows ===
+include(FetchContent)
+
+set(TRUSTTUNNEL_CLIENT_VERSION "1.1.5")
+
+# Determine the target architecture for the archive URL.
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM|aarch64")
+    set(TRUSTTUNNEL_CLIENT_ARCH "arm64")
+  else()
+    set(TRUSTTUNNEL_CLIENT_ARCH "amd64")
+  endif()
+else()
+  message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+set(TRUSTTUNNEL_CLIENT_ARCHIVE_URL
+  "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${TRUSTTUNNEL_CLIENT_VERSION}/TrustTunnelClient-windows-${TRUSTTUNNEL_CLIENT_ARCH}-${TRUSTTUNNEL_CLIENT_VERSION}.zip"
+)
+
+FetchContent_Declare(
+  TrustTunnelClientWindows
+  URL ${TRUSTTUNNEL_CLIENT_ARCHIVE_URL}
+)
+FetchContent_MakeAvailable(TrustTunnelClientWindows)
+
+# The archive ships lib/cmake/TrustTunnelClientWindows/TrustTunnelClientWindowsConfig.cmake
+# Register that location so find_package() can discover it.
+list(APPEND CMAKE_PREFIX_PATH "${trusttunnelclientwindows_SOURCE_DIR}")
+
+find_package(TrustTunnelClientWindows REQUIRED)
+target_link_libraries(${PLUGIN_NAME} PRIVATE TrustTunnelClientWindows::vpn_easy)
+
+# --- Bundle required adapter's targets ---
+set(_TT_BIN_DIR "${trusttunnelclientwindows_SOURCE_DIR}/bin")
+
+set(VPN_SERVICE_EXE "${_TT_BIN_DIR}/vpn_easy_service.exe")
+if(NOT EXISTS "${VPN_SERVICE_EXE}")
+  message(FATAL_ERROR "vpn_easy_service.exe not found at ${VPN_SERVICE_EXE}")
+endif()
+
+set(VPN_EASY_DLL "${_TT_BIN_DIR}/vpn_easy.dll")
+if(NOT EXISTS "${VPN_EASY_DLL}")
+  message(FATAL_ERROR "vpn_easy.dll not found at ${VPN_EASY_DLL}")
+endif()
+
+set(WINTUN_DLL "${_TT_BIN_DIR}/wintun.dll")
+set(WINTUN_LICENSE "${trusttunnelclientwindows_SOURCE_DIR}/WINTUN_LICENSE.txt")
+
+if(NOT EXISTS "${WINTUN_DLL}")
+  message(FATAL_ERROR "wintun.dll not found at ${WINTUN_DLL}")
+endif()
+
+set(SERVICE_INSTALLER_EXE "${_TT_BIN_DIR}/service_installer.exe")
+if(NOT EXISTS "${SERVICE_INSTALLER_EXE}")
+  message(FATAL_ERROR "service_installer.exe not found at ${SERVICE_INSTALLER_EXE}")
+endif()
+
+message(STATUS "Using vpn_easy_service.exe: ${VPN_SERVICE_EXE}")
+message(STATUS "Using wintun.dll: ${WINTUN_DLL}")
+message(STATUS "Using service_installer.exe: ${SERVICE_INSTALLER_EXE}")
+
+# Bundle the executables, DLLs and license so the app-level install step copies
+# them next to the main executable at runtime.
 set(vpn_plugin_bundled_libraries
-  ""
+  "${VPN_SERVICE_EXE}"
+  "${VPN_EASY_DLL}"
+  "${WINTUN_DLL}"
+  "${WINTUN_LICENSE}"
+  "${SERVICE_INSTALLER_EXE}"
   PARENT_SCOPE
 )
 
@@ -67,7 +140,6 @@ set(TEST_RUNNER "${PROJECT_NAME}_test")
 enable_testing()
 
 # Add the Google Test dependency.
-include(FetchContent)
 FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/release-1.11.0.zip
@@ -80,14 +152,27 @@ FetchContent_MakeAvailable(googletest)
 
 # The plugin's C API is not very useful for unit testing, so build the sources
 # directly into the test binary rather than using the DLL.
+#
+# We link against the real TrustTunnelClientWindows headers (for declarations)
+# but provide stub implementations (test/mocks/vpn_easy_stubs.cpp) instead of
+# the real library, so tests can control return values and avoid starting a
+# real VPN service.
 add_executable(${TEST_RUNNER}
   test/vpn_plugin_test.cpp
+  test/mocks/vpn_easy_stubs.cpp
   ${PLUGIN_SOURCES}
 )
 apply_standard_settings(${TEST_RUNNER})
-target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${TEST_RUNNER} PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  # Use real vpn_easy headers from the TrustTunnelClientWindows package.
+  "${trusttunnelclientwindows_SOURCE_DIR}/include"
+)
+# Link against the Pigeon-generated API (for FlutterError, ErrorOr, etc.).
+# The real TrustTunnelClientWindows::vpn_easy is NOT linked — stubs replace it.
 target_link_libraries(${TEST_RUNNER} PRIVATE flutter_wrapper_plugin)
 target_link_libraries(${TEST_RUNNER} PRIVATE gtest_main gmock)
+target_link_libraries(${TEST_RUNNER} PRIVATE Shell32 Ole32)
 # flutter_wrapper_plugin has link dependencies on the Flutter DLL.
 add_custom_command(TARGET ${TEST_RUNNER} POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different

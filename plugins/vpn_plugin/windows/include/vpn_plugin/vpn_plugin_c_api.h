@@ -1,5 +1,4 @@
-#ifndef FLUTTER_PLUGIN_VPN_PLUGIN_C_API_H_
-#define FLUTTER_PLUGIN_VPN_PLUGIN_C_API_H_
+#pragma once
 
 #include <flutter_plugin_registrar.h>
 
@@ -13,11 +12,13 @@
 extern "C" {
 #endif
 
+/**
+ * Register the VPN plugin with the Flutter engine.
+ * @param registrar The desktop plugin registrar reference.
+ */
 FLUTTER_PLUGIN_EXPORT void VpnPluginCApiRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar);
+        FlutterDesktopPluginRegistrarRef registrar);
 
 #if defined(__cplusplus)
-}  // extern "C"
+} // extern "C"
 #endif
-
-#endif  // FLUTTER_PLUGIN_VPN_PLUGIN_C_API_H_

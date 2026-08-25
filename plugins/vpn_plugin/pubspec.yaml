@@ -37,5 +37,5 @@ flutter:
       macos:
         pluginClass: VpnPlugin
       windows:
-        pluginClass: VpnPlugin
-        fileName: vpn_plugin.cpp
+        pluginClass: VpnPluginCApi
+        fileName: vpn_plugin_c_api.cpp

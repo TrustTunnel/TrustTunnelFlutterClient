@@ -5,8 +5,8 @@
 #include "vpn_plugin.h"
 
 void VpnPluginCApiRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar) {
-  vpn_plugin::VpnPlugin::RegisterWithRegistrar(
-      flutter::PluginRegistrarManager::GetInstance()
-          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
+        FlutterDesktopPluginRegistrarRef registrar) {
+    vpn_plugin::VpnPlugin::RegisterWithRegistrar(
+            flutter::PluginRegistrarManager::GetInstance()
+                    ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
 }

@@ -1,206 +1,165 @@
-#ifndef FLUTTER_PLUGIN_VPN_PLUGIN_H_
-#define FLUTTER_PLUGIN_VPN_PLUGIN_H_
+#pragma once
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 
 #include <flutter/event_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
 
 #include <memory>
+#include <mutex>
 #include <optional>
+#include <queue>
 #include <string>
-#include <vector>
+#include <thread>
+#include <filesystem>
+
+#include "background_worker.h"
+#include "runner/platform_api.g.h"
+#include "ui_thread_dispatcher.h"
 
 namespace vpn_plugin {
 
-enum class VpnManagerState : int64_t { kDisconnected = 0, kConnecting = 1, kConnected = 2 };
-enum class VpnProtocol : int64_t { kQuic = 0, kHttp2 = 1 };
-enum class RoutingMode : int64_t { kVpn = 0, kBypass = 1 };
-
-struct Server {
-  int64_t id;
-  std::string ip_address;
-  std::string domain;
-  std::string login;
-  std::string password;
-  std::vector<std::string> dns_servers;
-  VpnProtocol vpn_protocol;
-  int64_t routing_profile_id;
-};
-
-struct RoutingProfile {
-  int64_t id;
-  std::string name;
-  RoutingMode default_mode;
-  std::vector<std::string> bypass_rules;
-  std::vector<std::string> vpn_rules;
-};
-
-struct VpnRequest {
-  std::string zoned_date_time;
-  std::string protocol_name;
-  RoutingMode decision;
-  std::string source_ip_address;
-  std::string destination_ip_address;
-  std::string source_port;
-  std::string destination_port;
-  std::string domain;
-};
-
-enum class AddNewServerResult : int64_t {
-  kOk = 0,
-  kIpAddressIncorrect = 1,
-  kDomainIncorrect = 2,
-  kUsernameIncorrect = 3,
-  kPasswordIncorrect = 4,
-  kDnsServersIncorrect = 5
-};
-
-void IVpnManagerSetupSetUp(flutter::BinaryMessenger*, void* /*api*/);
-void IStorageManagerSetupSetUp(flutter::BinaryMessenger*, void* /*api*/);
-void ServersManagerSetupSetUp(flutter::BinaryMessenger*, void* /*api*/);
-void RoutingProfilesManagerSetupSetUp(flutter::BinaryMessenger*, void* /*api*/);
-
-class MockStorage {
- public:
-  MockStorage();
-
-  std::vector<Server>& AllServers() { return servers_; }
-  std::vector<RoutingProfile>& AllRoutingProfiles() { return routing_profiles_; }
-  std::optional<int64_t>& CurrentSelectedServerId() { return selected_server_id_; }
-  std::string& CurrentExcludedRoutes() { return excluded_routes_; }
-  VpnManagerState& CurrentVpnState() { return vpn_state_; }
-  std::vector<VpnRequest>& AllRequests() { return requests_; }
-
- private:
-  void SetupMockData();
-
-  std::vector<Server> servers_;
-  std::vector<RoutingProfile> routing_profiles_;
-  std::optional<int64_t> selected_server_id_;
-  std::string excluded_routes_;
-  VpnManagerState vpn_state_ = VpnManagerState::kDisconnected;
-  std::vector<VpnRequest> requests_;
-};
-
 class VpnEventStreamHandler
     : public flutter::StreamHandler<flutter::EncodableValue> {
- public:
-  explicit VpnEventStreamHandler(MockStorage* storage,
-                                 std::shared_ptr<flutter::TaskRunner> ui_runner);
+public:
+    VpnEventStreamHandler() = default;
+    virtual ~VpnEventStreamHandler() = default;
 
-  void EmitState(VpnManagerState state);
+    /**
+     * Send an event to the Flutter side via the event channel.
+     * If no listener is active, the event is queued and delivered on the next listen.
+     * @param event The event value to send.
+     */
+    void SendEvent(const flutter::EncodableValue& event);
 
- protected:
-  std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> OnListenInternal(
-      const flutter::EncodableValue* arguments,
-      std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& events) override;
+protected:
+    std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>>
+    OnListenInternal(
+            const flutter::EncodableValue* arguments,
+            std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& events)
+            override;
 
-  std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> OnCancelInternal(
-      const flutter::EncodableValue* arguments) override;
+    std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>>
+    OnCancelInternal(const flutter::EncodableValue* arguments) override;
 
- private:
-  MockStorage* storage_;
-  std::shared_ptr<flutter::TaskRunner> ui_runner_;
-  std::mutex mutex_;
-  std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> sink_;
+private:
+    std::mutex m_mutex;
+    std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> m_sink;
+    std::queue<flutter::EncodableValue> m_event_queue;
 };
 
-class IVpnManagerImpl {
- public:
-  IVpnManagerImpl(MockStorage* storage, VpnEventStreamHandler* handler,
-                  std::shared_ptr<flutter::TaskRunner> ui_runner);
-  void Start();
-  void Stop();
-  VpnManagerState GetCurrentState();
+class VpnPlugin : public flutter::Plugin, public IVpnManager {
+public:
+    /**
+     * Register this plugin with the Flutter engine.
+     * @param registrar The plugin registrar provided by Flutter.
+     */
+    static void RegisterWithRegistrar(
+            flutter::PluginRegistrarWindows* registrar);
 
- private:
-  MockStorage* storage_;
-  VpnEventStreamHandler* handler_;
-  std::shared_ptr<flutter::TaskRunner> ui_runner_;
+    VpnPlugin(flutter::PluginRegistrarWindows* registrar);
+    ~VpnPlugin() override;
+
+    VpnPlugin(const VpnPlugin&) = delete;
+    VpnPlugin& operator=(const VpnPlugin&) = delete;
+
+    // IVpnManager implementation
+    /**
+     * Start the VPN service with the given configuration.
+     * If the service is not installed, it will be installed first (non-MSIX only).
+     * @param config The VPN configuration string.
+     * @return Error if the operation cannot be initiated, nullopt otherwise.
+     */
+    std::optional<FlutterError> Start(const std::string& config) override;
+
+    /**
+     * Stop the VPN service.
+     * @return Error if the operation cannot be initiated, nullopt otherwise.
+     */
+    std::optional<FlutterError> Stop() override;
+
+    /**
+     * Update the VPN configuration.
+     * No-op on Windows: configuration is passed via Start().
+     * @param config The new configuration (unused).
+     * @return Always nullopt.
+     */
+    std::optional<FlutterError> UpdateConfiguration(
+            const std::string* config) override;
+
+    /**
+     * Get the current VPN manager state.
+     * @return The current state.
+     */
+    ErrorOr<VpnManagerState> GetCurrentState() override;
+
+    /**
+     * Handle state change notification from vpn_easy.
+     * @param state The new state value (cast to VpnManagerState).
+     */
+    void NotifyStateChanged(int state);
+
+    /**
+     * Handle connection info notification from vpn_easy.
+     * @param json The connection info as a JSON string.
+     */
+    void NotifyConnectionInfo(const std::string& json);
+
+private:
+    static constexpr DWORD SERVICE_INSTALL_TIMEOUT_MS = 30000;
+
+    /**
+     * Launch the service installer helper elevated and wait for it.
+     * @param params Command-line arguments for service_installer.exe.
+     * @return The helper's exit code, or a negative VpnEasyServiceError on failure.
+     */
+    int32_t RunElevatedHelper(const std::wstring& params);
+
+    /**
+     * Install the VPN service via the elevated helper (non-MSIX only).
+     * @return 0 on success, error code otherwise.
+     */
+    int32_t InstallService();
+
+    /**
+     * Uninstall the VPN service via the elevated helper (non-MSIX only).
+     * @return 0 on success, error code otherwise.
+     */
+    int32_t UninstallService();
+
+    /**
+     * Attach to the running VPN background service.
+     * @return 0 on success, error code otherwise.
+     */
+    int32_t AttachService();
+
+    /**
+     * Start the VPN background service with the given configuration.
+     * @param config The VPN configuration string.
+     * @return 0 on success, error code otherwise.
+     */
+    int32_t StartService(const std::string& config);
+
+    flutter::PluginRegistrarWindows* m_registrar;
+    UIThreadDispatcher m_dispatcher;
+    BackgroundWorker m_worker;
+
+    std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>>
+            m_state_channel;
+    std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>>
+            m_query_log_channel;
+
+    VpnEventStreamHandler* m_state_handler = nullptr;
+    VpnEventStreamHandler* m_query_log_handler = nullptr;
+
+    std::wstring m_service_name;
+    std::wstring m_pipe_name;
+    std::filesystem::path m_ring_buffer_path;
+
+    VpnManagerState m_current_state = VpnManagerState::kDisconnected;
 };
 
-class StorageManagerImpl {
- public:
-  explicit StorageManagerImpl(MockStorage* storage) : storage_(storage) {}
-  void SetExcludedRoutes(const std::string& routes) { storage_->CurrentExcludedRoutes() = routes; }
-  void SetRoutingProfiles(const std::vector<RoutingProfile>& profiles) { storage_->AllRoutingProfiles() = profiles; }
-  void SetSelectedServerId(int64_t id) { storage_->CurrentSelectedServerId() = id; }
-  void SetServers(const std::vector<Server>& servers) { storage_->AllServers() = servers; }
-  std::vector<VpnRequest> GetAllRequests() { return storage_->AllRequests(); }
-  std::string GetExcludedRoutes() { return storage_->CurrentExcludedRoutes(); }
-  std::vector<RoutingProfile> GetRoutingProfiles() { return storage_->AllRoutingProfiles(); }
-  std::optional<int64_t> GetSelectedServerId() { return storage_->CurrentSelectedServerId(); }
-  std::vector<Server> GetAllServers() { return storage_->AllServers(); }
-
- private:
-  MockStorage* storage_;
-};
-
-class ServersManagerImpl {
- public:
-  explicit ServersManagerImpl(MockStorage* storage) : storage_(storage) {}
-  AddNewServerResult AddNewServer(const std::string& name, const std::string& ip,
-                                  const std::string& domain, const std::string& user,
-                                  const std::string& pass, VpnProtocol proto,
-                                  int64_t routing_profile_id, const std::string& dns_csv);
-  std::vector<Server> GetAllServers() { return storage_->AllServers(); }
-  AddNewServerResult SetNewServer(int64_t id, const std::string& name, const std::string& ip,
-                                  const std::string& domain, const std::string& user,
-                                  const std::string& pass, VpnProtocol proto,
-                                  int64_t routing_profile_id, const std::string& dns_csv);
-  void SetSelectedServerId(int64_t id) { storage_->CurrentSelectedServerId() = id; }
-  void RemoveServer(int64_t id);
-
-  static bool IsValidIp(const std::string& ip);
-  static std::vector<std::string> SplitAndTrim(const std::string& s, char delim);
-  static void Trim(std::string& s);
-
- private:
-  MockStorage* storage_;
-};
-
-class RoutingProfilesManagerImpl {
- public:
-  explicit RoutingProfilesManagerImpl(MockStorage* storage) : storage_(storage) {}
-  void AddNewProfile();
-  std::vector<RoutingProfile> GetAllProfiles() { return storage_->AllRoutingProfiles(); }
-  void SetDefaultRoutingMode(int64_t id, RoutingMode mode);
-  void SetProfileName(int64_t id, const std::string& name);
-  void SetRules(int64_t id, RoutingMode mode, const std::string& rules);
-  void RemoveAllRules(int64_t id);
-
- private:
-  MockStorage* storage_;
-};
-
-class VpnPlugin : public flutter::Plugin {
- public:
-  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
-
-  explicit VpnPlugin(
-      std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> event_channel,
-      std::shared_ptr<MockStorage> storage,
-      std::unique_ptr<VpnEventStreamHandler> handler,
-      std::unique_ptr<IVpnManagerImpl> vpn_manager,
-      std::unique_ptr<StorageManagerImpl> storage_manager,
-      std::unique_ptr<ServersManagerImpl> servers_manager,
-      std::unique_ptr<RoutingProfilesManagerImpl> routing_manager);
-
-  ~VpnPlugin() override;
-
-  VpnPlugin(const VpnPlugin&) = delete;
-  VpnPlugin& operator=(const VpnPlugin&) = delete;
-
- private:
-  std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> event_channel_;
-  std::shared_ptr<MockStorage> storage_;
-  std::unique_ptr<VpnEventStreamHandler> handler_;
-  std::unique_ptr<IVpnManagerImpl> vpn_manager_;
-  std::unique_ptr<StorageManagerImpl> storage_manager_;
-  std::unique_ptr<ServersManagerImpl> servers_manager_;
-  std::unique_ptr<RoutingProfilesManagerImpl> routing_manager_;
-};
-
-}  // namespace vpn_plugin
-
-#endif  // FLUTTER_PLUGIN_VPN_PLUGIN_H_
+} // namespace vpn_plugin
