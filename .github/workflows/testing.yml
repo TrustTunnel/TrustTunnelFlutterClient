@@ -40,39 +40,39 @@ jobs:
     uses: ./.github/workflows/flutter-test.yml
     secrets: inherit
 
-  build-android:
-    needs: [prepare]
-    uses: ./.github/workflows/flutter-build-android.yml
-    secrets: inherit
-    with:
-      channel: nightly
-      vault-role: trusttunnel-app
-      version: ${{ needs.prepare.outputs.version }}
-      build-number: ${{ github.run_number }}
-      version-title: ${{ needs.prepare.outputs.version-title }}
-      build-mode: apk
-      artifact-name: trusttunnel-android-pr
-      artifact-path: build/app/outputs/flutter-apk/app-release.apk
+  # build-android:
+  #   needs: [prepare]
+  #   uses: ./.github/workflows/flutter-build-android.yml
+  #   secrets: inherit
+  #   with:
+  #     channel: nightly
+  #     vault-role: trusttunnel-app
+  #     version: ${{ needs.prepare.outputs.version }}
+  #     build-number: ${{ github.run_number }}
+  #     version-title: ${{ needs.prepare.outputs.version-title }}
+  #     build-mode: apk
+  #     artifact-name: trusttunnel-android-pr
+  #     artifact-path: build/app/outputs/flutter-apk/app-release.apk
 
-  build-ios:
-    needs: [prepare]
-    if: >-
-      github.event.pull_request.draft == false
-    uses: ./.github/workflows/flutter-build-ios.yml
-    secrets: inherit
-    with:
-      channel: nightly
-      version: ${{ needs.prepare.outputs.version }}
-      build-number: ${{ github.run_number }}
-      version-title: ${{ needs.prepare.outputs.version-title }}
-      build-mode: adhoc
-      artifact-name: trusttunnel-ios-pr
-      artifact-path: ios/build/TrustTunnel.ipa
+  # build-ios:
+  #   needs: [prepare]
+  #   if: >-
+  #     github.event.pull_request.draft == false
+  #   uses: ./.github/workflows/flutter-build-ios.yml
+  #   secrets: inherit
+  #   with:
+  #     channel: nightly
+  #     version: ${{ needs.prepare.outputs.version }}
+  #     build-number: ${{ github.run_number }}
+  #     version-title: ${{ needs.prepare.outputs.version-title }}
+  #     build-mode: adhoc
+  #     artifact-name: trusttunnel-ios-pr
+  #     artifact-path: ios/build/TrustTunnel.ipa
 
   build-macos:
     needs: [prepare]
-    if: >-
-      github.event.pull_request.draft == false
+    # if: >-
+    #   github.event.pull_request.draft == false
     uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
