@@ -246,7 +246,7 @@ jobs:
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
   notify-slack:
-    needs: [meta, deploy-google-play, deploy-testflight, deploy-appetize, deploy-macos-testflight]
+    needs: [meta, deploy-testflight, deploy-appetize, deploy-macos-testflight]
     if: inputs.slack-channel != ''
     uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
     with:
