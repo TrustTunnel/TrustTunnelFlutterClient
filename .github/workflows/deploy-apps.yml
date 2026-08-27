@@ -65,16 +65,16 @@ jobs:
       tag: ${{ inputs.tag }}
 
   build-number:
-    needs: [meta]
     runs-on: [team-flutter]
     outputs:
       build-number: ${{ steps.counter.outputs.BUILD_NUMBER }}
     steps:
-      - uses: AdGuardSoftwareLimited/actions/actions/kv-multi@master
+      - name: Increment Build number
         id: counter
+        uses: AdGuardSoftwareLimited/actions/actions/kv-multi@master
         with:
           increment: |
-            BUILD_NUMBER=trusttunnel-flutter/v${{ needs.meta.outputs.version }}
+            BUILD_NUMBER=trusttunnel-flutter/build-number
 
   params:
     needs: [meta]
@@ -140,7 +140,7 @@ jobs:
     secrets: inherit
     with:
       version: ${{ needs.meta.outputs.version }}
-      build-number: '6403' # TODO: ${{ needs.build-number.outputs.build-number }} (temporarily hardcoded to avoid Play Store rejection due to version code regression)
+      build-number: ${{ needs.build-number.outputs.build-number }}
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       build-mode: appbundle
@@ -217,7 +217,7 @@ jobs:
       rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
       release-name: ${{ needs.meta.outputs.version-title }}
       artifact-pattern: trusttunnel-android-aab
-      version-codes: '6403' # TODO: ${{ needs.build-number.outputs.build-number }} (temporarily hardcoded to avoid Play Store rejection due to version code regression)
+      version-codes: ${{ needs.build-number.outputs.build-number }}
       changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
       environment: ${{ needs.meta.outputs.release-channel }}-google-play
 
