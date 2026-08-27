@@ -181,31 +181,6 @@ jobs:
           bundle exec fastlane build_macos_app type:"${{ inputs.macos-signing-type }}"
           cd ..
 
-      - name: Package into DMG
-        if: inputs.macos-signing-type == 'developer_id'
-        run: |
-          set -euo pipefail
-          cd macos
-          APP_PATH="${FASTLANE_BUILD_DIRECTORY}/${CUSTOM_FASTLANE_BUILD_NAME}.app"
-          DMG_PATH="${FASTLANE_BUILD_DIRECTORY}/${CUSTOM_FASTLANE_BUILD_NAME}.dmg"
-          test -d "$APP_PATH" || { echo "App bundle not found at $APP_PATH"; ls -la "$FASTLANE_BUILD_DIRECTORY"; exit 1; }
-
-          STAGING_DIR="$(mktemp -d)"
-          cp -R "$APP_PATH" "$STAGING_DIR/"
-          ln -s /Applications "$STAGING_DIR/Applications"
-
-          hdiutil create -volname "$CUSTOM_FASTLANE_BUILD_NAME" \
-            -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
-
-          rm -rf "$STAGING_DIR"
-
-      - name: Notarize DMG
-        if: inputs.macos-signing-type == 'developer_id'
-        uses: AdGuardSoftwareLimited/actions/actions/notarize-macos-app@master
-        with:
-          bundle_path: ${{ github.workspace }}/macos/build/TrustTunnel.dmg
-          vault_url: ${{ vars.VAULT_URL }}
-
       - name: Archive artifact with ditto
         id: archive-artifact
         env:
@@ -226,5 +201,31 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact-name }}
-          path: ${{ inputs.artifact-path }}
+          path: ${{ steps.archive-artifact.outputs.archive-path }}
           if-no-files-found: error
+
+
+      # - name: Package into DMG
+      #   if: inputs.macos-signing-type == 'developer_id'
+      #   run: |
+      #     set -euo pipefail
+      #     cd macos
+      #     APP_PATH="${FASTLANE_BUILD_DIRECTORY}/${CUSTOM_FASTLANE_BUILD_NAME}.app"
+      #     DMG_PATH="${FASTLANE_BUILD_DIRECTORY}/${CUSTOM_FASTLANE_BUILD_NAME}.dmg"
+      #     test -d "$APP_PATH" || { echo "App bundle not found at $APP_PATH"; ls -la "$FASTLANE_BUILD_DIRECTORY"; exit 1; }
+
+      #     STAGING_DIR="$(mktemp -d)"
+      #     cp -R "$APP_PATH" "$STAGING_DIR/"
+      #     ln -s /Applications "$STAGING_DIR/Applications"
+
+      #     hdiutil create -volname "$CUSTOM_FASTLANE_BUILD_NAME" \
+      #       -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
+
+      #     rm -rf "$STAGING_DIR"
+
+      # - name: Notarize DMG
+      #   if: inputs.macos-signing-type == 'developer_id'
+      #   uses: AdGuardSoftwareLimited/actions/actions/notarize-macos-app@master
+      #   with:
+      #     bundle_path: ${{ github.workspace }}/macos/build/TrustTunnel.dmg
+      #     vault_url: ${{ vars.VAULT_URL }}
