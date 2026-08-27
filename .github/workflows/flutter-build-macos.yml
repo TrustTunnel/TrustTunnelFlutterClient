@@ -17,8 +17,8 @@ on:
         description: 'Human-readable version title'
       macos-signing-type:
         type: string
-        default: 'developer_id'
-        description: 'macOS signing type: developer_id, appstore'
+        default: 'development'
+        description: 'macOS signing type: development, appstore'
       channel:
         type: string
         required: true
@@ -93,14 +93,6 @@ jobs:
           cd macos
           bundle config set --local path '.bundle/vendor'
           bundle install
-          cd ..
-
-      - name: macOS system-extension entitlements update
-        if: inputs.macos-signing-type == 'developer_id'
-        run: |
-          set -euo pipefail
-          cd macos
-          bundle exec fastlane update_macos_entitlements type:"${{ inputs.macos-signing-type }}"
           cd ..
 
       - name: Flutter pub get and code generation
@@ -213,6 +205,22 @@ jobs:
         with:
           bundle_path: ${{ github.workspace }}/macos/build/TrustTunnel.dmg
           vault_url: ${{ vars.VAULT_URL }}
+
+      - name: Archive artifact with ditto
+        id: archive-artifact
+        env:
+          ARTIFACT_PATH: ${{ github.workspace }}/${{ inputs.artifact-path }}
+        run: |
+          set -euo pipefail
+          if [[ -d "$ARTIFACT_PATH" ]]; then
+            dir_name=$(basename "$ARTIFACT_PATH")
+            archive_name="${dir_name}.zip"
+            archive_path="$(dirname "$ARTIFACT_PATH")/$archive_name"
+            ditto -c -k --keepParent "$ARTIFACT_PATH" "$archive_path"
+            echo "archive-path=$archive_path" >> "$GITHUB_OUTPUT"
+          else
+            echo "archive-path=$ARTIFACT_PATH" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
