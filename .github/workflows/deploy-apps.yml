@@ -246,8 +246,10 @@ jobs:
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
   notify-slack:
-    needs: [meta, deploy-testflight, deploy-appetize, deploy-macos-testflight]
-    if: inputs.slack-channel != ''
+    needs: [meta, build-android, deploy-testflight, deploy-appetize, deploy-macos-testflight]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.slack-channel != ''
     uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
     with:
       team: flutter
