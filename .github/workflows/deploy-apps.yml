@@ -235,67 +235,67 @@ jobs:
       artifact-name: trusttunnel-macos-testing
       artifact-path: macos/build/TrustTunnel.app
 
-  notify-slack:
-    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc]
-    if: >-
-      !cancelled() && !failure() &&
-      inputs.slack-channel != ''
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
-    with:
-      team: flutter
-      channel: ${{ inputs.slack-channel }}
-      product: 'TrustTunnel'
-      version-title: ${{ needs.meta.outputs.version-title }}
-      metadata: ${{ needs.params.outputs.slack-metadata }}
+  # notify-slack:
+  #   needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc]
+  #   if: >-
+  #     !cancelled() && !failure() &&
+  #     inputs.slack-channel != ''
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
+  #   with:
+  #     team: flutter
+  #     channel: ${{ inputs.slack-channel }}
+  #     product: 'TrustTunnel'
+  #     version-title: ${{ needs.meta.outputs.version-title }}
+  #     metadata: ${{ needs.params.outputs.slack-metadata }}
 
-  deploy-testflight:
-    needs: [meta, build-ios-appstore, changelog-public]
-    if: inputs.deploy-ios
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
-    with:
-      team: flutter
-      asset-artifact-name: trusttunnel-ios-appstore
-      changelog-artifact-name: changelog.txt
-      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
-      distribute-external: true
-      submit-beta-review: false
-      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+  # deploy-testflight:
+  #   needs: [meta, build-ios-appstore, changelog-public]
+  #   if: inputs.deploy-ios
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
+  #   with:
+  #     team: flutter
+  #     asset-artifact-name: trusttunnel-ios-appstore
+  #     changelog-artifact-name: changelog.txt
+  #     groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
+  #     distribute-external: true
+  #     submit-beta-review: false
+  #     environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
-  deploy-google-play:
-    needs: [meta, params, build-number, build-android-google-play, changelog-public]
-    if: inputs.deploy-android
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
-    with:
-      team: flutter
-      package-name: com.adguard.trusttunnel
-      track: ${{ needs.params.outputs.play-store-track }}
-      rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
-      release-name: ${{ needs.meta.outputs.version-title }}
-      artifact-pattern: trusttunnel-android-google-play
-      version-codes: ${{ needs.build-number.outputs.build-number }}
-      changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
-      environment: ${{ needs.meta.outputs.release-channel }}-google-play
+  # deploy-google-play:
+  #   needs: [meta, params, build-number, build-android-google-play, changelog-public]
+  #   if: inputs.deploy-android
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
+  #   with:
+  #     team: flutter
+  #     package-name: com.adguard.trusttunnel
+  #     track: ${{ needs.params.outputs.play-store-track }}
+  #     rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
+  #     release-name: ${{ needs.meta.outputs.version-title }}
+  #     artifact-pattern: trusttunnel-android-google-play
+  #     version-codes: ${{ needs.build-number.outputs.build-number }}
+  #     changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
+  #     environment: ${{ needs.meta.outputs.release-channel }}-google-play
 
-  deploy-appetize:
-    needs: [meta, build-ios-simulator]
-    if: inputs.deploy-ios
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
-    with:
-      team: flutter
-      artifact-name: trusttunnel-ios-simulator
-      platform: ios
-      note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
-      environment: ${{ needs.meta.outputs.release-channel }}-appetize
+  # deploy-appetize:
+  #   needs: [meta, build-ios-simulator]
+  #   if: inputs.deploy-ios
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
+  #   with:
+  #     team: flutter
+  #     artifact-name: trusttunnel-ios-simulator
+  #     platform: ios
+  #     note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
+  #     environment: ${{ needs.meta.outputs.release-channel }}-appetize
 
-  deploy-macos-testflight:
-    needs: [meta, build-macos-appstore, changelog-public]
-    if: inputs.deploy-macos
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
-    with:
-      team: flutter
-      asset-artifact-name: trusttunnel-macos-appstore
-      changelog-artifact-name: changelog.txt
-      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
-      distribute-external: true
-      submit-beta-review: false
-      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+  # deploy-macos-testflight:
+  #   needs: [meta, build-macos-appstore, changelog-public]
+  #   if: inputs.deploy-macos
+  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
+  #   with:
+  #     team: flutter
+  #     asset-artifact-name: trusttunnel-macos-appstore
+  #     changelog-artifact-name: changelog.txt
+  #     groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
+  #     distribute-external: true
+  #     submit-beta-review: false
+  #     environment: ${{ needs.meta.outputs.release-channel }}-testflight
