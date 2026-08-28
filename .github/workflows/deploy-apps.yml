@@ -9,9 +9,10 @@ on:
         required: true
         type: string
       slack-channel:
-        description: 'Slack channel for build notification'
+        description: 'Slack channel for build notification (ex. #proj-trusttunnel-)'
+        default: '#proj-trusttunnel-'
+        required: true
         type: string
-        default: '#build-trusttunnel'
       deploy-android:
         description: 'Build and deploy the Android app'
         type: boolean
