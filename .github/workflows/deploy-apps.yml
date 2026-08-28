@@ -206,20 +206,20 @@ jobs:
       submit-beta-review: false
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
-  # deploy-google-play:
-  #   needs: [meta, params, build-number, build-android, changelog-public]
-  #   if: inputs.deploy-android
-  #   uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
-  #   with:
-  #     team: flutter
-  #     package-name: com.adguard.trusttunnel
-  #     track: ${{ needs.params.outputs.play-store-track }}
-  #     rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
-  #     release-name: ${{ needs.meta.outputs.version-title }}
-  #     artifact-pattern: trusttunnel-android-aab
-  #     version-codes: ${{ needs.build-number.outputs.build-number }}
-  #     changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
-  #     environment: ${{ needs.meta.outputs.release-channel }}-google-play
+  deploy-google-play:
+    needs: [meta, params, build-number, build-android, changelog-public]
+    if: inputs.deploy-android
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
+    with:
+      team: flutter
+      package-name: com.adguard.trusttunnel
+      track: ${{ needs.params.outputs.play-store-track }}
+      rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
+      release-name: ${{ needs.meta.outputs.version-title }}
+      artifact-pattern: trusttunnel-android-aab
+      version-codes: ${{ needs.build-number.outputs.build-number }}
+      changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
+      environment: ${{ needs.meta.outputs.release-channel }}-google-play
 
   deploy-appetize:
     needs: [meta, build-simulator]
@@ -246,7 +246,7 @@ jobs:
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
   notify-slack:
-    needs: [meta, build-android, deploy-testflight, deploy-appetize, deploy-macos-testflight]
+    needs: [meta, deploy-google-play, deploy-testflight, deploy-appetize, deploy-macos-testflight]
     if: >-
       !cancelled() && !failure() &&
       inputs.slack-channel != ''
