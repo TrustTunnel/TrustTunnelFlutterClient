@@ -133,7 +133,7 @@ jobs:
       private: 'false'
       artifact-name: changelog
 
-  build-android:
+  build-android-google-play:
     needs: [meta, build-number]
     if: inputs.deploy-android
     uses: ./.github/workflows/flutter-build-android.yml
@@ -144,10 +144,24 @@ jobs:
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       build-mode: appbundle
-      artifact-name: trusttunnel-android-aab
+      artifact-name: trusttunnel-android-google-play
       artifact-path: build/app/outputs/bundle/release/app-release.aab
 
-  build-ios:
+  build-android-apk:
+    needs: [meta, build-number]
+    if: inputs.deploy-android
+    uses: ./.github/workflows/flutter-build-android.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      channel: ${{ needs.meta.outputs.release-channel }}
+      build-mode: apk
+      artifact-name: trusttunnel-android-testing
+      artifact-path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-ios-appstore:
     needs: [meta, build-number]
     if: inputs.deploy-ios
     uses: ./.github/workflows/flutter-build-ios.yml
@@ -158,12 +172,26 @@ jobs:
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       signing-type: appstore
-      artifact-name: trusttunnel-ios-ipa
+      artifact-name: trusttunnel-ios-appstore
       artifact-path: |
         ios/build/TrustTunnel.ipa
         ios/build/AppStoreInfo.plist
 
-  build-simulator:
+  build-ios-adhoc:
+    needs: [meta, build-number]
+    if: inputs.deploy-ios
+    uses: ./.github/workflows/flutter-build-ios.yml
+    secrets: inherit
+    with:
+      channel: ${{ needs.meta.outputs.release-channel }}
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      build-mode: adhoc
+      artifact-name: trusttunnel-ios-testing
+      artifact-path: ios/build/TrustTunnel.ipa
+
+  build-ios-simulator:
     needs: [meta, build-number]
     if: inputs.deploy-ios
     uses: ./.github/workflows/flutter-build-ios.yml
@@ -174,7 +202,7 @@ jobs:
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       build-mode: simulator
-      artifact-name: TrustTunnel.app.zip
+      artifact-name: trusttunnel-ios-simulator
       artifact-path: ios/build/TrustTunnel.app.zip
 
   build-macos-appstore:
@@ -193,13 +221,40 @@ jobs:
         macos/build/TrustTunnel.pkg
         macos/build/AppStoreInfo.plist
 
+  build-macos-adhoc:
+    needs: [meta, build-number]
+    if: inputs.deploy-macos
+    uses: ./.github/workflows/flutter-build-macos.yml
+    secrets: inherit
+    with:
+      channel: ${{ needs.meta.outputs.release-channel }}
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      macos-signing-type: development
+      artifact-name: trusttunnel-macos-testing
+      artifact-path: macos/build/TrustTunnel.app
+
+  notify-slack:
+    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.slack-channel != ''
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
+    with:
+      team: flutter
+      channel: ${{ inputs.slack-channel }}
+      product: 'TrustTunnel'
+      version-title: ${{ needs.meta.outputs.version-title }}
+      metadata: ${{ needs.params.outputs.slack-metadata }}
+
   deploy-testflight:
-    needs: [meta, build-ios, changelog-public]
+    needs: [meta, build-ios-appstore, changelog-public]
     if: inputs.deploy-ios
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
-      asset-artifact-name: trusttunnel-ios-ipa
+      asset-artifact-name: trusttunnel-ios-appstore
       changelog-artifact-name: changelog.txt
       groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
       distribute-external: true
@@ -207,7 +262,7 @@ jobs:
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
 
   deploy-google-play:
-    needs: [meta, params, build-number, build-android, changelog-public]
+    needs: [meta, params, build-number, build-android-google-play, changelog-public]
     if: inputs.deploy-android
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-google-play.yml@master
     with:
@@ -216,18 +271,18 @@ jobs:
       track: ${{ needs.params.outputs.play-store-track }}
       rollout-percent: ${{ needs.params.outputs.play-store-rollout }}
       release-name: ${{ needs.meta.outputs.version-title }}
-      artifact-pattern: trusttunnel-android-aab
+      artifact-pattern: trusttunnel-android-google-play
       version-codes: ${{ needs.build-number.outputs.build-number }}
       changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
       environment: ${{ needs.meta.outputs.release-channel }}-google-play
 
   deploy-appetize:
-    needs: [meta, build-simulator]
+    needs: [meta, build-ios-simulator]
     if: inputs.deploy-ios
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
     with:
       team: flutter
-      artifact-name: TrustTunnel.app.zip
+      artifact-name: trusttunnel-ios-simulator
       platform: ios
       note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
       environment: ${{ needs.meta.outputs.release-channel }}-appetize
@@ -244,16 +299,3 @@ jobs:
       distribute-external: true
       submit-beta-review: false
       environment: ${{ needs.meta.outputs.release-channel }}-testflight
-
-  notify-slack:
-    needs: [meta, deploy-google-play, deploy-testflight, deploy-appetize, deploy-macos-testflight]
-    if: >-
-      !cancelled() && !failure() &&
-      inputs.slack-channel != ''
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/slack-build-notify.yml@master
-    with:
-      team: flutter
-      channel: ${{ inputs.slack-channel }}
-      product: 'TrustTunnel'
-      version-title: ${{ needs.meta.outputs.version-title }}
-      metadata: ${{ needs.params.outputs.slack-metadata }}
