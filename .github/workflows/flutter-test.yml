@@ -2,6 +2,19 @@ name: Flutter Test
 
 on:
   workflow_call:
+    inputs:
+      container-image:
+        type: string
+        default: 'registry.int.agrd.dev/library/flutter-android:3.38.3--2'
+        description: 'Docker container image. Empty = run directly on runner'
+      runner-memory-mb:
+        type: string
+        default: '5120'
+        description: 'Memory limit for ephemeral runner in MB'
+      runner-cpu:
+        type: string
+        default: '2'
+        description: 'CPU limit for ephemeral runner'
 
 permissions:
   contents: read
@@ -15,17 +28,18 @@ jobs:
       - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
         id: kv
         with:
-          key: build-images/macos
+          key: build-images/flutter-android-builder
 
   test:
     needs: [resolve-runner]
     runs-on:
       - ephemeral
-      - ephemeral-mac
+      - ephemeral-linux
       - ${{ needs.resolve-runner.outputs.image }}
-      - ephemeral-limit-memory-5120
-      - ephemeral-limit-cpu-2
+      - ephemeral-limit-memory-${{ inputs.runner-memory-mb }}
+      - ephemeral-limit-cpu-${{ inputs.runner-cpu }}
       - ephemeral-limit-disk-gb-20
+    container: ${{ inputs.container-image }}
     defaults:
       run:
         shell: bash
