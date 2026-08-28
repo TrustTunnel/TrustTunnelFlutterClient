@@ -183,6 +183,7 @@ jobs:
 
       - name: Archive artifact with ditto
         id: archive-artifact
+        if: inputs.macos-signing-type == 'development'
         env:
           ARTIFACT_PATH: ${{ github.workspace }}/${{ inputs.artifact-path }}
         run: |
