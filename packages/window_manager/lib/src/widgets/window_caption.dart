@@ -57,9 +57,7 @@ class _WindowCaptionState extends State<WindowCaption> with WindowListener {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: widget.backgroundColor ??
-            (widget.brightness == Brightness.dark
-                ? const Color(0xff1C1C1C)
-                : Colors.transparent),
+            (widget.brightness == Brightness.dark ? const Color(0xff1C1C1C) : Colors.transparent),
       ),
       child: Row(
         children: [
@@ -73,9 +71,8 @@ class _WindowCaptionState extends State<WindowCaption> with WindowListener {
                       padding: const EdgeInsets.only(left: 16),
                       child: DefaultTextStyle(
                         style: TextStyle(
-                          color: widget.brightness == Brightness.light
-                              ? Colors.black.withOpacity(0.8956)
-                              : Colors.white,
+                          color:
+                              widget.brightness == Brightness.light ? Colors.black.withOpacity(0.8956) : Colors.white,
                           fontSize: 14,
                         ),
                         child: widget.title ?? Container(),

@@ -23,8 +23,7 @@ class VirtualWindowFrame extends StatefulWidget {
   State<StatefulWidget> createState() => _VirtualWindowFrameState();
 }
 
-class _VirtualWindowFrameState extends State<VirtualWindowFrame>
-    with WindowListener {
+class _VirtualWindowFrameState extends State<VirtualWindowFrame> with WindowListener {
   bool _isFocused = true;
   bool _isMaximized = false;
   bool _isFullScreen = false;
