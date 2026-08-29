@@ -134,6 +134,7 @@ jobs:
       private: 'false'
       artifact-name: changelog
 
+  # Android Build Steps
   build-android-google-play:
     needs: [meta, build-number]
     if: inputs.deploy-android
@@ -162,6 +163,7 @@ jobs:
       artifact-name: trusttunnel-android-testing
       artifact-path: build/app/outputs/flutter-apk/app-release.apk
 
+  # iOS Build Steps
   build-ios-appstore:
     needs: [meta, build-number]
     if: inputs.deploy-ios
@@ -206,6 +208,7 @@ jobs:
       artifact-name: trusttunnel-ios-simulator
       artifact-path: ios/build/TrustTunnel.app.zip
 
+  # macOS Build Steps
   build-macos-appstore:
     needs: [meta, build-number]
     if: inputs.deploy-macos
@@ -249,7 +252,8 @@ jobs:
       version-title: ${{ needs.meta.outputs.version-title }}
       metadata: ${{ needs.params.outputs.slack-metadata }}
 
-  deploy-testflight:
+  # iOS Deployment Steps
+  deploy-testflight-ios:
     needs: [meta, build-ios-appstore, changelog-public]
     if: inputs.deploy-ios
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
@@ -260,8 +264,34 @@ jobs:
       groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
       distribute-external: true
       submit-beta-review: false
-      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+      environment: ${{ needs.meta.outputs.release-channel }}-testflight-ios
 
+  deploy-appetize-ios:
+    needs: [meta, build-ios-simulator]
+    if: inputs.deploy-ios
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
+    with:
+      team: flutter
+      artifact-name: trusttunnel-ios-simulator
+      platform: ios
+      note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
+      environment: ${{ needs.meta.outputs.release-channel }}-appetize-ios
+
+  # macOS Deployment Steps
+  deploy-testflight-macos:
+    needs: [meta, build-macos-appstore, changelog-public]
+    if: inputs.deploy-macos
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
+    with:
+      team: flutter
+      asset-artifact-name: trusttunnel-macos-appstore
+      changelog-artifact-name: changelog.txt
+      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
+      distribute-external: true
+      submit-beta-review: false
+      environment: ${{ needs.meta.outputs.release-channel }}-testflight-macos
+
+  # Android Deployment Steps
   deploy-google-play:
     needs: [meta, params, build-number, build-android-google-play, changelog-public]
     if: inputs.deploy-android
@@ -277,26 +307,13 @@ jobs:
       changelog-text: ${{ needs.changelog-public.outputs.changelog-text }}
       environment: ${{ needs.meta.outputs.release-channel }}-google-play
 
-  deploy-appetize:
-    needs: [meta, build-ios-simulator]
-    if: inputs.deploy-ios
+  deploy-appetize-android:
+    needs: [meta, build-android-apk]
+    if: inputs.deploy-android
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
     with:
       team: flutter
-      artifact-name: trusttunnel-ios-simulator
-      platform: ios
+      artifact-name: trusttunnel-android-testing
+      platform: android
       note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
-      environment: ${{ needs.meta.outputs.release-channel }}-appetize
-
-  deploy-macos-testflight:
-    needs: [meta, build-macos-appstore, changelog-public]
-    if: inputs.deploy-macos
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
-    with:
-      team: flutter
-      asset-artifact-name: trusttunnel-macos-appstore
-      changelog-artifact-name: changelog.txt
-      groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
-      distribute-external: true
-      submit-beta-review: false
-      environment: ${{ needs.meta.outputs.release-channel }}-testflight
+      environment: ${{ needs.meta.outputs.release-channel }}-appetize-android
