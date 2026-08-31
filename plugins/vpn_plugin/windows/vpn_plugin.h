@@ -97,6 +97,21 @@ public:
     ErrorOr<VpnManagerState> GetCurrentState() override;
 
     /**
+     * Export the collected VPN log families to files on disk.
+     * Copies the client and service log families into a unique temp
+     * directory and returns the absolute paths of the copied files.
+     * @return List of absolute UTF-8 paths of the exported log files.
+     */
+    ErrorOr<flutter::EncodableList> ExportLogs() override;
+
+    /**
+     * Clear all the VPN log families written to disk.
+     * Safe to be called during a running VPN.
+     * @return Always nullopt.
+     */
+    std::optional<FlutterError> ClearLogs() override;
+
+    /**
      * Handle state change notification from vpn_easy.
      * @param state The new state value (cast to VpnManagerState).
      */
@@ -158,6 +173,7 @@ private:
     std::wstring m_service_name;
     std::wstring m_pipe_name;
     std::filesystem::path m_ring_buffer_path;
+    std::filesystem::path m_logs_dir;
 
     VpnManagerState m_current_state = VpnManagerState::kDisconnected;
 };

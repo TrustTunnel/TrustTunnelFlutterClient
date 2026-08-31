@@ -168,7 +168,14 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
       m_service_name(L"TrustTunnelVPN"),
       m_pipe_name(L"\\\\.\\pipe\\trusttunnel_vpn") {
     // Use writable path (MSIX-safe) for runtime data.
-    m_ring_buffer_path = GetWritableAppDataPath() / L"vpn_query_log.ring";
+    std::filesystem::path app_data = GetWritableAppDataPath();
+    m_ring_buffer_path = app_data / L"vpn_query_log.ring";
+    m_logs_dir = app_data / L"logs";
+
+    // Install the client-process file log sink before anything logs.
+    // Remembered by vpn_easy so export/clear can also reach the service
+    // log family, which the service process writes into the same directory.
+    vpn_easy_log_init(m_logs_dir.wstring().c_str());
 
     // Setup Event Channel for State
     auto state_handler = std::make_unique<VpnEventStreamHandler>();
@@ -247,18 +254,18 @@ int32_t VpnPlugin::InstallService() {
     }
     std::filesystem::path exe_dir = GetExeDir();
     std::wstring service_exe = (exe_dir / L"vpn_easy_service.exe").wstring();
-    // Use writable path (MSIX-safe) for the service log.
-    std::wstring log_path =
-            (GetWritableAppDataPath() / L"vpn_easy_service.log").wstring();
+    // The directory where both the client and the service write their
+    // rotating log families ("client" and "service" respectively).
+    std::wstring logs_dir = m_logs_dir.wstring();
     std::wstring ring_buffer_path_w =
             std::filesystem::path(m_ring_buffer_path).wstring();
 
     // Build the command-line arguments for service_installer.exe:
-    //   install <image_path> <logfile_path> <pipe_name> <name>
+    //   install <image_path> <logs_dir> <pipe_name> <name>
     //           <display_name> <description> <ring_buffer_path>
     std::wstring params = L"install";
     params += L" \"" + service_exe + L"\"";
-    params += L" \"" + log_path + L"\"";
+    params += L" \"" + logs_dir + L"\"";
     params += L" \"" + m_pipe_name + L"\"";
     params += L" \"" + m_service_name + L"\"";
     params += L" \"TrustTunnel VPN Service\"";
@@ -354,6 +361,33 @@ void VpnPlugin::NotifyConnectionInfo(const std::string& json) {
                     flutter::EncodableValue(json));
         }
     });
+}
+
+ErrorOr<flutter::EncodableList> VpnPlugin::ExportLogs() {
+    // Unique temp export dir per call; the caller owns cleanup.
+    std::filesystem::path export_dir =
+            std::filesystem::temp_directory_path() /
+            (L"trusttunnel_windows_logs_" +
+             std::to_wstring(GetTickCount64()));
+
+    flutter::EncodableList result;
+    vpn_easy_log_export(
+            export_dir.wstring().c_str(),
+            [](void* arg, const wchar_t* path) {
+                // Dart strings are marshaled as UTF-8; transcode the
+                // native wide path.
+                std::u8string u8 = std::filesystem::path(path).u8string();
+                static_cast<flutter::EncodableList*>(arg)->push_back(
+                        flutter::EncodableValue(
+                                std::string(u8.begin(), u8.end())));
+            },
+            &result);
+    return ErrorOr<flutter::EncodableList>(result);
+}
+
+std::optional<FlutterError> VpnPlugin::ClearLogs() {
+    vpn_easy_log_clear();
+    return std::nullopt;
 }
 
 } // namespace vpn_plugin
