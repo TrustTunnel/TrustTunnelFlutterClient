@@ -11,11 +11,12 @@
 <p align="center">
   <a href="https://github.com/TrustTunnel/TrustTunnel">TrustTunnel Server</a>
   · <a href="https://github.com/TrustTunnel/TrustTunnelClient">Console client</a>
-  · <a href="https://agrd.io/ios_trusttunnel">App Store</a>
+  · <a href="https://agrd.io/ios_trusttunnel">App Store (iOS)</a>
+  · <a href="https://agrd.io/macos_trusttunnel">App Store (macOS)</a>
   · <a href="https://agrd.io/android_trusttunnel">Play Store</a>
 </p>
 
-**TrustTunnel Flutter Client** is a mobile VPN client for **Android and iOS**, built with Flutter.
+**TrustTunnel Flutter Client** is a VPN client for Android, iOS, and macOS, built with Flutter.
 It provides a clean and focused graphical interface for connecting to **self-hosted TrustTunnel VPN servers**.
 
 The application acts as a thin, user-facing layer on top of the TrustTunnel VPN stack. It does not attempt to hide the underlying architecture or networking model. Instead, it exposes core concepts — servers, endpoints, credentials, and transport protocols — in a clear and predictable form suitable for both beginners and experienced users.
@@ -25,7 +26,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 ### Why TrustTunnel Flutter Client
 
 - **Cross-platform by design**
-  Built with Flutter, the client provides a consistent experience on Android and iOS while integrating directly with system VPN APIs on each platform.
+  Built with Flutter, the client provides a consistent experience on Android, iOS, and macOS while integrating directly with system VPN APIs on each platform.
 
 - **Clean separation of concerns**
   VPN functionality lives in a dedicated Flutter plugin with native bindings, while the application focuses on user experience and configuration. This architecture keeps the codebase understandable and easy to maintain.
@@ -66,7 +67,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 Before working with the application, ensure that your environment is ready:
 
 - **Flutter SDK 3.38.3 or newer**
-- Android and/or iOS development tooling configured on your system
+- Android, iOS, and/or macOS development tooling configured on your system
 - Basic build utilities, including `make`
 
 Flutter installation instructions are available in the official documentation:
@@ -151,7 +152,28 @@ Alternatively, disable automatic signing and select the required certificate and
 
 ---
 
-#### 6. Build or run the application
+
+#### 6. macOS: install pods and configure signing
+
+If you are building macOS application, make sure that pods are installed:
+```shell
+cd macos
+pod install --repo-update
+```
+
+Also make sure that project uses correct signing configuration.
+
+Configure signing in Xcode:
+
+Open the workspace: macos/Runner.xcworkspace
+Select the Runner target
+Open Signing & Capabilities
+Select your Apple Developer Team
+Enable Automatically manage signing (recommended)
+
+---
+
+#### 7. Build or run the application
 
 After initialization, the application can be built or launched using standard Flutter tooling:
 ```shell
@@ -277,14 +299,14 @@ TrustTunnel follows a strict and explicit **client–server VPN architecture**, 
 
 The **TrustTunnel server** runs on infrastructure fully controlled by the user. It is responsible for terminating encrypted connections, authenticating clients, and applying transport- and routing-level decisions. All security- and policy-related logic lives on the server side and is configured independently of the mobile application.
 
-The **TrustTunnel Flutter Client** runs on a mobile device and acts purely as a client. Its responsibility is to establish a secure tunnel to the server, integrate with the operating system VPN APIs, and provide a graphical interface for managing the connection and observing its behavior.
+The **TrustTunnel Flutter Client** runs on an user's device (mobile or desktop) and acts purely as a client. Its responsibility is to establish a secure tunnel to the server, integrate with the operating system VPN APIs, and provide a graphical interface for managing the connection and observing its behavior.
 
 ### Flutter App and VPN Plugin
 The project is intentionally split into **two independent layers**.
 
 The **Flutter application** is responsible for user experience and business logic. It handles UI, navigation, server management, configuration input, routing profile selection, and the overall connection lifecycle. This layer focuses on making VPN usage understandable and manageable for the user.
 
-The **VPN plugin**, located in `plugins/vpn_plugin`, is fully dedicated to VPN functionality. It communicates with native platform implementations through Pigeon-generated APIs and integrates directly with Android and iOS VPN frameworks. The plugin is completely decoupled from the GUI layer and does not depend on any application-specific logic.
+The **VPN plugin**, located in `plugins/vpn_plugin`, is fully dedicated to VPN functionality. It communicates with native platform implementations through Pigeon-generated APIs and integrates directly with Android, iOS, and macOS VPN frameworks. The plugin is completely decoupled from the GUI layer and does not depend on any application-specific logic.
 
 Because of this separation, the VPN plugin can be reused in other Flutter applications without modification. The GUI application is just one possible consumer of the plugin.
 
@@ -292,7 +314,7 @@ This architecture keeps responsibilities well-defined, simplifies maintenance, a
 
 ### Running & Development
 
-The application supports development and testing on Android and iOS platforms.
+The application supports development and testing on Android, iOS, and macOS platforms.
 
 However, **VPN functionality must be tested on physical devices**.
 Emulators and simulators do not fully replicate system VPN behavior and may introduce false positives or platform-specific issues.
