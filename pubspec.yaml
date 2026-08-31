@@ -121,8 +121,5 @@ msix_config:
   store: false
   # Test certificate for local development signing.
   # Generate it first: .\windows\msix\Setup-TestCert.ps1
-  # For production, override with CLI flags:
-  #   dart run msix:pack --certificate-path codesign.pfx --certificate-password XXX
-  #   — or use Build-MSIX.ps1 -CertificatePath / -SignToolOptions
   certificate_path: windows\\msix\\test_cert.pfx
   certificate_password: trusttunnel
