@@ -293,9 +293,7 @@ int32_t VpnPlugin::AttachService() {
 }
 
 int32_t VpnPlugin::StartService(const std::string& config) {
-    return vpn_easy_service_start(
-            m_service_name.c_str(), m_pipe_name.c_str(), config.c_str(),
-            s_notify_state_changed, this, s_notify_connection_info, this);
+    return vpn_easy_service_start(config.c_str());
 }
 
 std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
@@ -325,7 +323,7 @@ std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
 
 std::optional<FlutterError> VpnPlugin::Stop() {
     m_worker.Post([this]() {
-        vpn_easy_service_stop(m_service_name.c_str(), m_pipe_name.c_str());
+        vpn_easy_service_stop();
     });
 
     return std::nullopt;

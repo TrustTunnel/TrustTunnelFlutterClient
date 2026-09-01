@@ -35,23 +35,23 @@ void VpnEasyStubState::Reset() {
 
     start_return_value = 0;
     start_call_count = 0;
-    last_start_service_name.clear();
-    last_start_pipe_name.clear();
     last_start_config.clear();
-    last_start_state_cb = nullptr;
-    last_start_state_cb_arg = nullptr;
-    last_start_info_cb = nullptr;
-    last_start_info_cb_arg = nullptr;
 
     stop_return_value = 0;
     stop_call_count = 0;
-    last_stop_service_name.clear();
-    last_stop_pipe_name.clear();
 
     detach_call_count = 0;
 
     read_all_info_call_count = 0;
     last_read_all_info_path.clear();
+
+    log_init_call_count = 0;
+    last_log_init_dir.clear();
+
+    log_export_call_count = 0;
+    last_log_export_dir.clear();
+
+    log_clear_call_count = 0;
 }
 
 VpnEasyStubState& VpnEasyStubState::Instance() {
@@ -87,32 +87,16 @@ int32_t vpn_easy_service_attach(
 }
 
 int32_t vpn_easy_service_start(
-        const wchar_t* service_name,
-        const wchar_t* pipe_name,
-        const char* toml_config,
-        on_state_changed_t state_cb,
-        void* state_cb_arg,
-        on_connection_info_json_t info_cb,
-        void* info_cb_arg) {
+        const char* toml_config) {
     auto& s = g_stub;
     s.start_call_count++;
-    s.last_start_service_name = service_name ? service_name : L"";
-    s.last_start_pipe_name = pipe_name ? pipe_name : L"";
     s.last_start_config = toml_config ? toml_config : "";
-    s.last_start_state_cb = reinterpret_cast<void*>(state_cb);
-    s.last_start_state_cb_arg = state_cb_arg;
-    s.last_start_info_cb = reinterpret_cast<void*>(info_cb);
-    s.last_start_info_cb_arg = info_cb_arg;
     return s.start_return_value;
 }
 
-int32_t vpn_easy_service_stop(
-        const wchar_t* service_name,
-        const wchar_t* pipe_name) {
+int32_t vpn_easy_service_stop(void) {
     auto& s = g_stub;
     s.stop_call_count++;
-    s.last_stop_service_name = service_name ? service_name : L"";
-    s.last_stop_pipe_name = pipe_name ? pipe_name : L"";
     return s.stop_return_value;
 }
 
@@ -128,6 +112,29 @@ void vpn_easy_service_read_all_connection_info(
     s.read_all_info_call_count++;
     s.last_read_all_info_path = ring_buffer_path ? ring_buffer_path : L"";
     // Stub does not invoke the callback by default.
+}
+
+void vpn_easy_log_init(const wchar_t* logs_dir) {
+    auto& s = g_stub;
+    s.log_init_call_count++;
+    s.last_log_init_dir = logs_dir ? logs_dir : L"";
+}
+
+void vpn_easy_log_export(const wchar_t* dest_dir, on_log_path_t path_cb,
+        void* path_cb_arg) {
+    auto& s = g_stub;
+    s.log_export_call_count++;
+    s.last_log_export_dir = dest_dir ? dest_dir : L"";
+    // Report a single sample exported file so tests can assert the
+    // resulting path list without touching the real filesystem.
+    if (path_cb != nullptr && dest_dir != nullptr) {
+        std::wstring sample = std::wstring(dest_dir) + L"\\service.log";
+        path_cb(path_cb_arg, sample.c_str());
+    }
+}
+
+void vpn_easy_log_clear(void) {
+    g_stub.log_clear_call_count++;
 }
 
 // Stubs for the non-service vpn_easy API (not used by VpnPlugin but
