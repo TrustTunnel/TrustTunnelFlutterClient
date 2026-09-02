@@ -214,7 +214,7 @@ VpnPlugin::~VpnPlugin() {
 
 int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
     std::filesystem::path exe_dir = GetExeDir();
-    std::wstring helper_exe = (exe_dir / L"service_installer.exe").wstring();
+    std::wstring helper_exe = (exe_dir / L"trusttunnel_service_installer.exe").wstring();
 
     SHELLEXECUTEINFOW sei = {};
     sei.cbSize = sizeof(sei);
@@ -253,14 +253,14 @@ int32_t VpnPlugin::InstallService() {
         return VPN_EASY_SVC_ERR_OTHER;
     }
     std::filesystem::path exe_dir = GetExeDir();
-    std::wstring service_exe = (exe_dir / L"vpn_easy_service.exe").wstring();
+    std::wstring service_exe = (exe_dir / L"trusttunnel_service.exe").wstring();
     // The directory where both the client and the service write their
     // rotating log families ("client" and "service" respectively).
     std::wstring logs_dir = m_logs_dir.wstring();
     std::wstring ring_buffer_path_w =
             std::filesystem::path(m_ring_buffer_path).wstring();
 
-    // Build the command-line arguments for service_installer.exe:
+    // Build the command-line arguments for trusttunnel_service_installer.exe:
     //   install <image_path> <logs_dir> <pipe_name> <name>
     //           <display_name> <description> <ring_buffer_path>
     std::wstring params = L"install";

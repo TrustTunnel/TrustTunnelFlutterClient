@@ -92,9 +92,9 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE TrustTunnelClientWindows::vpn_easy)
 # --- Bundle required adapter's targets ---
 set(_TT_BIN_DIR "${trusttunnelclientwindows_SOURCE_DIR}/bin")
 
-set(VPN_SERVICE_EXE "${_TT_BIN_DIR}/vpn_easy_service.exe")
+set(VPN_SERVICE_EXE "${_TT_BIN_DIR}/trusttunnel_service.exe")
 if(NOT EXISTS "${VPN_SERVICE_EXE}")
-  message(FATAL_ERROR "vpn_easy_service.exe not found at ${VPN_SERVICE_EXE}")
+  message(FATAL_ERROR "trusttunnel_service.exe not found at ${VPN_SERVICE_EXE}")
 endif()
 
 set(VPN_EASY_DLL "${_TT_BIN_DIR}/vpn_easy.dll")
@@ -109,14 +109,14 @@ if(NOT EXISTS "${WINTUN_DLL}")
   message(FATAL_ERROR "wintun.dll not found at ${WINTUN_DLL}")
 endif()
 
-set(SERVICE_INSTALLER_EXE "${_TT_BIN_DIR}/service_installer.exe")
+set(SERVICE_INSTALLER_EXE "${_TT_BIN_DIR}/trusttunnel_service_installer.exe")
 if(NOT EXISTS "${SERVICE_INSTALLER_EXE}")
-  message(FATAL_ERROR "service_installer.exe not found at ${SERVICE_INSTALLER_EXE}")
+  message(FATAL_ERROR "trusttunnel_service_installer.exe not found at ${SERVICE_INSTALLER_EXE}")
 endif()
 
-message(STATUS "Using vpn_easy_service.exe: ${VPN_SERVICE_EXE}")
+message(STATUS "Using trusttunnel_service.exe: ${VPN_SERVICE_EXE}")
 message(STATUS "Using wintun.dll: ${WINTUN_DLL}")
-message(STATUS "Using service_installer.exe: ${SERVICE_INSTALLER_EXE}")
+message(STATUS "Using trusttunnel_service_installer.exe: ${SERVICE_INSTALLER_EXE}")
 
 # Bundle the executables, DLLs and license so the app-level install step copies
 # them next to the main executable at runtime.

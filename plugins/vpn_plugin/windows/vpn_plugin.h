@@ -128,7 +128,7 @@ private:
 
     /**
      * Launch the service installer helper elevated and wait for it.
-     * @param params Command-line arguments for service_installer.exe.
+     * @param params Command-line arguments for trusttunnel_service_installer.exe.
      * @return The helper's exit code, or a negative VpnEasyServiceError on failure.
      */
     int32_t RunElevatedHelper(const std::wstring& params);

@@ -17,7 +17,7 @@
 #   1. flutter build windows
 #   2. dart run msix:build        (generates AppxManifest + assets)
 #   3. Patch AppxManifest.xml: inject packaged service extension
-#      so Windows auto-installs vpn_easy_service.exe as SYSTEM
+#      so Windows auto-installs trusttunnel_service.exe as SYSTEM
 #   4. dart run msix:pack          (packages + signs with test cert)
 #
 # Service logs after install:
@@ -119,7 +119,7 @@ try {
         $applicationNode.AppendChild($extensionsNode) | Out-Null
     }
 
-    # Inject the packaged service extension — declares vpn_easy_service.exe
+    # Inject the packaged service extension — declares trusttunnel_service.exe
     # as a Windows service (LocalSystem) that Windows auto-installs with the MSIX.
     # Arguments must match pipe_name_ and ring_buffer_path_ in vpn_plugin.cpp.
     # StartupType="manual" because the app connects via named pipe on-demand.
@@ -131,7 +131,7 @@ try {
     if (-not $existingService) {
         $svcExt = $manifest.CreateElement("desktop6", "Extension", $d6ns)
         $svcExt.SetAttribute("Category", "windows.service")
-        $svcExt.SetAttribute("Executable", "vpn_easy_service.exe")
+        $svcExt.SetAttribute("Executable", "trusttunnel_service.exe")
         $svcExt.SetAttribute("EntryPoint", "Windows.FullTrustApplication")
 
         $svc = $manifest.CreateElement("desktop6", "Service", $d6ns)
@@ -142,7 +142,7 @@ try {
         $svcExt.AppendChild($svc) | Out-Null
 
         $extensionsNode.AppendChild($svcExt) | Out-Null
-        Write-Host "  Added packaged service: vpn_easy_service.exe (TrustTunnelVPN)" -ForegroundColor Green
+        Write-Host "  Added packaged service: trusttunnel_service.exe (TrustTunnelVPN)" -ForegroundColor Green
         Write-Host "    Arguments: $serviceArgs" -ForegroundColor DarkGray
     } else {
         Write-Host "  Service extension already present — skipping injection" -ForegroundColor Yellow
@@ -162,15 +162,15 @@ try {
     Write-Host "  Manifest patched successfully." -ForegroundColor Green
 
     # ------------------------------------------------------------------
-    # 3b. Remove service_installer.exe from the staging directory
+    # 3b. Remove trusttunnel_service_installer.exe from the staging directory
     #     (not needed in MSIX — the packaged service is managed by the
-    #      platform via desktop6:Service; service_installer.exe is only
+    #      platform via desktop6:Service; trusttunnel_service_installer.exe is only
     #      used by the non-MSIX elevated helper path).
     # ------------------------------------------------------------------
-    $svcInstaller = Join-Path $buildOutputDir "service_installer.exe"
+    $svcInstaller = Join-Path $buildOutputDir "trusttunnel_service_installer.exe"
     if (Test-Path $svcInstaller) {
         Remove-Item $svcInstaller -Force
-        Write-Host "  Removed service_installer.exe from MSIX staging (not needed for packaged service)" -ForegroundColor Green
+        Write-Host "  Removed trusttunnel_service_installer.exe from MSIX staging (not needed for packaged service)" -ForegroundColor Green
     }
 
     # ------------------------------------------------------------------
