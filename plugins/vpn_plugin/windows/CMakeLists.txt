@@ -75,7 +75,7 @@ else()
 endif()
 
 set(TRUSTTUNNEL_CLIENT_ARCHIVE_URL
-  "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${TRUSTTUNNEL_CLIENT_VERSION}/TrustTunnelClient-windows-${TRUSTTUNNEL_CLIENT_ARCH}-${TRUSTTUNNEL_CLIENT_VERSION}.zip"
+  "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${TRUSTTUNNEL_CLIENT_VERSION}/trusttunnel-client-windows-${TRUSTTUNNEL_CLIENT_VERSION}-${TRUSTTUNNEL_CLIENT_ARCH}.zip"
 )
 
 FetchContent_Declare(
