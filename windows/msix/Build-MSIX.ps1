@@ -21,7 +21,7 @@
 #   4. dart run msix:pack          (packages + signs with test cert)
 #
 # Service logs after install:
-#   C:\ProgramData\TrustTunnel\vpn_easy_service.log
+#   C:\ProgramData\TrustTunnel\logs\service.log
 #   C:\ProgramData\TrustTunnel\vpn_query_log.ring
 #   Also viewable: Get-WinEvent -LogName Application | Where-Object { $_.ProviderName -match 'TrustTunnelVPN' }
 
@@ -122,8 +122,12 @@ try {
     # Inject the packaged service extension — declares trusttunnel_service.exe
     # as a Windows service (LocalSystem) that Windows auto-installs with the MSIX.
     # Arguments must match pipe_name_ and ring_buffer_path_ in vpn_plugin.cpp.
+    # The first argument is the logs DIRECTORY - it must match the plugin's
+    # m_logs_dir (%ProgramData%\TrustTunnel\logs in MSIX mode) so that the app's
+    # log export/clear also reaches the service log family; the service writes
+    # service.log inside it.
     # StartupType="manual" because the app connects via named pipe on-demand.
-    $serviceArgs = "%ProgramData%\TrustTunnel\vpn_easy_service.log \\.\pipe\trusttunnel_vpn %ProgramData%\TrustTunnel\vpn_query_log.ring"
+    $serviceArgs = "%ProgramData%\TrustTunnel\logs \\.\pipe\trusttunnel_vpn %ProgramData%\TrustTunnel\vpn_query_log.ring"
 
     $d6ns = "http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
     $existingService = $extensionsNode.SelectSingleNode(
@@ -206,8 +210,8 @@ try {
     Write-Host '    Get-Service TrustTunnelVPN' -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  --- SERVICE LOGS ---" -ForegroundColor Yellow
-    Write-Host '    # Service log file (the first service argument):' -ForegroundColor White
-    Write-Host '    Get-Content C:\ProgramData\TrustTunnel\vpn_easy_service.log -Tail 50' -ForegroundColor Cyan
+    Write-Host '    # Service log file (inside the logs directory passed as the first service argument):' -ForegroundColor White
+    Write-Host '    Get-Content C:\ProgramData\TrustTunnel\logs\service.log -Tail 50' -ForegroundColor Cyan
     Write-Host ''
     Write-Host '    # Ring buffer log (binary, use the query tool or just check size):' -ForegroundColor White
     Write-Host '    Get-Item C:\ProgramData\TrustTunnel\vpn_query_log.ring' -ForegroundColor Cyan
