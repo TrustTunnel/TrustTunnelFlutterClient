@@ -11,8 +11,8 @@
 #include <cstdio>
 #include <filesystem>
 
-#include "vpn/vpn_easy.h"
-#include "vpn/vpn_easy_service.h"
+#include "vpn/trusttunnel.h"
+#include "vpn/trusttunnel_service.h"
 
 namespace vpn_plugin {
 
@@ -99,7 +99,7 @@ static std::filesystem::path GetWritableAppDataPath() {
 }
 
 // ---------------------------------------------------------------------------
-// vpn_easy C Callbacks
+// trusttunnel C Callbacks
 // ---------------------------------------------------------------------------
 
 static void s_notify_state_changed(void* arg, int state) {
@@ -173,9 +173,9 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
     m_logs_dir = app_data / L"logs";
 
     // Install the client-process file log sink before anything logs.
-    // Remembered by vpn_easy so export/clear can also reach the service
+    // Remembered by trusttunnel so export/clear can also reach the service
     // log family, which the service process writes into the same directory.
-    vpn_easy_log_init(m_logs_dir.wstring().c_str());
+    trusttunnel_log_init(m_logs_dir.wstring().c_str());
 
     // Setup Event Channel for State
     auto state_handler = std::make_unique<VpnEventStreamHandler>();
@@ -200,7 +200,7 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
     m_worker.Post([this]() {
         AttachService();
         std::wstring ring_buffer_path = m_ring_buffer_path.wstring();
-        vpn_easy_service_read_all_connection_info(
+        trusttunnel_service_read_all_connection_info(
                 ring_buffer_path.c_str(), s_notify_connection_info, this);
     });
 }
@@ -208,7 +208,7 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
 VpnPlugin::~VpnPlugin() {
     // Tear down the pipe IO synchronously before the worker stops.
     m_worker.Sync([]() {
-        vpn_easy_service_detach();
+        trusttunnel_service_detach();
     });
 }
 
@@ -227,16 +227,16 @@ int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
     if (!ShellExecuteExW(&sei)) {
         DWORD err = GetLastError();
         if (err == ERROR_CANCELLED) {
-            return VPN_EASY_SVC_ERR_ACCESS;
+            return TRUSTTUNNEL_SVC_ERR_ACCESS;
         }
-        return VPN_EASY_SVC_ERR_OTHER;
+        return TRUSTTUNNEL_SVC_ERR_OTHER;
     }
 
     DWORD wait_result =
             WaitForSingleObject(sei.hProcess, SERVICE_INSTALL_TIMEOUT_MS);
     if (wait_result == WAIT_TIMEOUT) {
         CloseHandle(sei.hProcess);
-        return VPN_EASY_SVC_ERR_TIMED_OUT;
+        return TRUSTTUNNEL_SVC_ERR_TIMED_OUT;
     }
     DWORD exit_code = 0;
     GetExitCodeProcess(sei.hProcess, &exit_code);
@@ -250,7 +250,7 @@ int32_t VpnPlugin::InstallService() {
         // When running in MSIX, the service is managed by the platform
         // (packaged service). Installing isn't supported; the service is
         // installed along with the package.
-        return VPN_EASY_SVC_ERR_OTHER;
+        return TRUSTTUNNEL_SVC_ERR_OTHER;
     }
     std::filesystem::path exe_dir = GetExeDir();
     std::wstring service_exe = (exe_dir / L"trusttunnel_service.exe").wstring();
@@ -280,27 +280,27 @@ int32_t VpnPlugin::UninstallService() {
         // When running in MSIX, the service is managed by the platform
         // (packaged service). Uninstalling isn't supported; the service is
         // removed when the package is uninstalled.
-        return VPN_EASY_SVC_ERR_OTHER;
+        return TRUSTTUNNEL_SVC_ERR_OTHER;
     }
     std::wstring params = L"uninstall \"" + m_service_name + L"\"";
     return RunElevatedHelper(params);
 }
 
 int32_t VpnPlugin::AttachService() {
-    return vpn_easy_service_attach(
+    return trusttunnel_service_attach(
             m_service_name.c_str(), m_pipe_name.c_str(),
             s_notify_state_changed, this, s_notify_connection_info, this);
 }
 
 int32_t VpnPlugin::StartService(const std::string& config) {
-    return vpn_easy_service_start(config.c_str());
+    return trusttunnel_service_start(config.c_str());
 }
 
 std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
     m_worker.Post([this, config = config]() {
         int32_t start_result = StartService(config);
 
-        if (start_result == VPN_EASY_SVC_ERR_NO_SUCH_SERVICE) {
+        if (start_result == TRUSTTUNNEL_SVC_ERR_NO_SUCH_SERVICE) {
             int32_t install_result = InstallService();
             if (install_result != 0) {
                 LogError("Failed to install VPN service (error code: %d)",
@@ -323,7 +323,7 @@ std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
 
 std::optional<FlutterError> VpnPlugin::Stop() {
     m_worker.Post([this]() {
-        vpn_easy_service_stop();
+        trusttunnel_service_stop();
     });
 
     return std::nullopt;
@@ -369,7 +369,7 @@ ErrorOr<flutter::EncodableList> VpnPlugin::ExportLogs() {
              std::to_wstring(GetTickCount64()));
 
     flutter::EncodableList result;
-    vpn_easy_log_export(
+    trusttunnel_log_export(
             export_dir.wstring().c_str(),
             [](void* arg, const wchar_t* path) {
                 // Dart strings are marshaled as UTF-8; transcode the
@@ -384,7 +384,7 @@ ErrorOr<flutter::EncodableList> VpnPlugin::ExportLogs() {
 }
 
 std::optional<FlutterError> VpnPlugin::ClearLogs() {
-    vpn_easy_log_clear();
+    trusttunnel_log_clear();
     return std::nullopt;
 }
 

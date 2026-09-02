@@ -87,19 +87,19 @@ FetchContent_MakeAvailable(TrustTunnelClientWindows)
 list(APPEND CMAKE_PREFIX_PATH "${trusttunnelclientwindows_SOURCE_DIR}")
 
 find_package(TrustTunnelClientWindows REQUIRED)
-target_link_libraries(${PLUGIN_NAME} PRIVATE TrustTunnelClientWindows::vpn_easy)
+target_link_libraries(${PLUGIN_NAME} PRIVATE TrustTunnelClientWindows::trusttunnel)
 
 # --- Bundle required adapter's targets ---
 set(_TT_BIN_DIR "${trusttunnelclientwindows_SOURCE_DIR}/bin")
 
-set(VPN_SERVICE_EXE "${_TT_BIN_DIR}/trusttunnel_service.exe")
-if(NOT EXISTS "${VPN_SERVICE_EXE}")
-  message(FATAL_ERROR "trusttunnel_service.exe not found at ${VPN_SERVICE_EXE}")
+set(TRUSTTUNNEL_SERVICE_EXE "${_TT_BIN_DIR}/trusttunnel_service.exe")
+if(NOT EXISTS "${TRUSTTUNNEL_SERVICE_EXE}")
+  message(FATAL_ERROR "trusttunnel_service.exe not found at ${TRUSTTUNNEL_SERVICE_EXE}")
 endif()
 
-set(VPN_EASY_DLL "${_TT_BIN_DIR}/vpn_easy.dll")
-if(NOT EXISTS "${VPN_EASY_DLL}")
-  message(FATAL_ERROR "vpn_easy.dll not found at ${VPN_EASY_DLL}")
+set(TRUSTTUNNEL_DLL "${_TT_BIN_DIR}/trusttunnel.dll")
+if(NOT EXISTS "${TRUSTTUNNEL_DLL}")
+  message(FATAL_ERROR "trusttunnel.dll not found at ${TRUSTTUNNEL_DLL}")
 endif()
 
 set(WINTUN_DLL "${_TT_BIN_DIR}/wintun.dll")
@@ -109,23 +109,23 @@ if(NOT EXISTS "${WINTUN_DLL}")
   message(FATAL_ERROR "wintun.dll not found at ${WINTUN_DLL}")
 endif()
 
-set(SERVICE_INSTALLER_EXE "${_TT_BIN_DIR}/trusttunnel_service_installer.exe")
-if(NOT EXISTS "${SERVICE_INSTALLER_EXE}")
-  message(FATAL_ERROR "trusttunnel_service_installer.exe not found at ${SERVICE_INSTALLER_EXE}")
+set(TRUSTTUNNEL_SERVICE_INSTALLER_EXE "${_TT_BIN_DIR}/trusttunnel_service_installer.exe")
+if(NOT EXISTS "${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}")
+  message(FATAL_ERROR "trusttunnel_service_installer.exe not found at ${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}")
 endif()
 
-message(STATUS "Using trusttunnel_service.exe: ${VPN_SERVICE_EXE}")
+message(STATUS "Using trusttunnel_service.exe: ${TRUSTTUNNEL_SERVICE_EXE}")
 message(STATUS "Using wintun.dll: ${WINTUN_DLL}")
-message(STATUS "Using trusttunnel_service_installer.exe: ${SERVICE_INSTALLER_EXE}")
+message(STATUS "Using trusttunnel_service_installer.exe: ${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}")
 
 # Bundle the executables, DLLs and license so the app-level install step copies
 # them next to the main executable at runtime.
 set(vpn_plugin_bundled_libraries
-  "${VPN_SERVICE_EXE}"
-  "${VPN_EASY_DLL}"
+  "${TRUSTTUNNEL_SERVICE_EXE}"
+  "${TRUSTTUNNEL_DLL}"
   "${WINTUN_DLL}"
   "${WINTUN_LICENSE}"
-  "${SERVICE_INSTALLER_EXE}"
+  "${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}"
   PARENT_SCOPE
 )
 
@@ -154,22 +154,22 @@ FetchContent_MakeAvailable(googletest)
 # directly into the test binary rather than using the DLL.
 #
 # We link against the real TrustTunnelClientWindows headers (for declarations)
-# but provide stub implementations (test/mocks/vpn_easy_stubs.cpp) instead of
+# but provide stub implementations (test/mocks/trusttunnel_stubs.cpp) instead of
 # the real library, so tests can control return values and avoid starting a
 # real VPN service.
 add_executable(${TEST_RUNNER}
   test/vpn_plugin_test.cpp
-  test/mocks/vpn_easy_stubs.cpp
+  test/mocks/trusttunnel_stubs.cpp
   ${PLUGIN_SOURCES}
 )
 apply_standard_settings(${TEST_RUNNER})
 target_include_directories(${TEST_RUNNER} PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}"
-  # Use real vpn_easy headers from the TrustTunnelClientWindows package.
+  # Use real trusttunnel headers from the TrustTunnelClientWindows package.
   "${trusttunnelclientwindows_SOURCE_DIR}/include"
 )
 # Link against the Pigeon-generated API (for FlutterError, ErrorOr, etc.).
-# The real TrustTunnelClientWindows::vpn_easy is NOT linked — stubs replace it.
+# The real TrustTunnelClientWindows::trusttunnel is NOT linked — stubs replace it.
 target_link_libraries(${TEST_RUNNER} PRIVATE flutter_wrapper_plugin)
 target_link_libraries(${TEST_RUNNER} PRIVATE gtest_main gmock)
 target_link_libraries(${TEST_RUNNER} PRIVATE Shell32 Ole32)

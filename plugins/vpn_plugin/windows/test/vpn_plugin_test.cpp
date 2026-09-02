@@ -10,7 +10,7 @@
 
 #include "background_worker.h"
 #include "vpn_plugin.h"
-#include "mocks/vpn_easy_stub_state.h"
+#include "mocks/trusttunnel_stub_state.h"
 
 namespace vpn_plugin {
 namespace test {

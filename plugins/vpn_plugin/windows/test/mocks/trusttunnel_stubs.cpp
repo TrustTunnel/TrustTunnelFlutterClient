@@ -1,5 +1,5 @@
 /**
- * Stub implementations for the vpn_easy C functions.
+ * Stub implementations for the trusttunnel C functions.
  *
  * These stubs replace the real TrustTunnelClientWindows library so
  * that unit tests can link and exercise the plugin code without
@@ -12,18 +12,18 @@
  * to the include path via CMake). Only the IMPLEMENTATIONS are stubbed.
  */
 
-#include "vpn_easy_stub_state.h"
-#include "vpn/vpn_easy.h"
-#include "vpn/vpn_easy_service.h"
+#include "trusttunnel_stub_state.h"
+#include "vpn/trusttunnel.h"
+#include "vpn/trusttunnel_service.h"
 
 #include <cstring>
 #include <string>
 
 // ---------------------------------------------------------------------------
-// VpnEasyStubState implementation
+// TrusttunnelStubState implementation
 // ---------------------------------------------------------------------------
 
-void VpnEasyStubState::Reset() {
+void TrusttunnelStubState::Reset() {
     attach_return_value = 0;
     attach_call_count = 0;
     last_attach_service_name.clear();
@@ -54,13 +54,13 @@ void VpnEasyStubState::Reset() {
     log_clear_call_count = 0;
 }
 
-VpnEasyStubState& VpnEasyStubState::Instance() {
-    static VpnEasyStubState instance;
+TrusttunnelStubState& TrusttunnelStubState::Instance() {
+    static TrusttunnelStubState instance;
     return instance;
 }
 
 // Global accessor for tests — delegates to the singleton.
-static VpnEasyStubState& g_stub = VpnEasyStubState::Instance();
+static TrusttunnelStubState& g_stub = TrusttunnelStubState::Instance();
 
 // ---------------------------------------------------------------------------
 // Stub implementations
@@ -68,7 +68,7 @@ static VpnEasyStubState& g_stub = VpnEasyStubState::Instance();
 
 extern "C" {
 
-int32_t vpn_easy_service_attach(
+int32_t trusttunnel_service_attach(
         const wchar_t* service_name,
         const wchar_t* pipe_name,
         on_state_changed_t state_cb,
@@ -86,7 +86,7 @@ int32_t vpn_easy_service_attach(
     return s.attach_return_value;
 }
 
-int32_t vpn_easy_service_start(
+int32_t trusttunnel_service_start(
         const char* toml_config) {
     auto& s = g_stub;
     s.start_call_count++;
@@ -94,17 +94,17 @@ int32_t vpn_easy_service_start(
     return s.start_return_value;
 }
 
-int32_t vpn_easy_service_stop(void) {
+int32_t trusttunnel_service_stop(void) {
     auto& s = g_stub;
     s.stop_call_count++;
     return s.stop_return_value;
 }
 
-void vpn_easy_service_detach(void) {
+void trusttunnel_service_detach(void) {
     g_stub.detach_call_count++;
 }
 
-void vpn_easy_service_read_all_connection_info(
+void trusttunnel_service_read_all_connection_info(
         const wchar_t* ring_buffer_path,
         on_connection_info_json_t info_cb,
         void* info_cb_arg) {
@@ -114,13 +114,13 @@ void vpn_easy_service_read_all_connection_info(
     // Stub does not invoke the callback by default.
 }
 
-void vpn_easy_log_init(const wchar_t* logs_dir) {
+void trusttunnel_log_init(const wchar_t* logs_dir) {
     auto& s = g_stub;
     s.log_init_call_count++;
     s.last_log_init_dir = logs_dir ? logs_dir : L"";
 }
 
-void vpn_easy_log_export(const wchar_t* dest_dir, on_log_path_t path_cb,
+void trusttunnel_log_export(const wchar_t* dest_dir, on_log_path_t path_cb,
         void* path_cb_arg) {
     auto& s = g_stub;
     s.log_export_call_count++;
@@ -133,20 +133,20 @@ void vpn_easy_log_export(const wchar_t* dest_dir, on_log_path_t path_cb,
     }
 }
 
-void vpn_easy_log_clear(void) {
+void trusttunnel_log_clear(void) {
     g_stub.log_clear_call_count++;
 }
 
-// Stubs for the non-service vpn_easy API (not used by VpnPlugin but
+// Stubs for the non-service trusttunnel API (not used by VpnPlugin but
 // required to resolve all symbols from the header).
-void vpn_easy_start(const char*, on_state_changed_t, void*) {}
-void vpn_easy_stop() {}
-vpn_easy_t* vpn_easy_start_ex(const char*, on_state_changed_t, void*,
+void trusttunnel_start(const char*, on_state_changed_t, void*) {}
+void trusttunnel_stop() {}
+trusttunnel_t* trusttunnel_start_ex(const char*, on_state_changed_t, void*,
         on_connection_info_t, void*) { return nullptr; }
-void vpn_easy_stop_ex(vpn_easy_t*) {}
-int32_t vpn_easy_service_install(const wchar_t*, const wchar_t*,
+void trusttunnel_stop_ex(trusttunnel_t*) {}
+int32_t trusttunnel_service_install(const wchar_t*, const wchar_t*,
         const wchar_t*, const wchar_t*, const wchar_t*, const wchar_t*,
         const wchar_t*) { return 0; }
-int32_t vpn_easy_service_uninstall(const wchar_t*) { return 0; }
+int32_t trusttunnel_service_uninstall(const wchar_t*) { return 0; }
 
 } // extern "C"

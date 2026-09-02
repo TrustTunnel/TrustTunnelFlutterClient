@@ -112,13 +112,13 @@ public:
     std::optional<FlutterError> ClearLogs() override;
 
     /**
-     * Handle state change notification from vpn_easy.
+     * Handle state change notification from trusttunnel.
      * @param state The new state value (cast to VpnManagerState).
      */
     void NotifyStateChanged(int state);
 
     /**
-     * Handle connection info notification from vpn_easy.
+     * Handle connection info notification from trusttunnel.
      * @param json The connection info as a JSON string.
      */
     void NotifyConnectionInfo(const std::string& json);
@@ -129,7 +129,7 @@ private:
     /**
      * Launch the service installer helper elevated and wait for it.
      * @param params Command-line arguments for trusttunnel_service_installer.exe.
-     * @return The helper's exit code, or a negative VpnEasyServiceError on failure.
+     * @return The helper's exit code, or a negative TrusttunnelServiceError on failure.
      */
     int32_t RunElevatedHelper(const std::wstring& params);
 
