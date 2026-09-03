@@ -35,6 +35,18 @@ Push-Location $PSScriptRoot\..\..
 
 try {
     # ------------------------------------------------------------------
+    # 0. Detect host architecture and pass it explicitly to the msix
+    #    commands. The msix package only accepts "x64" or "arm64".
+    # ------------------------------------------------------------------
+    $hostArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+    $msixArch = if ($hostArch -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+        "arm64"
+    } else {
+        "x64"
+    }
+    Write-Host "  Host architecture: $msixArch" -ForegroundColor DarkGray
+
+    # ------------------------------------------------------------------
     # 0. Pre-check: test cert must exist
     # ------------------------------------------------------------------
     $testPfxPath = Join-Path $PSScriptRoot "test_cert.pfx"
@@ -59,7 +71,7 @@ try {
     # 2. Generate MSIX files (manifest + assets, no packaging yet)
     # ------------------------------------------------------------------
     Write-Host "=== Generating MSIX assets (msix:build) ===" -ForegroundColor Cyan
-    dart run msix:build --$($Configuration.ToLower())
+    dart run msix:build --$($Configuration.ToLower()) --architecture $msixArch
     if ($LASTEXITCODE -ne 0) {
         Write-Error "msix:build failed with exit code $LASTEXITCODE"
         exit $LASTEXITCODE
@@ -72,20 +84,11 @@ try {
 
     # The msix plugin writes the manifest next to the built exe.
     # Flutter build layout: build\windows\<arch>\runner\<Config>
-    # Cross-compilation is not supported, so there will only ever be one
-    # architecture directory matching the host platform.
-
-    # Detect the architecture directory produced by the build.
-    $buildOutputDir = $null
-    foreach ($arch in @("x64", "arm64")) {
-        $candidate = Join-Path $PWD "build\windows\$arch\runner\$Configuration"
-        if (Test-Path $candidate) {
-            $buildOutputDir = $candidate
-            break
-        }
-    }
-    if (-not $buildOutputDir) {
-        Write-Error "Build output not found under build\windows\*\runner\$Configuration. Did 'flutter build windows' succeed?"
+    # Cross-compilation is not supported, so the build output always lives
+    # under the host architecture directory detected in step 0.
+    $buildOutputDir = Join-Path $PWD "build\windows\$msixArch\runner\$Configuration"
+    if (-not (Test-Path $buildOutputDir)) {
+        Write-Error "Build output not found under build\windows\$msixArch\runner\$Configuration. Did 'flutter build windows' succeed?"
         exit 1
     }
 
@@ -182,7 +185,7 @@ try {
     # ------------------------------------------------------------------
     Write-Host "=== Packaging MSIX (test cert from msix_config) ===" -ForegroundColor Cyan
 
-    $packArgs = @("run", "msix:pack", "--$($Configuration.ToLower())")
+    $packArgs = @("run", "msix:pack", "--$($Configuration.ToLower())", "--architecture", $msixArch)
     Write-Host "  Command: dart $($packArgs -join ' ')" -ForegroundColor DarkGray
     & dart @packArgs
     if ($LASTEXITCODE -ne 0) {
@@ -202,7 +205,7 @@ try {
     if ($msixFile) {
         $msixRelPath = $msixFile.FullName.Substring($PWD.Path.Length + 1)
     } else {
-        $msixRelPath = "build\windows\x64\runner\$Configuration\trusttunnel.msix"
+        $msixRelPath = "build\windows\$msixArch\runner\$Configuration\trusttunnel.msix"
     }
     Write-Host "    Add-AppxPackage -Path `".\$msixRelPath`"" -ForegroundColor Cyan
     Write-Host ""
