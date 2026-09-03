@@ -77,7 +77,7 @@ try {
 
     # Detect the architecture directory produced by the build.
     $buildOutputDir = $null
-    foreach ($arch in @("x64", "arm64", "x86")) {
+    foreach ($arch in @("x64", "arm64")) {
         $candidate = Join-Path $PWD "build\windows\$arch\runner\$Configuration"
         if (Test-Path $candidate) {
             $buildOutputDir = $candidate
