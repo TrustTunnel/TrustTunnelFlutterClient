@@ -12,9 +12,9 @@
  * to the include path via CMake). Only the IMPLEMENTATIONS are stubbed.
  */
 
+#include "trusttunnel/trusttunnel.h"
+#include "trusttunnel/trusttunnel_service.h"
 #include "trusttunnel_stub_state.h"
-#include "vpn/trusttunnel.h"
-#include "vpn/trusttunnel_service.h"
 
 #include <cstring>
 #include <string>

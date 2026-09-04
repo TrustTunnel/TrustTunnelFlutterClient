@@ -11,8 +11,8 @@
 #include <cstdio>
 #include <filesystem>
 
-#include "vpn/trusttunnel.h"
-#include "vpn/trusttunnel_service.h"
+#include "trusttunnel/trusttunnel.h"
+#include "trusttunnel/trusttunnel_service.h"
 
 namespace vpn_plugin {
 
