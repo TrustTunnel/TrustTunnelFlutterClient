@@ -59,7 +59,7 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE Shell32 Ole32)
 # === Download and use prebuilt TrustTunnelClientWindows ===
 include(FetchContent)
 
-set(TRUSTTUNNEL_CLIENT_VERSION "1.1.5")
+set(TRUSTTUNNEL_CLIENT_VERSION "1.3.0-alpha.1")
 
 # Determine the target architecture for the archive URL.
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
