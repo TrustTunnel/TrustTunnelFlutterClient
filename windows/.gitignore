@@ -15,3 +15,7 @@ x86/
 *.[Cc]ache
 # but keep track of directories ending in .cache
 !*.[Cc]ache/
+
+# MSIX test certificate (each dev generates their own via Setup-TestCert.ps1)
+msix/test_cert.pfx
+msix/test_cert.cer

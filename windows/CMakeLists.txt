@@ -53,6 +53,11 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# Disable unit tests for vpn_plugin.
+# Must be set before including generated_plugins.cmake so that the plugin's
+# CMakeLists.txt can pick it up.
+set(include_vpn_plugin_tests OFF)
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
