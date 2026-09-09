@@ -12,6 +12,7 @@ enum ConnectionStateInTrayMenuMacOS {
 
 final class TrayMenuCallbacks {
   final AsyncCallback onAddServerPressed;
+  final AsyncCallback onOpenTrustTunnelPressed;
   final AsyncCallback onRoutingPressed;
   final AsyncCallback onConnectionLogPressed;
   final AsyncCallback onConnectPressed;
@@ -26,6 +27,7 @@ final class TrayMenuCallbacks {
 
   const TrayMenuCallbacks({
     required this.onAddServerPressed,
+    required this.onOpenTrustTunnelPressed,
     required this.onRoutingPressed,
     required this.onConnectionLogPressed,
     required this.onConnectPressed,

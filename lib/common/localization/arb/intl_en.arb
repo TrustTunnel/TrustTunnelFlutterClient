@@ -178,6 +178,14 @@
   "connectTo": "Connect to",
   "logging": "Logging",
   "otherServers": "Other servers",
+  "trayOpenApp": "Open {appName}",
+  "@trayOpenApp": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
   "trayQuitApp": "Quit {appName}",
   "@trayQuitApp": {
     "placeholders": {

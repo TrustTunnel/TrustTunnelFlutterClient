@@ -13,6 +13,7 @@ import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/tray_manager_macos.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/tray_menu_data.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
@@ -42,6 +43,7 @@ class TrayMenuScope extends StatefulWidget {
 
 class _TrayMenuScopeState extends State<TrayMenuScope> {
   late final TrayManagerMacOS? _trayManager;
+  late AppWindowController _appWindowController;
   late VpnController _vpnController;
   late ServersScopeController _serversController;
   late AppLoggingScopeController _appLoggingController;
@@ -63,6 +65,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     super.didChangeDependencies();
 
     if (_isMacOS) {
+      _appWindowController = context.dependencyFactory.appWindowController;
       _vpnController = VpnScope.vpnControllerOf(context);
       _serversController = ServersScope.controllerOf(context);
       _appLoggingController = AppLoggingScope.controllerOf(context);
@@ -117,6 +120,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
       data: data,
       callbacks: TrayMenuCallbacks(
         onAddServerPressed: _onAddServerPressed,
+        onOpenTrustTunnelPressed: _onOpenTrustTunnelPressed,
         onRoutingPressed: _onRoutingPressed,
         onConnectionLogPressed: _onConnectionLogPressed,
         onConnectPressed: _onConnectPressed,
@@ -133,6 +137,8 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
   }
 
   Future<void> _onAddServerPressed() => widget.onRouteRequested(AppRoutes.serverDetails);
+
+  Future<void> _onOpenTrustTunnelPressed() => _appWindowController.showMainWindow();
 
   Future<void> _onRoutingPressed() => widget.onRouteRequested(AppRoutes.routing);
 

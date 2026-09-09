@@ -118,9 +118,14 @@ final class TrayManagerMacOS {
           onTap: () => unawaited(callbacks.onAddServerPressed()),
         ),
       );
+      items.add(const TraySeparator());
     }
 
     items.addAll([
+      TrayButton(
+        title: data.localization.trayOpenApp(AppConstants.appName),
+        onTap: () => unawaited(callbacks.onOpenTrustTunnelPressed()),
+      ),
       TrayButton(
         title: data.localization.routing,
         onTap: () => unawaited(callbacks.onRoutingPressed()),
