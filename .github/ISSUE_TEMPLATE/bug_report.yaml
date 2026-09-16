@@ -47,18 +47,6 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: build_mode
-    attributes:
-      label: Build mode
-      multiple: false
-      options:
-        - Debug
-        - Profile
-        - Release
-    validations:
-      required: true
-
   - type: textarea
     id: environment
     attributes:
