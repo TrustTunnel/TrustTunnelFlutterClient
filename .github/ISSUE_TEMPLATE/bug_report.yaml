@@ -43,6 +43,7 @@ body:
       options:
         - Android
         - iOS
+        - MacOS
     validations:
       required: true
 
