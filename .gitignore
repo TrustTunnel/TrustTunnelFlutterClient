@@ -26,6 +26,10 @@ devtools_options.yaml
 .project
 .settings/
 
+# Syncthing related
+.stfolder/
+.stignore
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -79,3 +83,6 @@ lib/common/localization/generated/
 */Gemfile.lock
 */Podfile.lock
 */.bundle
+
+# Windows related
+/windows/inno/.cache/
