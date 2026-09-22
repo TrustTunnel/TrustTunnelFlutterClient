@@ -39,8 +39,12 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     final logFiles = <String, Uint8List>{};
 
     for (final group in LogPlatformFiles.platform(defaultTargetPlatform).value) {
-      final regex = RegExp(r'.*' + group + r'(\.\d+)?\.log');
-      final selectedPaths = logPaths.where(regex.hasMatch).toList();
+      final fileNameRegex = RegExp('^${RegExp.escape(group)}(\\.\\d+)?\\.log\$', caseSensitive: false);
+      final selectedPaths = logPaths.where((path) {
+        final fileName = path.split(RegExp(r'[/\\]')).last;
+
+        return fileNameRegex.hasMatch(fileName);
+      }).toList();
 
       final lines = selectedPaths.isEmpty
           ? <String>[]

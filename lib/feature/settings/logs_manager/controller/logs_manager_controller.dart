@@ -62,39 +62,49 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
     required String chooserTitle,
     required ExportLogsArchive archive,
     VoidCallback? onUnavailable,
-  }) => handle(
-    () async {
-      setState(
-        const LogsManagerState.loading(),
-      );
-
-      final tempDir = await getTemporaryDirectory();
-      final filePath = '${tempDir.path}/${archive.name}';
-
-      await _repository.saveRawFile(
-        data: archive.data,
-        path: filePath,
-      );
-
-      await _shareClient.share(
-        ShareRequest(
-          content: [
-            ShareFile(
-              path: filePath,
-              mimeType: 'application/zip',
-            ),
-          ],
-          subject: subject,
-          chooserTitle: chooserTitle,
-        ),
-      );
-    },
-    errorHandler: (error, stackTrace) {
+  }) {
+    final bool isShareAvailableOnPlatform =
+        defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+    if (!isShareAvailableOnPlatform) {
       onUnavailable?.call();
-      _onError(error, stackTrace);
-    },
-    completionHandler: _onCompleted,
-  );
+
+      return;
+    }
+
+    handle(
+      () async {
+        setState(
+          const LogsManagerState.loading(),
+        );
+
+        final tempDir = await getTemporaryDirectory();
+        final filePath = '${tempDir.path}/${archive.name}';
+
+        await _repository.saveRawFile(
+          data: archive.data,
+          path: filePath,
+        );
+
+        await _shareClient.share(
+          ShareRequest(
+            content: [
+              ShareFile(
+                path: filePath,
+                mimeType: 'application/zip',
+              ),
+            ],
+            subject: subject,
+            chooserTitle: chooserTitle,
+          ),
+        );
+      },
+      errorHandler: (error, stackTrace) {
+        onUnavailable?.call();
+        _onError(error, stackTrace);
+      },
+      completionHandler: _onCompleted,
+    );
+  }
 
   void deleteLogs({
     VoidCallback? onDeleted,
