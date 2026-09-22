@@ -3,7 +3,7 @@
 #
 # Usage:
 #   .\windows\msix\Setup-TestCert.ps1                 # Generate + trust (first time)
-#   .\windows\msix\Setup-TestCert.ps1 -Untrust        # Remove from trusted roots
+#   .\windows\msix\Setup-TestCert.ps1 -Untrust        # Remove from Trusted People
 #   .\windows\msix\Setup-TestCert.ps1 -Remove         # Remove trust + delete cert files
 #   .\windows\msix\Setup-TestCert.ps1 -Force          # Regenerate even if files exist
 #
@@ -12,12 +12,12 @@
 #      (must match `publisher` in pubspec.yaml msix_config).
 #   2. Exports public key → test_cert.cer (for trusting)
 #   3. Exports private key → test_cert.pfx (for signing, password: "trusttunnel")
-#   4. Imports the .cer into LocalMachine\Root (requires admin)
+#   4. Imports the .cer into LocalMachine\TrustedPeople (requires admin)
 #
 # The .pfx/.cer files are NOT committed to git — each developer runs this once.
 
 param(
-    # Remove the certificate from the Local Machine Trusted Root store.
+    # Remove the certificate from the Local Machine Trusted People store.
     [switch]$Untrust,
 
     # Remove trust AND delete the .pfx/.cer files from disk.
@@ -58,10 +58,10 @@ function Assert-Admin {
 }
 
 # -------------------------------------------------------------------------
-# Helper: find certificate by subject in LocalMachine\Root
+# Helper: find certificate by subject in LocalMachine\TrustedPeople
 # -------------------------------------------------------------------------
 function Find-TrustedCert {
-    return Get-ChildItem Cert:\LocalMachine\Root |
+    return Get-ChildItem Cert:\LocalMachine\TrustedPeople |
         Where-Object { $_.Subject -eq $CertSubject }
 }
 
@@ -79,14 +79,14 @@ function Find-PersonalCert {
 if ($Untrust -or $Remove) {
     Assert-Admin
 
-    # Remove from LocalMachine\Root (trusted roots)
+    # Remove from LocalMachine\TrustedPeople
     $trusted = Find-TrustedCert
     if ($trusted) {
         foreach ($c in $trusted) {
-            Write-Host "Removing from Trusted Roots: $($c.Subject) ($($c.Thumbprint))" -ForegroundColor Cyan
-            Remove-Item "Cert:\LocalMachine\Root\$($c.Thumbprint)" -Force
+            Write-Host "Removing from Trusted People: $($c.Subject) ($($c.Thumbprint))" -ForegroundColor Cyan
+            Remove-Item "Cert:\LocalMachine\TrustedPeople\$($c.Thumbprint)" -Force
         }
-        Write-Host "Certificate removed from Trusted Roots." -ForegroundColor Green
+        Write-Host "Certificate removed from Trusted People." -ForegroundColor Green
     } else {
         Write-Host "No trusted certificate with subject '$CertSubject' found." -ForegroundColor Yellow
     }
@@ -144,7 +144,7 @@ if ((Test-Path $PfxPath) -and (Test-Path $CerPath) -and -not $Force) {
     if ($Force) {
         $oldTrusted = Find-TrustedCert
         foreach ($c in $oldTrusted) {
-            Remove-Item "Cert:\LocalMachine\Root\$($c.Thumbprint)" -Force -ErrorAction SilentlyContinue
+            Remove-Item "Cert:\LocalMachine\TrustedPeople\$($c.Thumbprint)" -Force -ErrorAction SilentlyContinue
         }
         $oldPersonal = Find-PersonalCert
         foreach ($c in $oldPersonal) {
@@ -189,7 +189,7 @@ if ((Test-Path $PfxPath) -and (Test-Path $CerPath) -and -not $Force) {
     Write-Host "  Removed from CurrentUser\My (not needed after export)." -ForegroundColor DarkGray
 }
 
-# Import .cer into LocalMachine\Root (trust the cert for MSIX install)
+# Import .cer into LocalMachine\TrustedPeople (trust the cert for MSIX install)
 $existingTrust = Find-TrustedCert
 if ($existingTrust) {
     Write-Host ""
@@ -197,8 +197,8 @@ if ($existingTrust) {
 } else {
     Write-Host ""
     Write-Host "Trusting certificate..." -ForegroundColor Cyan
-    Import-Certificate -FilePath $CerPath -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
-    Write-Host "Certificate added to Trusted Roots." -ForegroundColor Green
+    Import-Certificate -FilePath $CerPath -CertStoreLocation Cert:\LocalMachine\TrustedPeople | Out-Null
+    Write-Host "Certificate added to Trusted People." -ForegroundColor Green
 }
 
 # Summary

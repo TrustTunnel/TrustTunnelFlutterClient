@@ -112,6 +112,7 @@ msix_config:
   publisher: CN=TrustTunnelDev
   identity_name: com.adguard.trusttunnel
   msix_version: 1.2.0.0
+  protocol_activation: tt
   # The msix tool defaults to 10.0.17763.0 (Windows 10, version 1809), but the
   # package contains a windows.service extension (trusttunnel_service.exe),
   # and service installation via MSIX only works on Windows 10 version 2004
@@ -129,3 +130,4 @@ msix_config:
   # Generate it first: .\windows\msix\Setup-TestCert.ps1
   certificate_path: windows\\msix\\test_cert.pfx
   certificate_password: trusttunnel
+  install_certificate: false

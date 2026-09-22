@@ -130,7 +130,7 @@ try {
     # log export/clear also reaches the service log family; the service writes
     # service.log inside it.
     # StartupType="manual" because the app connects via named pipe on-demand.
-    $serviceArgs = "%ProgramData%\TrustTunnel\logs \\.\pipe\trusttunnel_vpn %ProgramData%\TrustTunnel\vpn_query_log.ring"
+    $serviceArgs = '"%ProgramData%\TrustTunnel\logs" "\\.\pipe\trusttunnel_vpn" "%ProgramData%\TrustTunnel\vpn_query_log.ring"'
 
     $d6ns = "http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
     $existingService = $extensionsNode.SelectSingleNode(

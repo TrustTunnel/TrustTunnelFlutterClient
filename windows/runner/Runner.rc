@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.adguard" "\0"
-            VALUE "FileDescription", "vpn" "\0"
+            VALUE "CompanyName", "Adguard Software Limited" "\0"
+            VALUE "FileDescription", "TrustTunnel" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "vpn" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2024 com.adguard. All rights reserved." "\0"
-            VALUE "OriginalFilename", "vpn.exe" "\0"
-            VALUE "ProductName", "vpn" "\0"
+            VALUE "InternalName", "TrustTunnel" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Adguard Software Limited. All rights reserved." "\0"
+            VALUE "OriginalFilename", "TrustTunnel.exe" "\0"
+            VALUE "ProductName", "TrustTunnel" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
