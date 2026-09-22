@@ -12,6 +12,7 @@ import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/macos_exit_dialog.dart';
+import 'package:trusttunnel/feature/menu_bar/tray_manager/windows/windows_exit_dialog.dart';
 import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_aspect.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
@@ -193,24 +194,41 @@ class VpnScope extends StatefulWidget {
 class _VpnScopeState extends State<VpnScope> {
   static const _logLimit = 500;
 
+  /// On Windows, `stop()` only queues service work, so `disconnected` may never arrive if it fails.
+  /// Limit the wait to avoid leaving the app exit request pending forever.
+  static const _windowsDisconnectOnExitTimeout = Duration(seconds: 5);
+
   late final ValueNotifier<VpnState> _stateNotifier;
   late final ValueNotifier<List<VpnLog>> _logsNotifier;
 
+  /// We need this notifier because exit handling and interaction with the related dialog are above the [MaterialApp],
+  /// and we need to listen to it across the app.
+  late final _DisconnectOnExitErrorNotifier _disconnectOnExitErrorNotifier;
+
   /// Listens to app lifecycle events (resume and exit requested).
-  /// Handles macOS exit requests by showing a dialog if the VPN is connected or connecting.
+  /// Handles desktop exit requests, including confirmation while VPN is active.
   late final AppLifecycleListener _appLifecycleListener;
 
   StreamSubscription<VpnLog>? _logStreamSub;
   StreamSubscription<VpnState>? _vpnStreamSub;
 
+  /// The pending exit request for Windows (the same reason as with the timeout)
+  Future<AppExitResponse>? _windowsExitRequest;
+
   // Tracks state updates so a delayed request cannot overwrite a newer VPN state.
   int _vpnStateRevision = 0;
+
+  bool get _shouldShowExitDialog => switch (_stateNotifier.value) {
+    VpnState.connected || VpnState.connecting => true,
+    VpnState.disconnected || VpnState.waitingForRecovery || VpnState.recovering || VpnState.waitingForNetwork => false,
+  };
 
   @override
   void initState() {
     super.initState();
     _stateNotifier = ValueNotifier(widget.initialState);
     _logsNotifier = ValueNotifier(<VpnLog>[]);
+    _disconnectOnExitErrorNotifier = _DisconnectOnExitErrorNotifier();
     _appLifecycleListener = AppLifecycleListener(
       onResume: _onAppResumed,
       onExitRequested: _onExitRequested,
@@ -234,6 +252,7 @@ class _VpnScopeState extends State<VpnScope> {
       onStop: _stop,
       onUpdate: _updateConfiguration,
       onDeleteConfiguration: _deleteConfiguration,
+      disconnectOnExitErrorListenable: _disconnectOnExitErrorNotifier,
       child: child!,
     ),
     child: widget.child,
@@ -284,7 +303,7 @@ class _VpnScopeState extends State<VpnScope> {
   }
 
   /// Stops the VPN and waits for the native side to report disconnection.
-  Future<void> _stopAndWaitUntilDisconnected() async {
+  Future<void> _stopAndWaitUntilDisconnected({Duration? timeout}) async {
     if (_stateNotifier.value == VpnState.disconnected) {
       return;
     }
@@ -299,9 +318,19 @@ class _VpnScopeState extends State<VpnScope> {
     _stateNotifier.addListener(disconnectedStateListener);
     try {
       await widget.vpnRepository.stop();
-      await disconnectedCompleter.future;
+
+      if (timeout == null) {
+        await disconnectedCompleter.future;
+
+        return;
+      }
+
+      await disconnectedCompleter.future.timeout(timeout);
     } finally {
       _stateNotifier.removeListener(disconnectedStateListener);
+      if (!disconnectedCompleter.isCompleted) {
+        disconnectedCompleter.complete();
+      }
     }
   }
 
@@ -351,23 +380,36 @@ class _VpnScopeState extends State<VpnScope> {
   void _onAppResumed() => unawaited(_refreshState());
 
   Future<AppExitResponse> _onExitRequested() async {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
-      return AppExitResponse.exit;
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      final pendingExitRequest = _windowsExitRequest;
+      if (pendingExitRequest != null) {
+        return pendingExitRequest;
+      }
+
+      try {
+        final exitRequest = _handleWindowsExitRequested();
+        _windowsExitRequest = exitRequest;
+
+        return await exitRequest;
+      } finally {
+        _windowsExitRequest = null;
+      }
     }
+
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      return await _handleMacosExitRequested();
+    }
+
+    return AppExitResponse.exit;
+  }
+
+  Future<AppExitResponse> _handleMacosExitRequested() async {
     final appWindowController = widget.appWindowController;
     if (appWindowController == null) {
       throw StateError('AppWindowController must be provided on macOS');
     }
 
-    final shouldShowExitDialog = switch (_stateNotifier.value) {
-      VpnState.connected || VpnState.connecting => true,
-      VpnState.disconnected ||
-      VpnState.waitingForRecovery ||
-      VpnState.recovering ||
-      VpnState.waitingForNetwork => false,
-    };
-
-    if (shouldShowExitDialog) {
+    if (_shouldShowExitDialog) {
       final localization = Localization.ln;
       final result = await MacosExitDialog.show(
         title: localization.exitDialogTitle,
@@ -386,6 +428,41 @@ class _VpnScopeState extends State<VpnScope> {
     return AppExitResponse.exit;
   }
 
+  Future<AppExitResponse> _handleWindowsExitRequested() async {
+    if (_shouldShowExitDialog) {
+      final localization = Localization.ln;
+      final result = await WindowsExitDialog.show(
+        title: localization.exitDialogTitle,
+        message: localization.exitDialogDescription,
+        quitButtonText: localization.quit,
+        dontQuitButtonText: localization.dontQuit,
+      );
+      if (!mounted || result != WindowsExitDialogResult.quit) {
+        return AppExitResponse.cancel;
+      }
+    }
+    if (!mounted) {
+      return AppExitResponse.cancel;
+    }
+
+    final disconnected = await _stopWindowsVpnWithWaitForDisconnection();
+    if (disconnected) {
+      return AppExitResponse.exit;
+    }
+
+    if (mounted) {
+      _disconnectOnExitErrorNotifier.notifyListeners();
+    }
+
+    return AppExitResponse.cancel;
+  }
+
+  Future<bool> _stopWindowsVpnWithWaitForDisconnection() =>
+      _stopAndWaitUntilDisconnected(timeout: _windowsDisconnectOnExitTimeout).then(
+        (_) => true,
+        onError: (_) => false,
+      );
+
   @override
   void dispose() {
     _appLifecycleListener.dispose();
@@ -393,8 +470,14 @@ class _VpnScopeState extends State<VpnScope> {
     _vpnStreamSub?.cancel().ignore();
     _stateNotifier.dispose();
     _logsNotifier.dispose();
+    _disconnectOnExitErrorNotifier.dispose();
     super.dispose();
   }
+}
+
+class _DisconnectOnExitErrorNotifier extends ChangeNotifier {
+  @override
+  void notifyListeners() => super.notifyListeners();
 }
 
 class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnController, LogController {
@@ -409,11 +492,15 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnControl
   @override
   final VpnState state;
 
+  @override
+  final Listenable disconnectOnExitErrorListenable;
+
   const _InheritedVpnScope({
     required UpdateVpnCallback onStart,
     required UpdateVpnCallback onUpdate,
     required AsyncCallback onStop,
     required AsyncCallback onDeleteConfiguration,
+    required this.disconnectOnExitErrorListenable,
     required this.state,
     required this.logs,
     required super.child,
