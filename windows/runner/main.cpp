@@ -194,7 +194,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   bool owns_mutex = mutex_error != ERROR_ALREADY_EXISTS;
   if (!owns_mutex) {
     HWND existing_window = WaitForExistingAppWindowOrMutex(app_mutex, owns_mutex);
-    if (existing_window != nullptr && !::IsHungAppWindow(existing_window)) {
+    if (existing_window != nullptr) {
       ForwardAppLink(existing_window);
       ActivateWindow(existing_window);
       ::CloseHandle(app_mutex);
