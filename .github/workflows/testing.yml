@@ -83,3 +83,16 @@ jobs:
       macos-signing-type: development
       artifact-name: trusttunnel-macos-pr
       artifact-path: macos/build/TrustTunnel.app
+
+  build-windows:
+    needs: [prepare]
+    if: >-
+      github.event.pull_request.draft == false
+    uses: ./.github/workflows/flutter-build-windows.yml
+    secrets: inherit
+    with:
+      channel: nightly
+      version: ${{ needs.prepare.outputs.version }}
+      build-number: ${{ github.run_number }}
+      version-title: ${{ needs.prepare.outputs.version-title }}
+      artifact-name: trusttunnel-windows-pr
