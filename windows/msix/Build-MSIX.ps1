@@ -10,15 +10,15 @@
 #
 # Prerequisites:
 #   - Flutter SDK
-#   - Windows SDK (for MakeAppx / SignTool, pulled in by the msix plugin)
+#   - Windows SDK (for MakeAppx via the msix plugin; signtool must be on PATH)
 #   - Test cert generated: .\windows\msix\Setup-TestCert.ps1 (one-time)
 #
 # Flow:
 #   1. flutter build windows
 #   2. dart run msix:build        (generates AppxManifest + assets)
-#   3. Patch AppxManifest.xml: inject packaged service extension
-#      so Windows auto-installs trusttunnel_service.exe as SYSTEM
-#   4. dart run msix:pack          (packages + signs with test cert)
+#   2b. Sign vpn.exe with the test cert and derive the client-authentication pin
+#   3. Patch AppxManifest.xml: inject the packaged service
+#   4. dart run msix:pack          (packages + signs with the test cert)
 #
 # Service logs after install:
 #   C:\ProgramData\TrustTunnel\logs\service.log
@@ -35,8 +35,7 @@ Push-Location $PSScriptRoot\..\..
 
 try {
     # ------------------------------------------------------------------
-    # 0. Detect host architecture and pass it explicitly to the msix
-    #    commands. The msix package only accepts "x64" or "arm64".
+    # 0. Detect host architecture; msix accepts only "x64" or "arm64".
     # ------------------------------------------------------------------
     $hostArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
     $msixArch = if ($hostArch -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
@@ -77,20 +76,47 @@ try {
         exit $LASTEXITCODE
     }
 
-    # ------------------------------------------------------------------
-    # 3. Locate and patch AppxManifest.xml IN-PLACE
-    # ------------------------------------------------------------------
-    Write-Host "=== Injecting packaged service extension ===" -ForegroundColor Cyan
-
-    # The msix plugin writes the manifest next to the built exe.
     # Flutter build layout: build\windows\<arch>\runner\<Config>
-    # Cross-compilation is not supported, so the build output always lives
-    # under the host architecture directory detected in step 0.
     $buildOutputDir = Join-Path $PWD "build\windows\$msixArch\runner\$Configuration"
     if (-not (Test-Path $buildOutputDir)) {
         Write-Error "Build output not found under build\windows\$msixArch\runner\$Configuration. Did 'flutter build windows' succeed?"
         exit 1
     }
+
+    # ------------------------------------------------------------------
+    # 2b. Sign the app executable and derive the client-authentication pin
+    # ------------------------------------------------------------------
+    Write-Host "=== Signing app executable + deriving client pin ===" -ForegroundColor Cyan
+
+    $appExePath = Join-Path $buildOutputDir "vpn.exe"
+    if (-not (Test-Path $appExePath)) {
+        Write-Error "App executable not found at '$appExePath'. Did 'flutter build windows' succeed?"
+        exit 1
+    }
+
+    signtool sign /fd SHA256 /f $testPfxPath /p "trusttunnel" $appExePath
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "signtool failed to sign '$appExePath' (exit code $LASTEXITCODE)"
+        exit $LASTEXITCODE
+    }
+
+    $signerCert = (Get-AuthenticodeSignature -FilePath $appExePath).SignerCertificate
+    if ($null -eq $signerCert) {
+        Write-Error "App executable '$appExePath' has no signer certificate; refusing to build a pinless MSIX"
+        exit 1
+    }
+
+    $clientPin = $signerCert.GetCertHashString([System.Security.Cryptography.HashAlgorithmName]::SHA256)
+    if (-not $clientPin -or $clientPin.Length -ne 64) {
+        Write-Error "Failed to derive a 64-character SHA-256 pin for '$appExePath' (got: '$clientPin')"
+        exit 1
+    }
+    Write-Host "  App executable signed; client-authentication pin: $clientPin" -ForegroundColor Green
+
+    # ------------------------------------------------------------------
+    # 3. Locate and patch AppxManifest.xml IN-PLACE
+    # ------------------------------------------------------------------
+    Write-Host "=== Injecting packaged service extension ===" -ForegroundColor Cyan
 
     $manifestPath = Join-Path $buildOutputDir "AppxManifest.xml"
 
@@ -110,9 +136,7 @@ try {
         exit 1
     }
 
-    # The <Extensions> element must be in the default AppX namespace
-    # (http://schemas.microsoft.com/appx/manifest/foundation/windows10),
-    # otherwise MakeAppx rejects the manifest.
+    # <Extensions> must use the AppX default namespace or MakeAppx rejects it.
     $appxNs = $manifest.DocumentElement.NamespaceURI
 
     # Find or create <Extensions>
@@ -122,15 +146,11 @@ try {
         $applicationNode.AppendChild($extensionsNode) | Out-Null
     }
 
-    # Inject the packaged service extension — declares trusttunnel_service.exe
-    # as a Windows service (LocalSystem) that Windows auto-installs with the MSIX.
-    # Arguments must match pipe_name_ and ring_buffer_path_ in vpn_plugin.cpp.
-    # The first argument is the logs DIRECTORY - it must match the plugin's
-    # m_logs_dir (%ProgramData%\TrustTunnel\logs in MSIX mode) so that the app's
-    # log export/clear also reaches the service log family; the service writes
-    # service.log inside it.
-    # StartupType="manual" because the app connects via named pipe on-demand.
-    $serviceArgs = "%ProgramData%\TrustTunnel\logs \\.\pipe\trusttunnel_vpn %ProgramData%\TrustTunnel\vpn_query_log.ring"
+    # Service arguments: logs dir, pipe name, ring buffer path, pin.
+    # An empty pipe name makes the service generate a random one per start;
+    # the plugin discovers it from the registry. The logs dir must match the
+    # plugin's (%ProgramData%\TrustTunnel\logs).
+    $serviceArgs = '%ProgramData%\TrustTunnel\logs "" %ProgramData%\TrustTunnel\vpn_query_log.ring {0}' -f $clientPin
 
     $d6ns = "http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
     $existingService = $extensionsNode.SelectSingleNode(
@@ -152,12 +172,13 @@ try {
         Write-Host "  Added packaged service: trusttunnel_service.exe (TrustTunnelVPN)" -ForegroundColor Green
         Write-Host "    Arguments: $serviceArgs" -ForegroundColor DarkGray
     } else {
-        Write-Host "  Service extension already present — skipping injection" -ForegroundColor Yellow
+        # msix:build regenerates the manifest on every run, so an existing
+        # service extension means a stale or hand-edited manifest.
+        Write-Error "AppxManifest.xml already contains a windows.service extension; expected a freshly generated manifest"
+        exit 1
     }
 
-    # Ensure desktop6 is in IgnorableNamespaces.
-    # The msix plugin already declares xmlns:desktop6 on the root element but
-    # only puts "uap3 desktop" in IgnorableNamespaces, so we must add desktop6.
+    # The msix plugin does not list desktop6 in IgnorableNamespaces; add it.
     $root = $manifest.DocumentElement
     $ignorable = $root.GetAttribute("IgnorableNamespaces")
     if ($ignorable -notmatch "\bdesktop6\b") {
@@ -169,10 +190,7 @@ try {
     Write-Host "  Manifest patched successfully." -ForegroundColor Green
 
     # ------------------------------------------------------------------
-    # 3b. Remove trusttunnel_service_installer.exe from the staging directory
-    #     (not needed in MSIX — the packaged service is managed by the
-    #      platform via desktop6:Service; trusttunnel_service_installer.exe is only
-    #      used by the non-MSIX elevated helper path).
+    # 3b. Drop the installer helper; the packaged service is managed by the platform.
     # ------------------------------------------------------------------
     $svcInstaller = Join-Path $buildOutputDir "trusttunnel_service_installer.exe"
     if (Test-Path $svcInstaller) {
@@ -211,15 +229,17 @@ try {
     Write-Host ""
     Write-Host "  --- VERIFY SERVICE ---" -ForegroundColor Yellow
     Write-Host '    Get-Service TrustTunnelVPN' -ForegroundColor Cyan
+    Write-Host '    # Published pipe name (random per start):' -ForegroundColor White
+    Write-Host '    Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\TrustTunnelVPN\Parameters" -Name PipeName' -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  --- SERVICE LOGS ---" -ForegroundColor Yellow
-    Write-Host '    # Service log file (inside the logs directory passed as the first service argument):' -ForegroundColor White
+    Write-Host '    # Service log file:' -ForegroundColor White
     Write-Host '    Get-Content C:\ProgramData\TrustTunnel\logs\service.log -Tail 50' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host '    # Ring buffer log (binary, use the query tool or just check size):' -ForegroundColor White
+    Write-Host '    # Ring buffer log (binary):' -ForegroundColor White
     Write-Host '    Get-Item C:\ProgramData\TrustTunnel\vpn_query_log.ring' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host '    # Windows Event Log (if service writes there via ReportEvent):' -ForegroundColor White
+    Write-Host '    # Windows Event Log:' -ForegroundColor White
     Write-Host '    Get-WinEvent -LogName Application | Where-Object { $_.ProviderName -match "TrustTunnelVPN" } | Select-Object -First 20' -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  --- UNINSTALL ---" -ForegroundColor Yellow
