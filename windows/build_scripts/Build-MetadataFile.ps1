@@ -33,13 +33,19 @@ function Get-NormalizedDirectoryPath {
     return [IO.Path]::GetFullPath($Path).TrimEnd([char[]]@('\', '/'))
 }
 
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$cmakeCachePath = Join-Path $repoRoot "build\windows\$Architecture\CMakeCache.txt"
+if (-not (Test-Path -LiteralPath $cmakeCachePath -PathType Leaf)) {
+    throw "CMake cache is missing: $cmakeCachePath"
+}
+
 $flutterJson = (& flutter --version --machine | Out-String) |
     ConvertFrom-Json
 if ($LASTEXITCODE -ne 0) {
     throw "Could not determine the Flutter and Dart versions."
 }
 
-$cmakeCache = Get-Content "build\windows\$Architecture\CMakeCache.txt" -Raw
+$cmakeCache = Get-Content -LiteralPath $cmakeCachePath -Raw
 $cmakeCommand = Get-CMakeCacheValue $cmakeCache "CMAKE_COMMAND"
 $generatorInstance = Get-CMakeCacheValue $cmakeCache "CMAKE_GENERATOR_INSTANCE"
 $visualStudioPath = Get-NormalizedDirectoryPath $generatorInstance
@@ -128,7 +134,11 @@ $metadata = [ordered]@{
     }
 }
 
-$outputFullPath = [IO.Path]::GetFullPath($OutputPath)
+$outputFullPath = if ([IO.Path]::IsPathRooted($OutputPath)) {
+    [IO.Path]::GetFullPath($OutputPath)
+} else {
+    [IO.Path]::GetFullPath((Join-Path $repoRoot $OutputPath))
+}
 New-Item -ItemType Directory `
     -Path (Split-Path $outputFullPath -Parent) `
     -Force | Out-Null
