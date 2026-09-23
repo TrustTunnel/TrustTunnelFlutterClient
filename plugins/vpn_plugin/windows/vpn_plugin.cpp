@@ -76,25 +76,42 @@ static std::filesystem::path GetExeDir() {
 }
 
 /**
- * Return a writable directory for runtime data (logs, ring buffers).
+ * Return a directory shared by the client and the SYSTEM service.
  *
- * MSIX: %ProgramData%\TrustTunnel\ (shared between app and SYSTEM service).
- * Otherwise: same directory as the executable.
- * @return Writable path; guaranteed to exist on return.
+ * Installed builds use %ProgramData%\TrustTunnel\. The Inno installer grants
+ * users modify access to this application-owned directory. Unpackaged
+ * development builds fall back to the executable directory when ProgramData
+ * cannot be created; MSIX builds keep the path shared with the packaged
+ * service and never fall back to the read-only package directory.
+ * @return Writable path for installed and development builds.
  */
 static std::filesystem::path GetWritableAppDataPath() {
-    if (IsRunningInMsixPackage()) {
-        PWSTR program_data = nullptr;
-        if (SUCCEEDED(SHGetKnownFolderPath(
-                FOLDERID_ProgramData, 0, nullptr, &program_data))) {
-            std::filesystem::path p =
-                    std::filesystem::path(program_data) / L"TrustTunnel";
-            CoTaskMemFree(program_data);
-            std::error_code ec;
-            std::filesystem::create_directories(p, ec);
-            return p;
+    const bool is_msix = IsRunningInMsixPackage();
+    PWSTR program_data = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(
+            FOLDERID_ProgramData, 0, nullptr, &program_data))) {
+        std::filesystem::path path =
+                std::filesystem::path(program_data) / L"TrustTunnel";
+        CoTaskMemFree(program_data);
+
+        std::error_code ec;
+        std::filesystem::create_directories(path, ec);
+        if (!ec) {
+            return path;
+        }
+
+        // A packaged service receives this same path from AppxManifest.xml.
+        // Never fall back to the read-only package directory: apart from being
+        // unwritable, that would make the client read a different ring buffer
+        // than the service writes. The LocalSystem service creates the shared
+        // directory when it starts.
+        if (is_msix) {
+            LogError("Failed to create the MSIX shared data directory (error: %d)",
+                     ec.value());
+            return path;
         }
     }
+
     return GetExeDir();
 }
 

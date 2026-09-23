@@ -76,7 +76,7 @@ endif()
 
 # Standalone helper used by the elevated uninstaller to remove data belonging
 # to a specific Windows user without starting Flutter.
-add_subdirectory("cleanup")
+add_subdirectory("cleanup_user_data")
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")

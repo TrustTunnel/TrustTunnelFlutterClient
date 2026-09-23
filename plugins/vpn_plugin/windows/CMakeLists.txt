@@ -57,8 +57,6 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 target_link_libraries(${PLUGIN_NAME} PRIVATE Shell32 Ole32)
 
 # === Download and use prebuilt TrustTunnelClientWindows ===
-include(FetchContent)
-
 set(TRUSTTUNNEL_CLIENT_VERSION "1.3.0-alpha.1")
 
 # Determine the target architecture for the archive URL.
@@ -72,15 +70,104 @@ else()
   message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
-set(TRUSTTUNNEL_CLIENT_ARCHIVE_URL
-  "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${TRUSTTUNNEL_CLIENT_VERSION}/trusttunnel-client-windows-${TRUSTTUNNEL_CLIENT_VERSION}-${TRUSTTUNNEL_CLIENT_ARCH}.zip"
+function(prepare_trusttunnel_client_windows
+  version
+  architecture
+  archive_path
+  output_dir
 )
+  set(_package_name "TrustTunnel Client ${version} for ${architecture}")
+  set(_source_dir
+    "${CMAKE_BINARY_DIR}/_deps/trusttunnel-client-windows")
+  set(_complete_marker
+    "${_source_dir}/${version}-${architecture}.complete")
+  set(_package_config
+    "${_source_dir}/lib/cmake/TrustTunnelClientWindows/TrustTunnelClientWindowsConfig.cmake")
 
-FetchContent_Declare(
-  TrustTunnelClientWindows
-  URL ${TRUSTTUNNEL_CLIENT_ARCHIVE_URL}
-)
-FetchContent_MakeAvailable(TrustTunnelClientWindows)
+  # Remove artifacts created by the former FetchContent-based download. They
+  # can contain the credentialized package URL from an earlier configuration.
+  file(REMOVE_RECURSE
+    "${CMAKE_BINARY_DIR}/_deps/trusttunnelclientwindows-build"
+    "${CMAKE_BINARY_DIR}/_deps/trusttunnelclientwindows-src"
+    "${CMAKE_BINARY_DIR}/_deps/trusttunnelclientwindows-subbuild")
+
+  if(
+    EXISTS "${_complete_marker}" AND
+    EXISTS "${_package_config}" AND
+    EXISTS "${archive_path}"
+  )
+    set(${output_dir} "${_source_dir}" PARENT_SCOPE)
+    return()
+  endif()
+
+  if("$ENV{GPR_KEY}" STREQUAL "")
+    message(FATAL_ERROR
+      "GPR_KEY is not set. Cannot download ${_package_name}.")
+  endif()
+
+  file(REMOVE_RECURSE "${_source_dir}")
+  file(MAKE_DIRECTORY "${_source_dir}")
+  get_filename_component(_download_dir "${archive_path}" DIRECTORY)
+  file(MAKE_DIRECTORY "${_download_dir}")
+
+  set(_archive_url
+    "https://$ENV{GPR_KEY}:@maven.pkg.github.com/TrustTunnel/TrustTunnelClient/com/adguard/trusttunnel/trusttunnel-client-windows/${version}/trusttunnel-client-windows-${version}-${architecture}.zip")
+  file(DOWNLOAD "${_archive_url}" "${archive_path}"
+    STATUS _download_status
+    TLS_VERIFY ON)
+  unset(_archive_url)
+
+  list(GET _download_status 0 _download_result)
+  if(NOT _download_result EQUAL 0)
+    file(REMOVE_RECURSE "${_source_dir}")
+    file(REMOVE "${archive_path}")
+    message(FATAL_ERROR "Failed to download ${_package_name}.")
+  endif()
+
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E tar xvf "${archive_path}"
+    WORKING_DIRECTORY "${_source_dir}"
+    RESULT_VARIABLE _extract_result
+    OUTPUT_QUIET
+    ERROR_QUIET)
+
+  if(NOT _extract_result EQUAL 0)
+    file(REMOVE_RECURSE "${_source_dir}")
+    message(FATAL_ERROR "Failed to extract ${_package_name}.")
+  endif()
+
+  if(NOT EXISTS "${_package_config}")
+    file(REMOVE_RECURSE "${_source_dir}")
+    message(FATAL_ERROR "${_package_name} is missing its CMake package file.")
+  endif()
+
+  file(WRITE "${_complete_marker}" "complete\n")
+  set(${output_dir} "${_source_dir}" PARENT_SCOPE)
+endfunction()
+
+set(_trusttunnel_client_archive_path
+  "${CMAKE_BINARY_DIR}/downloads/trusttunnel-client-windows-${TRUSTTUNNEL_CLIENT_VERSION}-${TRUSTTUNNEL_CLIENT_ARCH}.zip")
+prepare_trusttunnel_client_windows(
+  "${TRUSTTUNNEL_CLIENT_VERSION}"
+  "${TRUSTTUNNEL_CLIENT_ARCH}"
+  "${_trusttunnel_client_archive_path}"
+  trusttunnelclientwindows_SOURCE_DIR)
+
+file(SHA256
+  "${_trusttunnel_client_archive_path}"
+  _trusttunnel_client_archive_sha256)
+set(TRUSTTUNNEL_CLIENT_RESOLVED_VERSION
+  "${TRUSTTUNNEL_CLIENT_VERSION}"
+  CACHE INTERNAL "Resolved TrustTunnel Client version")
+set(TRUSTTUNNEL_CLIENT_RESOLVED_ARCH
+  "${TRUSTTUNNEL_CLIENT_ARCH}"
+  CACHE INTERNAL "Resolved TrustTunnel Client architecture")
+set(TRUSTTUNNEL_CLIENT_ARCHIVE_PATH
+  "${_trusttunnel_client_archive_path}"
+  CACHE INTERNAL "Downloaded TrustTunnel Client archive")
+set(TRUSTTUNNEL_CLIENT_ARCHIVE_SHA256
+  "${_trusttunnel_client_archive_sha256}"
+  CACHE INTERNAL "SHA-256 of the downloaded TrustTunnel Client archive")
 
 # The archive ships lib/cmake/TrustTunnelClientWindows/TrustTunnelClientWindowsConfig.cmake
 # Register that location so find_package() can discover it.
@@ -140,6 +227,7 @@ set(TEST_RUNNER "${PROJECT_NAME}_test")
 enable_testing()
 
 # Add the Google Test dependency.
+include(FetchContent)
 FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/release-1.11.0.zip
