@@ -354,6 +354,7 @@ var
   ResultCode: Integer;
   StopError: String;
   CommandStarted: Boolean;
+  ServiceStillExists: Boolean;
 begin
   Result := True;
   ErrorMessage := '';
@@ -372,7 +373,15 @@ begin
   end;
 
   if not StopServiceAndWait(StopError) then
-    Log('[service] ' + StopError);
+  begin
+    if QueryServiceExistence(ServiceStillExists) and
+       not ServiceStillExists then
+      exit;
+
+    Result := False;
+    ErrorMessage := StopError;
+    exit;
+  end;
   if not ServiceExists then
     exit;
 
