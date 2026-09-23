@@ -83,13 +83,15 @@ static std::filesystem::path GetExeDir() {
  * development builds fall back to the executable directory when ProgramData
  * cannot be created; MSIX builds keep the path shared with the packaged
  * service and never fall back to the read-only package directory.
- * @return Writable path for installed and development builds.
+ * @return Writable path for installed and development builds, or an empty path
+ *         if the MSIX shared directory cannot be located.
  */
 static std::filesystem::path GetWritableAppDataPath() {
     const bool is_msix = IsRunningInMsixPackage();
     PWSTR program_data = nullptr;
-    if (SUCCEEDED(SHGetKnownFolderPath(
-            FOLDERID_ProgramData, 0, nullptr, &program_data))) {
+    const HRESULT known_folder_result = SHGetKnownFolderPath(
+            FOLDERID_ProgramData, 0, nullptr, &program_data);
+    if (SUCCEEDED(known_folder_result)) {
         std::filesystem::path path =
                 std::filesystem::path(program_data) / L"TrustTunnel";
         CoTaskMemFree(program_data);
@@ -110,9 +112,22 @@ static std::filesystem::path GetWritableAppDataPath() {
                      ec.value());
             return path;
         }
+    } else {
+        CoTaskMemFree(program_data);
+        if (is_msix) {
+            LogError("Failed to locate the MSIX shared data directory (HRESULT: 0x%08lX)",
+                     static_cast<unsigned long>(known_folder_result));
+            return {};
+        }
     }
 
     return GetExeDir();
+}
+
+static FlutterError RuntimeDataUnavailableError() {
+    return FlutterError(
+            "runtime-data-unavailable",
+            "Unable to locate the TrustTunnel shared data directory.");
 }
 
 // ---------------------------------------------------------------------------
@@ -186,13 +201,15 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
       m_pipe_name(L"\\\\.\\pipe\\trusttunnel_vpn") {
     // Use writable path (MSIX-safe) for runtime data.
     std::filesystem::path app_data = GetWritableAppDataPath();
-    m_ring_buffer_path = app_data / L"vpn_query_log.ring";
-    m_logs_dir = app_data / L"logs";
+    if (!app_data.empty()) {
+        m_ring_buffer_path = app_data / L"vpn_query_log.ring";
+        m_logs_dir = app_data / L"logs";
 
-    // Install the client-process file log sink before anything logs.
-    // Remembered by trusttunnel so export/clear can also reach the service
-    // log family, which the service process writes into the same directory.
-    trusttunnel_log_init(m_logs_dir.wstring().c_str());
+        // Install the client-process file log sink before anything logs.
+        // Remembered by trusttunnel so export/clear can also reach the service
+        // log family, which the service process writes into the same directory.
+        trusttunnel_log_init(m_logs_dir.wstring().c_str());
+    }
 
     // Setup Event Channel for State
     auto state_handler = std::make_unique<VpnEventStreamHandler>();
@@ -216,9 +233,11 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
     // Attach to the background service and replay persisted connection info.
     m_worker.Post([this]() {
         AttachService();
-        std::wstring ring_buffer_path = m_ring_buffer_path.wstring();
-        trusttunnel_service_read_all_connection_info(
-                ring_buffer_path.c_str(), s_notify_connection_info, this);
+        if (!m_ring_buffer_path.empty()) {
+            std::wstring ring_buffer_path = m_ring_buffer_path.wstring();
+            trusttunnel_service_read_all_connection_info(
+                    ring_buffer_path.c_str(), s_notify_connection_info, this);
+        }
     });
 }
 
@@ -314,6 +333,10 @@ int32_t VpnPlugin::StartService(const std::string& config) {
 }
 
 std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
+    if (m_ring_buffer_path.empty()) {
+        return RuntimeDataUnavailableError();
+    }
+
     m_worker.Post([this, config = config]() {
         int32_t start_result = StartService(config);
 
@@ -379,6 +402,10 @@ void VpnPlugin::NotifyConnectionInfo(const std::string& json) {
 }
 
 ErrorOr<flutter::EncodableList> VpnPlugin::ExportLogs() {
+    if (m_logs_dir.empty()) {
+        return ErrorOr<flutter::EncodableList>(RuntimeDataUnavailableError());
+    }
+
     // Unique temp export dir per call; the caller owns cleanup.
     std::filesystem::path export_dir =
             std::filesystem::temp_directory_path() /
@@ -401,6 +428,10 @@ ErrorOr<flutter::EncodableList> VpnPlugin::ExportLogs() {
 }
 
 std::optional<FlutterError> VpnPlugin::ClearLogs() {
+    if (m_logs_dir.empty()) {
+        return RuntimeDataUnavailableError();
+    }
+
     trusttunnel_log_clear();
     return std::nullopt;
 }
