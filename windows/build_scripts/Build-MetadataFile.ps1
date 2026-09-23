@@ -1,5 +1,9 @@
 [CmdletBinding()]
 param(
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('x64', 'arm64')]
+    [string]$Architecture,
+
     [string]$OutputPath = "build\windows\metadata\build.json"
 )
 
@@ -29,7 +33,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Could not determine the Flutter and Dart versions."
 }
 
-$cmakeCache = Get-Content "build\windows\x64\CMakeCache.txt" -Raw
+$cmakeCache = Get-Content "build\windows\$Architecture\CMakeCache.txt" -Raw
 $cmakeCommand = Get-CMakeCacheValue $cmakeCache "CMAKE_COMMAND"
 $compilerPath = Get-CMakeCacheValue $cmakeCache "CMAKE_CXX_COMPILER"
 
@@ -54,7 +58,6 @@ if (-not (Test-Path $vswherePath -PathType Leaf)) {
 $visualStudioInstances = (& $vswherePath `
     -all `
     -products * `
-    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
     -format json `
     -utf8 | Out-String) | ConvertFrom-Json
 $visualStudioInstance = $visualStudioInstances |
@@ -105,7 +108,7 @@ if (-not [string]::Equals(
 }
 
 $metadata = [ordered]@{
-    architecture = "x64"
+    architecture = $Architecture
     flutter_version = $flutterJson.frameworkVersion
     dart_version = $flutterJson.dartSdkVersion
     cmake_version = $cmakeMatch.Groups[1].Value

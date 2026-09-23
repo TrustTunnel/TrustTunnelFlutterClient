@@ -25,6 +25,10 @@ on:
         description: 'Build and deploy the macOS app'
         type: boolean
         default: true
+      deploy-windows:
+        description: 'Build Windows x64 and arm64 EXE installers'
+        type: boolean
+        default: true
 
   workflow_call:
     inputs:
@@ -48,6 +52,10 @@ on:
         type: boolean
         default: true
         description: 'Build and deploy the macOS app'
+      deploy-windows:
+        type: boolean
+        default: true
+        description: 'Build Windows x64 and arm64 EXE installers'
 
 permissions:
   contents: read
@@ -239,8 +247,35 @@ jobs:
       artifact-name: trusttunnel-macos-testing
       artifact-path: macos/build/TrustTunnel.app
 
+  # Windows EXE installers. The ARM64 chain starts after x64 is fully signed.
+  build-windows-x64:
+    needs: [meta, build-number]
+    if: inputs.deploy-windows
+    uses: ./.github/workflows/flutter-build-windows.yml
+    secrets: inherit
+    with:
+      architecture: x64
+      channel: ${{ needs.meta.outputs.release-channel }}
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      artifact-name: trusttunnel-windows-installer
+
+  build-windows-arm64:
+    needs: [meta, build-number, build-windows-x64]
+    if: inputs.deploy-windows
+    uses: ./.github/workflows/flutter-build-windows.yml
+    secrets: inherit
+    with:
+      architecture: arm64
+      channel: ${{ needs.meta.outputs.release-channel }}
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      artifact-name: trusttunnel-windows-installer
+
   notify-slack:
-    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc]
+    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc, build-windows-x64, build-windows-arm64]
     if: >-
       !cancelled() && !failure() &&
       inputs.slack-channel != ''

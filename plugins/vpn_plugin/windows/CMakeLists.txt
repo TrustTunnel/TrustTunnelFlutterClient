@@ -59,15 +59,24 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE Shell32 Ole32)
 # === Download and use prebuilt TrustTunnelClientWindows ===
 set(TRUSTTUNNEL_CLIENT_VERSION "1.3.0-alpha.1")
 
-# Determine the target architecture for the archive URL.
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM|aarch64")
-    set(TRUSTTUNNEL_CLIENT_ARCH "aarch64")
-  else()
-    set(TRUSTTUNNEL_CLIENT_ARCH "x86_64")
-  endif()
+# Determine the archive architecture from the Visual Studio target platform.
+# CMAKE_SYSTEM_PROCESSOR may identify the host instead of the target.
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _tt_system_processor)
+string(TOLOWER "${CMAKE_VS_PLATFORM_NAME}" _tt_vs_platform)
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message(FATAL_ERROR "Unsupported pointer size: ${CMAKE_SIZEOF_VOID_P}")
+endif()
+if(_tt_vs_platform)
+  set(_tt_target_processor "${_tt_vs_platform}")
 else()
-  message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  set(_tt_target_processor "${_tt_system_processor}")
+endif()
+if(_tt_target_processor MATCHES "^(amd64|x86_64|x64)$")
+  set(TRUSTTUNNEL_CLIENT_ARCH "x86_64")
+elseif(_tt_target_processor MATCHES "^(arm64|aarch64)$")
+  set(TRUSTTUNNEL_CLIENT_ARCH "aarch64")
+else()
+  message(FATAL_ERROR "Unsupported Windows target architecture: ${_tt_target_processor}")
 endif()
 
 function(prepare_trusttunnel_client_windows

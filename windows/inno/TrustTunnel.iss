@@ -10,6 +10,10 @@
   #define AppArchitecture "x64"
 #endif
 
+#if AppArchitecture != "x64" && AppArchitecture != "arm64"
+  #error Unsupported AppArchitecture. Expected x64 or arm64.
+#endif
+
 #ifndef BuildDir
   #define BuildDir "..\..\build\windows\x64\runner\Release"
 #endif
@@ -45,7 +49,7 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 OutputDir={#OutputDir}
-OutputBaseFilename=TrustTunnelSetup
+OutputBaseFilename=TrustTunnelSetup-{#AppArchitecture}
 SetupIconFile=..\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 ArchitecturesAllowed={#AllowedArchitecture}
@@ -246,4 +250,3 @@ begin
   else if not AppDirectoryExistedBeforeInstall then
     DelTree(ExpandConstant('{app}'), True, True, True);
 end;
-

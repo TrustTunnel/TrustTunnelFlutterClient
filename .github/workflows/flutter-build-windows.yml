@@ -3,6 +3,10 @@ name: Flutter Build Windows
 on:
   workflow_call:
     inputs:
+      architecture:
+        type: string
+        required: true
+        description: 'Windows target architecture: x64 or arm64'
       runner-memory-mb:
         type: string
         default: '12288'
@@ -41,17 +45,29 @@ jobs:
     runs-on: [team-flutter]
     outputs:
       image: ${{ steps.kv.outputs.value }}
+      pool: ${{ steps.arch.outputs.pool }}
     steps:
+      - name: Validate architecture and select runner pool
+        id: arch
+        shell: bash
+        env:
+          ARCHITECTURE: ${{ inputs.architecture }}
+        run: |
+          case "$ARCHITECTURE" in
+            x64) echo 'pool=ephemeral-vmwin' >> "$GITHUB_OUTPUT" ;;
+            arm64) echo 'pool=ephemeral-vmwin-arm64' >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::Unsupported Windows architecture: $ARCHITECTURE"; exit 1 ;;
+          esac
       - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
         id: kv
         with:
-          key: build-images/windows2022-flutter
+          key: ${{ inputs.architecture == 'arm64' && 'build-images/windows2022-flutter-arm64' || 'build-images/windows2022-flutter' }}
 
   build:
     needs: [resolve-runner]
     runs-on:
       - ephemeral
-      - ephemeral-vmwin
+      - ${{ needs.resolve-runner.outputs.pool }}
       - ${{ needs.resolve-runner.outputs.image }}
       - ephemeral-limit-memory-${{ inputs.runner-memory-mb }}
       - ephemeral-limit-cpu-${{ inputs.runner-cpu }}
@@ -100,13 +116,16 @@ jobs:
 
       - name: Validate Windows bundle
         shell: powershell
+        env:
+          ARCHITECTURE: ${{ inputs.architecture }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $buildDir = 'build\windows\x64\runner\Release'
+          $buildDir = "build\windows\$env:ARCHITECTURE\runner\Release"
           $requiredFiles = @(
             'TrustTunnel.exe',
             'cleanup_user_data_helper.exe',
             'app_links_plugin.dll',
+            'flutter_windows.dll',
             'screen_retriever_windows_plugin.dll',
             'sqlite3.dll',
             'sqlite3_flutter_libs_plugin.dll',
@@ -115,32 +134,32 @@ jobs:
             'window_manager_plugin.dll',
             'trusttunnel.dll',
             'trusttunnel_service.exe',
-            'trusttunnel_service_installer.exe'
+            'trusttunnel_service_installer.exe',
+            'wintun.dll'
           )
           foreach ($file in $requiredFiles) {
             $path = Join-Path $buildDir $file
             if (-not (Test-Path $path -PathType Leaf)) {
-              Write-Error "Required Windows bundle file is missing: $path"
-              exit 1
+              throw "Required Windows bundle file is missing: $path"
             }
           }
 
       - name: Collect build metadata
         shell: powershell
-        run: .\windows\build_scripts\Build-MetadataFile.ps1
+        run: .\windows\build_scripts\Build-MetadataFile.ps1 -Architecture ${{ inputs.architecture }}
 
       - name: Upload build metadata
         uses: actions/upload-artifact@v7
         with:
-          name: trusttunnel-windows-build-metadata
+          name: trusttunnel-windows-build-metadata-${{ inputs.architecture }}
           path: build/windows/metadata/build.json
           if-no-files-found: error
 
       - name: Upload unsigned Windows bundle
         uses: actions/upload-artifact@v7
         with:
-          name: trusttunnel-windows-bundle-unsigned
-          path: build/windows/x64/runner/Release/
+          name: trusttunnel-windows-bundle-unsigned-${{ inputs.architecture }}
+          path: build/windows/${{ inputs.architecture }}/runner/Release/
           if-no-files-found: error
 
   sign-binaries:
@@ -151,11 +170,13 @@ jobs:
     uses: AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master
     with:
       team: flutter
-      artifact-name: trusttunnel-windows-bundle-unsigned
+      artifact-name: trusttunnel-windows-bundle-unsigned-${{ inputs.architecture }}
+      # Wintun keeps its upstream signature; the package job verifies it.
       files: |
         TrustTunnel.exe
         cleanup_user_data_helper.exe
         app_links_plugin.dll
+        flutter_windows.dll
         screen_retriever_windows_plugin.dll
         sqlite3.dll
         sqlite3_flutter_libs_plugin.dll
@@ -165,13 +186,13 @@ jobs:
         trusttunnel.dll
         trusttunnel_service.exe
         trusttunnel_service_installer.exe
-      signed-artifact-name: trusttunnel-windows-bundle-signed
+      signed-artifact-name: trusttunnel-windows-bundle-signed-${{ inputs.architecture }}
 
   package-installer:
     needs: [resolve-runner, sign-binaries]
     runs-on:
       - ephemeral
-      - ephemeral-vmwin
+      - ${{ needs.resolve-runner.outputs.pool }}
       - ${{ needs.resolve-runner.outputs.image }}
       - ephemeral-limit-memory-${{ inputs.runner-memory-mb }}
       - ephemeral-limit-cpu-${{ inputs.runner-cpu }}
@@ -186,19 +207,22 @@ jobs:
       - name: Download signed Windows bundle
         uses: actions/download-artifact@v8
         with:
-          name: trusttunnel-windows-bundle-signed
-          path: build/windows/x64/runner/Release
+          name: trusttunnel-windows-bundle-signed-${{ inputs.architecture }}
+          path: build/windows/${{ inputs.architecture }}/runner/Release
 
       - name: Resolve SignTool
+        env:
+          ARCHITECTURE: ${{ inputs.architecture }}
         run: |
           $ErrorActionPreference = 'Stop'
           $windowsKitsPath = 'C:\Program Files (x86)\Windows Kits\10\bin'
-          $signtoolPath = Get-ChildItem -Path $windowsKitsPath -Directory |
+          $sdkDirectories = Get-ChildItem -Path $windowsKitsPath -Directory |
             Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
-            Sort-Object { [Version]$_.Name } -Descending |
-            ForEach-Object { Join-Path $_.FullName 'x64' } |
-            Get-ChildItem -Filter signtool.exe -File -Recurse |
-            Select-Object -ExpandProperty FullName -First 1
+            Sort-Object { [Version]$_.Name } -Descending
+          $signtoolPath = $sdkDirectories |
+            ForEach-Object { Join-Path $_.FullName "$env:ARCHITECTURE\signtool.exe" } |
+            Where-Object { Test-Path $_ -PathType Leaf } |
+            Select-Object -First 1
           if (-not $signtoolPath) {
             Write-Error "signtool.exe not found in $windowsKitsPath"
             exit 1
@@ -207,28 +231,17 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "SIGNTOOL_PATH=$signtoolPath" -Encoding ascii
 
       - name: Verify signed Windows bundle
+        env:
+          ARCHITECTURE: ${{ inputs.architecture }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $buildDir = 'build\windows\x64\runner\Release'
-          $signedFiles = @(
-            'TrustTunnel.exe',
-            'cleanup_user_data_helper.exe',
-            'app_links_plugin.dll',
-            'screen_retriever_windows_plugin.dll',
-            'sqlite3.dll',
-            'sqlite3_flutter_libs_plugin.dll',
-            'url_launcher_windows_plugin.dll',
-            'vpn_plugin_plugin.dll',
-            'window_manager_plugin.dll',
-            'trusttunnel.dll',
-            'trusttunnel_service.exe',
-            'trusttunnel_service_installer.exe'
-          )
-          foreach ($file in $signedFiles) {
-            $path = Join-Path $buildDir $file
-            & $env:SIGNTOOL_PATH verify /pa /all /v /tw $path
+          $buildDir = "build\windows\$env:ARCHITECTURE\runner\Release"
+          $binaries = @(Get-ChildItem -Path $buildDir -Recurse -File |
+            Where-Object { $_.Extension -in @('.exe', '.dll') })
+          foreach ($binary in $binaries) {
+            & $env:SIGNTOOL_PATH verify /pa /all /v /tw $binary.FullName
             if ($LASTEXITCODE -ne 0) {
-              throw "Authenticode verification failed for $path"
+              throw "Authenticode verification failed for $($binary.FullName)"
             }
           }
 
@@ -240,6 +253,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           & .\windows\inno\Build-Installer.ps1 `
             -Configuration Release `
+            -Architecture ${{ inputs.architecture }} `
             -AppVersion $env:APP_VERSION `
             -BuildNumber $env:BUILD_NUMBER `
             -SkipFlutterBuild
@@ -247,8 +261,8 @@ jobs:
       - name: Upload unsigned installer
         uses: actions/upload-artifact@v7
         with:
-          name: trusttunnel-windows-installer-unsigned
-          path: build/windows/installer/TrustTunnelSetup.exe
+          name: trusttunnel-windows-installer-unsigned-${{ inputs.architecture }}
+          path: build/windows/installer/TrustTunnelSetup-${{ inputs.architecture }}.exe
           if-no-files-found: error
 
   sign-installer:
@@ -259,6 +273,6 @@ jobs:
     uses: AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master
     with:
       team: flutter
-      artifact-name: trusttunnel-windows-installer-unsigned
-      files: TrustTunnelSetup.exe
-      signed-artifact-name: ${{ inputs.artifact-name }}
+      artifact-name: trusttunnel-windows-installer-unsigned-${{ inputs.architecture }}
+      files: TrustTunnelSetup-${{ inputs.architecture }}.exe
+      signed-artifact-name: ${{ inputs.artifact-name }}-${{ inputs.architecture }}

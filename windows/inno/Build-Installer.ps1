@@ -9,6 +9,9 @@ param(
     [ValidateRange(0, 65535)]
     [int]$BuildNumber = 0,
 
+    [ValidateSet("x64", "arm64")]
+    [string]$Architecture,
+
     [switch]$SkipFlutterBuild,
 
     [switch]$ForceDownload
@@ -31,21 +34,21 @@ $numericVersion = "{0}.{1}.{2}.{3}" -f `
     $BuildNumber
 
 $hostArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
-switch ($hostArchitecture) {
-    "X64" {
-        $appArchitecture = "x64"
-        $flutterArchitecture = "x64"
+if (-not $Architecture) {
+    $Architecture = switch ($hostArchitecture) {
+        'X64' { 'x64' }
+        'Arm64' { 'arm64' }
+        default { throw "Unsupported Windows architecture: $hostArchitecture" }
+    }
+}
+switch ($Architecture) {
+    "x64" {
         $vcRedistName = "vc_redist.x64.exe"
         $vcRedistUrl = "https://aka.ms/vc14/vc_redist.x64.exe"
     }
-    "Arm64" {
-        $appArchitecture = "arm64"
-        $flutterArchitecture = "arm64"
+    "arm64" {
         $vcRedistName = "vc_redist.arm64.exe"
         $vcRedistUrl = "https://aka.ms/vc14/vc_redist.arm64.exe"
-    }
-    default {
-        throw "Unsupported Windows architecture: $hostArchitecture"
     }
 }
 
@@ -79,7 +82,7 @@ if (-not $SkipFlutterBuild) {
     }
 }
 
-$buildDir = Join-Path $repoRoot "build\windows\$flutterArchitecture\runner\$Configuration"
+$buildDir = Join-Path $repoRoot "build\windows\$Architecture\runner\$Configuration"
 $requiredBundleItems = @(
     "TrustTunnel.exe",
     "cleanup_user_data_helper.exe",
@@ -109,7 +112,6 @@ foreach ($item in $requiredBundleItems) {
         throw "Required release bundle item is missing: $itemPath"
     }
 }
-
 $cacheDir = Join-Path $scriptDir ".cache"
 New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
 $vcRedistPath = Join-Path $cacheDir $vcRedistName
@@ -182,7 +184,7 @@ $issPath = Join-Path $scriptDir "TrustTunnel.iss"
 $isccArguments = @(
     "/DAppVersion=$AppVersion",
     "/DNumericVersion=$numericVersion",
-    "/DAppArchitecture=$appArchitecture",
+    "/DAppArchitecture=$Architecture",
     "/DBuildDir=$buildDir",
     "/DOutputDir=$outputDir",
     "/DVcRedistPath=$vcRedistPath",
@@ -194,7 +196,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Inno Setup compilation failed with exit code $LASTEXITCODE."
 }
 
-$installerPath = Join-Path $outputDir "TrustTunnelSetup.exe"
+$installerPath = Join-Path $outputDir "TrustTunnelSetup-$Architecture.exe"
 if (-not (Test-Path $installerPath)) {
     throw "The installer was not created at the expected path: $installerPath"
 }

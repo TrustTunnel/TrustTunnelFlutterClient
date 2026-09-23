@@ -9,10 +9,10 @@ on:
         required: true
         type: string
       platforms:
-        description: 'Target platforms to deploy to. Comma-separated list of: android,ios,macos'
+        description: 'Target platforms to deploy to. Comma-separated list of: android,ios,macos,windows'
         required: true
         type: string
-        default: 'android,ios,macos'
+        default: 'android,ios,macos,windows'
       slack-channel:
         description: 'Slack channel for build notification'
         type: string
@@ -47,7 +47,7 @@ jobs:
           raw="$(printf '%s' "$raw" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
           if [ -z "$raw" ]; then
-            echo "::error::platforms input is empty. Expected a comma-separated list of: android,ios,macos"
+            echo "::error::platforms input is empty. Expected a comma-separated list of: android,ios,macos,windows"
             exit 1
           fi
 
@@ -84,7 +84,7 @@ jobs:
             item="$(printf '%s' "$item" | tr '[:upper:]' '[:lower:]')"
 
             case "$item" in
-              android|ios|macos)
+              android|ios|macos|windows)
                 # De-duplicate while keeping the original order
                 if [ -z "${seen[$item]:-}" ]; then
                   seen[$item]=1
@@ -98,7 +98,7 @@ jobs:
           done
 
           if [ -n "$invalid" ]; then
-            echo "::error::Unsupported platform(s) '$invalid' in '$raw'. Allowed values: android,ios,macos"
+            echo "::error::Unsupported platform(s) '$invalid' in '$raw'. Allowed values: android,ios,macos,windows"
             exit 1
           fi
 
@@ -123,3 +123,4 @@ jobs:
       deploy-android: ${{ contains(needs.validate-inputs.outputs.platforms, 'android') }}
       deploy-ios: ${{ contains(needs.validate-inputs.outputs.platforms, 'ios') }}
       deploy-macos: ${{ contains(needs.validate-inputs.outputs.platforms, 'macos') }}
+      deploy-windows: ${{ contains(needs.validate-inputs.outputs.platforms, 'windows') }}
