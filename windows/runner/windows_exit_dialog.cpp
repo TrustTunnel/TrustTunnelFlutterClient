@@ -154,6 +154,12 @@ class WindowsExitDialog::Impl {
     kDontQuit,
   };
 
+  enum class ShowResult {
+    kQuit,
+    kCancel,
+    kUnavailable,
+  };
+
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
@@ -186,23 +192,34 @@ class WindowsExitDialog::Impl {
         std::move(*quit_button_text),
         std::move(*dont_quit_button_text),
     };
-    result->Success(flutter::EncodableValue(Show(configuration)));
+    switch (Show(configuration)) {
+      case ShowResult::kQuit:
+        result->Success(flutter::EncodableValue(true));
+        return;
+      case ShowResult::kCancel:
+        result->Success(flutter::EncodableValue(false));
+        return;
+      case ShowResult::kUnavailable:
+        result->Error("dialog_unavailable", "Unable to show the Windows exit dialog");
+        return;
+    }
   }
 
-  bool Show(const Configuration& configuration) {
+  ShowResult Show(const Configuration& configuration) {
     if (dialog_window_ != nullptr) {
       ::ShowWindow(dialog_window_, SW_SHOW);
       ::SetForegroundWindow(dialog_window_);
-      return false;
+      return ShowResult::kCancel;
     }
     if (gdiplus_token_ == 0 || !RegisterWindowClass()) {
-      return false;
+      return ShowResult::kUnavailable;
     }
 
     configuration_ = configuration;
     dpi_ = GetWindowDpi(parent_window_);
     should_quit_ = false;
     is_finished_ = false;
+    decision_made_ = false;
     focused_button_ = Button::kDontQuit;
     hovered_button_ = Button::kNone;
     pressed_button_ = Button::kNone;
@@ -216,7 +233,7 @@ class WindowsExitDialog::Impl {
         WS_POPUP, origin.x, origin.y, width, height, parent_window_, nullptr,
         ::GetModuleHandleW(nullptr), this);
     if (dialog_window_ == nullptr) {
-      return false;
+      return ShowResult::kUnavailable;
     }
 
     ApplyWindowShape();
@@ -234,6 +251,7 @@ class WindowsExitDialog::Impl {
 
     MSG message;
     bool received_quit_message = false;
+    bool message_loop_failed = false;
     int quit_code = 0;
     while (!is_finished_) {
       const BOOL get_message_result = ::GetMessageW(&message, nullptr, 0, 0);
@@ -242,6 +260,7 @@ class WindowsExitDialog::Impl {
           received_quit_message = true;
           quit_code = static_cast<int>(message.wParam);
         }
+        message_loop_failed = true;
         break;
       }
       ::TranslateMessage(&message);
@@ -261,7 +280,10 @@ class WindowsExitDialog::Impl {
       ::PostQuitMessage(quit_code);
     }
 
-    return should_quit_;
+    if (message_loop_failed || !decision_made_) {
+      return ShowResult::kUnavailable;
+    }
+    return should_quit_ ? ShowResult::kQuit : ShowResult::kCancel;
   }
 
   bool RegisterWindowClass() const {
@@ -570,6 +592,7 @@ class WindowsExitDialog::Impl {
 
   void Finish(bool should_quit) {
     should_quit_ = should_quit;
+    decision_made_ = true;
     is_finished_ = true;
     if (dialog_window_ != nullptr) {
       ::DestroyWindow(dialog_window_);
@@ -731,6 +754,7 @@ class WindowsExitDialog::Impl {
   Button pressed_button_ = Button::kNone;
   bool should_quit_ = false;
   bool is_finished_ = false;
+  bool decision_made_ = false;
 };
 
 WindowsExitDialog::WindowsExitDialog(flutter::BinaryMessenger* messenger,

@@ -317,15 +317,17 @@ class _VpnScopeState extends State<VpnScope> {
 
     _stateNotifier.addListener(disconnectedStateListener);
     try {
-      await widget.vpnRepository.stop();
+      // Future.wait combines stop() and the disconnected event; one timeout covers both.
+      final stopAndDisconnect = Future.wait<void>(
+        [widget.vpnRepository.stop(), disconnectedCompleter.future],
+        eagerError: true,
+      );
 
       if (timeout == null) {
-        await disconnectedCompleter.future;
-
-        return;
+        await stopAndDisconnect;
+      } else {
+        await stopAndDisconnect.timeout(timeout);
       }
-
-      await disconnectedCompleter.future.timeout(timeout);
     } finally {
       _stateNotifier.removeListener(disconnectedStateListener);
       if (!disconnectedCompleter.isCompleted) {
@@ -411,12 +413,19 @@ class _VpnScopeState extends State<VpnScope> {
 
     if (_shouldShowExitDialog) {
       final localization = Localization.ln;
-      final result = await MacosExitDialog.show(
-        title: localization.exitDialogTitle,
-        message: localization.exitDialogDescription,
-        quitButtonText: localization.quit,
-        dontQuitButtonText: localization.dontQuit,
-      );
+      final result =
+          await MacosExitDialog.show(
+            title: localization.exitDialogTitle,
+            message: localization.exitDialogDescription,
+            quitButtonText: localization.quit,
+            dontQuitButtonText: localization.dontQuit,
+          ).onError((_, _) {
+            if (mounted) {
+              _disconnectOnExitErrorNotifier.notifyListeners();
+            }
+
+            return MacosExitDialogResult.cancel;
+          });
       if (!mounted || result != MacosExitDialogResult.quit) {
         return AppExitResponse.cancel;
       }
@@ -431,12 +440,22 @@ class _VpnScopeState extends State<VpnScope> {
   Future<AppExitResponse> _handleWindowsExitRequested() async {
     if (_shouldShowExitDialog) {
       final localization = Localization.ln;
-      final result = await WindowsExitDialog.show(
-        title: localization.exitDialogTitle,
-        message: localization.exitDialogDescription,
-        quitButtonText: localization.quit,
-        dontQuitButtonText: localization.dontQuit,
-      );
+      WindowsExitDialogResult result;
+
+      result =
+          await WindowsExitDialog.show(
+            title: localization.exitDialogTitle,
+            message: localization.exitDialogDescription,
+            quitButtonText: localization.quit,
+            dontQuitButtonText: localization.dontQuit,
+          ).onError((_, _) {
+            if (mounted) {
+              _disconnectOnExitErrorNotifier.notifyListeners();
+            }
+
+            return WindowsExitDialogResult.cancel;
+          });
+
       if (!mounted || result != WindowsExitDialogResult.quit) {
         return AppExitResponse.cancel;
       }
@@ -446,7 +465,7 @@ class _VpnScopeState extends State<VpnScope> {
     }
 
     final disconnected = await _stopWindowsVpnWithWaitForDisconnection();
-    if (disconnected) {
+    if (disconnected || (mounted && _stateNotifier.value == VpnState.disconnected)) {
       return AppExitResponse.exit;
     }
 
