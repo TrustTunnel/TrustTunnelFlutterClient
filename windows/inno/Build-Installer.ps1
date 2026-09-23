@@ -41,6 +41,9 @@ if (-not $Architecture) {
         default { throw "Unsupported Windows architecture: $hostArchitecture" }
     }
 }
+if (-not $SkipFlutterBuild -and $Architecture -ne $hostArchitecture.ToLowerInvariant()) {
+    throw "Cannot build Windows $Architecture on a $hostArchitecture host. Use -SkipFlutterBuild to package an existing bundle."
+}
 switch ($Architecture) {
     "x64" {
         $vcRedistName = "vc_redist.x64.exe"
