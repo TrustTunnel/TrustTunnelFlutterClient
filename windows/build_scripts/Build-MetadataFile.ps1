@@ -27,6 +27,12 @@ function Get-CMakeCacheValue {
     return $match.Groups[1].Value.Trim()
 }
 
+function Get-NormalizedDirectoryPath {
+    param([string]$Path)
+
+    return [IO.Path]::GetFullPath($Path).TrimEnd([char[]]@('\', '/'))
+}
+
 $flutterJson = (& flutter --version --machine | Out-String) |
     ConvertFrom-Json
 if ($LASTEXITCODE -ne 0) {
@@ -35,7 +41,8 @@ if ($LASTEXITCODE -ne 0) {
 
 $cmakeCache = Get-Content "build\windows\$Architecture\CMakeCache.txt" -Raw
 $cmakeCommand = Get-CMakeCacheValue $cmakeCache "CMAKE_COMMAND"
-$compilerPath = Get-CMakeCacheValue $cmakeCache "CMAKE_CXX_COMPILER"
+$generatorInstance = Get-CMakeCacheValue $cmakeCache "CMAKE_GENERATOR_INSTANCE"
+$visualStudioPath = Get-NormalizedDirectoryPath $generatorInstance
 
 $cmakeOutput = & $cmakeCommand --version
 if ($LASTEXITCODE -ne 0) {
@@ -62,8 +69,9 @@ $visualStudioInstances = (& $vswherePath `
     -utf8 | Out-String) | ConvertFrom-Json
 $visualStudioInstance = $visualStudioInstances |
     Where-Object {
-        $compilerPath.StartsWith(
-            $_.installationPath,
+        $_.installationPath -and [string]::Equals(
+            $visualStudioPath,
+            (Get-NormalizedDirectoryPath $_.installationPath),
             [StringComparison]::OrdinalIgnoreCase
         )
     } |
