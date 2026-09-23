@@ -10,6 +10,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 
 #include "trusttunnel/trusttunnel.h"
 #include "trusttunnel/trusttunnel_service.h"
@@ -84,17 +85,18 @@ static std::filesystem::path GetExeDir() {
  * cannot be created; MSIX builds keep the path shared with the packaged
  * service and never fall back to the read-only package directory.
  * @return Writable path for installed and development builds, or an empty path
- *         if the MSIX shared directory cannot be located.
+ *         if the MSIX shared directory cannot be located or created.
  */
 static std::filesystem::path GetWritableAppDataPath() {
     const bool is_msix = IsRunningInMsixPackage();
-    PWSTR program_data = nullptr;
+    PWSTR raw_program_data = nullptr;
     const HRESULT known_folder_result = SHGetKnownFolderPath(
-            FOLDERID_ProgramData, 0, nullptr, &program_data);
+            FOLDERID_ProgramData, 0, nullptr, &raw_program_data);
+    std::unique_ptr<wchar_t, decltype(&::CoTaskMemFree)> program_data(
+            raw_program_data, ::CoTaskMemFree);
     if (SUCCEEDED(known_folder_result)) {
         std::filesystem::path path =
-                std::filesystem::path(program_data) / L"TrustTunnel";
-        CoTaskMemFree(program_data);
+                std::filesystem::path(program_data.get()) / L"TrustTunnel";
 
         std::error_code ec;
         std::filesystem::create_directories(path, ec);
@@ -105,15 +107,13 @@ static std::filesystem::path GetWritableAppDataPath() {
         // A packaged service receives this same path from AppxManifest.xml.
         // Never fall back to the read-only package directory: apart from being
         // unwritable, that would make the client read a different ring buffer
-        // than the service writes. The LocalSystem service creates the shared
-        // directory when it starts.
+        // than the service writes.
         if (is_msix) {
             LogError("Failed to create the MSIX shared data directory (error: %d)",
                      ec.value());
-            return path;
+            return {};
         }
     } else {
-        CoTaskMemFree(program_data);
         if (is_msix) {
             LogError("Failed to locate the MSIX shared data directory (HRESULT: 0x%08lX)",
                      static_cast<unsigned long>(known_folder_result));
@@ -127,7 +127,7 @@ static std::filesystem::path GetWritableAppDataPath() {
 static FlutterError RuntimeDataUnavailableError() {
     return FlutterError(
             "runtime-data-unavailable",
-            "Unable to locate the TrustTunnel shared data directory.");
+            "Unable to access the TrustTunnel shared data directory.");
 }
 
 // ---------------------------------------------------------------------------
