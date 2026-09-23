@@ -39,7 +39,8 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     final logFiles = <String, Uint8List>{};
 
     for (final group in LogPlatformFiles.platform(defaultTargetPlatform).value) {
-      final fileNameRegex = RegExp('^${RegExp.escape(group)}(\\.\\d+)?\\.log\$', caseSensitive: false);
+      // Match only this log group, including rotations before or after .log.
+      final fileNameRegex = RegExp('^${RegExp.escape(group)}(\\.\\d+)?\\.log(\\.\\d+)?\$', caseSensitive: false);
       final selectedPaths = logPaths.where((path) {
         final fileName = path.split(RegExp(r'[/\\]')).last;
 
