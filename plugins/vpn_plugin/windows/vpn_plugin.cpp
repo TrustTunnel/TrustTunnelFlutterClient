@@ -164,8 +164,7 @@ void VpnPlugin::RegisterWithRegistrar(
 
 VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
     : m_registrar(registrar),
-      m_service_name(L"TrustTunnelVPN"),
-      m_pipe_name(L"\\\\.\\pipe\\trusttunnel_vpn") {
+      m_service_name(L"TrustTunnelVPN") {
     // Runtime data lives in %ProgramData%\TrustTunnel, shared with the service.
     std::filesystem::path app_data = GetWritableAppDataPath();
     m_ring_buffer_path = app_data / L"vpn_query_log.ring";
@@ -254,16 +253,20 @@ int32_t VpnPlugin::InstallService() {
             std::filesystem::path(m_ring_buffer_path).wstring();
 
     // Build the command-line arguments for trusttunnel_service_installer.exe:
-    //   install <image_path> <logs_dir> <pipe_name> <name>
-    //           <display_name> <description> <ring_buffer_path>
+    //   install <image_path> <logs_dir> <pipe_name|empty> <name>
+    //           <display_name> <description> <ring_buffer_path> <pin|empty>
+    // An empty pipe name makes the service generate a fresh random name on
+    // every start and publish it for trusttunnel_service_attach() to discover.
+    // The dev self-install is always pinless.
     std::wstring params = L"install";
     params += L" \"" + service_exe + L"\"";
     params += L" \"" + logs_dir + L"\"";
-    params += L" \"" + m_pipe_name + L"\"";
+    params += L" \"\"";
     params += L" \"" + m_service_name + L"\"";
     params += L" \"TrustTunnel VPN Service\"";
     params += L" \"Provides VPN connectivity for the TrustTunnel client.\"";
     params += L" \"" + ring_buffer_path_w + L"\"";
+    params += L" \"\"";
 
     return RunElevatedHelper(params);
 }
@@ -274,8 +277,10 @@ int32_t VpnPlugin::UninstallService() {
 }
 
 int32_t VpnPlugin::AttachService() {
+    // A null pipe name makes the adapter discover the name the running service
+    // published to the registry, so no pipe name is hardcoded here.
     return trusttunnel_service_attach(
-            m_service_name.c_str(), m_pipe_name.c_str(),
+            m_service_name.c_str(), nullptr,
             s_notify_state_changed, this, s_notify_connection_info, this);
 }
 

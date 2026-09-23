@@ -172,7 +172,6 @@ private:
     VpnEventStreamHandler* m_query_log_handler = nullptr;
 
     std::wstring m_service_name;
-    std::wstring m_pipe_name;
     std::filesystem::path m_ring_buffer_path;
     std::filesystem::path m_logs_dir;
 
