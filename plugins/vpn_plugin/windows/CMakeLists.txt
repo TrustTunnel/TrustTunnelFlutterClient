@@ -49,6 +49,19 @@ set_target_properties(${PLUGIN_NAME} PROPERTIES
   CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL)
 
+# Dev-only lazy service install. When defined, VpnPlugin::Start() installs the
+# VPN service through the elevated helper if it is missing (pinless dev
+# provisioning). Debug builds get it by default; CI can override it by setting
+# the VPN_SELF_INSTALL environment variable before configuring: "1" forces it
+# on, any other value forces it off.
+if(DEFINED ENV{VPN_SELF_INSTALL})
+  if("$ENV{VPN_SELF_INSTALL}" STREQUAL "1")
+    target_compile_definitions(${PLUGIN_NAME} PRIVATE VPN_SELF_INSTALL=1)
+  endif()
+else()
+  target_compile_definitions(${PLUGIN_NAME} PRIVATE $<$<CONFIG:Debug>:VPN_SELF_INSTALL=1>)
+endif()
+
 # Source include directories and library dependencies. Add any plugin-specific
 # dependencies here.
 target_include_directories(${PLUGIN_NAME} INTERFACE

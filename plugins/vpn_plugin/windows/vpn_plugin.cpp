@@ -243,6 +243,7 @@ int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
     return static_cast<int32_t>(exit_code);
 }
 
+#ifdef VPN_SELF_INSTALL
 int32_t VpnPlugin::InstallService() {
     std::filesystem::path exe_dir = GetExeDir();
     std::wstring service_exe = (exe_dir / L"trusttunnel_service.exe").wstring();
@@ -270,6 +271,7 @@ int32_t VpnPlugin::InstallService() {
 
     return RunElevatedHelper(params);
 }
+#endif
 
 int32_t VpnPlugin::UninstallService() {
     std::wstring params = L"uninstall \"" + m_service_name + L"\"";
@@ -292,6 +294,7 @@ std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
     m_worker.Post([this, config = config]() {
         int32_t start_result = StartService(config);
 
+#ifdef VPN_SELF_INSTALL
         if (start_result == TRUSTTUNNEL_SVC_ERR_NO_SUCH_SERVICE) {
             int32_t install_result = InstallService();
             if (install_result != 0) {
@@ -302,6 +305,16 @@ std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
 
             start_result = StartService(config);
         }
+#else
+        if (start_result == TRUSTTUNNEL_SVC_ERR_NO_SUCH_SERVICE) {
+            // Production builds never self-install: the installer provisions
+            // the service. The user sees a failed connection and finds the
+            // reason in the logs.
+            LogError("VPN service is not installed; reinstall the application "
+                     "(error code: %d)", start_result);
+            return;
+        }
+#endif
 
         if (start_result != 0) {
             LogError("Failed to start VPN service (error code: %d)",
