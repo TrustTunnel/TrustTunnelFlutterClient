@@ -69,7 +69,8 @@ public:
     // IVpnManager implementation
     /**
      * Start the VPN service with the given configuration.
-     * If the service is not installed, it will be installed first (non-MSIX only).
+     * If the service is not installed and the plugin is built with self-install
+     * support, it will be installed first.
      * @param config The VPN configuration string.
      * @return Error if the operation cannot be initiated, nullopt otherwise.
      */
@@ -134,13 +135,13 @@ private:
     int32_t RunElevatedHelper(const std::wstring& params);
 
     /**
-     * Install the VPN service via the elevated helper (non-MSIX only).
+     * Install the VPN service via the elevated helper.
      * @return 0 on success, error code otherwise.
      */
     int32_t InstallService();
 
     /**
-     * Uninstall the VPN service via the elevated helper (non-MSIX only).
+     * Uninstall the VPN service via the elevated helper.
      * @return 0 on success, error code otherwise.
      */
     int32_t UninstallService();

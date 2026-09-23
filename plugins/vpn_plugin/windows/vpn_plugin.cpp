@@ -3,7 +3,6 @@
 
 #include "vpn_plugin.h"
 
-#include <appmodel.h>
 #include <shellapi.h>
 #include <ShlObj.h>
 
@@ -18,8 +17,12 @@ namespace vpn_plugin {
 
 /**
  * Minimal Windows-native logging (replaces common/logger.h dependency).
- * OutputDebugStringA sends to the debugger; for production MSIX builds
- * these messages appear in tools like DebugView or ETW traces.
+ * OutputDebugStringA sends to the debugger; these messages appear in tools
+ * like DebugView or ETW traces.
+ *
+ * Log messages must never contain sensitive data: paths (which can embed a
+ * user name), IP addresses, credentials, or configuration payloads. Log the
+ * numeric error code instead of the data it refers to.
  * @param fmt Printf-style format string.
  */
 static void LogError(const char* fmt, ...) {
@@ -35,21 +38,8 @@ static void LogError(const char* fmt, ...) {
 }
 
 // ---------------------------------------------------------------------------
-// MSIX helpers
+// Path helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Check whether the process is running inside an MSIX/AppX container.
- * @return True when running in a packaged context.
- */
-static bool IsRunningInMsixPackage() {
-    UINT32 len = 0;
-    // Call with null buffer to probe: ERROR_INSUFFICIENT_BUFFER (122) means
-    // the process HAS package identity; APPMODEL_ERROR_NO_PACKAGE (15700)
-    // means it's an unpackaged Win32 process.
-    LONG result = GetCurrentPackageFullName(&len, nullptr);
-    return (result == ERROR_INSUFFICIENT_BUFFER);
-}
 
 /**
  * Return the directory containing the running executable.
@@ -76,26 +66,35 @@ static std::filesystem::path GetExeDir() {
 }
 
 /**
- * Return a writable directory for runtime data (logs, ring buffers).
+ * Return the runtime data directory shared by the app and the service:
+ * %ProgramData%\TrustTunnel.
  *
- * MSIX: %ProgramData%\TrustTunnel\ (shared between app and SYSTEM service).
- * Otherwise: same directory as the executable.
+ * The unelevated app creates the directory itself; the SYSTEM service writes
+ * its log family into the same directory, so log export and clear cover both
+ * families. There is no executable-directory fallback: production installs
+ * live under Program Files, which is not writable.
  * @return Writable path; guaranteed to exist on return.
  */
 static std::filesystem::path GetWritableAppDataPath() {
-    if (IsRunningInMsixPackage()) {
-        PWSTR program_data = nullptr;
-        if (SUCCEEDED(SHGetKnownFolderPath(
-                FOLDERID_ProgramData, 0, nullptr, &program_data))) {
-            std::filesystem::path p =
-                    std::filesystem::path(program_data) / L"TrustTunnel";
-            CoTaskMemFree(program_data);
-            std::error_code ec;
-            std::filesystem::create_directories(p, ec);
-            return p;
-        }
+    PWSTR program_data = nullptr;
+    if (FAILED(SHGetKnownFolderPath(
+            FOLDERID_ProgramData, 0, nullptr, &program_data))) {
+        LogError("SHGetKnownFolderPath(FOLDERID_ProgramData) failed (error: %lu)",
+                 GetLastError());
+        return {};
     }
-    return GetExeDir();
+
+    std::filesystem::path p =
+            std::filesystem::path(program_data) / L"TrustTunnel";
+    CoTaskMemFree(program_data);
+
+    std::error_code ec;
+    std::filesystem::create_directories(p, ec);
+    if (ec) {
+        LogError("Failed to create the runtime data directory (error: %d)",
+                 ec.value());
+    }
+    return p;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +166,7 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
     : m_registrar(registrar),
       m_service_name(L"TrustTunnelVPN"),
       m_pipe_name(L"\\\\.\\pipe\\trusttunnel_vpn") {
-    // Use writable path (MSIX-safe) for runtime data.
+    // Runtime data lives in %ProgramData%\TrustTunnel, shared with the service.
     std::filesystem::path app_data = GetWritableAppDataPath();
     m_ring_buffer_path = app_data / L"vpn_query_log.ring";
     m_logs_dir = app_data / L"logs";
@@ -246,12 +245,6 @@ int32_t VpnPlugin::RunElevatedHelper(const std::wstring& params) {
 }
 
 int32_t VpnPlugin::InstallService() {
-    if (IsRunningInMsixPackage()) {
-        // When running in MSIX, the service is managed by the platform
-        // (packaged service). Installing isn't supported; the service is
-        // installed along with the package.
-        return TRUSTTUNNEL_SVC_ERR_OTHER;
-    }
     std::filesystem::path exe_dir = GetExeDir();
     std::wstring service_exe = (exe_dir / L"trusttunnel_service.exe").wstring();
     // The directory where both the client and the service write their
@@ -276,12 +269,6 @@ int32_t VpnPlugin::InstallService() {
 }
 
 int32_t VpnPlugin::UninstallService() {
-    if (IsRunningInMsixPackage()) {
-        // When running in MSIX, the service is managed by the platform
-        // (packaged service). Uninstalling isn't supported; the service is
-        // removed when the package is uninstalled.
-        return TRUSTTUNNEL_SVC_ERR_OTHER;
-    }
     std::wstring params = L"uninstall \"" + m_service_name + L"\"";
     return RunElevatedHelper(params);
 }
