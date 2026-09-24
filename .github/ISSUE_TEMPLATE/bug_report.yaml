@@ -43,18 +43,7 @@ body:
       options:
         - Android
         - iOS
-    validations:
-      required: true
-
-  - type: dropdown
-    id: build_mode
-    attributes:
-      label: Build mode
-      multiple: false
-      options:
-        - Debug
-        - Profile
-        - Release
+        - MacOS
     validations:
       required: true
 
