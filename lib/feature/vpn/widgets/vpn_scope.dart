@@ -515,18 +515,15 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnControl
   final Listenable disconnectOnExitErrorListenable;
 
   const _InheritedVpnScope({
-    required UpdateVpnCallback onStart,
+    required this._onStart,
     required UpdateVpnCallback onUpdate,
-    required AsyncCallback onStop,
-    required AsyncCallback onDeleteConfiguration,
+    required this._onStop,
+    required this._onDeleteConfiguration,
     required this.disconnectOnExitErrorListenable,
     required this.state,
     required this.logs,
     required super.child,
-  }) : _onStart = onStart,
-       _onStop = onStop,
-       _onDeleteConfiguration = onDeleteConfiguration,
-       _updateConfiguration = onUpdate;
+  }) : _updateConfiguration = onUpdate;
 
   @override
   Future<void> start({

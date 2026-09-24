@@ -14,11 +14,10 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
   final ShareClient _shareClient;
 
   LogsManagerController({
-    required ExportLogsRepository repository,
-    ShareClient shareClient = const AdgShare(),
+    required this._repository,
+    this._shareClient = const AdgShare(),
     super.initialState = const LogsManagerState.initial(),
-  }) : _repository = repository,
-       _shareClient = shareClient;
+  });
 
   void export({
     ValueChanged<ExportLogsArchive>? onArchiveReady,

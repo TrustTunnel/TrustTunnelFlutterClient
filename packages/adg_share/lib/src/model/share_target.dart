@@ -15,8 +15,7 @@ enum ShareTarget {
   postToVimeo('com.apple.UIKit.activity.PostToVimeo'),
   postToWeibo('com.apple.UIKit.activity.PostToWeibo'),
   print('com.apple.UIKit.activity.Print'),
-  saveToCameraRoll('com.apple.UIKit.activity.SaveToCameraRoll')
-  ;
+  saveToCameraRoll('com.apple.UIKit.activity.SaveToCameraRoll');
 
   const ShareTarget(this.platformIdentifier);
 

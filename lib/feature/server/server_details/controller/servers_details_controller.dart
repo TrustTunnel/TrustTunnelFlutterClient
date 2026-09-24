@@ -22,15 +22,12 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
 
   /// {@macro products_controller}
   ServerDetailsController({
-    required ServerRepository repository,
-    required RoutingRepository routingRepository,
-    required ServerDetailsService detailsService,
-    required String? serverId,
+    required this._repository,
+    required this._routingRepository,
+    required this._detailsService,
+    required this._serverId,
     super.initialState = const ServerDetailsState.initial(),
-  }) : _repository = repository,
-       _routingRepository = routingRepository,
-       _detailsService = detailsService,
-       _serverId = serverId;
+  });
 
   /// Make a purchase for the given product ID
   void fetch() {

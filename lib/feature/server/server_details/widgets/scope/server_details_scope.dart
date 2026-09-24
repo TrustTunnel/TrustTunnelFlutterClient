@@ -116,7 +116,7 @@ class _InheritedServerDetailsScope extends InheritedModel<ServerDetailsScopeAspe
   final ServerDetailsState _state;
 
   const _InheritedServerDetailsScope({
-    required ServerDetailsState state,
+    required this._state,
     required this.changeData,
     required this.fetchServer,
     required this.delete,
@@ -126,7 +126,7 @@ class _InheritedServerDetailsScope extends InheritedModel<ServerDetailsScopeAspe
     required this.pickPemCertificate,
     required this.clearPemCertificate,
     required super.child,
-  }) : _state = state;
+  });
 
   static _InheritedServerDetailsScope serversControllerOf(
     BuildContext context, {

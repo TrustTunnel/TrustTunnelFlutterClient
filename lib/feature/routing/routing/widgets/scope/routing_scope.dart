@@ -90,9 +90,9 @@ class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implemen
     required this.fieldErrors,
     required this.loading,
     required this.routingList,
-    required RoutingController rawController,
+    required this._rawController,
     required super.child,
-  }) : _rawController = rawController;
+  });
 
   // Controller API
 
@@ -168,10 +168,10 @@ class RoutingScopeValue extends StatelessWidget {
   final RoutingController _controller;
 
   const RoutingScopeValue({
-    required RoutingController controller,
+    required this._controller,
     required this.child,
     super.key,
-  }) : _controller = controller;
+  });
 
   RoutingScopeValue.fromContext({
     required BuildContext context,

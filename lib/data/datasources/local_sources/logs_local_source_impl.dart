@@ -22,16 +22,12 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
   final SharedPreferences _sharedPreferences;
 
   LogsLocalSourceImpl({
-    required FileLogAppender logAppender,
-    required AppStateLoggingDataSource appStateLoggingDataSource,
-    required FilePicker filePicker,
-    required VpnPlugin vpnPlugin,
-    required SharedPreferences sharedPreferences,
-  }) : _logAppender = logAppender,
-       _appStateLoggingDataSource = appStateLoggingDataSource,
-       _vpnPlugin = vpnPlugin,
-       _sharedPreferences = sharedPreferences,
-       _filePicker = filePicker;
+    required this._logAppender,
+    required this._appStateLoggingDataSource,
+    required this._filePicker,
+    required this._vpnPlugin,
+    required this._sharedPreferences,
+  });
 
   @override
   Future<ExportLogsArchive> createArchive() async {

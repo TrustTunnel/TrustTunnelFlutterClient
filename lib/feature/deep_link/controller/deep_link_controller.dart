@@ -16,9 +16,9 @@ final class DeepLinkController extends BaseStateController<DeepLinkState> with S
 
   /// {@macro products_controller}
   DeepLinkController({
-    required DeepLinkRepository repository,
+    required this._repository,
     super.initialState = const DeepLinkState.initial(),
-  }) : _repository = repository;
+  });
 
   void onDeepLinkReceived(Uri? deepLink) => handle(
     () async {

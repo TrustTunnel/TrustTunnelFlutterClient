@@ -16,8 +16,8 @@ class LoggingSettingsRepositoryImpl implements LoggingSettingsRepository {
   final LoggingSettingsDataSource _dataSource;
 
   LoggingSettingsRepositoryImpl({
-    required LoggingSettingsDataSource dataSource,
-  }) : _dataSource = dataSource;
+    required this._dataSource,
+  });
 
   @override
   Future<LoggingLevel> getLoggingLevel() => _dataSource.getLoggingLevel();

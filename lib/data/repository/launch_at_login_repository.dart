@@ -12,8 +12,8 @@ class LaunchAtLoginRepositoryImpl implements LaunchAtLoginRepository {
   final LaunchAtLoginDataSource _dataSource;
 
   LaunchAtLoginRepositoryImpl({
-    required LaunchAtLoginDataSource dataSource,
-  }) : _dataSource = dataSource;
+    required this._dataSource,
+  });
 
   @override
   Future<bool> isEnabled() => _dataSource.isEnabled();

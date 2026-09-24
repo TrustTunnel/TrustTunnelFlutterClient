@@ -21,13 +21,11 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
 
   /// {@macro products_controller}
   RoutingDetailsController({
-    required RoutingRepository repository,
-    required RoutingDetailsServiceImpl detailsService,
-    required String? profileId,
+    required this._repository,
+    required RoutingDetailsServiceImpl this._detailsService,
+    required this._profileId,
     super.initialState = const RoutingDetailsState.initial(),
-  }) : _repository = repository,
-       _detailsService = detailsService,
-       _profileId = profileId;
+  });
 
   /// Make a purchase for the given product ID
   void fetch() {

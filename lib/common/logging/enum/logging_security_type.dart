@@ -1,7 +1,6 @@
 enum LoggingSecurityType {
   stripped('stripped'),
-  full('full')
-  ;
+  full('full');
 
   final String value;
 

@@ -72,12 +72,12 @@ class _InheritedExcludedRoutesScope extends InheritedModel<ExcludedRoutesAspect>
   final ExcludedRoutesState _state;
 
   const _InheritedExcludedRoutesScope({
-    required ExcludedRoutesState state,
+    required this._state,
     required this.changeData,
     required this.fetchExcludedRoutes,
     required this.submit,
     required super.child,
-  }) : _state = state;
+  });
 
   @override
   final ExcludedRoutesDataChangedCallback changeData;

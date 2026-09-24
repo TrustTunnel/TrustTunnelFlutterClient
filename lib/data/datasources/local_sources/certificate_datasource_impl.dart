@@ -13,10 +13,9 @@ class CertificateDataSourceImpl implements CertificateDataSource {
   final RawCertificateDecoder _decoder;
 
   const CertificateDataSourceImpl({
-    required FilePicker filePicker,
-    required RawCertificateDecoder decoder,
-  }) : _decoder = decoder,
-       _filePicker = filePicker;
+    required this._filePicker,
+    required this._decoder,
+  });
 
   @override
   Future<Certificate?> pickCertificate() async {
