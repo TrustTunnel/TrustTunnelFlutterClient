@@ -48,7 +48,6 @@ linter:
     annotate_overrides: true
     avoid_function_literals_in_foreach_calls: true
     avoid_init_to_null: true
-    avoid_null_checks_in_equality_operators: true
     avoid_renaming_method_parameters: true
     avoid_return_types_on_setters: true
     avoid_single_cascade_in_expression_statements: true
