@@ -97,17 +97,3 @@ jobs:
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
       artifact-name: trusttunnel-windows-x64-pr
-
-  build-windows-arm64:
-    needs: [prepare]
-    # if: >-
-    #   github.event.pull_request.draft == false
-    uses: ./.github/workflows/flutter-build-windows.yml
-    secrets: inherit
-    with:
-      architecture: arm64
-      channel: nightly
-      version: ${{ needs.prepare.outputs.version }}
-      build-number: ${{ github.run_number }}
-      version-title: ${{ needs.prepare.outputs.version-title }}
-      artifact-name: trusttunnel-windows-arm64-pr
