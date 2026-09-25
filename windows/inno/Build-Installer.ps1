@@ -1,3 +1,9 @@
+# Builds Flutter for Windows, then packages the app and VC++ runtime into an
+# EXE installer with Inno Setup 6.6+.
+# From the repository root on Windows (Flutter and GPR_KEY required; x64/arm64 architecture):
+#   .\windows\inno\Build-Installer.ps1 -Architecture x64
+# Output: build\windows\installer\TrustTunnelSetup-x64.exe
+
 [CmdletBinding()]
 param(
     [ValidateSet("Debug", "Profile", "Release")]
