@@ -47,21 +47,21 @@ jobs:
       image: ${{ steps.kv.outputs.value }}
       pool: ${{ steps.arch.outputs.pool }}
     steps:
-      - name: Validate architecture and select runner pool
-        id: arch
-        shell: bash
-        env:
-          ARCHITECTURE: ${{ inputs.architecture }}
-        run: |
-          case "$ARCHITECTURE" in
-            x64) echo 'pool=ephemeral-vmwin' >> "$GITHUB_OUTPUT" ;;
-            arm64) echo 'pool=ephemeral-vmwin-arm64' >> "$GITHUB_OUTPUT" ;;
-            *) echo "::error::Unsupported Windows architecture: $ARCHITECTURE"; exit 1 ;;
-          esac
+      # - name: Validate architecture and select runner pool
+      #   id: arch
+      #   shell: bash
+      #   env:
+      #     ARCHITECTURE: ${{ inputs.architecture }}
+      #   run: |
+      #     case "$ARCHITECTURE" in
+      #       x64) echo 'pool=ephemeral-vmwin' >> "$GITHUB_OUTPUT" ;;
+      #       arm64) echo 'pool=ephemeral-vmwin-arm64' >> "$GITHUB_OUTPUT" ;;
+      #       *) echo "::error::Unsupported Windows architecture: $ARCHITECTURE"; exit 1 ;;
+      #     esac
       - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
         id: kv
         with:
-          key: ${{ inputs.architecture == 'arm64' && 'build-images/windows2022-flutter-arm64' || 'build-images/windows2022-flutter' }}
+          key: build-images/windows2022-flutter #${{ inputs.architecture == 'arm64' && 'build-images/windows2022-flutter-arm64' || 'build-images/windows2022-flutter' }}
 
   build:
     needs: [resolve-runner]
@@ -76,25 +76,21 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Enable Git Bash
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $gitBin = Join-Path $env:ProgramFiles 'Git\bin'
-          if (-not (Test-Path (Join-Path $gitBin 'sh.exe'))) {
-            Write-Error "sh.exe not found in $gitBin"
-            exit 1
-          }
-          Add-Content -Path $env:GITHUB_PATH -Value $gitBin -Encoding ascii
-
-      - name: Fix Flutter git safe directory
-        run: git config --global --add safe.directory "${FLUTTER_ROOT:-C:/flutter}"
-
       - name: Checkout repository
         uses: actions/checkout@v5
 
       - name: Apply PR overrides
         uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+
+      - name: Select Flutter
+        env:
+          FLUTTER_VERSION: '3.44.8'
+        run: |
+          set -euo pipefail
+          : "${FLUTTER_SDKS_ROOT:?image does not provide versioned Flutter SDKs}"
+          sdk="$FLUTTER_SDKS_ROOT/$FLUTTER_VERSION"
+          echo "$sdk/bin" >> "$GITHUB_PATH"
+          { echo "FLUTTER_ROOT=$sdk"; echo "FLUTTER_HOME=$sdk"; } >> "$GITHUB_ENV"
 
       - name: Flutter pub get and code generation
         run: make init
