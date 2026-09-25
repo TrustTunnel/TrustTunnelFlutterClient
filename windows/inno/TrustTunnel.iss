@@ -73,7 +73,6 @@ VersionInfoCopyright=Copyright (C) 2026 Adguard Software Limited. All rights res
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
