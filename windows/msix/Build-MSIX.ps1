@@ -16,7 +16,6 @@
 # Flow:
 #   1. flutter build windows
 #   2. dart run msix:build        (generates AppxManifest + assets)
-#   2b. Sign vpn.exe with the test cert and derive the client-authentication pin
 #   3. Patch AppxManifest.xml: inject the packaged service
 #   4. dart run msix:pack          (packages + signs with the test cert)
 #
@@ -84,36 +83,6 @@ try {
     }
 
     # ------------------------------------------------------------------
-    # 2b. Sign the app executable and derive the client-authentication pin
-    # ------------------------------------------------------------------
-    Write-Host "=== Signing app executable + deriving client pin ===" -ForegroundColor Cyan
-
-    $appExePath = Join-Path $buildOutputDir "vpn.exe"
-    if (-not (Test-Path $appExePath)) {
-        Write-Error "App executable not found at '$appExePath'. Did 'flutter build windows' succeed?"
-        exit 1
-    }
-
-    signtool sign /fd SHA256 /f $testPfxPath /p "trusttunnel" $appExePath
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "signtool failed to sign '$appExePath' (exit code $LASTEXITCODE)"
-        exit $LASTEXITCODE
-    }
-
-    $signerCert = (Get-AuthenticodeSignature -FilePath $appExePath).SignerCertificate
-    if ($null -eq $signerCert) {
-        Write-Error "App executable '$appExePath' has no signer certificate; refusing to build a pinless MSIX"
-        exit 1
-    }
-
-    $clientPin = $signerCert.GetCertHashString([System.Security.Cryptography.HashAlgorithmName]::SHA256)
-    if (-not $clientPin -or $clientPin.Length -ne 64) {
-        Write-Error "Failed to derive a 64-character SHA-256 pin for '$appExePath' (got: '$clientPin')"
-        exit 1
-    }
-    Write-Host "  App executable signed; client-authentication pin: $clientPin" -ForegroundColor Green
-
-    # ------------------------------------------------------------------
     # 3. Locate and patch AppxManifest.xml IN-PLACE
     # ------------------------------------------------------------------
     Write-Host "=== Injecting packaged service extension ===" -ForegroundColor Cyan
@@ -146,11 +115,11 @@ try {
         $applicationNode.AppendChild($extensionsNode) | Out-Null
     }
 
-    # Service arguments: logs dir, pipe name, ring buffer path, pin.
+    # Service arguments: logs dir, pipe name, ring buffer path.
     # An empty pipe name makes the service generate a random one per start;
     # the plugin discovers it from the registry. The logs dir must match the
     # plugin's (%ProgramData%\TrustTunnel\logs).
-    $serviceArgs = '%ProgramData%\TrustTunnel\logs "" %ProgramData%\TrustTunnel\vpn_query_log.ring {0}' -f $clientPin
+    $serviceArgs = '%ProgramData%\TrustTunnel\logs "" %ProgramData%\TrustTunnel\vpn_query_log.ring'
 
     $d6ns = "http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
     $existingService = $extensionsNode.SelectSingleNode(

@@ -255,10 +255,9 @@ int32_t VpnPlugin::InstallService() {
 
     // Build the command-line arguments for trusttunnel_service_installer.exe:
     //   install <image_path> <logs_dir> <pipe_name|empty> <name>
-    //           <display_name> <description> <ring_buffer_path> <pin|empty>
+    //           <display_name> <description> <ring_buffer_path>
     // An empty pipe name makes the service generate a fresh random name on
     // every start and publish it for trusttunnel_service_attach() to discover.
-    // The dev self-install is always pinless.
     std::wstring params = L"install";
     params += L" \"" + service_exe + L"\"";
     params += L" \"" + logs_dir + L"\"";
@@ -267,7 +266,6 @@ int32_t VpnPlugin::InstallService() {
     params += L" \"TrustTunnel VPN Service\"";
     params += L" \"Provides VPN connectivity for the TrustTunnel client.\"";
     params += L" \"" + ring_buffer_path_w + L"\"";
-    params += L" \"\"";
 
     return RunElevatedHelper(params);
 }
