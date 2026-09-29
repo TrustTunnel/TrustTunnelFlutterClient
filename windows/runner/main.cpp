@@ -1,6 +1,7 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
+#include <VersionHelpers.h>
 
 #include <cwchar>
 #include <iterator>
@@ -185,6 +186,12 @@ void ActivateWindow(HWND window) {
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  if (!IsWindows10OrGreater()) {
+    ::MessageBoxW(nullptr, L"TrustTunnel requires Windows 10 or later.",
+                  L"TrustTunnel", MB_OK | MB_ICONERROR);
+    return EXIT_FAILURE;
+  }
+
   HANDLE app_mutex = ::CreateMutexW(nullptr, TRUE, kAppMutexName);
   const DWORD mutex_error = ::GetLastError();
   if (app_mutex == nullptr) {

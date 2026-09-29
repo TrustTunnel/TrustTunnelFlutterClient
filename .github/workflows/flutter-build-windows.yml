@@ -3,10 +3,6 @@ name: Flutter Build Windows
 on:
   workflow_call:
     inputs:
-      architecture:
-        type: string
-        required: true
-        description: 'Windows target architecture: x64 or arm64'
       runner-memory-mb:
         type: string
         default: '12288'
@@ -45,23 +41,11 @@ jobs:
     runs-on: [team-flutter]
     outputs:
       image: ${{ steps.kv.outputs.value }}
-      pool: ${{ steps.arch.outputs.pool }}
     steps:
-      # - name: Validate architecture and select runner pool
-      #   id: arch
-      #   shell: bash
-      #   env:
-      #     ARCHITECTURE: ${{ inputs.architecture }}
-      #   run: |
-      #     case "$ARCHITECTURE" in
-      #       x64) echo 'pool=ephemeral-vmwin' >> "$GITHUB_OUTPUT" ;;
-      #       arm64) echo 'pool=ephemeral-vmwin-arm64' >> "$GITHUB_OUTPUT" ;;
-      #       *) echo "::error::Unsupported Windows architecture: $ARCHITECTURE"; exit 1 ;;
-      #     esac
       - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
         id: kv
         with:
-          key: build-images/windows2022-flutter #${{ inputs.architecture == 'arm64' && 'build-images/windows2022-flutter-arm64' || 'build-images/windows2022-flutter' }}
+          key: build-images/windows2022-flutter
 
   build:
     needs: [resolve-runner]
@@ -113,61 +97,55 @@ jobs:
 
       - name: Validate Windows bundle
         shell: powershell
-        env:
-          ARCHITECTURE: ${{ inputs.architecture }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $buildDir = "build\windows\$env:ARCHITECTURE\runner\Release"
-          $requiredFiles = @(
-            'TrustTunnel.exe',
-            'cleanup_user_data_helper.exe',
-            'app_links_plugin.dll',
-            'flutter_windows.dll',
-            'screen_retriever_windows_plugin.dll',
-            'sqlite3.dll',
-            'sqlite3_flutter_libs_plugin.dll',
-            'url_launcher_windows_plugin.dll',
-            'vpn_plugin_plugin.dll',
-            'window_manager_plugin.dll',
-            'trusttunnel.dll',
-            'trusttunnel_service.exe',
-            'trusttunnel_service_installer.exe',
-            'wintun.dll'
-          )
-          foreach ($file in $requiredFiles) {
-            $path = Join-Path $buildDir $file
-            if (-not (Test-Path $path -PathType Leaf)) {
-              throw "Required Windows bundle file is missing: $path"
-            }
-          }
+          .\windows\build_scripts\Verify-WindowsBundle.ps1 `
+            -BundlePath build\windows\x64\runner\Release -Architecture x64
 
       - name: Collect build metadata
         shell: powershell
-        run: .\windows\build_scripts\Build-MetadataFile.ps1 -Architecture ${{ inputs.architecture }}
+        run: .\windows\build_scripts\Build-MetadataFile.ps1 -Architecture x64
+
+      - name: Prepare mixed ARM64 bundle
+        shell: powershell
+        env:
+          GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
+        run: .\windows\build_scripts\Prepare-MixedArm64Bundle.ps1
 
       - name: Upload build metadata
         uses: actions/upload-artifact@v7
         with:
-          name: trusttunnel-windows-build-metadata-${{ inputs.architecture }}
+          name: trusttunnel-windows-build-metadata-x64
           path: build/windows/metadata/build.json
           if-no-files-found: error
 
       - name: Upload unsigned Windows bundle
         uses: actions/upload-artifact@v7
         with:
-          name: trusttunnel-windows-bundle-unsigned-${{ inputs.architecture }}
-          path: build/windows/${{ inputs.architecture }}/runner/Release/
+          name: trusttunnel-windows-bundle-unsigned-x64
+          path: build/windows/x64/runner/Release/
+          if-no-files-found: error
+
+      - name: Upload unsigned mixed ARM64 bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: trusttunnel-windows-bundle-unsigned-arm64-mixed
+          path: build/windows/arm64-mixed/runner/Release/
           if-no-files-found: error
 
   sign-binaries:
     needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        bundle: [x64, arm64-mixed]
     permissions:
       contents: read
       id-token: write
     uses: AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master
     with:
       team: flutter
-      artifact-name: trusttunnel-windows-bundle-unsigned-${{ inputs.architecture }}
+      artifact-name: trusttunnel-windows-bundle-unsigned-${{ matrix.bundle }}
       # Wintun keeps its upstream signature; the package job verifies it.
       files: |
         TrustTunnel.exe
@@ -183,10 +161,14 @@ jobs:
         trusttunnel.dll
         trusttunnel_service.exe
         trusttunnel_service_installer.exe
-      signed-artifact-name: trusttunnel-windows-bundle-signed-${{ inputs.architecture }}
+      signed-artifact-name: trusttunnel-windows-bundle-signed-${{ matrix.bundle }}
 
   package-installer:
     needs: [resolve-runner, sign-binaries]
+    strategy:
+      fail-fast: false
+      matrix:
+        bundle: [x64, arm64-mixed]
     runs-on:
       - ephemeral
       - ephemeral-vmwin
@@ -205,12 +187,10 @@ jobs:
       - name: Download signed Windows bundle
         uses: actions/download-artifact@v8
         with:
-          name: trusttunnel-windows-bundle-signed-${{ inputs.architecture }}
-          path: build/windows/${{ inputs.architecture }}/runner/Release
+          name: trusttunnel-windows-bundle-signed-${{ matrix.bundle }}
+          path: build/windows/${{ matrix.bundle }}/runner/Release
 
       - name: Resolve SignTool
-        env:
-          ARCHITECTURE: ${{ inputs.architecture }}
         run: |
           $ErrorActionPreference = 'Stop'
           $windowsKitsPath = 'C:\Program Files (x86)\Windows Kits\10\bin'
@@ -218,7 +198,7 @@ jobs:
             Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
             Sort-Object { [Version]$_.Name } -Descending
           $signtoolPath = $sdkDirectories |
-            ForEach-Object { Join-Path $_.FullName "$env:ARCHITECTURE\signtool.exe" } |
+            ForEach-Object { Join-Path $_.FullName 'x64\signtool.exe' } |
             Where-Object { Test-Path $_ -PathType Leaf } |
             Select-Object -First 1
           if (-not $signtoolPath) {
@@ -230,47 +210,52 @@ jobs:
 
       - name: Verify signed Windows bundle
         env:
-          ARCHITECTURE: ${{ inputs.architecture }}
+          BUNDLE_ARCHITECTURE: ${{ matrix.bundle }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $buildDir = "build\windows\$env:ARCHITECTURE\runner\Release"
-          $binaries = @(Get-ChildItem -Path $buildDir -Recurse -File |
-            Where-Object { $_.Extension -in @('.exe', '.dll') })
-          foreach ($binary in $binaries) {
-            & $env:SIGNTOOL_PATH verify /pa /all /v /tw $binary.FullName
-            if ($LASTEXITCODE -ne 0) {
-              throw "Authenticode verification failed for $($binary.FullName)"
-            }
-          }
+          .\windows\build_scripts\Verify-WindowsBundle.ps1 `
+            -BundlePath "build\windows\$env:BUNDLE_ARCHITECTURE\runner\Release" `
+            -Architecture $env:BUNDLE_ARCHITECTURE `
+            -SignToolPath $env:SIGNTOOL_PATH
 
       - name: Build EXE installer
         env:
           APP_VERSION: ${{ inputs.version }}
           BUILD_NUMBER: ${{ inputs.build-number }}
+          BUNDLE_ARCHITECTURE: ${{ matrix.bundle }}
         run: |
           $ErrorActionPreference = 'Stop'
-          & .\windows\inno\Build-Installer.ps1 `
-            -Configuration Release `
-            -Architecture ${{ inputs.architecture }} `
-            -AppVersion $env:APP_VERSION `
-            -BuildNumber $env:BUILD_NUMBER `
-            -SkipFlutterBuild
+          $targetArchitecture = if ($env:BUNDLE_ARCHITECTURE -eq 'arm64-mixed') { 'arm64' } else { 'x64' }
+          $arguments = @{
+            Configuration = 'Release'
+            Architecture = $targetArchitecture
+            AppVersion = $env:APP_VERSION
+            BuildNumber = [int]$env:BUILD_NUMBER
+            SkipFlutterBuild = $true
+            BundlePath = "build\windows\$env:BUNDLE_ARCHITECTURE\runner\Release"
+          }
+          if ($env:BUNDLE_ARCHITECTURE -eq 'arm64-mixed') { $arguments.MixedArm64 = $true }
+          & .\windows\inno\Build-Installer.ps1 @arguments
 
       - name: Upload unsigned installer
         uses: actions/upload-artifact@v7
         with:
-          name: trusttunnel-windows-installer-unsigned-${{ inputs.architecture }}
-          path: build/windows/installer/TrustTunnelSetup-${{ inputs.architecture }}.exe
+          name: trusttunnel-windows-installer-unsigned-${{ matrix.bundle }}
+          path: build/windows/installer/TrustTunnelSetup-${{ matrix.bundle }}.exe
           if-no-files-found: error
 
   sign-installer:
     needs: [package-installer]
+    strategy:
+      fail-fast: false
+      matrix:
+        bundle: [x64, arm64-mixed]
     permissions:
       contents: read
       id-token: write
     uses: AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master
     with:
       team: flutter
-      artifact-name: trusttunnel-windows-installer-unsigned-${{ inputs.architecture }}
-      files: TrustTunnelSetup-${{ inputs.architecture }}.exe
-      signed-artifact-name: ${{ inputs.artifact-name }}-${{ inputs.architecture }}
+      artifact-name: trusttunnel-windows-installer-unsigned-${{ matrix.bundle }}
+      files: TrustTunnelSetup-${{ matrix.bundle }}.exe
+      signed-artifact-name: ${{ inputs.artifact-name }}-${{ matrix.bundle }}

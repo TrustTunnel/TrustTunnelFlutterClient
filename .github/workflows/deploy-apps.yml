@@ -248,13 +248,12 @@ jobs:
       artifact-path: macos/build/TrustTunnel.app
 
   # Windows EXE installer.
-  build-windows-x64:
+  build-windows:
     needs: [meta, build-number]
     if: inputs.deploy-windows
     uses: ./.github/workflows/flutter-build-windows.yml
     secrets: inherit
     with:
-      architecture: x64
       channel: ${{ needs.meta.outputs.release-channel }}
       version: ${{ needs.meta.outputs.version }}
       build-number: ${{ needs.build-number.outputs.build-number }}
@@ -262,7 +261,7 @@ jobs:
       artifact-name: trusttunnel-windows-installer
 
   notify-slack:
-    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc, build-windows-x64]
+    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc, build-windows]
     if: >-
       !cancelled() && !failure() &&
       inputs.slack-channel != ''
