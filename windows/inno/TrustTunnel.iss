@@ -6,24 +6,12 @@
   #define NumericVersion "1.2.0.0"
 #endif
 
-#ifndef AppArchitecture
-  #define AppArchitecture "x64"
+#ifndef X64BuildDir
+  #define X64BuildDir "..\..\build\windows\x64\runner\Release"
 #endif
 
-#ifndef MixedArm64
-  #define MixedArm64 "0"
-#endif
-
-#if AppArchitecture != "x64" && AppArchitecture != "arm64"
-  #error Unsupported AppArchitecture. Expected x64 or arm64.
-#endif
-
-#if MixedArm64 == "1" && AppArchitecture != "arm64"
-  #error MixedArm64 requires AppArchitecture arm64.
-#endif
-
-#ifndef BuildDir
-  #define BuildDir "..\..\build\windows\x64\runner\Release"
+#ifndef MixedArm64BuildDir
+  #define MixedArm64BuildDir "..\..\build\windows\arm64-mixed\runner\Release"
 #endif
 
 #ifndef OutputDir
@@ -32,21 +20,6 @@
 
 #ifndef VcRedistPath
   #define VcRedistPath ".cache\vc_redist.x64.exe"
-#endif
-
-#if AppArchitecture == "arm64"
-  #define AllowedArchitecture "arm64"
-#else
-  #define AllowedArchitecture "x64compatible"
-#endif
-
-#if MixedArm64 == "1"
-  #define SetupFilename "TrustTunnelSetup-arm64-mixed"
-  ; Windows 10 on ARM cannot run the x64 Flutter UI in this bundle.
-  #define MinimumWindowsVersion "10.0.22000"
-#else
-  #define SetupFilename "TrustTunnelSetup-" + AppArchitecture
-  #define MinimumWindowsVersion "10.0"
 #endif
 
 #define AppName "TrustTunnel"
@@ -66,12 +39,12 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableReadyPage=yes
 OutputDir={#OutputDir}
-OutputBaseFilename={#SetupFilename}
+OutputBaseFilename=TrustTunnelSetup
 SetupIconFile=..\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#AppExeName}
-ArchitecturesAllowed={#AllowedArchitecture}
-ArchitecturesInstallIn64BitMode={#AllowedArchitecture}
-MinVersion={#MinimumWindowsVersion}
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+MinVersion=10.0
 PrivilegesRequired=admin
 AppMutex=TrustTunnelFlutterClient
 CloseApplications=yes
@@ -96,8 +69,15 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "{#VcRedistPath}"; DestName: "vc_redist.exe"; Flags: dontcopy
-Source: "{#BuildDir}\trusttunnel_service_installer.exe"; DestDir: "service_install"; Flags: dontcopy
-Source: "{#BuildDir}\*"; DestDir: "{app}"; Excludes: "*.exp,*.ilk,*.lib,*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#X64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "service_install\x64"; Flags: dontcopy; Check: not IsArm64
+Source: "{#MixedArm64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "service_install\arm64"; Flags: dontcopy; Check: IsArm64
+Source: "{#X64BuildDir}\*"; DestDir: "{app}"; Excludes: "*.exp,*.ilk,*.lib,*.pdb,trusttunnel_service.exe,trusttunnel_service_installer.exe,wintun.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#X64BuildDir}\trusttunnel_service.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
+Source: "{#MixedArm64BuildDir}\trusttunnel_service.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
+Source: "{#X64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
+Source: "{#MixedArm64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
+Source: "{#X64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
+Source: "{#MixedArm64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
 
 [Dirs]
 Name: "{commonappdata}\TrustTunnel"; Permissions: users-modify
@@ -124,6 +104,22 @@ Type: dirifempty; Name: "{commonappdata}\TrustTunnel"
 #include "Service.iss"
 #include "Rollback.iss"
 #include "Uninstall.iss"
+
+function InitializeSetup: Boolean;
+var
+  WindowsVersion: TWindowsVersion;
+begin
+  Result := True;
+  if IsArm64 then
+  begin
+    GetWindowsVersionEx(WindowsVersion);
+    if (WindowsVersion.Major < 10) or (WindowsVersion.Build < 22000) then
+    begin
+      MsgBox('TrustTunnel requires Windows 11 on ARM64.', mbCriticalError, MB_OK);
+      Result := False;
+    end;
+  end;
+end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin

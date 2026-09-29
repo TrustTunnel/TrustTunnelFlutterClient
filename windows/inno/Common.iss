@@ -18,11 +18,6 @@ const
   ServiceNoChange = $FFFFFFFF;
   ServiceDemandStart = 3;
   ErrorServiceDoesNotExist = 1060;
-#if AppArchitecture == "arm64"
-  ExpectedServiceMachine = $AA64;
-#else
-  ExpectedServiceMachine = $8664;
-#endif
 
 type
   TTrustTunnelServiceStatus = record
@@ -209,4 +204,24 @@ begin
     Result := 'true'
   else
     Result := 'false';
+end;
+
+function ExpectedServiceMachine: Cardinal;
+begin
+  if IsArm64 then
+    Result := $AA64
+  else
+    Result := $8664;
+end;
+
+function BundledServiceHelperPath: String;
+begin
+  if IsArm64 then
+    Result := ExpandConstant(
+      '{tmp}\service_install\arm64\trusttunnel_service_installer.exe'
+    )
+  else
+    Result := ExpandConstant(
+      '{tmp}\service_install\x64\trusttunnel_service_installer.exe'
+    );
 end;

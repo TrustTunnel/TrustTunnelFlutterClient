@@ -165,10 +165,6 @@ jobs:
 
   package-installer:
     needs: [resolve-runner, sign-binaries]
-    strategy:
-      fail-fast: false
-      matrix:
-        bundle: [x64, arm64-mixed]
     runs-on:
       - ephemeral
       - ephemeral-vmwin
@@ -176,7 +172,7 @@ jobs:
       - ephemeral-limit-memory-${{ inputs.runner-memory-mb }}
       - ephemeral-limit-cpu-${{ inputs.runner-cpu }}
       - ephemeral-limit-disk-gb-20
-      - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+      - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}
     defaults:
       run:
         shell: powershell
@@ -184,11 +180,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Download signed Windows bundle
+      - name: Download signed x64 Windows bundle
         uses: actions/download-artifact@v8
         with:
-          name: trusttunnel-windows-bundle-signed-${{ matrix.bundle }}
-          path: build/windows/${{ matrix.bundle }}/runner/Release
+          name: trusttunnel-windows-bundle-signed-x64
+          path: build/windows/x64/runner/Release
+
+      - name: Download signed mixed ARM64 Windows bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-windows-bundle-signed-arm64-mixed
+          path: build/windows/arm64-mixed/runner/Release
 
       - name: Resolve SignTool
         run: |
@@ -208,54 +210,45 @@ jobs:
           Write-Host "Using signtool.exe at $signtoolPath"
           Add-Content -Path $env:GITHUB_ENV -Value "SIGNTOOL_PATH=$signtoolPath" -Encoding ascii
 
-      - name: Verify signed Windows bundle
-        env:
-          BUNDLE_ARCHITECTURE: ${{ matrix.bundle }}
+      - name: Verify signed Windows bundles
         run: |
           $ErrorActionPreference = 'Stop'
-          .\windows\build_scripts\Verify-WindowsBundle.ps1 `
-            -BundlePath "build\windows\$env:BUNDLE_ARCHITECTURE\runner\Release" `
-            -Architecture $env:BUNDLE_ARCHITECTURE `
-            -SignToolPath $env:SIGNTOOL_PATH
+          foreach ($architecture in @('x64', 'arm64-mixed')) {
+            .\windows\build_scripts\Verify-WindowsBundle.ps1 `
+              -BundlePath "build\windows\$architecture\runner\Release" `
+              -Architecture $architecture `
+              -SignToolPath $env:SIGNTOOL_PATH
+          }
 
       - name: Build EXE installer
         env:
           APP_VERSION: ${{ inputs.version }}
           BUILD_NUMBER: ${{ inputs.build-number }}
-          BUNDLE_ARCHITECTURE: ${{ matrix.bundle }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $targetArchitecture = if ($env:BUNDLE_ARCHITECTURE -eq 'arm64-mixed') { 'arm64' } else { 'x64' }
-          $arguments = @{
-            Configuration = 'Release'
-            Architecture = $targetArchitecture
-            AppVersion = $env:APP_VERSION
-            BuildNumber = [int]$env:BUILD_NUMBER
-            SkipFlutterBuild = $true
-            BundlePath = "build\windows\$env:BUNDLE_ARCHITECTURE\runner\Release"
-          }
-          if ($env:BUNDLE_ARCHITECTURE -eq 'arm64-mixed') { $arguments.MixedArm64 = $true }
-          & .\windows\inno\Build-Installer.ps1 @arguments
+          .\windows\inno\Build-Installer.ps1 `
+            -Configuration Release `
+            -AppVersion $env:APP_VERSION `
+            -BuildNumber ([int]$env:BUILD_NUMBER) `
+            -SkipFlutterBuild `
+            -X64BundlePath build\windows\x64\runner\Release `
+            -MixedArm64BundlePath build\windows\arm64-mixed\runner\Release
 
       - name: Upload unsigned installer
         uses: actions/upload-artifact@v7
         with:
-          name: trusttunnel-windows-installer-unsigned-${{ matrix.bundle }}
-          path: build/windows/installer/TrustTunnelSetup-${{ matrix.bundle }}.exe
+          name: trusttunnel-windows-installer-unsigned
+          path: build/windows/installer/TrustTunnelSetup.exe
           if-no-files-found: error
 
   sign-installer:
     needs: [package-installer]
-    strategy:
-      fail-fast: false
-      matrix:
-        bundle: [x64, arm64-mixed]
     permissions:
       contents: read
       id-token: write
     uses: AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master
     with:
       team: flutter
-      artifact-name: trusttunnel-windows-installer-unsigned-${{ matrix.bundle }}
-      files: TrustTunnelSetup-${{ matrix.bundle }}.exe
-      signed-artifact-name: ${{ inputs.artifact-name }}-${{ matrix.bundle }}
+      artifact-name: trusttunnel-windows-installer-unsigned
+      files: TrustTunnelSetup.exe
+      signed-artifact-name: ${{ inputs.artifact-name }}

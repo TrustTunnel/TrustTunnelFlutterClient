@@ -95,4 +95,4 @@ jobs:
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
-      artifact-name: trusttunnel-windows-x64-pr
+      artifact-name: trusttunnel-windows-pr

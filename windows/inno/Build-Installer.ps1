@@ -1,9 +1,19 @@
-# Builds Flutter for Windows, then packages the app and VC++ runtime into an
-# EXE installer with Inno Setup 6.6+.
-# From the repository root on Windows (Flutter and GPR_KEY required):
-#   .\windows\inno\Build-Installer.ps1 -Architecture x64
-# For Windows 11 ARM64 with an x64 UI and native ARM64 VPN service:
-#   .\windows\inno\Build-Installer.ps1 -Architecture arm64 -MixedArm64 -Arm64NativeArchive <path-to-aarch64-zip>
+# Builds one installer containing the x64 Flutter client and both native
+# service variants with Inno Setup 6.6+.
+# Arguments:
+#   -Configuration          Flutter build configuration (default: Release).
+#   -AppVersion             App version embedded in the installer.
+#   -BuildNumber            Fourth component of the installer version.
+#   -SkipFlutterBuild       Package existing bundles without building Flutter.
+#   -Arm64NativeArchive     Use a local ARM64 native ZIP instead of downloading it.
+#   -X64BundlePath          Path to the x64 Flutter bundle.
+#   -MixedArm64BundlePath   Path to the mixed ARM64 bundle.
+#   -ForceDownload          Download the VC++ redistributable again.
+# Usage:
+# From the repository root on x64 Windows (Flutter and GPR_KEY required):
+#   .\windows\inno\Build-Installer.ps1 -Arm64NativeArchive <path-to-aarch64-zip>
+# To package existing bundles:
+#   .\windows\inno\Build-Installer.ps1 -SkipFlutterBuild -X64BundlePath <path> -MixedArm64BundlePath <path>
 
 [CmdletBinding()]
 param(
@@ -16,16 +26,13 @@ param(
     [ValidateRange(0, 65535)]
     [int]$BuildNumber = 0,
 
-    [ValidateSet("x64", "arm64")]
-    [string]$Architecture,
-
     [switch]$SkipFlutterBuild,
-
-    [switch]$MixedArm64,
 
     [string]$Arm64NativeArchive,
 
-    [string]$BundlePath,
+    [string]$X64BundlePath,
+
+    [string]$MixedArm64BundlePath,
 
     [switch]$ForceDownload
 )
@@ -46,37 +53,12 @@ $numericVersion = "{0}.{1}.{2}.{3}" -f `
     $versionMatch.Groups[3].Value, `
     $BuildNumber
 
-$hostArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
-if (-not $Architecture) {
-    $Architecture = switch ($hostArchitecture) {
-        'X64' { 'x64' }
-        'Arm64' { 'arm64' }
-        default { throw "Unsupported Windows architecture: $hostArchitecture" }
-    }
+if (-not $SkipFlutterBuild -and
+    [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -ne 'X64') {
+    throw 'The x64 Flutter bundle must be built on x64 Windows. Use -SkipFlutterBuild to package existing bundles.'
 }
-$flutterArchitecture = if ($MixedArm64) { 'x64' } else { $Architecture }
-if ($MixedArm64 -and $Architecture -ne 'arm64') {
-    throw 'MixedArm64 requires -Architecture arm64.'
-}
-if ($Arm64NativeArchive -and -not $MixedArm64) {
-    throw '-Arm64NativeArchive requires -MixedArm64.'
-}
-if ($MixedArm64 -and -not $SkipFlutterBuild -and -not $Arm64NativeArchive) {
-    throw 'A local mixed ARM64 build requires -Arm64NativeArchive.'
-}
-if (-not $SkipFlutterBuild -and $flutterArchitecture -ne $hostArchitecture.ToLowerInvariant()) {
-    throw "Cannot build Windows $Architecture on a $hostArchitecture host. Use -SkipFlutterBuild to package an existing bundle."
-}
-switch ($Architecture) {
-    "x64" {
-        $vcRedistName = "vc_redist.x64.exe"
-        $vcRedistUrl = "https://aka.ms/vc14/vc_redist.x64.exe"
-    }
-    "arm64" {
-        $vcRedistName = if ($MixedArm64) { "vc_redist.x64.exe" } else { "vc_redist.arm64.exe" }
-        $vcRedistUrl = "https://aka.ms/vc14/$vcRedistName"
-    }
-}
+$vcRedistName = 'vc_redist.x64.exe'
+$vcRedistUrl = 'https://aka.ms/vc14/vc_redist.x64.exe'
 
 if (-not $SkipFlutterBuild) {
     if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
@@ -108,27 +90,39 @@ if (-not $SkipFlutterBuild) {
     }
 }
 
-$buildDir = if ($BundlePath) {
-    [IO.Path]::GetFullPath($BundlePath)
-} elseif ($MixedArm64) {
-    Join-Path $repoRoot "build\windows\arm64-mixed\runner\$Configuration"
+$x64BuildDir = if ($X64BundlePath) {
+    [IO.Path]::GetFullPath($X64BundlePath)
 } else {
-    Join-Path $repoRoot "build\windows\$Architecture\runner\$Configuration"
+    Join-Path $repoRoot "build\windows\x64\runner\$Configuration"
 }
-if ($MixedArm64 -and $Arm64NativeArchive) {
+$mixedBuildDir = if ($MixedArm64BundlePath) {
+    [IO.Path]::GetFullPath($MixedArm64BundlePath)
+} else {
+    Join-Path $repoRoot "build\windows\arm64-mixed\runner\$Configuration"
+}
+if ([string]::Equals($x64BuildDir, $mixedBuildDir, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'The x64 and mixed ARM64 bundles must have separate paths.'
+}
+if (-not $SkipFlutterBuild -or $Arm64NativeArchive) {
     $metadataPath = Join-Path $repoRoot 'build\windows\metadata\build.json'
     & (Join-Path $repoRoot 'windows\build_scripts\Build-MetadataFile.ps1') `
         -Architecture x64 -OutputPath $metadataPath
     & (Join-Path $repoRoot 'windows\build_scripts\Prepare-MixedArm64Bundle.ps1') `
         -Configuration $Configuration `
         -Arm64NativeArchive $Arm64NativeArchive `
+        -SourceBundle $x64BuildDir `
         -MetadataPath $metadataPath `
-        -OutputBundle $buildDir
+        -OutputBundle $mixedBuildDir
 }
-$bundleArchitecture = if ($MixedArm64) { 'arm64-mixed' } else { $Architecture }
-if ($bundleArchitecture -in @('x64', 'arm64-mixed')) {
+foreach ($bundle in @(
+    @{ Path = $x64BuildDir; Architecture = 'x64' },
+    @{ Path = $mixedBuildDir; Architecture = 'arm64-mixed' }
+)) {
+    if (-not (Test-Path -LiteralPath $bundle.Path -PathType Container)) {
+        throw "Windows $($bundle.Architecture) bundle is missing: $($bundle.Path)"
+    }
     & (Join-Path $repoRoot 'windows\build_scripts\Verify-WindowsBundle.ps1') `
-        -BundlePath $buildDir -Architecture $bundleArchitecture -Configuration $Configuration
+        -BundlePath $bundle.Path -Architecture $bundle.Architecture -Configuration $Configuration
 }
 $cacheDir = Join-Path $scriptDir ".cache"
 New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
@@ -202,23 +196,18 @@ $issPath = Join-Path $scriptDir "TrustTunnel.iss"
 $isccArguments = @(
     "/DAppVersion=$AppVersion",
     "/DNumericVersion=$numericVersion",
-    "/DAppArchitecture=$Architecture",
-    "/DBuildDir=$buildDir",
+    "/DX64BuildDir=$x64BuildDir",
+    "/DMixedArm64BuildDir=$mixedBuildDir",
     "/DOutputDir=$outputDir",
     "/DVcRedistPath=$vcRedistPath",
     $issPath
 )
-if ($MixedArm64) {
-    $isccArguments = @('/DMixedArm64=1') + $isccArguments
-}
-
 & $isccPath @isccArguments
 if ($LASTEXITCODE -ne 0) {
     throw "Inno Setup compilation failed with exit code $LASTEXITCODE."
 }
 
-$installerName = if ($MixedArm64) { 'TrustTunnelSetup-arm64-mixed.exe' } else { "TrustTunnelSetup-$Architecture.exe" }
-$installerPath = Join-Path $outputDir $installerName
+$installerPath = Join-Path $outputDir 'TrustTunnelSetup.exe'
 if (-not (Test-Path $installerPath)) {
     throw "The installer was not created at the expected path: $installerPath"
 }

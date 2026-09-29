@@ -387,10 +387,7 @@ begin
 
   HelperPath := ExpandConstant('{app}\trusttunnel_service_installer.exe');
   if not FileExists(HelperPath) then
-    HelperPath :=
-      ExpandConstant(
-        '{tmp}\service_install\trusttunnel_service_installer.exe'
-      );
+    HelperPath := BundledServiceHelperPath;
 
   if FileExists(HelperPath) then
   begin
@@ -501,18 +498,32 @@ begin
     '"';
 end;
 
-function RunServiceInstallHelper(var ErrorMessage: String): Boolean;
+function RunServiceInstallHelper(
+  const UseInstalledHelper: Boolean;
+  var ErrorMessage: String
+): Boolean;
 var
   HelperPath: String;
   Parameters: String;
 begin
   Result := False;
   ErrorMessage := '';
-  ExtractTemporaryFiles('service_install\*');
-
-  HelperPath := ExpandConstant(
-    '{tmp}\service_install\trusttunnel_service_installer.exe'
-  );
+  if UseInstalledHelper then
+    HelperPath := ExpandConstant('{app}\trusttunnel_service_installer.exe')
+  else
+  begin
+    if IsArm64 then
+      ExtractTemporaryFiles('service_install\arm64\*')
+    else
+      ExtractTemporaryFiles('service_install\x64\*');
+    HelperPath := BundledServiceHelperPath;
+  end;
+  if not FileExists(HelperPath) then
+  begin
+    ErrorMessage := 'The TrustTunnel VPN service installer is missing: ' +
+      HelperPath;
+    exit;
+  end;
   Parameters :=
     'install ' +
     '"' + ExpandConstant('{app}\trusttunnel_service.exe') + '" ' +
@@ -737,7 +748,7 @@ begin
 
   if not ServiceExistedBeforeInstall then
   begin
-    if not RunServiceInstallHelper(ErrorMessage) then
+    if not RunServiceInstallHelper(False, ErrorMessage) then
     begin
       if ServiceExists and
          ReadServiceConfiguration(CurrentImagePath, CurrentStartType) and
@@ -874,4 +885,3 @@ begin
     BooleanAsText(ServiceWasRunning));
   Result := True;
 end;
-

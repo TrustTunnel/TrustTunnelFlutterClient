@@ -247,7 +247,8 @@ jobs:
       artifact-name: trusttunnel-macos-testing
       artifact-path: macos/build/TrustTunnel.app
 
-  # Windows EXE installer.
+  # Windows Build Steps
+  # One signed TrustTunnelSetup.exe for Windows 10-11 x64 and Windows 11 ARM64.
   build-windows:
     needs: [meta, build-number]
     if: inputs.deploy-windows

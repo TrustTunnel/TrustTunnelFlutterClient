@@ -207,7 +207,8 @@ begin
 
   if not ServiceExists then
   begin
-    if not RunServiceInstallHelper(OperationError) then
+    { The restored helper belongs to the previous service architecture. }
+    if not RunServiceInstallHelper(True, OperationError) then
     begin
       ErrorMessage :=
         'Unable to recreate the previous service: ' + OperationError +
