@@ -143,13 +143,13 @@ private:
      * @return 0 on success, error code otherwise.
      */
     int32_t InstallService();
-#endif
 
     /**
      * Uninstall the VPN service via the elevated helper.
      * @return 0 on success, error code otherwise.
      */
     int32_t UninstallService();
+#endif
 
     /**
      * Attach to the running VPN background service.

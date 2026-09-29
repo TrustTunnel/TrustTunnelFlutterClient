@@ -269,12 +269,12 @@ int32_t VpnPlugin::InstallService() {
 
     return RunElevatedHelper(params);
 }
-#endif
 
 int32_t VpnPlugin::UninstallService() {
     std::wstring params = L"uninstall \"" + m_service_name + L"\"";
     return RunElevatedHelper(params);
 }
+#endif
 
 int32_t VpnPlugin::AttachService() {
     // A null pipe name makes the adapter discover the name the running service
