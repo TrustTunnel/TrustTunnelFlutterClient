@@ -179,20 +179,8 @@ jobs:
       artifact-path: |
         ios/build/TrustTunnel.ipa
         ios/build/AppStoreInfo.plist
-
-  build-ios-adhoc:
-    needs: [meta, build-number]
-    if: inputs.deploy-ios
-    uses: ./.github/workflows/flutter-build-ios.yml
-    secrets: inherit
-    with:
-      channel: ${{ needs.meta.outputs.release-channel }}
-      version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
-      version-title: ${{ needs.meta.outputs.version-title }}
-      build-mode: adhoc
-      artifact-name: trusttunnel-ios-testing
-      artifact-path: ios/build/TrustTunnel.ipa
+      # The Ad Hoc IPA for testers is signed from the same build.
+      additional-distributions: '[{"signing-type": "adhoc", "artifact-name": "trusttunnel-ios-testing", "artifact-path": "ios/build/TrustTunnel.ipa"}]'
 
   build-ios-simulator:
     needs: [meta, build-number]
@@ -224,23 +212,11 @@ jobs:
       artifact-path: |
         macos/build/TrustTunnel.pkg
         macos/build/AppStoreInfo.plist
-
-  build-macos-adhoc:
-    needs: [meta, build-number]
-    if: inputs.deploy-macos
-    uses: ./.github/workflows/flutter-build-macos.yml
-    secrets: inherit
-    with:
-      channel: ${{ needs.meta.outputs.release-channel }}
-      version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
-      version-title: ${{ needs.meta.outputs.version-title }}
-      macos-signing-type: development
-      artifact-name: trusttunnel-macos-testing
-      artifact-path: macos/build/TrustTunnel.app
+      # The Development app for testers is signed from the same build.
+      additional-distributions: '[{"signing-type": "development", "artifact-name": "trusttunnel-macos-testing", "artifact-path": "macos/build/TrustTunnel.app"}]'
 
   notify-slack:
-    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc]
+    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-simulator, build-macos-appstore]
     if: >-
       !cancelled() && !failure() &&
       inputs.slack-channel != ''
