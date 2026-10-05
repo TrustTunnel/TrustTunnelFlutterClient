@@ -1,5 +1,20 @@
 name: Flutter Build iOS
 
+# Builds the app once without signing material, then signs every requested distribution of that
+# same build in its own job:
+#
+#   build  Flutter and CocoaPods preparation, then the xcodebuild action: a device archive with
+#          deferred signing (unsigned-build.zip), or a simulator build (.app.zip) when build-mode
+#          is "simulator". The build job has no id-token and never sees signing material.
+#   sign   one job per distribution (signing-type plus additional-distributions): the sign-apple
+#          action exports the same archive, and the result is uploaded under artifact-name from
+#          artifact-path, as before.
+#
+# Fastlane is not run. The build is described by the fastlane env file (fastlane-env-path), and the
+# outputs land where the build_ipa / build_simulator_app_and_zip lanes put them:
+# ios/build/<CUSTOM_FASTLANE_BUILD_NAME>.ipa, ios/build/AppStoreInfo.plist and
+# ios/build/<CUSTOM_FASTLANE_BUILD_NAME>.app.zip.
+
 on:
   workflow_call:
     inputs:
@@ -22,7 +37,7 @@ on:
       signing-type:
         type: string
         default: 'adhoc'
-        description: 'iOS signing type: adhoc, appstore, development'
+        description: 'iOS signing type: adhoc, appstore'
       channel:
         type: string
         required: true
@@ -35,6 +50,10 @@ on:
         type: string
         default: ''
         description: 'Path to build output file(s)'
+      additional-distributions:
+        type: string
+        default: '[]'
+        description: 'More distributions signed from the same device build, as a JSON array of {"signing-type", "artifact-name", "artifact-path"} (not for build-mode simulator)'
       fastlane-env-path:
         type: string
         default: 'ios/fastlane/.env'
@@ -64,6 +83,16 @@ jobs:
       - ephemeral-limit-cpu-4
       - ephemeral-limit-disk-gb-20
       - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+    # The build never gets signing material: without id-token it cannot read it from Vault.
+    permissions:
+      contents: read
+    outputs:
+      distributions: ${{ steps.params.outputs.distributions }}
+      unsigned-artifact: ${{ steps.params.outputs.unsigned-artifact }}
+      sha256: ${{ steps.device.outputs.sha256 }}
+      output-dir: ${{ steps.params.outputs.output-dir }}
+      build-name: ${{ steps.params.outputs.build-name }}
+      app-identifiers: ${{ steps.params.outputs.app-identifiers }}
     defaults:
       run:
         shell: bash
@@ -109,21 +138,10 @@ jobs:
           bundle exec pod install
           cd ..
 
+      # Both build modes read the scheme and the output names from it.
       - name: Load fastlane env
-        if: inputs.build-mode != 'simulator'
         run: |
           grep -vE '^\s*(#|$)' "${{ inputs.fastlane-env-path }}" >> "$GITHUB_ENV"
-
-      - name: Sync iOS signing assets
-        if: inputs.build-mode != 'simulator'
-        id: signing
-        uses: AdGuardSoftwareLimited/apple-devices/.github/actions/match-sync@master
-        with:
-          vault_url: ${{ vars.VAULT_URL }}
-          type: ${{ inputs.signing-type }}
-          app_id: ${{ env.APP_IDENTIFIERS }}
-          keychain_name: ci-signing
-          readonly: 'true'
 
       - name: Generate Flutter iOS config files
         env:
@@ -179,23 +197,185 @@ jobs:
             echo "No pre-release framework versions found — nothing to sanitize."
           fi
 
-      - name: Build iOS with Fastlane
+      - name: Resolve the distributions
+        id: params
         env:
-          MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ steps.signing.outputs.keychain_password }}
+          BUILD_MODE: ${{ inputs.build-mode }}
+          SIGNING_TYPE: ${{ inputs.signing-type }}
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          ARTIFACT_PATH: ${{ inputs.artifact-path }}
+          ADDITIONAL_DISTRIBUTIONS: ${{ inputs.additional-distributions }}
         run: |
           set -euo pipefail
-          cd ios
-          if [ "${{ inputs.build-mode }}" = "simulator" ]; then
-            bundle exec fastlane build_simulator_app_and_zip
-          else
-            bundle exec fastlane build_ipa type:"${{ inputs.signing-type }}"
-          fi
-          cd ..
+          /usr/bin/python3 - <<'PY'
+          import json, os, re, sys
+
+          def fail(message):
+              print(f'::error::{message}')
+              sys.exit(1)
+
+          additional = json.loads(os.environ['ADDITIONAL_DISTRIBUTIONS'] or '[]')
+          if not isinstance(additional, list):
+              fail('additional-distributions must be a JSON array')
+          distributions = []
+          if os.environ['BUILD_MODE'] == 'simulator':
+              if additional:
+                  fail('additional-distributions applies to device builds only')
+              # Placeholder so that the skipped sign job never expands an empty matrix.
+              distributions.append({'signing_type': 'none'})
+          else:
+              entries = [{'signing-type': os.environ['SIGNING_TYPE'], 'artifact-name': os.environ['ARTIFACT_NAME'],
+                          'artifact-path': os.environ['ARTIFACT_PATH']}] + additional
+              for entry in entries:
+                  signing_type = entry.get('signing-type', '')
+                  # The build_ipa lane exported App Store or Ad Hoc only.
+                  if signing_type not in ('appstore', 'adhoc'):
+                      fail(f'unsupported signing-type {signing_type!r}; expected appstore or adhoc')
+                  if not entry.get('artifact-path'):
+                      fail(f'artifact-path is required for the {signing_type} distribution')
+                  distributions.append({'signing_type': signing_type,
+                                        'artifact_name': entry.get('artifact-name', ''),
+                                        'artifact_path': entry['artifact-path']})
+              types = [d['signing_type'] for d in distributions]
+              names = [d['artifact_name'] or 'artifact' for d in distributions]
+              if len(set(types)) != len(types) or len(set(names)) != len(names):
+                  fail(f'each distribution needs its own signing-type and artifact-name: {distributions}')
+
+          primary = os.environ['ARTIFACT_NAME'] or os.environ['ARTIFACT_PATH']
+          outputs = {
+              'distributions': json.dumps(distributions),
+              'unsigned-artifact': re.sub(r'[\\/:*?"<>|\r\n]', '-', primary) + '-unsigned-build',
+              'output-dir': os.path.join('ios', os.environ['FASTLANE_BUILD_DIRECTORY']),
+              'build-name': os.environ['CUSTOM_FASTLANE_BUILD_NAME'],
+              'app-identifiers': os.environ['APP_IDENTIFIERS'],
+          }
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              for key, value in outputs.items():
+                  f.write(f'{key}={value}\n')
+                  print(f'{key}={value}')
+          PY
+
+      - name: Build the device archive (no signing material)
+        id: device
+        if: inputs.build-mode != 'simulator'
+        uses: AdGuardSoftwareLimited/actions/actions/xcodebuild@master
+        with:
+          signing: deferred
+          working-directory: ios
+          workspace: Runner.xcworkspace
+          scheme: ${{ env.CUSTOM_FASTLANE_SCHEMA }}
+          destination: generic/platform=iOS
+          derived-data-path: ${{ env.FASTLANE_BUILD_DIRECTORY }}/derived_data
+          archive-path: ${{ env.FASTLANE_BUILD_DIRECTORY }}/${{ env.CUSTOM_FASTLANE_BUILD_NAME }}.xcarchive
+          team-id: ${{ env.TEAM_ID }}
+          output-path: ${{ runner.temp }}/${{ steps.params.outputs.unsigned-artifact }}.zip
+
+      - name: Build for the iOS Simulator
+        if: inputs.build-mode == 'simulator'
+        uses: AdGuardSoftwareLimited/actions/actions/xcodebuild@master
+        with:
+          signing: local
+          working-directory: ios
+          workspace: Runner.xcworkspace
+          scheme: ${{ env.CUSTOM_FASTLANE_SCHEMA }}
+          configuration: Debug
+          destination: generic/platform=iOS Simulator
+          derived-data-path: ${{ env.FASTLANE_BUILD_DIRECTORY }}/derived_data
+          archive-path: ${{ env.FASTLANE_BUILD_DIRECTORY }}/${{ env.CUSTOM_FASTLANE_BUILD_NAME }}.xcarchive
+          output: app-zip
+          output-path: ${{ env.FASTLANE_BUILD_DIRECTORY }}/${{ env.CUSTOM_FASTLANE_BUILD_NAME }}.app.zip
+
+      # Uploaded as-is (archive: false), so the artifact is named after the file.
+      - name: Upload the unsigned build
+        if: inputs.build-mode != 'simulator'
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/${{ steps.params.outputs.unsigned-artifact }}.zip
+          archive: false
+          retention-days: 7
+          if-no-files-found: error
 
       - name: Upload build artifact
+        if: inputs.build-mode == 'simulator'
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ inputs.artifact-path }}
           if-no-files-found: error
+
+  sign:
+    if: inputs.build-mode != 'simulator'
+    needs: [resolve-runner, build]
+    name: sign (${{ matrix.distribution.signing_type }})
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-7168
+      - ephemeral-limit-cpu-4
+      - ephemeral-limit-disk-gb-20
+      - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: ${{ fromJSON(needs.build.outputs.distributions) }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download the unsigned build
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.unsigned-artifact }}.zip
+          path: ${{ runner.temp }}/unsigned
+          # A raw .zip artifact would otherwise be extracted on download.
+          skip-decompress: true
+
+      - name: Sign
+        id: sign
+        uses: AdGuardSoftwareLimited/actions/actions/sign-apple@master
+        with:
+          input: ${{ runner.temp }}/unsigned/${{ needs.build.outputs.unsigned-artifact }}.zip
+          sha256: ${{ needs.build.outputs.sha256 }}
+          method: ${{ matrix.distribution.signing_type }}
+          vault-url: ${{ vars.VAULT_URL }}
+          app-identifiers: ${{ needs.build.outputs.app-identifiers }}
+          # The export options of the build_ipa lane.
+          export-options: ${{ matrix.distribution.signing_type == 'appstore' && '{"manageAppVersionAndBuildNumber":true,"generateAppStoreInformation":true,"uploadSymbols":true,"uploadBitcode":false}' || '{"manageAppVersionAndBuildNumber":false,"generateAppStoreInformation":true}' }}
+
+      - name: Put the signed output where the build lane put it
+        env:
+          SIGNED_DIR: ${{ steps.sign.outputs.output-dir }}
+          OUTPUT_DIR: ${{ needs.build.outputs.output-dir }}
+          BUILD_NAME: ${{ needs.build.outputs.build-name }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          shopt -s nullglob
+          ipas=("$SIGNED_DIR"/*.ipa)
+          if [ "${#ipas[@]}" -ne 1 ]; then
+            echo "::error::expected one .ipa from sign-apple"; ls -la "$SIGNED_DIR"; exit 1
+          fi
+          ditto "${ipas[0]}" "$OUTPUT_DIR/$BUILD_NAME.ipa"
+          if [ -f "$SIGNED_DIR/AppStoreInfo.plist" ]; then
+            ditto "$SIGNED_DIR/AppStoreInfo.plist" "$OUTPUT_DIR/AppStoreInfo.plist"
+          fi
+          ls -la "$OUTPUT_DIR"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.distribution.artifact_name }}
+          path: ${{ matrix.distribution.artifact_path }}
+          if-no-files-found: error
+
+      - name: Upload the signing report
+        if: always() && steps.sign.outputs.report-dir != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.build.outputs.unsigned-artifact }}-${{ matrix.distribution.signing_type }}-report
+          path: ${{ steps.sign.outputs.report-dir }}
+          if-no-files-found: ignore
