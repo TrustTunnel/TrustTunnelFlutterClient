@@ -1,5 +1,20 @@
 name: Flutter Build macOS
 
+# Builds the app once without signing material, then signs every requested distribution of that
+# same build in its own job:
+#
+#   build  Flutter and CocoaPods preparation, then the xcodebuild action: a Release archive with
+#          deferred signing (unsigned-build.zip). The build job has no id-token and never sees
+#          signing material.
+#   sign   one job per distribution (macos-signing-type plus additional-distributions): the
+#          sign-apple action exports the same archive, and the result is uploaded under
+#          artifact-name from artifact-path, as before (a Development app as a ditto zip).
+#
+# Fastlane is not run. The build is described by the fastlane env file (fastlane-env-path), and the
+# outputs are named as the build_macos_app lane named them: macos/build/<CUSTOM_FASTLANE_BUILD_NAME>.app
+# or .pkg, and macos/build/AppStoreInfo.plist. Targets without a provisioning profile
+# (SIGNING_TARGETS_NO_PROFILE) are signed with the distribution identity only, as the lane signed them.
+
 on:
   workflow_call:
     inputs:
@@ -31,6 +46,10 @@ on:
         type: string
         default: ''
         description: 'Path to build output file(s)'
+      additional-distributions:
+        type: string
+        default: '[]'
+        description: 'More distributions signed from the same build, as a JSON array of {"signing-type", "artifact-name", "artifact-path"}'
       fastlane-env-path:
         type: string
         default: 'macos/fastlane/.env'
@@ -60,6 +79,16 @@ jobs:
       - ephemeral-limit-cpu-4
       - ephemeral-limit-disk-gb-20
       - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+    # The build never gets signing material: without id-token it cannot read it from Vault.
+    permissions:
+      contents: read
+    outputs:
+      distributions: ${{ steps.params.outputs.distributions }}
+      unsigned-artifact: ${{ steps.params.outputs.unsigned-artifact }}
+      sha256: ${{ steps.archive.outputs.sha256 }}
+      build-dir: ${{ steps.params.outputs.build-dir }}
+      build-name: ${{ steps.params.outputs.build-name }}
+      app-identifiers: ${{ steps.params.outputs.app-identifiers }}
     defaults:
       run:
         shell: bash
@@ -105,18 +134,6 @@ jobs:
           cd macos
           bundle exec pod install
           cd ..
-
-      - name: Sync macOS signing assets
-        id: signing
-        uses: AdGuardSoftwareLimited/apple-devices/.github/actions/match-sync@master
-        with:
-          vault_url: ${{ vars.VAULT_URL }}
-          type: ${{ inputs.macos-signing-type }}
-          app_id: ${{ env.APP_IDENTIFIERS }}
-          keychain_name: ci-signing
-          readonly: 'true'
-          platform: macos
-          additional_cert_types: ${{ inputs.macos-signing-type == 'appstore' && 'mac_installer_distribution' || '' }}
 
       - name: Generate Flutter macOS config files
         env:
@@ -172,21 +189,150 @@ jobs:
             echo "No pre-release framework versions found — nothing to sanitize."
           fi
 
-      - name: Build macOS with Fastlane
+      - name: Resolve the distributions
+        id: params
         env:
-          MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ steps.signing.outputs.keychain_password }}
+          SIGNING_TYPE: ${{ inputs.macos-signing-type }}
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          ARTIFACT_PATH: ${{ inputs.artifact-path }}
+          ADDITIONAL_DISTRIBUTIONS: ${{ inputs.additional-distributions }}
         run: |
           set -euo pipefail
-          cd macos
-          bundle exec fastlane build_macos_app type:"${{ inputs.macos-signing-type }}"
-          cd ..
+          /usr/bin/python3 - <<'PY'
+          import json, os, re, sys
+
+          def fail(message):
+              print(f'::error::{message}')
+              sys.exit(1)
+
+          additional = json.loads(os.environ['ADDITIONAL_DISTRIBUTIONS'] or '[]')
+          if not isinstance(additional, list):
+              fail('additional-distributions must be a JSON array')
+          entries = [{'signing-type': os.environ['SIGNING_TYPE'], 'artifact-name': os.environ['ARTIFACT_NAME'],
+                      'artifact-path': os.environ['ARTIFACT_PATH']}] + additional
+          distributions = []
+          for entry in entries:
+              signing_type = entry.get('signing-type', '')
+              # The signing types of the build_macos_app lane.
+              if signing_type not in ('development', 'appstore'):
+                  fail(f'Unknown signing type: {signing_type!r}. Expected: development, appstore')
+              distributions.append({'signing_type': signing_type,
+                                    'artifact_name': entry.get('artifact-name', ''),
+                                    'artifact_path': entry.get('artifact-path', '')})
+          types = [d['signing_type'] for d in distributions]
+          names = [d['artifact_name'] or 'artifact' for d in distributions]
+          if len(set(types)) != len(types) or len(set(names)) != len(names):
+              fail(f'each distribution needs its own signing-type and artifact-name: {distributions}')
+
+          base = re.sub(r'[\\/:*?"<>|\r\n]', '-', os.environ['ARTIFACT_NAME'] or os.environ['ARTIFACT_PATH'])
+          outputs = {
+              'distributions': json.dumps(distributions),
+              'unsigned-artifact': f'{base}-unsigned-build',
+              'build-dir': os.environ['FASTLANE_BUILD_DIRECTORY'],
+              'build-name': os.environ['CUSTOM_FASTLANE_BUILD_NAME'],
+              'app-identifiers': os.environ['APP_IDENTIFIERS'],
+          }
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              for key, value in outputs.items():
+                  f.write(f'{key}={value}\n')
+                  print(f'{key}={value}')
+          PY
+
+      - name: Build the archive (no signing material)
+        id: archive
+        uses: AdGuardSoftwareLimited/actions/actions/xcodebuild@master
+        with:
+          signing: deferred
+          working-directory: macos
+          workspace: Runner.xcworkspace
+          scheme: ${{ env.CUSTOM_FASTLANE_SCHEMA }}
+          destination: generic/platform=macOS
+          derived-data-path: ${{ env.FASTLANE_BUILD_DIRECTORY }}/derived_data
+          archive-path: ${{ env.FASTLANE_BUILD_DIRECTORY }}/${{ env.CUSTOM_FASTLANE_BUILD_NAME }}.xcarchive
+          team-id: ${{ env.TEAM_ID }}
+          output-path: ${{ runner.temp }}/${{ steps.params.outputs.unsigned-artifact }}.zip
+
+      # Uploaded as-is (archive: false), so the artifact is named after the file.
+      - name: Upload the unsigned build
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/${{ steps.params.outputs.unsigned-artifact }}.zip
+          archive: false
+          retention-days: 7
+          if-no-files-found: error
+
+  sign:
+    needs: [resolve-runner, build]
+    name: sign (${{ matrix.distribution.signing_type }})
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-limit-memory-7168
+      - ephemeral-limit-cpu-4
+      - ephemeral-limit-disk-gb-20
+      - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: ${{ fromJSON(needs.build.outputs.distributions) }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download the unsigned build
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.unsigned-artifact }}.zip
+          path: ${{ runner.temp }}/unsigned
+          # A raw .zip artifact would otherwise be extracted on download.
+          skip-decompress: true
+
+      - name: Sign
+        id: sign
+        uses: AdGuardSoftwareLimited/actions/actions/sign-apple@master
+        with:
+          input: ${{ runner.temp }}/unsigned/${{ needs.build.outputs.unsigned-artifact }}.zip
+          sha256: ${{ needs.build.outputs.sha256 }}
+          method: ${{ matrix.distribution.signing_type }}
+          vault-url: ${{ vars.VAULT_URL }}
+          app-identifiers: ${{ needs.build.outputs.app-identifiers }}
+          additional-cert-types: ${{ matrix.distribution.signing_type == 'appstore' && 'mac_installer_distribution' || '' }}
+          # The export options of the build_macos_app lane.
+          export-options: ${{ matrix.distribution.signing_type == 'appstore' && '{"manageAppVersionAndBuildNumber":true,"generateAppStoreInformation":true,"uploadSymbols":true}' || '{"manageAppVersionAndBuildNumber":false,"generateAppStoreInformation":false}' }}
+
+      - name: Put the signed output where the build lane put it
+        env:
+          SIGNED_DIR: ${{ steps.sign.outputs.output-dir }}
+          OUTPUT_DIR: macos/${{ needs.build.outputs.build-dir }}
+          BUILD_NAME: ${{ needs.build.outputs.build-name }}
+          SIGNING_TYPE: ${{ matrix.distribution.signing_type }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          shopt -s nullglob
+          if [ "$SIGNING_TYPE" = appstore ]; then
+            outputs=("$SIGNED_DIR"/*.pkg); extension=pkg
+          else
+            outputs=("$SIGNED_DIR"/*.app); extension=app
+          fi
+          if [ "${#outputs[@]}" -ne 1 ]; then
+            echo "::error::expected one .$extension from sign-apple"; ls -la "$SIGNED_DIR"; exit 1
+          fi
+          ditto "${outputs[0]}" "$OUTPUT_DIR/$BUILD_NAME.$extension"
+          if [ -f "$SIGNED_DIR/AppStoreInfo.plist" ]; then
+            ditto "$SIGNED_DIR/AppStoreInfo.plist" "$OUTPUT_DIR/AppStoreInfo.plist"
+          fi
+          ls -la "$OUTPUT_DIR"
 
       - name: Archive artifact with ditto
         id: archive-artifact
-        if: inputs.macos-signing-type == 'development'
+        if: matrix.distribution.signing_type == 'development'
         env:
-          ARTIFACT_PATH: ${{ github.workspace }}/${{ inputs.artifact-path }}
+          ARTIFACT_PATH: ${{ github.workspace }}/${{ matrix.distribution.artifact_path }}
         run: |
           set -euo pipefail
           if [[ -d "$ARTIFACT_PATH" ]]; then
@@ -202,6 +348,15 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.artifact-name }}
-          path: ${{ steps.archive-artifact.outputs.archive-path || inputs.artifact-path }}
+          name: ${{ matrix.distribution.artifact_name }}
+          path: ${{ steps.archive-artifact.outputs.archive-path || matrix.distribution.artifact_path }}
           if-no-files-found: error
+
+      - name: Upload the signing report
+        if: always() && steps.sign.outputs.report-dir != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.build.outputs.unsigned-artifact }}-${{ matrix.distribution.signing_type }}-report
+          path: ${{ steps.sign.outputs.report-dir }}
+          if-no-files-found: ignore
+
