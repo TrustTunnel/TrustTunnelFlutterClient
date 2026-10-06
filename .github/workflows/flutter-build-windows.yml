@@ -5,7 +5,7 @@ on:
     inputs:
       runner-memory-mb:
         type: string
-        default: '12288'
+        default: '5120'
         description: 'Memory limit for ephemeral runner in MB'
       runner-cpu:
         type: string
