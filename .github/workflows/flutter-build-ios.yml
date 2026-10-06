@@ -1,5 +1,13 @@
 name: Flutter Build iOS
 
+# The iOS build of this product through the shared build-ios-app.yml: the Flutter and CocoaPods
+# preparation of this repository is the prepare-script, the shared workflow builds the app once
+# without signing material (xcodebuild action), signs every distribution of that build in its own
+# job (sign-apple) and uploads the artifacts as before. The build is described by the fastlane env
+# file (fastlane-env-path: CUSTOM_FASTLANE_SCHEMA, CUSTOM_FASTLANE_BUILD_NAME, FASTLANE_BUILD_DIRECTORY,
+# APP_IDENTIFIERS, TEAM_ID); the outputs land where the fastlane lanes put them: ios/build/<name>.ipa,
+# ios/build/AppStoreInfo.plist and ios/build/<name>.app.zip.
+
 on:
   workflow_call:
     inputs:
@@ -35,6 +43,10 @@ on:
         type: string
         default: ''
         description: 'Path to build output file(s)'
+      additional-distributions:
+        type: string
+        default: '[]'
+        description: 'More distributions signed from the same device build, as a JSON array of {"signing-type", "artifact-name", "artifact-path"} (not for build-mode simulator)'
       fastlane-env-path:
         type: string
         default: 'ios/fastlane/.env'
@@ -44,158 +56,65 @@ permissions:
   id-token: write
 
 jobs:
-  resolve-runner:
-    runs-on: [team-flutter]
-    outputs:
-      image: ${{ steps.kv.outputs.value }}
-    steps:
-      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
-        id: kv
-        with:
-          key: build-images/macos
-
   build:
-    needs: [resolve-runner]
-    runs-on:
-      - ephemeral
-      - ephemeral-mac
-      - ${{ needs.resolve-runner.outputs.image }}
-      - ephemeral-limit-memory-7168
-      - ephemeral-limit-cpu-4
-      - ephemeral-limit-disk-gb-20
-      - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}-${{ strategy.job-index || 0 }}
-    defaults:
-      run:
-        shell: bash
-    env:
-      GPR_KEY: ${{ secrets.PUBLIC_REPO_GPR_KEY }}
-    steps:
-      - name: Fix Flutter git safe directory
-        run: git config --global --add safe.directory /opt/flutter
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-ios-app.yml@master
+    secrets: inherit
+    with:
+      channel: ${{ inputs.channel }}
+      version: ${{ inputs.version }}
+      version-title: ${{ inputs.version-title }}
+      build-number: ${{ inputs.build-number }}
+      signing-type: ${{ inputs.signing-type }}
+      build-mode: ${{ inputs.build-mode }}
+      signing-env-file: ${{ inputs.fastlane-env-path }}
+      prepare-secret: PUBLIC_REPO_GPR_KEY
+      prepare-secret-env: GPR_KEY
+      prepare-script: |
+        set -euo pipefail
+        set -x
 
-      - name: Checkout repository
-        uses: actions/checkout@v5
+        # Flutter of the image (/opt/flutter), owned by another user.
+        git config --global --add safe.directory /opt/flutter
 
-      - name: Apply PR overrides
-        uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
+        # Ruby for CocoaPods.
+        eval "$(rbenv init - bash)"
+        rbenv install 3.3.10 --skip-existing
+        rbenv local 3.3.10
+        rbenv rehash
+        printf '%s\n' "$HOME/.rbenv/bin" "$HOME/.rbenv/shims" >> "$GITHUB_PATH"
+        gem install bundler -v 2.7.2
+        rbenv rehash
+        export BUNDLER_VERSION=2.7.2
+        (cd ios && bundle config set --local path '.bundle/vendor' && bundle install)
 
-      - name: Prepare Ruby environment
-        run: |
-          set -euo pipefail
-          set -x
-          eval "$(rbenv init - bash)"
-          rbenv install 3.3.10 --skip-existing
-          rbenv local 3.3.10
-          rbenv rehash
-          printf '%s\n' "$HOME/.rbenv/bin" "$HOME/.rbenv/shims" >> "$GITHUB_PATH"
-          gem install bundler -v 2.7.2
-          rbenv rehash
-          export BUNDLER_VERSION=2.7.2
-          cd ios
-          bundle config set --local path '.bundle/vendor'
-          bundle install
-          cd ..
+        make init
+        flutter precache --ios
+        (cd ios && bundle exec pod install)
 
-      - name: Flutter pub get and code generation
-        run: make init
+        flutter build ios --release \
+          --build-name="${{ inputs.version }}" \
+          --build-number="${{ inputs.build-number }}" \
+          --no-pub \
+          --config-only
 
-      - name: Precache Flutter iOS artifacts
-        run: flutter precache --ios
-
-      - name: Pod install
-        run: |
-          set -euo pipefail
-          cd ios
-          bundle exec pod install
-          cd ..
-
-      - name: Load fastlane env
-        if: inputs.build-mode != 'simulator'
-        run: |
-          grep -vE '^\s*(#|$)' "${{ inputs.fastlane-env-path }}" >> "$GITHUB_ENV"
-
-      - name: Sync iOS signing assets
-        if: inputs.build-mode != 'simulator'
-        id: signing
-        uses: AdGuardSoftwareLimited/apple-devices/.github/actions/match-sync@master
-        with:
-          vault_url: ${{ vars.VAULT_URL }}
-          type: ${{ inputs.signing-type }}
-          app_id: ${{ env.APP_IDENTIFIERS }}
-          keychain_name: ci-signing
-          readonly: 'true'
-
-      - name: Generate Flutter iOS config files
-        env:
-          PROJECT_VERSION: ${{ inputs.version }}
-          BUILD_NUMBER: ${{ inputs.build-number }}
-        run: |
-          set -euo pipefail
-          flutter build ios --release \
-            --build-name="$PROJECT_VERSION" \
-            --build-number="$BUILD_NUMBER" \
-            --no-pub \
-            --config-only
-
-      # CocoaPods vendored .framework bundles sometimes carry pre-release version
-      # strings in their Info.plist (e.g. "1.2.3-beta.4" or "5.0.0+abc123").
-      # Apple's code-signing and App Store validation reject any version that
-      # contains a hyphen (-) or plus (+) — it must be a strict SemVer core
-      # (MAJOR.MINOR.PATCH).
-      #
-      # This step walks every Info.plist inside ios/Pods/**/*.framework/ and
-      # strips the pre-release/build-metadata suffix from two keys:
-      #
-      #   CFBundleShortVersionString  (the user-visible version, e.g. "1.2.3")
-      #   CFBundleVersion             (the build number)
-      #
-      # The shell parameter expansion ${value%%[-+]*} greedily removes
-      # everything from the first '-' or '+' onward, leaving only the clean
-      # core version.  PlistBuddy writes the sanitized value back in-place.
-      #
-      # If no pre-release versions are found the step prints a message and
-      # exits successfully — it is a no-op for clean dependency trees.
-      - name: Sanitize vendored framework versions
-        run: |
-          set -euo pipefail
-          PODS_DIR="ios/Pods"
-          test -d "$PODS_DIR" || { echo "Pods directory not found at $PODS_DIR"; exit 1; }
-
-          changed=0
-          while IFS= read -r -d '' plist; do
-            for key in CFBundleShortVersionString CFBundleVersion; do
-              value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)"
-              [ -z "$value" ] && continue
-              clean="${value%%[-+]*}"
-              if [ "$clean" != "$value" ]; then
-                echo "Sanitizing $key '$value' -> '$clean' in $plist"
-                /usr/libexec/PlistBuddy -c "Set :$key $clean" "$plist"
-                changed=1
-              fi
-            done
-          done < <(find "$PODS_DIR" -type f -name Info.plist -path '*.framework/*' -print0)
-
-          if [ "$changed" -eq 0 ]; then
-            echo "No pre-release framework versions found — nothing to sanitize."
-          fi
-
-      - name: Build iOS with Fastlane
-        env:
-          MATCH_KEYCHAIN_NAME: ${{ steps.signing.outputs.keychain_name }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ steps.signing.outputs.keychain_password }}
-        run: |
-          set -euo pipefail
-          cd ios
-          if [ "${{ inputs.build-mode }}" = "simulator" ]; then
-            bundle exec fastlane build_simulator_app_and_zip
-          else
-            bundle exec fastlane build_ipa type:"${{ inputs.signing-type }}"
-          fi
-          cd ..
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ inputs.artifact-name }}
-          path: ${{ inputs.artifact-path }}
-          if-no-files-found: error
+        # CocoaPods vendored frameworks may carry pre-release versions ("1.2.3-beta.4", "5.0.0+abc"),
+        # which code signing and App Store validation reject: keep the SemVer core of
+        # CFBundleShortVersionString and CFBundleVersion.
+        changed=0
+        while IFS= read -r -d '' plist; do
+          for key in CFBundleShortVersionString CFBundleVersion; do
+            value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)"
+            [ -z "$value" ] && continue
+            clean="${value%%[-+]*}"
+            if [ "$clean" != "$value" ]; then
+              echo "Sanitizing $key '$value' -> '$clean' in $plist"
+              /usr/libexec/PlistBuddy -c "Set :$key $clean" "$plist"
+              changed=1
+            fi
+          done
+        done < <(find ios/Pods -type f -name Info.plist -path '*.framework/*' -print0)
+        [ "$changed" -eq 1 ] || echo "No pre-release framework versions found."
+      artifact-name: ${{ inputs.artifact-name }}
+      artifact-path: ${{ inputs.artifact-path }}
+      artifact-archive: true
+      additional-distributions: ${{ inputs.additional-distributions }}
