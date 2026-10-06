@@ -9,8 +9,8 @@ workspace:
   - packages/window_manager
 
 environment:
-  flutter: 3.44.8
-  sdk: 3.12.2
+  flutter: ">=3.44.8"
+  sdk: ^3.12.2
 
 dependencies:
   adg_share:
