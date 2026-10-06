@@ -1,3 +1,4 @@
+# Round 2 (2026-10-06): build-macos.yml takes the multi-line artifact-path of upload-artifact.
 # TEMPORARY (AG-55858 acceptance, not for merge): the iOS and macOS build calls of deploy-apps.yml in
 # their build-once form, without any deployment and without the Sentry upload.
 name: AG-55858 acceptance (release shape)
