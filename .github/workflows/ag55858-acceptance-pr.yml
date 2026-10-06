@@ -1,0 +1,56 @@
+# TEMPORARY (AG-55858 acceptance, not for merge): the iOS and macOS build calls of testing.yml (pull
+# requests), without the Sentry upload.
+name: AG-55858 acceptance (PR shape)
+
+on:
+  push:
+    branches: [AG-55858-acceptance]
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+jobs:
+  build-ios:
+    uses: ./.github/workflows/flutter-build-ios.yml
+    secrets: inherit
+    with:
+      channel: nightly
+      version: '1.0.0'
+      build-number: '9002'
+      version-title: '1.0.0 PR 9002'
+      build-mode: adhoc
+      artifact-name: trusttunnel-ios-pr
+      artifact-path: ios/build/TrustTunnel.ipa
+
+  build-macos:
+    uses: ./.github/workflows/flutter-build-macos.yml
+    secrets: inherit
+    with:
+      channel: nightly
+      version: '1.0.0'
+      build-number: '9002'
+      version-title: '1.0.0 PR 9002'
+      macos-signing-type: development
+      artifact-name: trusttunnel-macos-pr
+      artifact-path: macos/build/TrustTunnel.app
+
+  check:
+    needs: [build-ios, build-macos]
+    runs-on: [team-flutter]
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-ios-pr
+          path: artifacts/trusttunnel-ios-pr
+      - uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-macos-pr
+          path: artifacts/trusttunnel-macos-pr
+      - name: Artifact layout as before
+        run: |
+          set -e -x
+          find artifacts -maxdepth 2 | sort
+          test "$(ls artifacts/trusttunnel-ios-pr)" = "TrustTunnel.ipa"
+          test "$(ls artifacts/trusttunnel-macos-pr)" = "TrustTunnel.app.zip"

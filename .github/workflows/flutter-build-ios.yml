@@ -57,7 +57,7 @@ permissions:
 
 jobs:
   build:
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-ios-app.yml@master
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-ios-app.yml@AG-55858-phase3-integration
     secrets: inherit
     with:
       channel: ${{ inputs.channel }}

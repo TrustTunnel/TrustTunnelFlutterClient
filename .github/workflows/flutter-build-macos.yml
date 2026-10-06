@@ -53,7 +53,7 @@ permissions:
 
 jobs:
   build:
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-macos.yml@master
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-macos.yml@AG-55858-phase3-integration
     secrets: inherit
     with:
       channel: ${{ inputs.channel }}

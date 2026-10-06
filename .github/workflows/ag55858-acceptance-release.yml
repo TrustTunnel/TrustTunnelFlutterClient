@@ -1,0 +1,89 @@
+# TEMPORARY (AG-55858 acceptance, not for merge): the iOS and macOS build calls of deploy-apps.yml in
+# their build-once form, without any deployment and without the Sentry upload.
+name: AG-55858 acceptance (release shape)
+
+on:
+  push:
+    branches: [AG-55858-acceptance]
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+jobs:
+  build-ios-appstore:
+    uses: ./.github/workflows/flutter-build-ios.yml
+    secrets: inherit
+    with:
+      version: '1.0.0'
+      build-number: '9001'
+      version-title: '1.0.0 Nightly 9001'
+      channel: nightly
+      signing-type: appstore
+      artifact-name: trusttunnel-ios-appstore
+      artifact-path: |
+        ios/build/TrustTunnel.ipa
+        ios/build/AppStoreInfo.plist
+      additional-distributions: '[{"signing-type": "adhoc", "artifact-name": "trusttunnel-ios-testing", "artifact-path": "ios/build/TrustTunnel.ipa"}]'
+
+  build-ios-simulator:
+    uses: ./.github/workflows/flutter-build-ios.yml
+    secrets: inherit
+    with:
+      version: '1.0.0'
+      build-number: '9001'
+      version-title: '1.0.0 Nightly 9001'
+      channel: nightly
+      build-mode: simulator
+      artifact-name: trusttunnel-ios-simulator
+      artifact-path: ios/build/TrustTunnel.app.zip
+
+  build-macos-appstore:
+    uses: ./.github/workflows/flutter-build-macos.yml
+    secrets: inherit
+    with:
+      version: '1.0.0'
+      build-number: '9001'
+      version-title: '1.0.0 Nightly 9001'
+      channel: nightly
+      macos-signing-type: appstore
+      artifact-name: trusttunnel-macos-appstore
+      artifact-path: |
+        macos/build/TrustTunnel.pkg
+        macos/build/AppStoreInfo.plist
+      additional-distributions: '[{"signing-type": "development", "artifact-name": "trusttunnel-macos-testing", "artifact-path": "macos/build/TrustTunnel.app"}]'
+
+  check:
+    needs: [build-ios-appstore, build-ios-simulator, build-macos-appstore]
+    runs-on: [team-flutter]
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-ios-appstore
+          path: artifacts/trusttunnel-ios-appstore
+      - uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-ios-testing
+          path: artifacts/trusttunnel-ios-testing
+      - uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-ios-simulator
+          path: artifacts/trusttunnel-ios-simulator
+      - uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-macos-appstore
+          path: artifacts/trusttunnel-macos-appstore
+      - uses: actions/download-artifact@v8
+        with:
+          name: trusttunnel-macos-testing
+          path: artifacts/trusttunnel-macos-testing
+      - name: Artifact layout expected by deploy-to-testflight, deploy-to-appetize and the testers
+        run: |
+          set -e -x
+          find artifacts -maxdepth 2 | sort
+          test "$(ls artifacts/trusttunnel-ios-appstore | LC_ALL=C sort)" = "$(printf '%s\n' AppStoreInfo.plist TrustTunnel.ipa | LC_ALL=C sort)"
+          test "$(ls artifacts/trusttunnel-ios-testing)" = "TrustTunnel.ipa"
+          test "$(ls artifacts/trusttunnel-ios-simulator)" = "TrustTunnel.app.zip"
+          test "$(ls artifacts/trusttunnel-macos-appstore | LC_ALL=C sort)" = "$(printf '%s\n' AppStoreInfo.plist TrustTunnel.pkg | LC_ALL=C sort)"
+          test "$(ls artifacts/trusttunnel-macos-testing)" = "TrustTunnel.app.zip"
