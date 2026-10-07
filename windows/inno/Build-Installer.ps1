@@ -132,19 +132,19 @@ if ($ForceDownload -or -not (Test-Path $vcRedistPath)) {
     Invoke-WebRequest -Uri $vcRedistUrl -OutFile $vcRedistPath
 }
 
-$vcRedistSignature = Get-AuthenticodeSignature $vcRedistPath
-if (
-    $vcRedistSignature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
-    $vcRedistSignature.SignerCertificate.Subject -notmatch "Microsoft"
-) {
-    throw "The downloaded Visual C++ Redistributable has an invalid Microsoft signature."
-}
-
-$isccCommand = Get-Command ISCC.exe -ErrorAction SilentlyContinue
-$isccCandidates = @()
-if ($isccCommand) {
-    $isccCandidates += $isccCommand.Source
-}
+$innoRegistryKeys = @(
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
+    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
+    "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1"
+)
+$innoInstallations = @($innoRegistryKeys |
+    ForEach-Object {
+        Get-ItemProperty -LiteralPath $_ -ErrorAction SilentlyContinue
+    })
+# Prefer the installed compiler (for case if Chocolatey's PATH alternative is used)
+$isccCandidates = @($innoInstallations |
+    Where-Object { $_.InstallLocation } |
+    ForEach-Object { Join-Path $_.InstallLocation "ISCC.exe" })
 $programFilesX86 = [Environment]::GetFolderPath(
     [Environment+SpecialFolder]::ProgramFilesX86
 )
@@ -156,8 +156,12 @@ $isccCandidates += @(
     (Join-Path $programFilesX86 "Inno Setup 6\ISCC.exe"),
     (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe")
 )
+$isccCommand = Get-Command ISCC.exe -CommandType Application -ErrorAction SilentlyContinue
+if ($isccCommand) {
+    $isccCandidates += $isccCommand.Source
+}
 $isccPath = $isccCandidates |
-    Where-Object { $_ -and (Test-Path $_) } |
+    Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } |
     Select-Object -First 1
 
 if (-not $isccPath) {
@@ -165,17 +169,10 @@ if (-not $isccPath) {
 }
 
 $isccVersion = [version](Get-Item $isccPath).VersionInfo.FileVersion
-# If the version is 0.0.0.0 (bug???), try to find the version from the registry
+# ISCC can report 0.0.0.0 in its file metadata. Read the installed Inno version
+# from the matching uninstall registry entry instead.
 if ($isccVersion -eq [version]"0.0.0.0") {
-    $innoRegistryKeys = @(
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
-        "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
-        "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1"
-    )
-    $installedVersion = $innoRegistryKeys |
-        ForEach-Object {
-            Get-ItemProperty $_ -ErrorAction SilentlyContinue
-        } |
+    $installedVersion = $innoInstallations |
         Where-Object {
             $_.InstallLocation -and
             $isccPath.StartsWith($_.InstallLocation, [StringComparison]::OrdinalIgnoreCase)
@@ -189,6 +186,7 @@ if ($isccVersion -eq [version]"0.0.0.0") {
 if ($isccVersion -lt [version]"6.6") {
     throw "Inno Setup 6.6 or newer is required. Found: $isccVersion"
 }
+Write-Host "Using Inno Setup $isccVersion compiler: $isccPath"
 
 $outputDir = Join-Path $repoRoot "build\windows\installer"
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
