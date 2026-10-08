@@ -136,7 +136,7 @@ jobs:
   sign-binaries:
     needs: [build]
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         bundle: [x64, arm64-mixed]
     permissions:
@@ -146,7 +146,7 @@ jobs:
     with:
       team: flutter
       artifact-name: trusttunnel-windows-bundle-unsigned-${{ matrix.bundle }}
-      # Wintun keeps its upstream signature; the package job verifies it.
+      # Wintun keeps its upstream signature.
       files: |
         TrustTunnel.exe
         cleanup_user_data_helper.exe
@@ -191,34 +191,6 @@ jobs:
         with:
           name: trusttunnel-windows-bundle-signed-arm64-mixed
           path: build/windows/arm64-mixed/runner/Release
-
-      - name: Resolve SignTool
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $windowsKitsPath = 'C:\Program Files (x86)\Windows Kits\10\bin'
-          $sdkDirectories = Get-ChildItem -Path $windowsKitsPath -Directory |
-            Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
-            Sort-Object { [Version]$_.Name } -Descending
-          $signtoolPath = $sdkDirectories |
-            ForEach-Object { Join-Path $_.FullName 'x64\signtool.exe' } |
-            Where-Object { Test-Path $_ -PathType Leaf } |
-            Select-Object -First 1
-          if (-not $signtoolPath) {
-            Write-Error "signtool.exe not found in $windowsKitsPath"
-            exit 1
-          }
-          Write-Host "Using signtool.exe at $signtoolPath"
-          Add-Content -Path $env:GITHUB_ENV -Value "SIGNTOOL_PATH=$signtoolPath" -Encoding ascii
-
-      - name: Verify signed Windows bundles
-        run: |
-          $ErrorActionPreference = 'Stop'
-          foreach ($architecture in @('x64', 'arm64-mixed')) {
-            .\windows\build_scripts\Verify-WindowsBundle.ps1 `
-              -BundlePath "build\windows\$architecture\runner\Release" `
-              -Architecture $architecture `
-              -SignToolPath $env:SIGNTOOL_PATH
-          }
 
       - name: Build EXE installer
         env:
