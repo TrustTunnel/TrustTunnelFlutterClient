@@ -225,7 +225,7 @@ jobs:
       files: TrustTunnelSetup.exe
       signed-artifact-name: ${{ inputs.artifact-name }}
 
-cleanup-artifacts:
+  cleanup-artifacts:
     needs: [sign-installer]
     runs-on: [team-flutter]
     permissions:
