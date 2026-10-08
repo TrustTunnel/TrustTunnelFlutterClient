@@ -69,7 +69,7 @@ jobs:
 
       - name: Select Flutter
         env:
-          FLUTTER_VERSION: '3.44.8'
+          FLUTTER_VERSION: '3.44.9'
         run: |
           set -euo pipefail
           : "${FLUTTER_SDKS_ROOT:?image does not provide versioned Flutter SDKs}"
