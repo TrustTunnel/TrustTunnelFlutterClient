@@ -86,8 +86,8 @@ jobs:
 
   build-windows:
     needs: [prepare]
-    if: >-
-      github.event.pull_request.draft == false
+    # if: >-
+    #   github.event.pull_request.draft == false
     uses: ./.github/workflows/flutter-build-windows.yml
     secrets: inherit
     with:
