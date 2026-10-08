@@ -60,7 +60,7 @@ on:
 permissions:
   contents: read
   id-token: write
-  actions: read
+  actions: write
 
 concurrency:
   group: deploy-${{ inputs.tag }}

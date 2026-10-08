@@ -224,3 +224,30 @@ jobs:
       artifact-name: trusttunnel-windows-installer-unsigned
       files: TrustTunnelSetup.exe
       signed-artifact-name: ${{ inputs.artifact-name }}
+
+  cleanup-artifacts:
+    needs: [sign-installer]
+    runs-on: [team-flutter]
+    permissions:
+      actions: write
+    steps:
+      - name: Delete intermediate artifacts
+        uses: actions/github-script@v8
+        env:
+          KEEP_ARTIFACT: ${{ inputs.artifact-name != '' && inputs.artifact-name || 'trusttunnel-windows-installer-unsigned' }},trusttunnel-windows-build-metadata-x64
+        with:
+          script: |
+            const keep = process.env.KEEP_ARTIFACT;
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              { ...context.repo, run_id: context.runId, per_page: 100 },
+              (response) => response.data.artifacts,
+            );
+            const stale = artifacts.filter(
+              (a) => a.name.startsWith('trusttunnel-windows-') && a.name !== keep,
+            );
+            for (const a of stale) {
+              core.info(`Deleting artifact: ${a.name} (id: ${a.id})`);
+              await github.rest.actions.deleteArtifact({ ...context.repo, artifact_id: a.id });
+            }
+            core.notice(`Deleted ${stale.length} intermediate artifact(s), kept: ${keep}`);
