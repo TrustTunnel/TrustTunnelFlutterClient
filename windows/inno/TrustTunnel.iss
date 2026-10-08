@@ -71,11 +71,13 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#VcRedistPath}"; DestName: "vc_redist.exe"; Flags: dontcopy
 Source: "{#X64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "service_install\x64"; Flags: dontcopy; Check: not IsArm64
 Source: "{#MixedArm64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "service_install\arm64"; Flags: dontcopy; Check: IsArm64
-Source: "{#X64BuildDir}\*"; DestDir: "{app}"; Excludes: "*.exp,*.ilk,*.lib,*.pdb,trusttunnel_service.exe,trusttunnel_service_installer.exe,wintun.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#X64BuildDir}\*"; DestDir: "{app}"; Excludes: "*.exp,*.ilk,*.lib,*.pdb,trusttunnel_service.exe,trusttunnel_service_installer.exe,wintun.dll,WINTUN_LICENSE.txt"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#X64BuildDir}\trusttunnel_service.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
 Source: "{#MixedArm64BuildDir}\trusttunnel_service.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
 Source: "{#X64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
 Source: "{#MixedArm64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
+Source: "{#X64BuildDir}\WINTUN_LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
+Source: "{#MixedArm64BuildDir}\WINTUN_LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
 Source: "{#X64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
 Source: "{#MixedArm64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
 

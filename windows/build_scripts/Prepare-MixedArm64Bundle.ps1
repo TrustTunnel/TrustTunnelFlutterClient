@@ -1,6 +1,6 @@
 # Creates an unsigned mixed ARM64 bundle from the x64 Flutter bundle.
 # Uses the x64 CMake build metadata to select the matching ARM64 native ZIP,
-# then replaces only the VPN service EXEs and wintun.dll. Verifies the result
+# then replaces the VPN service EXEs, wintun.dll and its license. Verifies the result
 # and records the ARM64 ZIP's SHA-256 alongside the x64 archive hash.
 [CmdletBinding()]
 param(
@@ -93,6 +93,10 @@ try {
             throw "ARM64 native package is missing: $path"
         }
     }
+    $nativeLicense = Join-Path $nativeDirectory 'WINTUN_LICENSE.txt'
+    if (-not (Test-Path -LiteralPath $nativeLicense -PathType Leaf)) {
+        throw "ARM64 native package is missing: $nativeLicense"
+    }
 
     if (Test-Path -LiteralPath $OutputBundle) {
         Remove-Item -LiteralPath $OutputBundle -Recurse -Force
@@ -103,6 +107,8 @@ try {
         Copy-Item -LiteralPath (Join-Path $nativeBin $name) `
             -Destination (Join-Path $OutputBundle $name) -Force
     }
+    Copy-Item -LiteralPath $nativeLicense `
+        -Destination (Join-Path $OutputBundle 'WINTUN_LICENSE.txt') -Force
     & (Join-Path $PSScriptRoot 'Verify-WindowsBundle.ps1') `
         -BundlePath $OutputBundle -Architecture arm64-mixed -Configuration $Configuration
 
