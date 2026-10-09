@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:tray_manager/src/model/tray_icon.dart';
 import 'package:tray_manager/src/model/tray_item.dart';
 import 'package:tray_manager/src/model/tray_item_to_map_converter.dart';
@@ -11,7 +12,7 @@ const _kChannelPrefix = 'tray_manager';
 /// High-level API for managing desktop system tray.
 ///
 /// Provides methods to initialize, update, and dispose the tray icon and menu.
-/// Supports macOS. Only one instance can be active at a time.
+/// Supports macOS and Windows. Only one instance can be active at a time.
 ///
 /// Usage:
 /// ```dart
@@ -23,6 +24,9 @@ const _kChannelPrefix = 'tray_manager';
 final class TrayManagerApi {
   /// Currently active instance. Only one instance can receive callbacks.
   static TrayManagerApi? _activeInstance;
+
+  /// Reports native tray failures, including automatic Explorer recovery.
+  final void Function(PlatformException error)? onNativeError;
 
   /// Low-level platform API.
   final TrayApi _api;
@@ -36,6 +40,7 @@ final class TrayManagerApi {
   TrayManagerApi({
     TrayApi? api,
     this._onError,
+    this.onNativeError,
   }) : _api = api ?? TrayApi(_kChannelPrefix),
        _converter = TrayItemConverter() {
     _becomeActive();
@@ -44,7 +49,9 @@ final class TrayManagerApi {
   /// Initializes the tray with the given menu [items].
   ///
   /// Creates the tray icon and context menu. Call [setTrayIcon] to set the icon.
-  /// Invoke only on macOS.
+  /// Supported on macOS and Windows.
+  /// On Windows, this prepares menu resources; Shell placement starts with
+  /// [setTrayIcon] and temporary failures are reported through [onNativeError].
   Future<void> initTray(List<TrayItem> items) async {
     _becomeActive();
     await _api.initTray(_convertItems(items));
@@ -52,7 +59,7 @@ final class TrayManagerApi {
 
   /// Updates the tray context menu with new [items].
   ///
-  /// Replaces the entire menu. Invoke only on macOS.
+  /// Replaces the entire menu. Supported on macOS and Windows.
   Future<void> updateMenu(List<TrayItem> items) async {
     _becomeActive();
     await _api.updateMenu(_convertItems(items));
@@ -61,8 +68,13 @@ final class TrayManagerApi {
   /// Sets the tray icon from PNG bytes.
   ///
   /// On macOS, [TrayIcon.isMonochrome] enables template mode for dark/light adaptation.
-  Future<void> setTrayIcon(TrayIcon icon) async {
-    await _api.setTrayIconPng(icon.bytes, icon.isMonochrome);
+  /// [tooltip] sets the Windows notification-area hover text.
+  Future<void> setTrayIcon(TrayIcon icon, {String? tooltip}) async {
+    await _api.setTrayIconPng(
+      icon.bytes,
+      icon.isMonochrome,
+      tooltip: tooltip,
+    );
   }
 
   /// Disposes the tray and stops receiving callbacks.
@@ -112,7 +124,7 @@ final class TrayManagerApi {
 
     TrayCallbackApiSetup.setUp(
       _kChannelPrefix,
-      TrayCallbackHandler(_dispatchCallback),
+      TrayCallbackHandler(_dispatchCallback, onError: onNativeError),
     );
   }
 

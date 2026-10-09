@@ -112,7 +112,8 @@ HMENU TrayManagerPlugin::BuildPopupMenu(
   menu_info.dwStyle = MNS_CHECKORBMP;
   SetMenuInfo(menu, &menu_info);
 
-  menu_id_map_.clear();
+  // Zero means cancellation in TPM_RETURNCMD, so IDs start at one.
+  menu_id_map_ = {""};
   ClearMenuBitmaps();
 
   std::function<void(HMENU, const std::vector<TrayMenuItem> &)> build_menu;
@@ -129,7 +130,13 @@ HMENU TrayManagerPlugin::BuildPopupMenu(
       const bool has_icon = !item.icon_png.empty();
       const bool checked = item.is_checked;
       const bool show_checkmark_on_right = checked && has_icon;
-      std::wstring display_text = text;
+      // Server names are literal labels, not Windows mnemonic declarations.
+      std::wstring display_text;
+      for (const wchar_t character : text) {
+        display_text += character;
+        if (character == L'&')
+          display_text += L'&';
+      }
       if (show_checkmark_on_right) {
         display_text += L"\t\u2713";
       }
@@ -155,6 +162,8 @@ HMENU TrayManagerPlugin::BuildPopupMenu(
           submenu_info.dwStyle = MNS_CHECKORBMP;
           SetMenuInfo(submenu, &submenu_info);
         }
+        if (!submenu)
+          continue;
         build_menu(submenu, item.children);
         UINT pos = GetMenuItemCount(menu);
         UINT flags = MF_STRING | MF_POPUP;
@@ -166,7 +175,11 @@ HMENU TrayManagerPlugin::BuildPopupMenu(
           flags |= MF_CHECKED;
         }
 
-        AppendMenuW(menu, flags, (UINT_PTR)submenu, display_text.c_str());
+        if (!AppendMenuW(menu, flags, reinterpret_cast<UINT_PTR>(submenu),
+                         display_text.c_str())) {
+          DestroyMenu(submenu);
+          continue;
+        }
 
         // Apply icon if present
         if (!item.icon_png.empty()) {
@@ -223,26 +236,67 @@ HMENU TrayManagerPlugin::BuildPopupMenu(
   return menu;
 }
 
-void TrayManagerPlugin::ShowContextMenu() {
-  if (menu_items_.empty())
+void TrayManagerPlugin::ShowContextMenu(POINT position) {
+  if (!tray_available_ || !initialized_ || popup_open_ || menu_items_.empty())
     return;
-
+  HWND main_window = MainWindow();
+  if (!main_window)
+    return;
+  if (!IsWindowEnabled(main_window)) {
+    HWND modal = GetLastActivePopup(main_window);
+    SetForegroundWindow(modal);
+    return;
+  }
+  // TrackPopupMenu requires a foreground top-level window for dismissal.
+  // Keep its owner independent so opening the menu does not raise the main
+  // window.
+  const HWND previous_foreground = GetForegroundWindow();
+  HWND owner =
+      CreateWindowExW(WS_EX_TOOLWINDOW, L"TrayManagerPluginWindow",
+                      L"TrustTunnel tray menu", WS_POPUP, 0, 0, 0, 0,
+                      nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+  if (!owner)
+    return;
   HMENU menu = BuildPopupMenu(menu_items_);
-  if (!menu)
+  if (!menu) {
+    DestroyWindow(owner);
     return;
-
-  POINT pt;
-  GetCursorPos(&pt);
-
-  // Required for proper menu dismissal
-  SetForegroundWindow(hwnd_);
-
-  TrackPopupMenu(menu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd_, nullptr);
-
-  // Required for proper menu dismissal
-  PostMessage(hwnd_, WM_NULL, 0, 0);
-
+  }
+  popup_open_ = true;
+  SetForegroundWindow(owner);
+  const UINT command =
+      TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY,
+                     position.x, position.y, 0, owner, nullptr);
+  const std::string selected =
+      command < menu_id_map_.size() ? menu_id_map_[command] : "";
+  const bool return_focus_to_tray =
+      selected.empty() && GetForegroundWindow() == owner;
+  // Dart dispatches the action asynchronously. Preserve this user action's
+  // foreground permission before restoring focus and destroying the owner,
+  // so showMainWindow can activate the app when the selected action needs it.
+  if (initialized_ && !selected.empty())
+    AllowSetForegroundWindow(GetCurrentProcessId());
+  PostMessageW(owner, WM_NULL, 0, 0);
   DestroyMenu(menu);
+  ClearMenuBitmaps();
+  menu_id_map_.clear();
+  // Restore focus before destroying the temporary active window so Windows
+  // does not choose the main window as its replacement. An outside click may
+  // have already activated another window; leave that choice intact.
+  if (GetForegroundWindow() == owner && IsWindow(previous_foreground))
+    SetForegroundWindow(previous_foreground);
+  DestroyWindow(owner);
+  popup_open_ = false;
+  // Dispatch only after native resources and the menu's modal loop are gone.
+  // Actions may immediately open another owned dialog or dispose the tray.
+  if (initialized_) {
+    if (tray_available_ && return_focus_to_tray) {
+      SetLastError(ERROR_SUCCESS);
+      if (!Shell_NotifyIconW(NIM_SETFOCUS, &nid_))
+        ReportShellError("NIM_SETFOCUS", GetLastError());
+    }
+    OnMenuItemClicked(selected);
+  }
 }
 
 void TrayManagerPlugin::OnMenuItemClicked(const std::string &id) {

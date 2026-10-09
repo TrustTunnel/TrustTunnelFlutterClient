@@ -9,10 +9,11 @@
 #include <windows.h>
 
 #include <cstdint>
-#include <stdint.h>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
+#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -61,6 +62,8 @@ private:
       "tray_manager/trayApi/setTrayIconPng";
   static constexpr char kOnMenuItemClickedChannel[] =
       "tray_manager/trayCallbackApi/onMenuItemClickedId";
+  static constexpr char kOnErrorChannel[] =
+      "tray_manager/trayCallbackApi/onError";
 
   // Unique message ID for tray icon
   static constexpr UINT kTrayIconMessage = WM_USER + 1;
@@ -69,7 +72,6 @@ private:
   // Window procedure for handling tray messages
   static LRESULT CALLBACK TrayWndProc(HWND hwnd, UINT msg, WPARAM wparam,
                                       LPARAM lparam);
-  static TrayManagerPlugin *instance_;
 
   // Initialize tray icon
   void InitTray(const flutter::EncodableList &items,
@@ -84,6 +86,7 @@ private:
 
   // Set tray icon from PNG bytes
   void SetTrayIcon(const std::vector<uint8_t> &icon_png, bool is_monochrome,
+                   const std::string &tooltip,
                    std::function<void(const flutter::EncodableValue &)> reply);
 
   // Parse menu items from encodable list
@@ -93,7 +96,7 @@ private:
   HMENU BuildPopupMenu(const std::vector<TrayMenuItem> &items);
 
   // Show context menu
-  void ShowContextMenu();
+  void ShowContextMenu(POINT position);
 
   // Handle menu item click
   void OnMenuItemClicked(const std::string &id);
@@ -107,9 +110,6 @@ private:
   // Clear menu item bitmaps
   void ClearMenuBitmaps();
 
-  // Get default tray icon
-  HICON GetDefaultIcon();
-
   // Create hidden window for message handling
   bool CreateTrayWindow();
 
@@ -122,8 +122,12 @@ private:
   // Remove tray icon from system tray
   void RemoveTrayIcon();
 
-  // Update tray icon
-  void UpdateTrayIcon();
+  // Recover after Explorer recreates the notification area.
+  void RestoreTrayIcon();
+  void SetTrayAvailable(bool available);
+  void ReportShellError(const char *operation, DWORD error);
+  HWND MainWindow() const;
+  void ReleaseTray();
 
   // Send success reply
   void
@@ -138,6 +142,22 @@ private:
   // Callback channel for menu clicks
   std::unique_ptr<flutter::BasicMessageChannel<flutter::EncodableValue>>
       callback_channel_;
+  std::unique_ptr<flutter::BasicMessageChannel<flutter::EncodableValue>>
+      error_channel_;
+
+  flutter::PluginRegistrarWindows *registrar_;
+  int window_proc_id_ = -1;
+  UINT taskbar_created_message_ = 0;
+  std::vector<
+      std::unique_ptr<flutter::BasicMessageChannel<flutter::EncodableValue>>>
+      channels_;
+  // Menu resources remain prepared while the Shell icon is unavailable.
+  bool initialized_ = false;
+  bool tray_available_ = false;
+  bool exiting_ = false;
+  std::map<std::string, DWORD> last_shell_errors_;
+  bool popup_open_ = false;
+  std::wstring tooltip_ = L"TrustTunnel";
 
   // Hidden window handle
   HWND hwnd_ = nullptr;

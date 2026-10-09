@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 /// {@template tray_api}
 /// Low-level platform channel API for tray operations.
 ///
-/// Communicates with the native macOS plugin via [BasicMessageChannel].
+/// Communicates with the native desktop plugins via [BasicMessageChannel].
 /// Use [TrayManagerApi] for a higher-level interface.
 /// {@endtemplate}
 class TrayApi {
@@ -69,8 +69,9 @@ class TrayApi {
   /// [isMonochrome] enables template mode on macOS.
   Future<void> setTrayIconPng(
     Uint8List iconPng,
-    bool isMonochrome,
-  ) async {
+    bool isMonochrome, {
+    String? tooltip,
+  }) async {
     final String channelName = '$_channelPrefix/trayApi/setTrayIconPng$_messageChannelSuffix';
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
       channelName,
@@ -78,7 +79,11 @@ class TrayApi {
       binaryMessenger: _binaryMessenger,
     );
 
-    final Object? reply = await channel.send(<Object?>[iconPng, isMonochrome]);
+    final Object? reply = await channel.send(<Object?>[
+      iconPng,
+      isMonochrome,
+      tooltip,
+    ]);
     _throwIfErrorReply(reply, channelName);
   }
 }
