@@ -1,17 +1,16 @@
-// This is a WIP version; it does not need to be reviewed and is entirely temporary.
-// At the time of creation, there is no design or technical specification for the final version of the dialog.
 #include "windows_exit_dialog.h"
 
+#include <d2d1.h>
 #include <dwmapi.h>
+#include <dwrite.h>
 #include <flutter/method_channel.h>
 #include <flutter/standard_method_codec.h>
-#include <gdiplus.h>
 #include <windowsx.h>
+#include <wrl/client.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <iterator>
 #include <optional>
 #include <string>
 #include <utility>
@@ -24,25 +23,37 @@ namespace {
 constexpr char kWindowsExitDialogChannel[] = "trusttunnel/windows_exit_dialog";
 constexpr wchar_t kDialogWindowClass[] = L"TRUSTTUNNEL_WINDOWS_EXIT_DIALOG";
 
-constexpr int kDialogWidth = 260;
-constexpr int kDialogHeight = 220;
-constexpr int kSideInset = 16;
-constexpr int kIconSize = 64;
-constexpr int kIconTopInset = 20;
-constexpr int kTitleTop = 100;
-constexpr int kTitleHeight = 16;
-constexpr int kMessageTop = 126;
-constexpr int kMessageHeight = 28;
-constexpr int kButtonTop = 172;
+// All layout values are Windows device-independent pixels (96 DPI).
+constexpr int kDialogWidth = 448;
+constexpr int kDialogHeight = 188;
+constexpr int kSideInset = 24;
+constexpr int kTitleTop = 24;
+constexpr int kTitleHeight = 28;
+constexpr int kMessageTop = kTitleTop + kTitleHeight + 12;
+constexpr int kMessageHeight = 20;
+constexpr int kDividerTop = kMessageTop + kMessageHeight + 24;
+constexpr int kButtonTop = kDividerTop + 24;
 constexpr int kButtonHeight = 32;
 constexpr int kButtonSpacing = 8;
-constexpr int kCornerRadius = 24;
-constexpr int kButtonCornerRadius = kButtonHeight / 2;
-constexpr int kIconCornerRadius = 14;
+constexpr int kCornerRadius = 8;
+constexpr int kButtonCornerRadius = 4;
+
+constexpr uint32_t kContentColor = 0xFFFFFF;
+constexpr uint32_t kFooterColor = 0xF3F3F3;
+constexpr uint32_t kDividerColor = 0xE5E5E5;
+constexpr uint32_t kPrimaryButtonColor = 0x005FB8;
+constexpr uint32_t kPrimaryButtonBorderColor = 0x156CBE;
+constexpr uint32_t kSecondaryButtonColor = 0xFBFBFB;
+constexpr uint32_t kSecondaryButtonBorderColor = 0xE5E5E5;
+constexpr uint32_t kDialogBorderColor = 0x757575;
+constexpr float kDialogBorderOpacity = 0x66 / 255.0f;
+constexpr float kTextOpacity = 0xE4 / 255.0f;
 
 constexpr wchar_t kDefaultTitle[] = L"Quit TrustTunnel?";
+constexpr wchar_t kDefaultMessage[] =
+    L"This will disconnect you from the active server";
 constexpr wchar_t kDefaultQuitButtonText[] = L"Quit";
-constexpr wchar_t kDefaultDontQuitButtonText[] = L"Don't quit";
+constexpr wchar_t kDefaultDontQuitButtonText[] = L"Don\u2019t quit";
 
 std::optional<std::wstring> Utf16FromUtf8(const std::string& value) {
   if (value.empty()) {
@@ -93,17 +104,23 @@ UINT GetWindowDpi(HWND window) {
              : get_dpi_for_window(window);
 }
 
-void AddRoundedRect(Gdiplus::GraphicsPath* path, const Gdiplus::RectF& rect,
-                    float radius) {
-  const float diameter = radius * 2.0f;
-  path->AddArc(rect.X, rect.Y, diameter, diameter, 180.0f, 90.0f);
-  path->AddArc(rect.GetRight() - diameter, rect.Y, diameter, diameter, 270.0f,
-               90.0f);
-  path->AddArc(rect.GetRight() - diameter, rect.GetBottom() - diameter,
-               diameter, diameter, 0.0f, 90.0f);
-  path->AddArc(rect.X, rect.GetBottom() - diameter, diameter, diameter, 90.0f,
-               90.0f);
-  path->CloseFigure();
+const wchar_t* ResolveDialogFont(IDWriteFactory* factory) {
+  Microsoft::WRL::ComPtr<IDWriteFontCollection> fonts;
+  if (SUCCEEDED(factory->GetSystemFontCollection(&fonts, TRUE))) {
+    // Match the family selection used by WindowsTitleBar / Flutter.
+    const wchar_t* candidates[] = {L"Segoe UI Variable",
+                                   L"Segoe UI Variable Text",
+                                   L"Segoe UI Variable Small"};
+    for (const auto* candidate : candidates) {
+      UINT32 index = 0;
+      BOOL exists = FALSE;
+      if (SUCCEEDED(fonts->FindFamilyName(candidate, &index, &exists)) &&
+          exists) {
+        return candidate;
+      }
+    }
+  }
+  return L"Segoe UI";
 }
 
 }  // namespace
@@ -116,12 +133,6 @@ class WindowsExitDialog::Impl {
             std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
                 messenger, kWindowsExitDialogChannel,
                 &flutter::StandardMethodCodec::GetInstance())) {
-    Gdiplus::GdiplusStartupInput startup_input;
-    if (Gdiplus::GdiplusStartup(&gdiplus_token_, &startup_input, nullptr) !=
-        Gdiplus::Ok) {
-      gdiplus_token_ = 0;
-    }
-
     channel_->SetMethodCallHandler(
         [this](const flutter::MethodCall<flutter::EncodableValue>& call,
                std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
@@ -134,9 +145,6 @@ class WindowsExitDialog::Impl {
 
     if (dialog_window_ != nullptr) {
       ::DestroyWindow(dialog_window_);
-    }
-    if (gdiplus_token_ != 0) {
-      Gdiplus::GdiplusShutdown(gdiplus_token_);
     }
   }
 
@@ -163,6 +171,12 @@ class WindowsExitDialog::Impl {
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+    if (call.method_name() == "cancelForInstaller") {
+      // Setup must not wait for a user's response to an earlier Quit request.
+      if (dialog_window_ != nullptr) Finish(false);
+      result->Success();
+      return;
+    }
     if (call.method_name() != "show") {
       result->NotImplemented();
       return;
@@ -175,7 +189,8 @@ class WindowsExitDialog::Impl {
         arguments == nullptr ? empty_arguments : *arguments;
 
     auto title = ReadStringArgument(dialog_arguments, "title", kDefaultTitle);
-    auto message = ReadStringArgument(dialog_arguments, "message", L"");
+    auto message =
+        ReadStringArgument(dialog_arguments, "message", kDefaultMessage);
     auto quit_button_text = ReadStringArgument(
         dialog_arguments, "quitButtonText", kDefaultQuitButtonText);
     auto dont_quit_button_text = ReadStringArgument(
@@ -200,7 +215,8 @@ class WindowsExitDialog::Impl {
         result->Success(flutter::EncodableValue(false));
         return;
       case ShowResult::kUnavailable:
-        result->Error("dialog_unavailable", "Unable to show the Windows exit dialog");
+        result->Error("dialog_unavailable",
+                      "Unable to show the Windows exit dialog");
         return;
     }
   }
@@ -211,7 +227,7 @@ class WindowsExitDialog::Impl {
       ::SetForegroundWindow(dialog_window_);
       return ShowResult::kCancel;
     }
-    if (gdiplus_token_ == 0 || !RegisterWindowClass()) {
+    if (!InitializeDrawingResources() || !RegisterWindowClass()) {
       return ShowResult::kUnavailable;
     }
 
@@ -223,13 +239,14 @@ class WindowsExitDialog::Impl {
     focused_button_ = Button::kDontQuit;
     hovered_button_ = Button::kNone;
     pressed_button_ = Button::kNone;
+    keyboard_focus_visible_ = false;
 
     const int width = Scale(kDialogWidth);
     const int height = Scale(kDialogHeight);
     const POINT origin = CalculateOrigin(width, height);
 
     dialog_window_ = ::CreateWindowExW(
-        WS_EX_TOOLWINDOW | WS_EX_DLGMODALFRAME, kDialogWindowClass, L"",
+        WS_EX_TOOLWINDOW, kDialogWindowClass, L"",
         WS_POPUP, origin.x, origin.y, width, height, parent_window_, nullptr,
         ::GetModuleHandleW(nullptr), this);
     if (dialog_window_ == nullptr) {
@@ -272,7 +289,7 @@ class WindowsExitDialog::Impl {
     }
     if (parent_was_enabled && ::IsWindow(parent_window_)) {
       ::EnableWindow(parent_window_, TRUE);
-      if (!should_quit_) {
+      if (!should_quit_ && ::IsWindowVisible(parent_window_)) {
         ::SetForegroundWindow(parent_window_);
       }
     }
@@ -346,22 +363,26 @@ class WindowsExitDialog::Impl {
         value * dpi_ / static_cast<double>(USER_DEFAULT_SCREEN_DPI)));
   }
 
-  float Scale(float value) const {
-    return value * dpi_ / static_cast<float>(USER_DEFAULT_SCREEN_DPI);
-  }
-
-  RECT ButtonRect(Button button) const {
+  D2D1_RECT_F ButtonLayoutRect(Button button) const {
     const int button_width =
         (kDialogWidth - kSideInset * 2 - kButtonSpacing) / 2;
-    const int x = button == Button::kQuit
+    const int x = button == Button::kDontQuit
                       ? kSideInset
                       : kSideInset + button_width + kButtonSpacing;
     return {
-        Scale(x),
-        Scale(kButtonTop),
-        Scale(x + button_width),
-        Scale(kButtonTop + kButtonHeight),
+        static_cast<float>(x),
+        static_cast<float>(kButtonTop),
+        static_cast<float>(x + button_width),
+        static_cast<float>(kButtonTop + kButtonHeight),
     };
+  }
+
+  RECT ButtonRect(Button button) const {
+    const auto rect = ButtonLayoutRect(button);
+    return {Scale(static_cast<int>(rect.left)),
+            Scale(static_cast<int>(rect.top)),
+            Scale(static_cast<int>(rect.right)),
+            Scale(static_cast<int>(rect.bottom))};
   }
 
   Button ButtonAt(POINT point) const {
@@ -411,183 +432,190 @@ class WindowsExitDialog::Impl {
                    reinterpret_cast<LPARAM>(icon));
   }
 
-  void Paint() const {
-    PAINTSTRUCT paint{};
-    HDC device_context = ::BeginPaint(dialog_window_, &paint);
+  bool CreateTextFormat(float size, float line_height, float baseline,
+                        DWRITE_FONT_WEIGHT weight,
+                        DWRITE_TEXT_ALIGNMENT alignment,
+                        IDWriteTextFormat** format) const {
+    if (FAILED(text_factory_->CreateTextFormat(
+            ResolveDialogFont(text_factory_.Get()), nullptr, weight,
+            DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, size, L"",
+            format))) {
+      return false;
+    }
 
-    RECT client_rect{};
-    ::GetClientRect(dialog_window_, &client_rect);
-    const int width = client_rect.right - client_rect.left;
-    const int height = client_rect.bottom - client_rect.top;
-
-    Gdiplus::Bitmap buffer(width, height, PixelFormat32bppPARGB);
-    Gdiplus::Graphics graphics(&buffer);
-    graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
-    graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHighQuality);
-    graphics.SetTextRenderingHint(Gdiplus::TextRenderingHintAntiAliasGridFit);
-
-    Gdiplus::LinearGradientBrush background_brush(
-        Gdiplus::Point(0, 0), Gdiplus::Point(0, height),
-        Gdiplus::Color(255, 252, 252, 252), Gdiplus::Color(255, 240, 240, 240));
-    graphics.FillRectangle(&background_brush, 0, 0, width, height);
-
-    Gdiplus::Pen border_pen(Gdiplus::Color(180, 255, 255, 255), Scale(1.0f));
-    const Gdiplus::RectF border_rect(Scale(0.5f), Scale(0.5f),
-                                     width - Scale(1.0f), height - Scale(1.0f));
-    Gdiplus::GraphicsPath border_path;
-    AddRoundedRect(&border_path, border_rect, Scale(kCornerRadius - 1.0f));
-    graphics.DrawPath(&border_pen, &border_path);
-
-    PaintIcon(graphics);
-    PaintText(graphics);
-    PaintButton(graphics, Button::kQuit, configuration_.quit_button_text);
-    PaintButton(graphics, Button::kDontQuit,
-                configuration_.dont_quit_button_text);
-
-    Gdiplus::Graphics target(device_context);
-    target.DrawImage(&buffer, 0, 0, width, height);
-    ::EndPaint(dialog_window_, &paint);
+    Microsoft::WRL::ComPtr<IDWriteInlineObject> ellipsis;
+    const DWRITE_TRIMMING trimming{DWRITE_TRIMMING_GRANULARITY_CHARACTER, 0, 0};
+    return SUCCEEDED((*format)->SetTextAlignment(alignment)) &&
+           SUCCEEDED((*format)->SetParagraphAlignment(
+               DWRITE_PARAGRAPH_ALIGNMENT_CENTER)) &&
+           SUCCEEDED(
+               (*format)->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP)) &&
+           SUCCEEDED((*format)->SetLineSpacing(
+               DWRITE_LINE_SPACING_METHOD_UNIFORM, line_height, baseline)) &&
+           SUCCEEDED(
+               text_factory_->CreateEllipsisTrimmingSign(*format, &ellipsis)) &&
+           SUCCEEDED((*format)->SetTrimming(&trimming, ellipsis.Get()));
   }
 
-  void PaintIcon(Gdiplus::Graphics& graphics) const {
-    const float x = Scale((kDialogWidth - kIconSize) / 2.0f);
-    const float y = Scale(static_cast<float>(kIconTopInset));
-    const float size = Scale(static_cast<float>(kIconSize));
-    const Gdiplus::RectF icon_rect(x, y, size, size);
-
-    const Gdiplus::RectF shadow_rect(x, y + Scale(1.0f), size, size);
-    Gdiplus::GraphicsPath shadow_path;
-    AddRoundedRect(&shadow_path, shadow_rect,
-                   Scale(static_cast<float>(kIconCornerRadius)));
-    Gdiplus::SolidBrush shadow_brush(Gdiplus::Color(42, 0, 0, 0));
-    graphics.FillPath(&shadow_brush, &shadow_path);
-
-    HICON icon = static_cast<HICON>(::LoadImageW(
-        ::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APP_ICON), IMAGE_ICON,
-        static_cast<int>(size), static_cast<int>(size), LR_DEFAULTCOLOR));
-    if (icon != nullptr) {
-      Gdiplus::Bitmap icon_bitmap(icon);
-      if (icon_bitmap.GetLastStatus() == Gdiplus::Ok) {
-        graphics.DrawImage(&icon_bitmap, icon_rect);
-      } else {
-        PaintPlaceholderIcon(graphics, icon_rect);
+  bool InitializeDrawingResources() {
+    if (!drawing_factory_ &&
+        FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
+                                 drawing_factory_.GetAddressOf()))) {
+      return false;
+    }
+    if (!text_factory_ &&
+        FAILED(DWriteCreateFactory(
+            DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
+            reinterpret_cast<IUnknown**>(text_factory_.GetAddressOf())))) {
+      return false;
+    }
+    if (!title_format_ || !message_format_ || !button_format_) {
+      if (!CreateTextFormat(20.0f, kTitleHeight, 21.0f,
+                            DWRITE_FONT_WEIGHT_SEMI_BOLD,
+                            DWRITE_TEXT_ALIGNMENT_LEADING,
+                            title_format_.ReleaseAndGetAddressOf()) ||
+          !CreateTextFormat(14.0f, kMessageHeight, 15.0f,
+                            DWRITE_FONT_WEIGHT_NORMAL,
+                            DWRITE_TEXT_ALIGNMENT_LEADING,
+                            message_format_.ReleaseAndGetAddressOf()) ||
+          !CreateTextFormat(14.0f, 20.0f, 15.0f, DWRITE_FONT_WEIGHT_NORMAL,
+                            DWRITE_TEXT_ALIGNMENT_CENTER,
+                            button_format_.ReleaseAndGetAddressOf())) {
+        title_format_.Reset();
+        message_format_.Reset();
+        button_format_.Reset();
+        return false;
       }
-      ::DestroyIcon(icon);
+    }
+    if (!render_target_) {
+      // The DC target buffers drawing internally before copying it to the
+      // window.
+      const auto properties = D2D1::RenderTargetProperties(
+          D2D1_RENDER_TARGET_TYPE_DEFAULT,
+          D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM,
+                            D2D1_ALPHA_MODE_IGNORE));
+      if (FAILED(drawing_factory_->CreateDCRenderTarget(
+              &properties, render_target_.GetAddressOf()))) {
+        return false;
+      }
+    }
+    if (!brush_ && FAILED(render_target_->CreateSolidColorBrush(
+                       D2D1::ColorF(0x000000), brush_.GetAddressOf()))) {
+      render_target_.Reset();
+      return false;
+    }
+    return true;
+  }
+
+  void SetBrushColor(uint32_t color, float opacity = 1.0f) const {
+    brush_->SetColor(D2D1::ColorF(color, opacity));
+  }
+
+  void PaintText(const std::wstring& text, IDWriteTextFormat* format,
+                 const D2D1_RECT_F& rect, uint32_t color,
+                 float opacity = 1.0f) const {
+    SetBrushColor(color, opacity);
+    render_target_->DrawText(text.c_str(), static_cast<UINT32>(text.size()),
+                             format, rect, brush_.Get(),
+                             D2D1_DRAW_TEXT_OPTIONS_CLIP);
+  }
+
+  void Paint() {
+    PAINTSTRUCT paint{};
+    HDC device_context = ::BeginPaint(dialog_window_, &paint);
+    RECT client_rect{};
+    ::GetClientRect(dialog_window_, &client_rect);
+    if (!InitializeDrawingResources() ||
+        FAILED(render_target_->BindDC(device_context, &client_rect))) {
+      ::EndPaint(dialog_window_, &paint);
+      // Show reports an unavailable dialog without confirming an exit.
+      is_finished_ = true;
       return;
     }
 
-    PaintPlaceholderIcon(graphics, icon_rect);
+    const float dpi = static_cast<float>(dpi_);
+    render_target_->SetDpi(dpi, dpi);
+    const auto size = render_target_->GetSize();
+    render_target_->BeginDraw();
+    render_target_->SetTransform(D2D1::Matrix3x2F::Identity());
+    render_target_->Clear(D2D1::ColorF(kContentColor));
+
+    // Fill the separator as a rectangle so it starts exactly at y = 108 DIPs.
+    render_target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+    SetBrushColor(kFooterColor);
+    render_target_->FillRectangle(
+        D2D1::RectF(0.0f, kDividerTop, size.width, size.height), brush_.Get());
+    SetBrushColor(kDividerColor);
+    render_target_->FillRectangle(
+        D2D1::RectF(0.0f, kDividerTop, size.width, kDividerTop + 1.0f),
+        brush_.Get());
+    render_target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+
+    PaintText(configuration_.title, title_format_.Get(),
+              D2D1::RectF(kSideInset, kTitleTop, kDialogWidth - kSideInset,
+                          kTitleTop + kTitleHeight),
+              0x000000, kTextOpacity);
+    PaintText(configuration_.message, message_format_.Get(),
+              D2D1::RectF(kSideInset, kMessageTop, kDialogWidth - kSideInset,
+                          kMessageTop + kMessageHeight),
+              0x000000, kTextOpacity);
+    PaintButton(Button::kDontQuit, configuration_.dont_quit_button_text);
+    PaintButton(Button::kQuit, configuration_.quit_button_text);
+
+    SetBrushColor(kDialogBorderColor, kDialogBorderOpacity);
+    render_target_->DrawRoundedRectangle(
+        D2D1::RoundedRect(
+            D2D1::RectF(0.5f, 0.5f, size.width - 0.5f, size.height - 0.5f),
+            kCornerRadius - 0.5f, kCornerRadius - 0.5f),
+        brush_.Get(), 1.0f);
+
+    const HRESULT result = render_target_->EndDraw();
+    ::EndPaint(dialog_window_, &paint);
+    if (result == D2DERR_RECREATE_TARGET) {
+      brush_.Reset();
+      render_target_.Reset();
+      ::InvalidateRect(dialog_window_, nullptr, FALSE);
+    } else if (FAILED(result)) {
+      is_finished_ = true;
+    }
   }
 
-  void PaintPlaceholderIcon(Gdiplus::Graphics& graphics,
-                            const Gdiplus::RectF& icon_rect) const {
-    Gdiplus::GraphicsPath icon_path;
-    AddRoundedRect(&icon_path, icon_rect,
-                   Scale(static_cast<float>(kIconCornerRadius)));
-    Gdiplus::SolidBrush background_brush(Gdiplus::Color(255, 255, 255, 255));
-    graphics.FillPath(&background_brush, &icon_path);
-
-    const float inset = Scale(11.0f);
-    Gdiplus::SolidBrush accent_brush(Gdiplus::Color(255, 51, 122, 184));
-    graphics.FillEllipse(&accent_brush, icon_rect.X + inset,
-                         icon_rect.Y + inset, icon_rect.Width - inset * 2,
-                         icon_rect.Height - inset * 2);
-
-    Gdiplus::Pen check_pen(Gdiplus::Color(255, 255, 255, 255), Scale(4.0f));
-    check_pen.SetStartCap(Gdiplus::LineCapRound);
-    check_pen.SetEndCap(Gdiplus::LineCapRound);
-    check_pen.SetLineJoin(Gdiplus::LineJoinRound);
-    Gdiplus::PointF check_points[] = {
-        {icon_rect.X + Scale(24.0f), icon_rect.Y + Scale(31.0f)},
-        {icon_rect.X + Scale(31.0f), icon_rect.Y + Scale(38.0f)},
-        {icon_rect.X + Scale(42.0f), icon_rect.Y + Scale(25.0f)},
-    };
-    graphics.DrawLines(&check_pen, check_points,
-                       static_cast<int>(std::size(check_points)));
-  }
-
-  void PaintText(Gdiplus::Graphics& graphics) const {
-    Gdiplus::SolidBrush text_brush(Gdiplus::Color(255, 0, 0, 0));
-    Gdiplus::Font title_font(L"Segoe UI", Scale(13.0f), Gdiplus::FontStyleBold,
-                             Gdiplus::UnitPixel);
-    Gdiplus::Font message_font(L"Segoe UI", Scale(11.0f),
-                               Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
-
-    Gdiplus::StringFormat title_format;
-    title_format.SetAlignment(Gdiplus::StringAlignmentCenter);
-    title_format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
-    title_format.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap);
-    title_format.SetTrimming(Gdiplus::StringTrimmingEllipsisCharacter);
-
-    Gdiplus::StringFormat message_format;
-    message_format.SetAlignment(Gdiplus::StringAlignmentCenter);
-    message_format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
-    message_format.SetTrimming(Gdiplus::StringTrimmingEllipsisWord);
-
-    const Gdiplus::RectF title_rect(
-        Scale(static_cast<float>(kSideInset)),
-        Scale(static_cast<float>(kTitleTop)),
-        Scale(static_cast<float>(kDialogWidth - kSideInset * 2)),
-        Scale(static_cast<float>(kTitleHeight)));
-    graphics.DrawString(configuration_.title.c_str(), -1, &title_font,
-                        title_rect, &title_format, &text_brush);
-
-    const Gdiplus::RectF message_rect(
-        Scale(static_cast<float>(kSideInset)),
-        Scale(static_cast<float>(kMessageTop)),
-        Scale(static_cast<float>(kDialogWidth - kSideInset * 2)),
-        Scale(static_cast<float>(kMessageHeight)));
-    graphics.DrawString(configuration_.message.c_str(), -1, &message_font,
-                        message_rect, &message_format, &text_brush);
-  }
-
-  void PaintButton(Gdiplus::Graphics& graphics, Button button,
-                   const std::wstring& title) const {
-    const RECT rectangle = ButtonRect(button);
-    const Gdiplus::RectF button_rect(
-        static_cast<float>(rectangle.left), static_cast<float>(rectangle.top),
-        static_cast<float>(rectangle.right - rectangle.left),
-        static_cast<float>(rectangle.bottom - rectangle.top));
-    Gdiplus::GraphicsPath button_path;
-    AddRoundedRect(&button_path, button_rect,
-                   Scale(static_cast<float>(kButtonCornerRadius)));
-
+  void PaintButton(Button button, const std::wstring& title) const {
+    const auto rect = ButtonLayoutRect(button);
+    // Inset the stroke by half its width to keep the button bounds exact.
+    const auto shape = D2D1::RoundedRect(
+        D2D1::RectF(rect.left + 0.5f, rect.top + 0.5f, rect.right - 0.5f,
+                    rect.bottom - 0.5f),
+        kButtonCornerRadius - 0.5f, kButtonCornerRadius - 0.5f);
     const bool is_primary = button == Button::kDontQuit;
     const bool is_pressed = button == pressed_button_;
     const bool is_hovered = button == hovered_button_;
-    Gdiplus::Color background_color;
-    if (is_primary) {
-      background_color = is_pressed   ? Gdiplus::Color(255, 0, 93, 204)
-                         : is_hovered ? Gdiplus::Color(255, 24, 132, 255)
-                                      : Gdiplus::Color(255, 0, 122, 255);
-    } else {
-      background_color = is_pressed   ? Gdiplus::Color(255, 215, 215, 215)
-                         : is_hovered ? Gdiplus::Color(255, 247, 247, 247)
-                                      : Gdiplus::Color(255, 235, 235, 235);
+    const uint32_t background_color =
+        is_primary ? (is_pressed   ? 0x0054A3
+                      : is_hovered ? 0x0059AD
+                                   : kPrimaryButtonColor)
+                   : (is_pressed   ? 0xF3F3F3
+                      : is_hovered ? 0xF6F6F6
+                                   : kSecondaryButtonColor);
+    SetBrushColor(background_color);
+    render_target_->FillRoundedRectangle(shape, brush_.Get());
+    SetBrushColor(is_primary ? kPrimaryButtonBorderColor
+                             : kSecondaryButtonBorderColor);
+    render_target_->DrawRoundedRectangle(shape, brush_.Get(), 1.0f);
+
+    if (keyboard_focus_visible_ && button == focused_button_) {
+      SetBrushColor(is_primary ? 0xFFFFFF : 0x000000,
+                    is_primary ? 1.0f : kTextOpacity);
+      render_target_->DrawRoundedRectangle(
+          D2D1::RoundedRect(D2D1::RectF(rect.left + 2.5f, rect.top + 2.5f,
+                                        rect.right - 2.5f, rect.bottom - 2.5f),
+                            2.0f, 2.0f),
+          brush_.Get(), 1.0f);
     }
 
-    Gdiplus::SolidBrush background_brush(background_color);
-    graphics.FillPath(&background_brush, &button_path);
-
-    if (button == focused_button_) {
-      Gdiplus::Pen focus_pen(is_primary ? Gdiplus::Color(150, 255, 255, 255)
-                                        : Gdiplus::Color(130, 0, 122, 255),
-                             Scale(1.5f));
-      graphics.DrawPath(&focus_pen, &button_path);
-    }
-
-    Gdiplus::Font button_font(L"Segoe UI", Scale(13.0f),
-                              Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
-    Gdiplus::SolidBrush text_brush(is_primary
-                                       ? Gdiplus::Color(255, 255, 255, 255)
-                                       : Gdiplus::Color(255, 0, 0, 0));
-    Gdiplus::StringFormat text_format;
-    text_format.SetAlignment(Gdiplus::StringAlignmentCenter);
-    text_format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
-    text_format.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap);
-    text_format.SetTrimming(Gdiplus::StringTrimmingEllipsisCharacter);
-    graphics.DrawString(title.c_str(), -1, &button_font, button_rect,
-                        &text_format, &text_brush);
+    PaintText(title, button_format_.Get(), rect,
+              is_primary ? 0xFFFFFF : 0x000000,
+              is_primary ? 1.0f : kTextOpacity);
   }
 
   void Finish(bool should_quit) {
@@ -600,6 +628,7 @@ class WindowsExitDialog::Impl {
   }
 
   void ToggleFocusedButton() {
+    keyboard_focus_visible_ = true;
     focused_button_ =
         focused_button_ == Button::kQuit ? Button::kDontQuit : Button::kQuit;
     ::InvalidateRect(dialog_window_, nullptr, FALSE);
@@ -656,6 +685,7 @@ class WindowsExitDialog::Impl {
         pressed_button_ = ButtonAt(point);
         if (pressed_button_ != Button::kNone) {
           focused_button_ = pressed_button_;
+          keyboard_focus_visible_ = false;
           ::SetCapture(window);
           ::InvalidateRect(window, nullptr, FALSE);
           return 0;
@@ -746,12 +776,19 @@ class WindowsExitDialog::Impl {
   HWND parent_window_ = nullptr;
   HWND dialog_window_ = nullptr;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
-  ULONG_PTR gdiplus_token_ = 0;
+  Microsoft::WRL::ComPtr<ID2D1Factory> drawing_factory_;
+  Microsoft::WRL::ComPtr<IDWriteFactory> text_factory_;
+  Microsoft::WRL::ComPtr<IDWriteTextFormat> title_format_;
+  Microsoft::WRL::ComPtr<IDWriteTextFormat> message_format_;
+  Microsoft::WRL::ComPtr<IDWriteTextFormat> button_format_;
+  Microsoft::WRL::ComPtr<ID2D1DCRenderTarget> render_target_;
+  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> brush_;
   Configuration configuration_;
   UINT dpi_ = USER_DEFAULT_SCREEN_DPI;
   Button focused_button_ = Button::kDontQuit;
   Button hovered_button_ = Button::kNone;
   Button pressed_button_ = Button::kNone;
+  bool keyboard_focus_visible_ = false;
   bool should_quit_ = false;
   bool is_finished_ = false;
   bool decision_made_ = false;

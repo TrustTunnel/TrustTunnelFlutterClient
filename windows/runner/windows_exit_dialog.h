@@ -1,5 +1,3 @@
-// This is a WIP version; it does not need to be reviewed and is entirely temporary.
-// At the time of creation, there is no design or technical specification for the final version of the dialog.
 #ifndef RUNNER_WINDOWS_EXIT_DIALOG_H_
 #define RUNNER_WINDOWS_EXIT_DIALOG_H_
 
