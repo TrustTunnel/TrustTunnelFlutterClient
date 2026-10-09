@@ -18,6 +18,7 @@ import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/initialization_result.dart';
 import 'package:trusttunnel/di/model/repository_factory.dart';
+import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
 
 abstract class InitializationHelper {
   const InitializationHelper();
@@ -65,8 +66,8 @@ class InitializationHelperIo extends InitializationHelper {
       logStorage: logStorage,
     );
 
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
-      await dependenciesFactory.appWindowController.configureMainWindow(
+    if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) {
+      await dependenciesFactory.appWindowController!.configureMainWindow(
         minimumWindowSize: const Size(905, 680),
         defaultWindowSize: const Size(1024, 768),
         isDebugMode: kDebugMode,
@@ -87,9 +88,26 @@ class InitializationHelperIo extends InitializationHelper {
       additionalTags: ['app', 'initialization'],
     );
 
-    await dependenciesFactory.exportLogsLocalSource.clearTempFiles();
+    try {
+      await dependenciesFactory.exportLogsLocalSource.clearTempFiles();
+    } catch (error, stackTrace) {
+      // Report without rethrowing: stale exports must not abort startup.
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'app initialization',
+        ),
+      );
+    }
 
     final initialVpnState = await repositoryFactory.vpnRepository.requestState();
+
+    final appWindowController = dependenciesFactory.appWindowController;
+    if (appWindowController is WindowsAppWindowController) {
+      // Setup can request exit even when launched outside the app.
+      await appWindowController.initializeInstallerExitHandler();
+    }
 
     FlutterNativeSplash.remove();
 

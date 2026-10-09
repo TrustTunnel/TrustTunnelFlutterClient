@@ -32,6 +32,7 @@ import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/macos_app_window_controller.dart';
+import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
 import 'package:vpn_plugin/vpn_plugin.dart';
 
@@ -72,7 +73,9 @@ abstract class DependencyFactory {
 
   AutoConnectOnLaunchSettingsDataSource get autoConnectOnLaunchSettingsDataSource;
 
-  AppWindowController get appWindowController;
+  /// Returns the cached native window controller on macOS and Windows.
+  /// Returns `null` on other platforms because window control is not implemented there.
+  AppWindowController? get appWindowController;
 
   db.AppDatabase get database;
 }
@@ -207,9 +210,10 @@ class DependencyFactoryImpl implements DependencyFactory {
       );
 
   @override
-  AppWindowController get appWindowController => _appWindowController ??= switch (defaultTargetPlatform) {
-    TargetPlatform.macOS => MacOSAppWindowController(),
-    _ => throw UnsupportedError('AppWindowController is not supported on ${defaultTargetPlatform.name}'),
+  AppWindowController? get appWindowController => switch (defaultTargetPlatform) {
+    TargetPlatform.macOS => _appWindowController ??= MacOSAppWindowController(),
+    TargetPlatform.windows => _appWindowController ??= WindowsAppWindowController(),
+    _ => null,
   };
 
   @override

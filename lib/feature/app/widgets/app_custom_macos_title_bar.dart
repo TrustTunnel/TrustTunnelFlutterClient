@@ -35,7 +35,7 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
       onDoubleTap: _toggleZoom,
       onPanStart: (_) => windowManager.startDragging(),
       child: ColoredBox(
-        color: context.colors.appSystemTitleBarBackground,
+        color: context.colors.macOSSystemTitleBarBackground,
         child: SizedBox(
           height: 28,
           child: Center(
@@ -43,7 +43,7 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
               AppConstants.appName,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: context.colors.appSystemTitleBarTitle,
+                color: context.colors.macOSSystemTitleBarTitle,
                 decoration: TextDecoration.none,
                 fontFamily: FontFamilies.cupertinoSystemText,
                 fontSize: 13,
@@ -71,7 +71,7 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
 
   @override
   void onWindowClose() {
-    unawaited(context.dependencyFactory.appWindowController.hideMainWindow());
+    unawaited(context.dependencyFactory.appWindowController!.hideMainWindow());
   }
 
   Future<void> _syncFullScreenState() async {

@@ -11,8 +11,9 @@ import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/macos_exit_dialog.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/windows/windows_exit_dialog.dart';
+import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
+import 'package:trusttunnel/feature/tray_menu/platform/macos/macos_exit_dialog.dart';
+import 'package:trusttunnel/feature/tray_menu/platform/windows/windows_exit_dialog.dart';
 import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_aspect.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
@@ -104,6 +105,8 @@ typedef UpdateVpnCallback =
 /// `*MaybeOf` variants if you want a nullable result instead.
 /// {@endtemplate}
 class VpnScope extends StatefulWidget {
+  /// Provided on macOS and Windows to show the window on errors and coordinate app exit.
+  /// `null` on other platforms because native window control is not implemented there.
   final AppWindowController? appWindowController;
 
   /// Repository used to start/stop the VPN and to listen for state/log updates.
@@ -138,8 +141,14 @@ class VpnScope extends StatefulWidget {
   /// If [listen] is `false`, the controller is read without establishing an
   /// inherited dependency, so the caller will not rebuild automatically.
   /// {@endtemplate}
-  static VpnController? vpnControllerMaybeOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.vpn);
+  static VpnController? vpnControllerMaybeOf(
+    BuildContext context, {
+    bool listen = true,
+  }) => _accessScope(
+    context,
+    listen: listen,
+    aspect: VpnAspect.vpn,
+  )?.controller;
 
   /// {@template vpn_scope_vpn_controller_of}
   /// Returns the nearest [VpnController] from the widget tree.
@@ -150,8 +159,16 @@ class VpnScope extends StatefulWidget {
   /// Throws an [ArgumentError] if called outside of a [VpnScope] subtree.
   /// Use [vpnControllerMaybeOf] when a nullable result is acceptable.
   /// {@endtemplate}
-  static VpnController vpnControllerOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.vpn) ?? _notFoundInheritedWidgetOfExactType();
+  static VpnController vpnControllerOf(
+    BuildContext context, {
+    bool listen = true,
+  }) =>
+      _accessScope(
+        context,
+        listen: listen,
+        aspect: VpnAspect.vpn,
+      )?.controller ??
+      _notFoundInheritedWidgetOfExactType();
 
   /// {@template vpn_scope_logs_controller_maybe_of}
   /// Returns the nearest [LogController] from the widget tree, or `null`.
@@ -162,8 +179,14 @@ class VpnScope extends StatefulWidget {
   /// If [listen] is `false`, the controller is read without establishing an
   /// inherited dependency.
   /// {@endtemplate}
-  static LogController? logsControllerMaybeOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.logs);
+  static LogController? logsControllerMaybeOf(
+    BuildContext context, {
+    bool listen = true,
+  }) => _accessScope(
+    context,
+    listen: listen,
+    aspect: VpnAspect.logs,
+  );
 
   /// {@template vpn_scope_logs_controller_of}
   /// Returns the nearest [LogController] from the widget tree.
@@ -174,10 +197,22 @@ class VpnScope extends StatefulWidget {
   /// Throws an [ArgumentError] if called outside of a [VpnScope] subtree.
   /// Use [logsControllerMaybeOf] when a nullable result is acceptable.
   /// {@endtemplate}
-  static LogController logsControllerOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.logs) ?? _notFoundInheritedWidgetOfExactType();
+  static LogController logsControllerOf(
+    BuildContext context, {
+    bool listen = true,
+  }) =>
+      _accessScope(
+        context,
+        listen: listen,
+        aspect: VpnAspect.logs,
+      ) ??
+      _notFoundInheritedWidgetOfExactType();
 
-  static _InheritedVpnScope? _accessScope(BuildContext context, {bool listen = true, VpnAspect? aspect}) => (listen
+  static _InheritedVpnScope? _accessScope(
+    BuildContext context, {
+    bool listen = true,
+    VpnAspect? aspect,
+  }) => (listen
       ? InheritedModel.inheritFrom<_InheritedVpnScope>(
           context,
           aspect: aspect,
@@ -191,7 +226,7 @@ class VpnScope extends StatefulWidget {
   );
 }
 
-class _VpnScopeState extends State<VpnScope> {
+class _VpnScopeState extends State<VpnScope> implements VpnController {
   static const _logLimit = 500;
 
   /// On Windows, `stop()` only queues service work, so `disconnected` may never arrive if it fails.
@@ -201,9 +236,9 @@ class _VpnScopeState extends State<VpnScope> {
   late final ValueNotifier<VpnState> _stateNotifier;
   late final ValueNotifier<List<VpnLog>> _logsNotifier;
 
-  /// We need this notifier because exit handling and interaction with the related dialog are above the [MaterialApp],
-  /// and we need to listen to it across the app.
-  late final _DisconnectOnExitErrorNotifier _disconnectOnExitErrorNotifier;
+  /// VPN operation errors originate above the [MaterialApp], so the UI listens here
+  /// to show feedback for both background updates and failed exit requests.
+  late final _OperationErrorNotifier _operationErrorNotifier;
 
   /// Listens to app lifecycle events (resume and exit requested).
   /// Handles desktop exit requests, including confirmation while VPN is active.
@@ -218,21 +253,23 @@ class _VpnScopeState extends State<VpnScope> {
   // Tracks state updates so a delayed request cannot overwrite a newer VPN state.
   int _vpnStateRevision = 0;
 
-  bool get _shouldShowExitDialog => switch (_stateNotifier.value) {
-    VpnState.connected || VpnState.connecting => true,
-    VpnState.disconnected || VpnState.waitingForRecovery || VpnState.recovering || VpnState.waitingForNetwork => false,
-  };
+  @override
+  VpnState get state => _stateNotifier.value;
+
+  @override
+  Listenable get operationErrorListenable => _operationErrorNotifier;
 
   @override
   void initState() {
     super.initState();
     _stateNotifier = ValueNotifier(widget.initialState);
     _logsNotifier = ValueNotifier(<VpnLog>[]);
-    _disconnectOnExitErrorNotifier = _DisconnectOnExitErrorNotifier();
+    _operationErrorNotifier = _OperationErrorNotifier();
     _appLifecycleListener = AppLifecycleListener(
       onResume: _onAppResumed,
       onExitRequested: _onExitRequested,
     );
+
     unawaited(_listenToVpnStates());
     unawaited(_listenToLogs());
   }
@@ -246,17 +283,59 @@ class _VpnScopeState extends State<VpnScope> {
       ],
     ),
     builder: (_, child) => _InheritedVpnScope(
+      controller: this,
       logs: _logsNotifier.value,
       state: _stateNotifier.value,
-      onStart: _start,
-      onStop: _stop,
-      onUpdate: _updateConfiguration,
-      onDeleteConfiguration: _deleteConfiguration,
-      disconnectOnExitErrorListenable: _disconnectOnExitErrorNotifier,
       child: child!,
     ),
     child: widget.child,
   );
+
+  @override
+  void addListener(VoidCallback listener) => _stateNotifier.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) => _stateNotifier.removeListener(listener);
+
+  @override
+  Future<void> start({
+    required Server server,
+    required RoutingProfile routingProfile,
+    required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
+  }) => _start(
+    server: server,
+    routingProfile: routingProfile,
+    excludedRoutes: excludedRoutes,
+    logLevel: logLevel,
+  );
+
+  @override
+  Future<void> updateConfiguration({
+    required Server server,
+    required RoutingProfile routingProfile,
+    required List<String> excludedRoutes,
+    required VpnConfigurationLogLevel logLevel,
+  }) => _updateConfiguration(
+    server: server,
+    routingProfile: routingProfile,
+    excludedRoutes: excludedRoutes,
+    logLevel: logLevel,
+  );
+
+  @override
+  Future<void> deleteConfiguration() => _deleteConfiguration();
+
+  @override
+  Future<void> stop() => _stop();
+
+  @override
+  Future<void> notifyOnOperationError() => _notifyOnOperationError();
+
+  bool get _shouldShowExitDialog => switch (_stateNotifier.value) {
+    VpnState.connected || VpnState.connecting => true,
+    VpnState.disconnected || VpnState.waitingForRecovery || VpnState.recovering || VpnState.waitingForNetwork => false,
+  };
 
   Future<void> _deleteConfiguration() async {
     await _stop();
@@ -381,6 +460,24 @@ class _VpnScopeState extends State<VpnScope> {
 
   void _onAppResumed() => unawaited(_refreshState());
 
+  /// Reveals the main window and notifies the UI about a VPN operation error.
+  Future<void> _notifyOnOperationError() async {
+    try {
+      await widget.appWindowController?.showMainWindow();
+    } catch (error, stackTrace) {
+      // This is necessary here because we want to continue notifying the UI even if the main window itself closed due to an error
+      FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+    }
+    if (mounted) {
+      _operationErrorNotifier.notifyListeners();
+    }
+  }
+
+  /// Handles the app exit requested event.
+  ///
+  /// This type of error handling is necessary here because if the `onExitRequested` handler throws an exception,
+  /// Flutter will log it but will not count it as a refusal to exit.
+  /// If no one explicitly returns `cancel`, the result will be an exit.
   Future<AppExitResponse> _onExitRequested() async {
     if (defaultTargetPlatform == TargetPlatform.windows) {
       final pendingExitRequest = _windowsExitRequest;
@@ -389,7 +486,15 @@ class _VpnScopeState extends State<VpnScope> {
       }
 
       try {
-        final exitRequest = _handleWindowsExitRequested();
+        final exitRequest = _handleWindowsExitRequested().catchError((
+          Object error,
+          StackTrace stackTrace,
+        ) async {
+          FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+          await _notifyOnOperationError();
+
+          return AppExitResponse.cancel;
+        });
         _windowsExitRequest = exitRequest;
 
         return await exitRequest;
@@ -399,7 +504,14 @@ class _VpnScopeState extends State<VpnScope> {
     }
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
-      return await _handleMacosExitRequested();
+      try {
+        return await _handleMacosExitRequested();
+      } catch (error, stackTrace) {
+        FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+        await _notifyOnOperationError();
+
+        return AppExitResponse.cancel;
+      }
     }
 
     return AppExitResponse.exit;
@@ -419,10 +531,11 @@ class _VpnScopeState extends State<VpnScope> {
             message: localization.exitDialogDescription,
             quitButtonText: localization.quit,
             dontQuitButtonText: localization.dontQuit,
-          ).onError((_, _) {
-            if (mounted) {
-              _disconnectOnExitErrorNotifier.notifyListeners();
-            }
+          ).onError((_, _) async {
+            // Here, we ignore the error and the stack trace, since these are native dialogs,
+            // and we don't need to know the full stack trace anyway, as the relevant section will be visible
+            // (showing that the error occurred in them).
+            await _notifyOnOperationError();
 
             return MacosExitDialogResult.cancel;
           });
@@ -439,6 +552,9 @@ class _VpnScopeState extends State<VpnScope> {
 
   Future<AppExitResponse> _handleWindowsExitRequested() async {
     if (_shouldShowExitDialog) {
+      if (!mounted) {
+        return AppExitResponse.cancel;
+      }
       final localization = Localization.ln;
       WindowsExitDialogResult result;
 
@@ -448,10 +564,11 @@ class _VpnScopeState extends State<VpnScope> {
             message: localization.exitDialogDescription,
             quitButtonText: localization.quit,
             dontQuitButtonText: localization.dontQuit,
-          ).onError((_, _) {
-            if (mounted) {
-              _disconnectOnExitErrorNotifier.notifyListeners();
-            }
+          ).onError((_, _) async {
+            // Here, we ignore the error and the stack trace, since these are native dialogs,
+            // and we don't need to know the full stack trace anyway, as the relevant section will be visible
+            // (showing that the error occurred in them).
+            await _notifyOnOperationError();
 
             return WindowsExitDialogResult.cancel;
           });
@@ -466,12 +583,15 @@ class _VpnScopeState extends State<VpnScope> {
 
     final disconnected = await _stopWindowsVpnWithWaitForDisconnection();
     if (disconnected || (mounted && _stateNotifier.value == VpnState.disconnected)) {
+      final window = widget.appWindowController;
+      if (window is WindowsAppWindowController) {
+        await window.prepareToExit();
+      }
+
       return AppExitResponse.exit;
     }
 
-    if (mounted) {
-      _disconnectOnExitErrorNotifier.notifyListeners();
-    }
+    await _notifyOnOperationError();
 
     return AppExitResponse.cancel;
   }
@@ -489,70 +609,30 @@ class _VpnScopeState extends State<VpnScope> {
     _vpnStreamSub?.cancel().ignore();
     _stateNotifier.dispose();
     _logsNotifier.dispose();
-    _disconnectOnExitErrorNotifier.dispose();
+    _operationErrorNotifier.dispose();
     super.dispose();
   }
 }
 
-class _DisconnectOnExitErrorNotifier extends ChangeNotifier {
+class _OperationErrorNotifier extends ChangeNotifier {
   @override
   void notifyListeners() => super.notifyListeners();
 }
 
-class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnController, LogController {
-  final AsyncCallback _onStop;
-  final AsyncCallback _onDeleteConfiguration;
-  final UpdateVpnCallback _onStart;
-  final UpdateVpnCallback _updateConfiguration;
+class _InheritedVpnScope extends InheritedModel<VpnAspect> implements LogController {
+  final VpnController controller;
 
   @override
   final List<VpnLog> logs;
 
-  @override
   final VpnState state;
 
-  @override
-  final Listenable disconnectOnExitErrorListenable;
-
   const _InheritedVpnScope({
-    required this._onStart,
-    required UpdateVpnCallback onUpdate,
-    required this._onStop,
-    required this._onDeleteConfiguration,
-    required this.disconnectOnExitErrorListenable,
+    required this.controller,
     required this.state,
     required this.logs,
     required super.child,
-  }) : _updateConfiguration = onUpdate;
-
-  @override
-  Future<void> start({
-    required Server server,
-    required RoutingProfile routingProfile,
-    required List<String> excludedRoutes,
-    required VpnConfigurationLogLevel logLevel,
-  }) => _onStart(
-    server: server,
-    routingProfile: routingProfile,
-    excludedRoutes: excludedRoutes,
-    logLevel: logLevel,
-  );
-
-  @override
-  Future<void> updateConfiguration({
-    required Server server,
-    required RoutingProfile routingProfile,
-    required List<String> excludedRoutes,
-    required VpnConfigurationLogLevel logLevel,
-  }) => _updateConfiguration(
-    server: server,
-    routingProfile: routingProfile,
-    excludedRoutes: excludedRoutes,
-    logLevel: logLevel,
-  );
-
-  @override
-  Future<void> stop() => _onStop();
+  });
 
   @override
   bool updateShouldNotify(covariant _InheritedVpnScope oldWidget) =>
@@ -569,9 +649,6 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnControl
 
     return false;
   }
-
-  @override
-  Future<void> deleteConfiguration() => _onDeleteConfiguration();
 
   bool _shouldNotifyVpnController(_InheritedVpnScope oldWidget) => oldWidget.state != state;
 

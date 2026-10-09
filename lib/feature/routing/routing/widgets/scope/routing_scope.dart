@@ -27,7 +27,11 @@ class RoutingScope extends StatefulWidget {
     BuildContext context, {
     bool listen = true,
     RoutingScopeAspect? aspect,
-  }) => _InheritedRoutingScope.controllerOf(context, listen: listen, aspect: aspect);
+  }) => _InheritedRoutingScope.controllerOf(
+    context,
+    listen: listen,
+    aspect: aspect,
+  ).controller;
 
   @override
   State<RoutingScope> createState() => _RoutingScopeState();
@@ -36,8 +40,37 @@ class RoutingScope extends StatefulWidget {
       _InheritedRoutingScope.controllerOf(context, listen: false)._rawController;
 }
 
-class _RoutingScopeState extends State<RoutingScope> {
+class _RoutingScopeState extends State<RoutingScope> implements RoutingScopeController {
   late final RoutingController _controller;
+
+  @override
+  List<RoutingProfile> get routingList => [..._controller.state.routingList];
+
+  @override
+  List<PresentationField> get fieldErrors => [..._controller.state.fieldErrors];
+
+  @override
+  PresentationException? get error => _controller.state.error;
+
+  @override
+  bool get loading => _controller.state.loading;
+
+  @override
+  void Function() get fetchProfiles => _controller.fetchRoutingProfiles;
+
+  @override
+  void Function({
+    required String id,
+    required String name,
+    required VoidCallback onSaved,
+  })
+  get changeName => _controller.editName;
+
+  @override
+  void Function(String routingProfileId, VoidCallback onDeleted) get deleteProfile => _controller.deleteProfile;
+
+  @override
+  void Function() get pickProfileToChangeName => _pickProfileToChangeName;
 
   @override
   void initState() {
@@ -51,8 +84,17 @@ class _RoutingScopeState extends State<RoutingScope> {
   @override
   Widget build(BuildContext context) => RoutingScopeValue(
     controller: _controller,
+    controllerFacade: this,
     child: widget.child,
   );
+
+  @override
+  void addListener(VoidCallback listener) => _controller.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) => _controller.removeListener(listener);
+
+  void _pickProfileToChangeName() => _controller.dataChanged(fieldErrors: []);
 
   @override
   void dispose() {
@@ -61,31 +103,13 @@ class _RoutingScopeState extends State<RoutingScope> {
   }
 }
 
-class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implements RoutingScopeController {
-  @override
-  final void Function() fetchProfiles;
-
-  @override
-  final void Function({
-    required String id,
-    required String name,
-    required VoidCallback onSaved,
-  })
-  changeName;
-
-  @override
-  final void Function(String routingProfileId, VoidCallback) deleteProfile;
-
-  @override
-  final void Function() pickProfileToChangeName;
+class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> {
+  final RoutingScopeController controller;
 
   final RoutingController _rawController;
 
   const _InheritedRoutingScope({
-    required this.fetchProfiles,
-    required this.changeName,
-    required this.deleteProfile,
-    required this.pickProfileToChangeName,
+    required this.controller,
     required this.error,
     required this.fieldErrors,
     required this.loading,
@@ -94,18 +118,12 @@ class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implemen
     required super.child,
   });
 
-  // Controller API
-
-  @override
   final List<RoutingProfile> routingList;
 
-  @override
   final List<PresentationField> fieldErrors;
 
-  @override
   final PresentationException? error;
 
-  @override
   final bool loading;
 
   // Inherited plumbing
@@ -166,9 +184,11 @@ class _InheritedRoutingScope extends InheritedModel<RoutingScopeAspect> implemen
 class RoutingScopeValue extends StatelessWidget {
   final Widget child;
   final RoutingController _controller;
+  final RoutingScopeController controllerFacade;
 
   const RoutingScopeValue({
     required this._controller,
+    required this.controllerFacade,
     required this.child,
     super.key,
   });
@@ -178,22 +198,18 @@ class RoutingScopeValue extends StatelessWidget {
 
     required this.child,
     super.key,
-  }) : _controller = RoutingScope._rawControllerOf(context);
+  }) : _controller = RoutingScope._rawControllerOf(context),
+       controllerFacade = RoutingScope.controllerOf(context, listen: false);
 
   @override
   Widget build(BuildContext context) => StateConsumer<RoutingController, RoutingState>(
     controller: _controller,
     builder: (context, state, _) => _InheritedRoutingScope(
-      fetchProfiles: _controller.fetchRoutingProfiles,
-      changeName: _controller.editName,
-      deleteProfile: _controller.deleteProfile,
+      controller: controllerFacade,
       error: state.error,
       loading: state.loading,
       fieldErrors: [...state.fieldErrors],
       routingList: [...state.routingList],
-      pickProfileToChangeName: () => _controller.dataChanged(
-        fieldErrors: [],
-      ),
       rawController: _controller,
       child: child,
     ),

@@ -31,15 +31,33 @@ class ServersScope extends StatefulWidget {
     context,
     listen: listen,
     aspect: aspect,
-  );
+  ).controller;
 
   @override
   State<ServersScope> createState() => _ServersScopeState();
 }
 
-class _ServersScopeState extends State<ServersScope> {
+class _ServersScopeState extends State<ServersScope> implements ServersScopeController {
   late final ServersController _controller;
   late final AutoConnectOnLaunchSettingsController _autoConnectOnLaunchSettingsController;
+
+  @override
+  List<Server> get servers => [..._controller.state.servers];
+
+  @override
+  Server? get selectedServer => _controller.state.selectedServer;
+
+  @override
+  PresentationException? get error => _controller.state.error;
+
+  @override
+  bool get loading => _controller.state.loading;
+
+  @override
+  void Function() get fetchServers => _controller.fetchServers;
+
+  @override
+  void Function(String? serverId) get pickServer => _selectServer;
 
   @override
   void initState() {
@@ -58,12 +76,17 @@ class _ServersScopeState extends State<ServersScope> {
   Widget build(BuildContext context) => StateConsumer<ServersController, ServersState>(
     controller: _controller,
     builder: (context, state, _) => _InheritedServersScope(
+      controller: this,
       state: state,
-      pickServer: _selectServer,
-      fetchServers: _controller.fetchServers,
       child: widget.child,
     ),
   );
+
+  @override
+  void addListener(VoidCallback listener) => _controller.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) => _controller.removeListener(listener);
 
   void _selectServer(String? serverId) {
     _autoConnectOnLaunchSettingsController.setLastServerId(serverId);
@@ -78,32 +101,23 @@ class _ServersScopeState extends State<ServersScope> {
   }
 }
 
-class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implements ServersScopeController {
+class _InheritedServersScope extends InheritedModel<ServersScopeAspect> {
+  final ServersScopeController controller;
+
   final ServersState _state;
 
-  @override
-  final void Function(String? serverId) pickServer;
-
-  @override
-  final void Function() fetchServers;
-
   const _InheritedServersScope({
+    required this.controller,
     required this._state,
-    required this.pickServer,
-    required this.fetchServers,
     required super.child,
   });
 
-  @override
   List<Server> get servers => [..._state.servers];
 
-  @override
   Server? get selectedServer => _state.selectedServer;
 
-  @override
   PresentationException? get error => _state.error;
 
-  @override
   bool get loading => _state.loading;
 
   @override

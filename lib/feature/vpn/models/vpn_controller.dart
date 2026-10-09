@@ -4,9 +4,11 @@ import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 
-mixin VpnController {
+mixin VpnController implements Listenable {
   abstract final VpnState state;
-  abstract final Listenable disconnectOnExitErrorListenable;
+
+  /// Notifies the UI when a VPN operation or exit request fails.
+  abstract final Listenable operationErrorListenable;
 
   Future<void> start({
     required Server server,
@@ -25,4 +27,6 @@ mixin VpnController {
   Future<void> deleteConfiguration();
 
   Future<void> stop();
+
+  Future<void> notifyOnOperationError();
 }

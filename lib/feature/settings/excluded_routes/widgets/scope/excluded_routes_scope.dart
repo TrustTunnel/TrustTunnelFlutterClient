@@ -20,14 +20,48 @@ class ExcludedRoutesScope extends StatefulWidget {
     BuildContext context, {
     bool listen = true,
     ExcludedRoutesAspect? aspect,
-  }) => _InheritedExcludedRoutesScope.controllerOf(context, listen: listen, aspect: aspect);
+  }) => _InheritedExcludedRoutesScope.controllerOf(
+    context,
+    listen: listen,
+    aspect: aspect,
+  ).controller;
 
   @override
   State<ExcludedRoutesScope> createState() => _ExcludedRoutesScopeState();
 }
 
-class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> {
+class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> implements ExcludedRoutesScopeController {
   late final ExcludedRoutesController _controller;
+
+  @override
+  List<String> get excludedRoutes => List<String>.unmodifiable(_controller.state.excludedRoutes);
+
+  @override
+  List<String> get initialExcludedRoutes => List<String>.unmodifiable(_controller.state.initialExcludedRoutes);
+
+  @override
+  bool get hasInvalidRoutes => _controller.state.hasInvalidRoutes;
+
+  @override
+  bool get hasChanges => !listEquals(excludedRoutes, initialExcludedRoutes);
+
+  @override
+  bool get canSave => hasChanges && (!hasInvalidRoutes || excludedRoutes.isEmpty);
+
+  @override
+  bool get loading => _controller.state.loading;
+
+  @override
+  PresentationException? get error => _controller.state.error;
+
+  @override
+  void Function() get fetchExcludedRoutes => _controller.fetch;
+
+  @override
+  ExcludedRoutesDataChangedCallback get changeData => _changeData;
+
+  @override
+  void Function(VoidCallback onSaved) get submit => _controller.submit;
 
   @override
   void initState() {
@@ -45,19 +79,24 @@ class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> {
   Widget build(BuildContext context) => StateConsumer<ExcludedRoutesController, ExcludedRoutesState>(
     controller: _controller,
     builder: (context, state, _) => _InheritedExcludedRoutesScope(
+      controller: this,
       state: state,
-      changeData:
-          ({
-            List<String>? excludedRoutes,
-            bool? hasInvalidRoutes,
-          }) => _controller.dataChanged(
-            excludedRoutes: excludedRoutes,
-            hasInvalidRules: hasInvalidRoutes,
-          ),
-      fetchExcludedRoutes: _controller.fetch,
-      submit: _controller.submit,
       child: widget.child,
     ),
+  );
+
+  @override
+  void addListener(VoidCallback listener) => _controller.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) => _controller.removeListener(listener);
+
+  void _changeData({
+    List<String>? excludedRoutes,
+    bool? hasInvalidRoutes,
+  }) => _controller.dataChanged(
+    excludedRoutes: excludedRoutes,
+    hasInvalidRules: hasInvalidRoutes,
   );
 
   @override
@@ -67,46 +106,29 @@ class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> {
   }
 }
 
-class _InheritedExcludedRoutesScope extends InheritedModel<ExcludedRoutesAspect>
-    implements ExcludedRoutesScopeController {
+class _InheritedExcludedRoutesScope extends InheritedModel<ExcludedRoutesAspect> {
+  final ExcludedRoutesScopeController controller;
+
   final ExcludedRoutesState _state;
 
   const _InheritedExcludedRoutesScope({
+    required this.controller,
     required this._state,
-    required this.changeData,
-    required this.fetchExcludedRoutes,
-    required this.submit,
     required super.child,
   });
 
-  @override
-  final ExcludedRoutesDataChangedCallback changeData;
-
-  @override
-  final void Function() fetchExcludedRoutes;
-
-  @override
-  final void Function(VoidCallback onSaved) submit;
-
-  @override
   List<String> get excludedRoutes => List<String>.unmodifiable(_state.excludedRoutes);
 
-  @override
   List<String> get initialExcludedRoutes => List<String>.unmodifiable(_state.initialExcludedRoutes);
 
-  @override
   bool get hasInvalidRoutes => _state.hasInvalidRoutes;
 
-  @override
   PresentationException? get error => _state.error;
 
-  @override
   bool get loading => _state.loading;
 
-  @override
   bool get hasChanges => !listEquals(excludedRoutes, initialExcludedRoutes);
 
-  @override
   bool get canSave => hasChanges && (!hasInvalidRoutes || excludedRoutes.isEmpty);
 
   @override
