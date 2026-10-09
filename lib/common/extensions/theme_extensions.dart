@@ -50,10 +50,19 @@ class CustomColors extends ThemeExtension<CustomColors> {
   final Color specialStaticWhitePressed;
   final Color specialStaticWhiteDisabled;
 
-  final Color staticTransparent;
+  final Color transparent;
 
-  final Color appSystemTitleBarBackground;
-  final Color appSystemTitleBarTitle;
+  final Color macOSSystemTitleBarBackground;
+  final Color macOSSystemTitleBarTitle;
+
+  final Color windowsSystemTitleBarBackground;
+  final Color windowsSystemTitleBarTitle;
+  final Color windowsSystemTitleBarTitleInactive;
+  final Color windowsSystemTitleBarButtonBackgroundHover;
+  final Color windowsSystemTitleBarButtonBackgroundPressed;
+  final Color windowsSystemTitleBarCloseButtonBackgroundHover;
+  final Color windowsSystemTitleBarCloseButtonBackgroundPressed;
+  final Color windowsSystemTitleBarCloseButtonForeground;
 
   final Color primary1;
   final Color primary2;
@@ -129,9 +138,17 @@ class CustomColors extends ThemeExtension<CustomColors> {
     required this.specialStaticWhiteHover,
     required this.specialStaticWhitePressed,
     required this.specialStaticWhiteDisabled,
-    required this.staticTransparent,
-    required this.appSystemTitleBarBackground,
-    required this.appSystemTitleBarTitle,
+    required this.transparent,
+    required this.macOSSystemTitleBarBackground,
+    required this.macOSSystemTitleBarTitle,
+    required this.windowsSystemTitleBarBackground,
+    required this.windowsSystemTitleBarTitle,
+    required this.windowsSystemTitleBarTitleInactive,
+    required this.windowsSystemTitleBarButtonBackgroundHover,
+    required this.windowsSystemTitleBarButtonBackgroundPressed,
+    required this.windowsSystemTitleBarCloseButtonBackgroundHover,
+    required this.windowsSystemTitleBarCloseButtonBackgroundPressed,
+    required this.windowsSystemTitleBarCloseButtonForeground,
     required this.primary1,
     required this.primary2,
     required this.primary3,
@@ -208,9 +225,17 @@ class CustomColors extends ThemeExtension<CustomColors> {
     Color? specialStaticWhiteHover,
     Color? specialStaticWhitePressed,
     Color? specialStaticWhiteDisabled,
-    Color? staticTransparent,
-    Color? appSystemTitleBarBackground,
-    Color? appSystemTitleBarTitle,
+    Color? transparent,
+    Color? macOSSystemTitleBarBackground,
+    Color? macOSSystemTitleBarTitle,
+    Color? windowsSystemTitleBarBackground,
+    Color? windowsSystemTitleBarTitle,
+    Color? windowsSystemTitleBarTitleInactive,
+    Color? windowsSystemTitleBarButtonBackgroundHover,
+    Color? windowsSystemTitleBarButtonBackgroundPressed,
+    Color? windowsSystemTitleBarCloseButtonBackgroundHover,
+    Color? windowsSystemTitleBarCloseButtonBackgroundPressed,
+    Color? windowsSystemTitleBarCloseButtonForeground,
     Color? primary1,
     Color? primary2,
     Color? primary3,
@@ -284,9 +309,22 @@ class CustomColors extends ThemeExtension<CustomColors> {
     specialStaticWhiteHover: specialStaticWhiteHover ?? this.specialStaticWhiteHover,
     specialStaticWhitePressed: specialStaticWhitePressed ?? this.specialStaticWhitePressed,
     specialStaticWhiteDisabled: specialStaticWhiteDisabled ?? this.specialStaticWhiteDisabled,
-    staticTransparent: staticTransparent ?? this.staticTransparent,
-    appSystemTitleBarBackground: appSystemTitleBarBackground ?? this.appSystemTitleBarBackground,
-    appSystemTitleBarTitle: appSystemTitleBarTitle ?? this.appSystemTitleBarTitle,
+    transparent: transparent ?? this.transparent,
+    macOSSystemTitleBarBackground: macOSSystemTitleBarBackground ?? this.macOSSystemTitleBarBackground,
+    macOSSystemTitleBarTitle: macOSSystemTitleBarTitle ?? this.macOSSystemTitleBarTitle,
+    windowsSystemTitleBarBackground: windowsSystemTitleBarBackground ?? this.windowsSystemTitleBarBackground,
+    windowsSystemTitleBarTitle: windowsSystemTitleBarTitle ?? this.windowsSystemTitleBarTitle,
+    windowsSystemTitleBarTitleInactive: windowsSystemTitleBarTitleInactive ?? this.windowsSystemTitleBarTitleInactive,
+    windowsSystemTitleBarButtonBackgroundHover:
+        windowsSystemTitleBarButtonBackgroundHover ?? this.windowsSystemTitleBarButtonBackgroundHover,
+    windowsSystemTitleBarButtonBackgroundPressed:
+        windowsSystemTitleBarButtonBackgroundPressed ?? this.windowsSystemTitleBarButtonBackgroundPressed,
+    windowsSystemTitleBarCloseButtonBackgroundHover:
+        windowsSystemTitleBarCloseButtonBackgroundHover ?? this.windowsSystemTitleBarCloseButtonBackgroundHover,
+    windowsSystemTitleBarCloseButtonBackgroundPressed:
+        windowsSystemTitleBarCloseButtonBackgroundPressed ?? this.windowsSystemTitleBarCloseButtonBackgroundPressed,
+    windowsSystemTitleBarCloseButtonForeground:
+        windowsSystemTitleBarCloseButtonForeground ?? this.windowsSystemTitleBarCloseButtonForeground,
     primary1: primary1 ?? this.primary1,
     primary2: primary2 ?? this.primary2,
     primary3: primary3 ?? this.primary3,
@@ -381,13 +419,61 @@ class CustomColors extends ThemeExtension<CustomColors> {
         other.specialStaticWhiteDisabled,
         t,
       )!,
-      staticTransparent: Color.lerp(staticTransparent, other.staticTransparent, t)!,
-      appSystemTitleBarBackground: Color.lerp(
-        appSystemTitleBarBackground,
-        other.appSystemTitleBarBackground,
+      transparent: Color.lerp(
+        transparent,
+        other.transparent,
         t,
       )!,
-      appSystemTitleBarTitle: Color.lerp(appSystemTitleBarTitle, other.appSystemTitleBarTitle, t)!,
+      macOSSystemTitleBarBackground: Color.lerp(
+        macOSSystemTitleBarBackground,
+        other.macOSSystemTitleBarBackground,
+        t,
+      )!,
+      macOSSystemTitleBarTitle: Color.lerp(
+        macOSSystemTitleBarTitle,
+        other.macOSSystemTitleBarTitle,
+        t,
+      )!,
+      windowsSystemTitleBarBackground: Color.lerp(
+        windowsSystemTitleBarBackground,
+        other.windowsSystemTitleBarBackground,
+        t,
+      )!,
+      windowsSystemTitleBarTitle: Color.lerp(
+        windowsSystemTitleBarTitle,
+        other.windowsSystemTitleBarTitle,
+        t,
+      )!,
+      windowsSystemTitleBarTitleInactive: Color.lerp(
+        windowsSystemTitleBarTitleInactive,
+        other.windowsSystemTitleBarTitleInactive,
+        t,
+      )!,
+      windowsSystemTitleBarButtonBackgroundHover: Color.lerp(
+        windowsSystemTitleBarButtonBackgroundHover,
+        other.windowsSystemTitleBarButtonBackgroundHover,
+        t,
+      )!,
+      windowsSystemTitleBarButtonBackgroundPressed: Color.lerp(
+        windowsSystemTitleBarButtonBackgroundPressed,
+        other.windowsSystemTitleBarButtonBackgroundPressed,
+        t,
+      )!,
+      windowsSystemTitleBarCloseButtonBackgroundHover: Color.lerp(
+        windowsSystemTitleBarCloseButtonBackgroundHover,
+        other.windowsSystemTitleBarCloseButtonBackgroundHover,
+        t,
+      )!,
+      windowsSystemTitleBarCloseButtonBackgroundPressed: Color.lerp(
+        windowsSystemTitleBarCloseButtonBackgroundPressed,
+        other.windowsSystemTitleBarCloseButtonBackgroundPressed,
+        t,
+      )!,
+      windowsSystemTitleBarCloseButtonForeground: Color.lerp(
+        windowsSystemTitleBarCloseButtonForeground,
+        other.windowsSystemTitleBarCloseButtonForeground,
+        t,
+      )!,
       primary1: Color.lerp(primary1, other.primary1, t)!,
       primary2: Color.lerp(primary2, other.primary2, t)!,
       primary3: Color.lerp(primary3, other.primary3, t)!,

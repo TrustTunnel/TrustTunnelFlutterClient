@@ -12,8 +12,8 @@ class HoverThemeProvider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Theme(
     data: context.theme.copyWith(
-      hoverColor: context.colors.staticTransparent,
-      focusColor: context.colors.staticTransparent,
+      hoverColor: context.colors.transparent,
+      focusColor: context.colors.transparent,
     ),
     child: child,
   );

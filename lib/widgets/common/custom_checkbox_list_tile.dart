@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
 
 class CustomCheckboxListTile extends StatelessWidget {
   final bool value;
@@ -21,7 +22,7 @@ class CustomCheckboxListTile extends StatelessWidget {
     final enabled = onChanged != null;
 
     return Material(
-      color: Colors.transparent,
+      color: context.colors.transparent,
       child: InkWell(
         onTap: enabled ? () => onChanged?.call(!value) : null,
         child: Padding(

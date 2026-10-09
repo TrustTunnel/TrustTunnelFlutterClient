@@ -22,9 +22,6 @@ class CustomSnackBar extends SnackBar {
   });
 
   @override
-  Color? get backgroundColor => Colors.transparent;
-
-  @override
   bool get showCloseIcon => false;
 
   @override
@@ -95,30 +92,30 @@ class CustomSnackBar extends SnackBar {
   double? get elevation => 0;
 
   ThemeData _getActionTheme(BuildContext context) => context.theme.copyWith(
-    hoverColor: Colors.transparent,
-    splashColor: Colors.transparent,
-    disabledColor: Colors.transparent,
-    focusColor: Colors.transparent,
-    highlightColor: Colors.transparent,
+    hoverColor: context.colors.transparent,
+    splashColor: context.colors.transparent,
+    disabledColor: context.colors.transparent,
+    focusColor: context.colors.transparent,
+    highlightColor: context.colors.transparent,
     buttonTheme: context.theme.buttonTheme.copyWith(
-      hoverColor: Colors.transparent,
-      splashColor: Colors.transparent,
-      focusColor: Colors.transparent,
-      highlightColor: Colors.transparent,
+      hoverColor: context.colors.transparent,
+      splashColor: context.colors.transparent,
+      focusColor: context.colors.transparent,
+      highlightColor: context.colors.transparent,
     ),
     // TODO: Fix hover color
     // Konstantin Gorynin <k.gorynin@adguard.com>, 15 October 2025
-    iconButtonTheme: const IconButtonThemeData(
+    iconButtonTheme: IconButtonThemeData(
       style: ButtonStyle(
         backgroundColor: WidgetStatePropertyAll(
-          Colors.transparent,
+          context.colors.transparent,
         ),
       ),
     ),
-    textButtonTheme: const TextButtonThemeData(
+    textButtonTheme: TextButtonThemeData(
       style: ButtonStyle(
         backgroundColor: WidgetStatePropertyAll(
-          Colors.transparent,
+          context.colors.transparent,
         ),
       ),
     ),

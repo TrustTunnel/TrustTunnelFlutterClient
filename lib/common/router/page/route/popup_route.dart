@@ -36,6 +36,7 @@ class PopUpRoute<T> extends CustomPageRoute<T> {
 
   ThemeData? _lastActualTheme;
 
+  // TODO: Remove hardcoded barrier color
   @override
   Color? get barrierColor => _isFullScreen ? null : _theme?.dialogTheme.barrierColor ?? Colors.black54;
 

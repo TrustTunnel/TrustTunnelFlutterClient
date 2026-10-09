@@ -55,6 +55,7 @@ extension SnackBarExtension on BuildContext {
       ..removeCurrentSnackBar()
       ..showSnackBar(
         CustomSnackBar(
+          backgroundColor: colors.transparent,
           content: ArbParser(
             data: message,
           ),
