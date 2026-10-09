@@ -88,11 +88,11 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
   final void Function() fetchServers;
 
   const _InheritedServersScope({
-    required ServersState state,
+    required this._state,
     required this.pickServer,
     required this.fetchServers,
     required super.child,
-  }) : _state = state;
+  });
 
   @override
   List<Server> get servers => [..._state.servers];

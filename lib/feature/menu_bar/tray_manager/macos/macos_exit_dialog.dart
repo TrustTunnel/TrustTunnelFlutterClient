@@ -1,7 +1,10 @@
 import 'package:flutter/services.dart';
 
+/// macOS returns true for Quit and false for staying open (also if already open).
+/// Native code has no unavailable result; a missing channel or null reply throws.
 enum MacosExitDialogResult {
   quit,
+  cancel,
 }
 
 final class MacosExitDialog {
@@ -9,26 +12,26 @@ final class MacosExitDialog {
 
   const MacosExitDialog._();
 
-  static Future<MacosExitDialogResult?> show({
+  static Future<MacosExitDialogResult> show({
     required String title,
     required String message,
     required String quitButtonText,
     required String dontQuitButtonText,
   }) async {
-    try {
-      final quit = await _channel.invokeMethod<bool>(
-        'show',
-        {
-          'title': title,
-          'message': message,
-          'quitButtonText': quitButtonText,
-          'dontQuitButtonText': dontQuitButtonText,
-        },
-      );
+    final quit = await _channel.invokeMethod<bool>(
+      'show',
+      {
+        'title': title,
+        'message': message,
+        'quitButtonText': quitButtonText,
+        'dontQuitButtonText': dontQuitButtonText,
+      },
+    );
 
-      return quit == true ? MacosExitDialogResult.quit : null;
-    } on MissingPluginException {
-      return null;
+    if (quit == null) {
+      throw StateError('macOS exit dialog returned no result');
     }
+
+    return quit ? MacosExitDialogResult.quit : MacosExitDialogResult.cancel;
   }
 }

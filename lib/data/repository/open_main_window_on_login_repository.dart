@@ -12,8 +12,8 @@ class OpenMainWindowOnLoginRepositoryImpl implements OpenMainWindowOnLoginReposi
   final OpenMainWindowOnLoginDataSource _dataSource;
 
   OpenMainWindowOnLoginRepositoryImpl({
-    required OpenMainWindowOnLoginDataSource dataSource,
-  }) : _dataSource = dataSource;
+    required this._dataSource,
+  });
 
   @override
   Future<bool> isEnabled() => _dataSource.isEnabled();

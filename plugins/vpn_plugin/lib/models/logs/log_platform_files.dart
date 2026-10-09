@@ -9,6 +9,7 @@ class LogPlatformFiles {
     final fileNames = switch (platform) {
       TargetPlatform.android => const ['vpn'],
       TargetPlatform.iOS || TargetPlatform.macOS => const ['app', 'extension'],
+      TargetPlatform.windows => const ['client', 'service'],
       _ => throw UnsupportedError('Unsupported platform: $platform'),
     };
 

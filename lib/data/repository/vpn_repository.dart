@@ -37,8 +37,8 @@ class VpnRepositoryImpl implements VpnRepository {
   final VpnDataSource _vpnDataSource;
 
   VpnRepositoryImpl({
-    required VpnDataSource vpnDataSource,
-  }) : _vpnDataSource = vpnDataSource;
+    required this._vpnDataSource,
+  });
 
   @override
   Future<void> start({

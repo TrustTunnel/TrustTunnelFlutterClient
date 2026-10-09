@@ -18,6 +18,9 @@ class DownloadAppLogsTile extends StatefulWidget {
 class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
   late LogsManagerScopeController _controller;
 
+  bool get _isShareAvailableOnPlatform =>
+      defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -62,9 +65,8 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
 
   void _showArchiveReadySnackBar(ExportLogsArchive archive) => context.showInfoSnackBar(
     message: context.ln.appLogsExportedSnackbar,
-    trailingActions: defaultTargetPlatform == TargetPlatform.macOS
-        ? const []
-        : [
+    trailingActions: _isShareAvailableOnPlatform
+        ? [
             TextButton(
               onPressed: () {
                 context.closeCurrentSnackBar();
@@ -82,6 +84,7 @@ class _DownloadAppLogsTileState extends State<DownloadAppLogsTile> {
                 ),
               ),
             ),
-          ],
+          ]
+        : const [],
   );
 }

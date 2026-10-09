@@ -20,18 +20,13 @@ final class AppStateLoggingDataSourceImpl implements AppStateLoggingDataSource {
   final LoggingSettingsDataSource _loggingSettingsDataSource;
 
   const AppStateLoggingDataSourceImpl({
-    required db.AppDatabase database,
-    required ServerDataSource serverDataSource,
-    required RoutingDataSource routingDataSource,
-    required SettingsDataSource settingsDataSource,
-    required VpnDataSource vpnDataSource,
-    required LoggingSettingsDataSource loggingSettingsDataSource,
-  }) : _database = database,
-       _serverDataSource = serverDataSource,
-       _routingDataSource = routingDataSource,
-       _settingsDataSource = settingsDataSource,
-       _vpnDataSource = vpnDataSource,
-       _loggingSettingsDataSource = loggingSettingsDataSource;
+    required this._database,
+    required this._serverDataSource,
+    required this._routingDataSource,
+    required this._settingsDataSource,
+    required this._vpnDataSource,
+    required this._loggingSettingsDataSource,
+  });
 
   @override
   Future<AppStateSnapshot> collectSnapshot() async {

@@ -7,8 +7,8 @@ class LaunchAtLoginDataSourceImpl implements LaunchAtLoginDataSource {
   final MethodChannel _channel;
 
   LaunchAtLoginDataSourceImpl({
-    MethodChannel channel = _defaultChannel,
-  }) : _channel = channel;
+    this._channel = _defaultChannel,
+  });
 
   @override
   Future<bool> isEnabled() async => await _channel.invokeMethod<bool>('isEnabled') ?? false;

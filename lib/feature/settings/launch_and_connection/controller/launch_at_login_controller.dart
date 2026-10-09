@@ -8,9 +8,9 @@ final class LaunchAtLoginController extends BaseStateController<LaunchAtLoginSta
   final LaunchAtLoginRepository _repository;
 
   LaunchAtLoginController({
-    required LaunchAtLoginRepository repository,
+    required this._repository,
     super.initialState = const LaunchAtLoginState.initial(),
-  }) : _repository = repository;
+  });
 
   void fetch() => handle(
     () async {

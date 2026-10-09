@@ -17,10 +17,9 @@ class CustomSnackBar extends SnackBar {
     super.elevation,
     super.margin,
     super.shape,
-    List<Widget> trailingActions = const [],
-    bool showCloseIcon = false,
-  }) : _showCloseIcon = showCloseIcon,
-       _trailingActions = trailingActions;
+    this._trailingActions = const [],
+    this._showCloseIcon = false,
+  });
 
   @override
   Color? get backgroundColor => Colors.transparent;

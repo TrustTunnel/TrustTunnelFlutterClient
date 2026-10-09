@@ -9,9 +9,9 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
   final AutoConnectOnLaunchSettingsRepository _repository;
 
   AutoConnectOnLaunchSettingsController({
-    required AutoConnectOnLaunchSettingsRepository repository,
+    required this._repository,
     super.initialState = const AutoConnectOnLaunchState.initial(),
-  }) : _repository = repository;
+  });
 
   void fetch() => handle(
     () async {
@@ -41,34 +41,6 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
   void enable() => _applyEnabled(enabled: true);
 
   void disable() => _applyEnabled(enabled: false);
-
-  void _applyEnabled({required bool enabled}) => handle(
-    () async {
-      setState(
-        AutoConnectOnLaunchState.loading(
-          enabled: state.enabled,
-          lastServerId: state.lastServerId,
-          connectOnLaunchHandled: state.connectOnLaunchHandled,
-        ),
-      );
-
-      if (enabled) {
-        await _repository.enable();
-      } else {
-        await _repository.disable();
-      }
-
-      setState(
-        AutoConnectOnLaunchState.idle(
-          enabled: await _repository.isEnabled(),
-          lastServerId: await _repository.getLastServerId(),
-          connectOnLaunchHandled: state.connectOnLaunchHandled,
-        ),
-      );
-    },
-    errorHandler: _onError,
-    completionHandler: _onCompleted,
-  );
 
   void setLastServerId(String? serverId) => handle(
     () async {
@@ -101,6 +73,34 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
           enabled: state.enabled,
           lastServerId: state.lastServerId,
           connectOnLaunchHandled: true,
+        ),
+      );
+    },
+    errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
+
+  void _applyEnabled({required bool enabled}) => handle(
+    () async {
+      setState(
+        AutoConnectOnLaunchState.loading(
+          enabled: state.enabled,
+          lastServerId: state.lastServerId,
+          connectOnLaunchHandled: state.connectOnLaunchHandled,
+        ),
+      );
+
+      if (enabled) {
+        await _repository.enable();
+      } else {
+        await _repository.disable();
+      }
+
+      setState(
+        AutoConnectOnLaunchState.idle(
+          enabled: await _repository.isEnabled(),
+          lastServerId: await _repository.getLastServerId(),
+          connectOnLaunchHandled: state.connectOnLaunchHandled,
         ),
       );
     },

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/logging/observers/logging_navigator_observer.dart';
 import 'package:trusttunnel/common/router/app_route.dart';
 import 'package:trusttunnel/common/router/app_routes.dart';
@@ -17,6 +18,7 @@ import 'package:trusttunnel/feature/server/servers/widget/servers_screen.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/settings_screen.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 
 class NavigationScreen extends StatefulWidget {
@@ -33,6 +35,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   ServerData? _deepLinkData;
 
+  /// Because exit handling and interaction with the related dialog in [VpnScope] (above the [MaterialApp])
+  /// and we can't react to an error right where we catch it, we need to listen to it here
+  Listenable? _disconnectOnExitErrorListenable;
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +50,17 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    final disconnectOnExitErrorListenable = VpnScope.vpnControllerOf(
+      context,
+      listen: false,
+    ).disconnectOnExitErrorListenable;
+    if (!identical(_disconnectOnExitErrorListenable, disconnectOnExitErrorListenable)) {
+      _disconnectOnExitErrorListenable?.removeListener(_onDisconnectOnExitError);
+      _disconnectOnExitErrorListenable = disconnectOnExitErrorListenable;
+      _disconnectOnExitErrorListenable?.addListener(_onDisconnectOnExitError);
+    }
+
     final fetchedDeepLink = DeepLinkScope.of(context).deepLinkData;
     if (_deepLinkData != fetchedDeepLink) {
       _deepLinkData = fetchedDeepLink;
@@ -125,6 +142,14 @@ class _NavigationScreenState extends State<NavigationScreen> {
     2 => const SettingsScreen(),
     _ => throw Exception('Invalid index: $selectedIndex'),
   };
+
+  void _onDisconnectOnExitError() {
+    if (!mounted) {
+      return;
+    }
+
+    context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
+  }
 
   Widget _getContent() => NavigatorPopHandler(
     onPopWithResult: (_) => _navigatorKey.currentState!.maybePop(),
@@ -256,6 +281,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   void dispose() {
+    _disconnectOnExitErrorListenable?.removeListener(_onDisconnectOnExitError);
     _selectedTabNotifier.dispose();
     super.dispose();
   }

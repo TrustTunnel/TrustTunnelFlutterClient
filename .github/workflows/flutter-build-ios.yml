@@ -79,6 +79,16 @@ jobs:
       - name: Apply PR overrides
         uses: AdGuardSoftwareLimited/actions/actions/apply-pr-overrides@master
 
+      - name: Select Flutter
+        env:
+          FLUTTER_VERSION: '3.44.9'
+        run: |
+          set -euo pipefail
+          : "${FLUTTER_SDKS_ROOT:?image does not provide versioned Flutter SDKs}"
+          sdk="$FLUTTER_SDKS_ROOT/$FLUTTER_VERSION"
+          echo "$sdk/bin" >> "$GITHUB_PATH"
+          { echo "FLUTTER_ROOT=$sdk"; echo "FLUTTER_HOME=$sdk"; } >> "$GITHUB_ENV"
+
       - name: Prepare Ruby environment
         run: |
           set -euo pipefail

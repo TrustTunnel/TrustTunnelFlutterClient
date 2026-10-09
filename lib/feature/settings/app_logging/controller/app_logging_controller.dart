@@ -11,9 +11,9 @@ final class AppLoggingController extends BaseStateController<AppLoggingState> wi
   final LoggingSettingsRepository _settingsRepository;
 
   AppLoggingController({
-    required LoggingSettingsRepository settingsRepository,
+    required this._settingsRepository,
     super.initialState = const AppLoggingState.initial(),
-  }) : _settingsRepository = settingsRepository;
+  });
 
   void fetch() => handle(
     () async {

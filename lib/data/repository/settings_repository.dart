@@ -12,8 +12,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
   final SettingsDataSource _settingsDataSource;
 
   SettingsRepositoryImpl({
-    required SettingsDataSource settingsDataSource,
-  }) : _settingsDataSource = settingsDataSource;
+    required this._settingsDataSource,
+  });
 
   @override
   Future<List<String>> getExcludedRoutes() => _settingsDataSource.getExcludedRoutes();

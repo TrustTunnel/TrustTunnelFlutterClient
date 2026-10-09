@@ -25,6 +25,10 @@ on:
         description: 'Build and deploy the macOS app'
         type: boolean
         default: true
+      deploy-windows:
+        description: 'Build Windows x64 EXE installer'
+        type: boolean
+        default: true
 
   workflow_call:
     inputs:
@@ -48,11 +52,15 @@ on:
         type: boolean
         default: true
         description: 'Build and deploy the macOS app'
+      deploy-windows:
+        type: boolean
+        default: true
+        description: 'Build Windows x64 EXE installer'
 
 permissions:
   contents: read
   id-token: write
-  actions: read
+  actions: write
 
 concurrency:
   group: deploy-${{ inputs.tag }}
@@ -239,8 +247,22 @@ jobs:
       artifact-name: trusttunnel-macos-testing
       artifact-path: macos/build/TrustTunnel.app
 
+  # Windows Build Steps
+  # One signed TrustTunnelSetup.exe for Windows 10-11 x64 and Windows 11 ARM64.
+  build-windows:
+    needs: [meta, build-number]
+    if: inputs.deploy-windows
+    uses: ./.github/workflows/flutter-build-windows.yml
+    secrets: inherit
+    with:
+      channel: ${{ needs.meta.outputs.release-channel }}
+      version: ${{ needs.meta.outputs.version }}
+      build-number: ${{ needs.build-number.outputs.build-number }}
+      version-title: ${{ needs.meta.outputs.version-title }}
+      artifact-name: trusttunnel-windows-installer
+
   notify-slack:
-    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc]
+    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc, build-windows]
     if: >-
       !cancelled() && !failure() &&
       inputs.slack-channel != ''

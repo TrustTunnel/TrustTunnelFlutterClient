@@ -15,9 +15,9 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
 
   /// {@macro products_controller}
   ExcludedRoutesController({
-    required SettingsRepository repository,
+    required this._repository,
     super.initialState = const ExcludedRoutesState.initial(),
-  }) : _repository = repository;
+  });
 
   /// Make a purchase for the given product ID
   void fetch() {

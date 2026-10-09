@@ -24,8 +24,8 @@ class RoutingDataSourceImpl implements RoutingDataSource {
 
   /// {@macro routing_data_source_impl}
   RoutingDataSourceImpl({
-    required db.AppDatabase database,
-  }) : _database = database;
+    required this._database,
+  });
 
   /// {@macro routing_data_source_add_new_profile}
   @override

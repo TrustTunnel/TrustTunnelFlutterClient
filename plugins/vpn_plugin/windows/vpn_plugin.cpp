@@ -10,6 +10,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 
 #include "trusttunnel/trusttunnel.h"
 #include "trusttunnel/trusttunnel_service.h"
@@ -76,26 +77,57 @@ static std::filesystem::path GetExeDir() {
 }
 
 /**
- * Return a writable directory for runtime data (logs, ring buffers).
+ * Return a directory shared by the client and the SYSTEM service.
  *
- * MSIX: %ProgramData%\TrustTunnel\ (shared between app and SYSTEM service).
- * Otherwise: same directory as the executable.
- * @return Writable path; guaranteed to exist on return.
+ * Installed builds use %ProgramData%\TrustTunnel\. The Inno installer grants
+ * users modify access to this application-owned directory. Unpackaged
+ * development builds fall back to the executable directory when ProgramData
+ * cannot be created; MSIX builds keep the path shared with the packaged
+ * service and never fall back to the read-only package directory.
+ * @return Writable path for installed and development builds, or an empty path
+ *         if the MSIX shared directory cannot be located or created.
  */
 static std::filesystem::path GetWritableAppDataPath() {
-    if (IsRunningInMsixPackage()) {
-        PWSTR program_data = nullptr;
-        if (SUCCEEDED(SHGetKnownFolderPath(
-                FOLDERID_ProgramData, 0, nullptr, &program_data))) {
-            std::filesystem::path p =
-                    std::filesystem::path(program_data) / L"TrustTunnel";
-            CoTaskMemFree(program_data);
-            std::error_code ec;
-            std::filesystem::create_directories(p, ec);
-            return p;
+    const bool is_msix = IsRunningInMsixPackage();
+    PWSTR raw_program_data = nullptr;
+    const HRESULT known_folder_result = SHGetKnownFolderPath(
+            FOLDERID_ProgramData, 0, nullptr, &raw_program_data);
+    std::unique_ptr<wchar_t, decltype(&::CoTaskMemFree)> program_data(
+            raw_program_data, ::CoTaskMemFree);
+    if (SUCCEEDED(known_folder_result)) {
+        std::filesystem::path path =
+                std::filesystem::path(program_data.get()) / L"TrustTunnel";
+
+        std::error_code ec;
+        std::filesystem::create_directories(path, ec);
+        if (!ec) {
+            return path;
+        }
+
+        // A packaged service receives this same path from AppxManifest.xml.
+        // Never fall back to the read-only package directory: apart from being
+        // unwritable, that would make the client read a different ring buffer
+        // than the service writes.
+        if (is_msix) {
+            LogError("Failed to create the MSIX shared data directory (error: %d)",
+                     ec.value());
+            return {};
+        }
+    } else {
+        if (is_msix) {
+            LogError("Failed to locate the MSIX shared data directory (HRESULT: 0x%08lX)",
+                     static_cast<unsigned long>(known_folder_result));
+            return {};
         }
     }
+
     return GetExeDir();
+}
+
+static FlutterError RuntimeDataUnavailableError() {
+    return FlutterError(
+            "runtime-data-unavailable",
+            "Unable to access the TrustTunnel shared data directory.");
 }
 
 // ---------------------------------------------------------------------------
@@ -169,13 +201,15 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
       m_pipe_name(L"\\\\.\\pipe\\trusttunnel_vpn") {
     // Use writable path (MSIX-safe) for runtime data.
     std::filesystem::path app_data = GetWritableAppDataPath();
-    m_ring_buffer_path = app_data / L"vpn_query_log.ring";
-    m_logs_dir = app_data / L"logs";
+    if (!app_data.empty()) {
+        m_ring_buffer_path = app_data / L"vpn_query_log.ring";
+        m_logs_dir = app_data / L"logs";
 
-    // Install the client-process file log sink before anything logs.
-    // Remembered by trusttunnel so export/clear can also reach the service
-    // log family, which the service process writes into the same directory.
-    trusttunnel_log_init(m_logs_dir.wstring().c_str());
+        // Install the client-process file log sink before anything logs.
+        // Remembered by trusttunnel so export/clear can also reach the service
+        // log family, which the service process writes into the same directory.
+        trusttunnel_log_init(m_logs_dir.wstring().c_str());
+    }
 
     // Setup Event Channel for State
     auto state_handler = std::make_unique<VpnEventStreamHandler>();
@@ -199,9 +233,11 @@ VpnPlugin::VpnPlugin(flutter::PluginRegistrarWindows* registrar)
     // Attach to the background service and replay persisted connection info.
     m_worker.Post([this]() {
         AttachService();
-        std::wstring ring_buffer_path = m_ring_buffer_path.wstring();
-        trusttunnel_service_read_all_connection_info(
-                ring_buffer_path.c_str(), s_notify_connection_info, this);
+        if (!m_ring_buffer_path.empty()) {
+            std::wstring ring_buffer_path = m_ring_buffer_path.wstring();
+            trusttunnel_service_read_all_connection_info(
+                    ring_buffer_path.c_str(), s_notify_connection_info, this);
+        }
     });
 }
 
@@ -297,6 +333,10 @@ int32_t VpnPlugin::StartService(const std::string& config) {
 }
 
 std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
+    if (m_ring_buffer_path.empty()) {
+        return RuntimeDataUnavailableError();
+    }
+
     m_worker.Post([this, config = config]() {
         int32_t start_result = StartService(config);
 
@@ -362,6 +402,10 @@ void VpnPlugin::NotifyConnectionInfo(const std::string& json) {
 }
 
 ErrorOr<flutter::EncodableList> VpnPlugin::ExportLogs() {
+    if (m_logs_dir.empty()) {
+        return ErrorOr<flutter::EncodableList>(RuntimeDataUnavailableError());
+    }
+
     // Unique temp export dir per call; the caller owns cleanup.
     std::filesystem::path export_dir =
             std::filesystem::temp_directory_path() /
@@ -384,6 +428,10 @@ ErrorOr<flutter::EncodableList> VpnPlugin::ExportLogs() {
 }
 
 std::optional<FlutterError> VpnPlugin::ClearLogs() {
+    if (m_logs_dir.empty()) {
+        return RuntimeDataUnavailableError();
+    }
+
     trusttunnel_log_clear();
     return std::nullopt;
 }

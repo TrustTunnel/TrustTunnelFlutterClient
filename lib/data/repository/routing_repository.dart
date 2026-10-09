@@ -27,8 +27,8 @@ class RoutingRepositoryImpl implements RoutingRepository {
   final RoutingDataSource _routingDataSource;
 
   RoutingRepositoryImpl({
-    required RoutingDataSource routingDataSource,
-  }) : _routingDataSource = routingDataSource;
+    required this._routingDataSource,
+  });
 
   @override
   Future<List<RoutingProfile>> getAllProfiles() async {

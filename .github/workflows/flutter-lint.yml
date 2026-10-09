@@ -9,7 +9,7 @@ on:
         description: 'Shell commands to run after checkout (e.g. keystore setup, env config). Vault secrets are available as env vars. Empty = skip'
       container-image:
         type: string
-        default: 'registry.int.agrd.dev/library/flutter-android:3.38.3--2'
+        default: 'registry.int.agrd.dev/library/flutter-mail-android:3.44.9--1'
         description: 'Docker container image. Empty = run directly on runner'
       runner-memory-mb:
         type: string
