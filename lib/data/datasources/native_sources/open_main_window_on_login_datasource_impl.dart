@@ -4,30 +4,24 @@ import 'package:trusttunnel/data/datasources/open_main_window_on_login_datasourc
 
 class OpenMainWindowOnLoginDataSourceImpl implements OpenMainWindowOnLoginDataSource {
   static const _macOSmainWindowChannel = MethodChannel('trusttunnel/macos_main_window');
+  static const _windowsMainWindowChannel = MethodChannel('trusttunnel/windows_main_window');
+
+  MethodChannel get _channel => switch (defaultTargetPlatform) {
+    TargetPlatform.macOS => _macOSmainWindowChannel,
+    TargetPlatform.windows => _windowsMainWindowChannel,
+    _ => throw UnsupportedError('OpenMainWindowOnLoginDataSource is only supported on macOS and Windows'),
+  };
 
   @override
-  Future<bool> isEnabled() async {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
-      _throwUnsupportedError();
-    }
-
-    return await _macOSmainWindowChannel.invokeMethod<bool>('getOpenMainWindowOnLogin') ?? false;
-  }
+  Future<bool> isEnabled() async => await _channel.invokeMethod<bool>('getOpenMainWindowOnLogin') ?? false;
 
   @override
   Future<void> setEnabled(bool enabled) async {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
-      _throwUnsupportedError();
-    }
-
-    await _macOSmainWindowChannel.invokeMethod<void>(
+    await _channel.invokeMethod<void>(
       'setOpenMainWindowOnLogin',
       <String, Object?>{
         'enabled': enabled,
       },
     );
   }
-
-  Never _throwUnsupportedError() =>
-      throw UnsupportedError('OpenMainWindowOnLoginDataSource currently is only supported on macOS');
 }
