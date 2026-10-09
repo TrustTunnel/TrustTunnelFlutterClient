@@ -78,8 +78,10 @@ class _LogsManagerScopeState extends State<LogsManagerScope> {
 
   void _deleteLogs({
     VoidCallback? onDeleted,
+    VoidCallback? onError,
   }) => _controller.deleteLogs(
     onDeleted: onDeleted,
+    onError: onError,
   );
 
   @override
@@ -121,6 +123,7 @@ class _InheritedLogsManagerScope extends InheritedModel<LogsManagerScopeAspect> 
   @override
   final void Function({
     VoidCallback? onDeleted,
+    VoidCallback? onError,
   })
   deleteLogs;
 

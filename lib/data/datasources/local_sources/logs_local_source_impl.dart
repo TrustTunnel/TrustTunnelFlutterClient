@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
@@ -73,14 +74,40 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     ExportFileType type = ExportFileType.any,
     List<String>? allowedExtensions,
     Uint8List? data,
-  }) => _filePicker.saveFile(
-    dialogTitle: dialogTitle,
-    fileName: fileName,
-    initialDirectory: initialDirectory,
-    type: _mapExportFileType(type),
-    allowedExtensions: allowedExtensions,
-    bytes: data,
-  );
+  }) async {
+    // This is necessary to handle a couple of corner cases where we need to make absolutely sure that the dialog “knows” which window it belongs to.
+    if (defaultTargetPlatform == TargetPlatform.windows &&
+        type == ExportFileType.custom &&
+        listEquals(allowedExtensions, ['zip'])) {
+      // The runner supplies the real main HWND as owner and reveals it just
+      // before the dialog, even if archive creation ran with the window hidden.
+      final path = await const MethodChannel('trusttunnel/windows_main_window').invokeMethod<String>(
+        'pickLogExportPath',
+        {
+          'dialogTitle': dialogTitle,
+          'fileName': fileName,
+          'initialDirectory': initialDirectory,
+        },
+      );
+      if (path != null && data != null)
+        await saveRawFile(
+          data: data,
+          path: path,
+          temporary: false,
+        );
+
+      return path;
+    }
+
+    return _filePicker.saveFile(
+      dialogTitle: dialogTitle,
+      fileName: fileName,
+      initialDirectory: initialDirectory,
+      type: _mapExportFileType(type),
+      allowedExtensions: allowedExtensions,
+      bytes: data,
+    );
+  }
 
   @override
   Future<String> saveRawFile({

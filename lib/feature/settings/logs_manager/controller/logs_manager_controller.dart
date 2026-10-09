@@ -107,6 +107,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
 
   void deleteLogs({
     VoidCallback? onDeleted,
+    VoidCallback? onError,
   }) => handle(
     () async {
       setState(
@@ -120,7 +121,10 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       );
       onDeleted?.call();
     },
-    errorHandler: _onError,
+    errorHandler: (error, stackTrace) {
+      onError?.call();
+      _onError(error, stackTrace);
+    },
     completionHandler: _onCompleted,
   );
 
