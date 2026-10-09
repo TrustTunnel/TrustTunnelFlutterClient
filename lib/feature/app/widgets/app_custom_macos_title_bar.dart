@@ -69,11 +69,6 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
     _setFullScreen(false);
   }
 
-  @override
-  void onWindowClose() {
-    unawaited(context.dependencyFactory.appWindowController.hideMainWindow());
-  }
-
   Future<void> _syncFullScreenState() async {
     final isFullScreen = await windowManager.isFullScreen();
     _setFullScreen(isFullScreen);
