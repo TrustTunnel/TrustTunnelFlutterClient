@@ -56,7 +56,8 @@ class _WindowCaptionState extends State<WindowCaption> with WindowListener {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: widget.backgroundColor ??
+        color:
+            widget.backgroundColor ??
             (widget.brightness == Brightness.dark
                 ? const Color(0xff1C1C1C)
                 : Colors.transparent),

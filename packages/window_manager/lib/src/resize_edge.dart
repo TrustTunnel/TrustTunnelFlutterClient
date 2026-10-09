@@ -6,5 +6,5 @@ enum ResizeEdge {
   topLeft,
   bottomLeft,
   topRight,
-  bottomRight
+  bottomRight,
 }

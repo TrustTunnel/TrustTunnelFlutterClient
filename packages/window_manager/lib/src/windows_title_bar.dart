@@ -32,7 +32,12 @@ class WindowsTitleBarRegions {
     'exclusions': exclusions.map(_rect).toList(),
   };
 
-  static List<double> _rect(Rect rect) => [rect.left, rect.top, rect.right, rect.bottom];
+  static List<double> _rect(Rect rect) => [
+    rect.left,
+    rect.top,
+    rect.right,
+    rect.bottom,
+  ];
 }
 
 class WindowsTitleBarState {
@@ -64,19 +69,20 @@ class WindowsTitleBarState {
     this.systemTextScale = 1,
   });
 
-  factory WindowsTitleBarState.fromMap(Map<Object?, Object?> map) => WindowsTitleBarState(
-    maximized: map['maximized'] as bool,
-    active: map['active'] as bool,
-    hovered: _button(map['hovered'] as String),
-    pressed: _button(map['pressed'] as String),
-    highContrast: map['highContrast'] as bool,
-    captionBackgroundColor: Color(map['captionBackgroundColor'] as int),
-    captionForegroundColor: Color(map['captionForegroundColor'] as int),
-    highlightColor: Color(map['highlightColor'] as int),
-    highlightTextColor: Color(map['highlightTextColor'] as int),
-    fontFamily: map['fontFamily'] as String,
-    systemTextScale: (map['textScale'] as num).toDouble(),
-  );
+  factory WindowsTitleBarState.fromMap(Map<Object?, Object?> map) =>
+      WindowsTitleBarState(
+        maximized: map['maximized'] as bool,
+        active: map['active'] as bool,
+        hovered: _button(map['hovered'] as String),
+        pressed: _button(map['pressed'] as String),
+        highContrast: map['highContrast'] as bool,
+        captionBackgroundColor: Color(map['captionBackgroundColor'] as int),
+        captionForegroundColor: Color(map['captionForegroundColor'] as int),
+        highlightColor: Color(map['highlightColor'] as int),
+        highlightTextColor: Color(map['highlightTextColor'] as int),
+        fontFamily: map['fontFamily'] as String,
+        systemTextScale: (map['textScale'] as num).toDouble(),
+      );
 
   static WindowsCaptionButton? _button(String name) {
     for (final button in WindowsCaptionButton.values) {
