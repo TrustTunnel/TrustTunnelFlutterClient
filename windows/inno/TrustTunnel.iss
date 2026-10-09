@@ -25,9 +25,10 @@
 #define AppName "TrustTunnel"
 #define AppExeName "TrustTunnel.exe"
 #define ServiceName "TrustTunnelVPN"
+#include "Identity.iss"
 
 [Setup]
-AppId={{1343AF0C-89EB-44AE-AE55-6251A45376C5}
+AppId={{{#AppGuid}}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=Adguard Software Limited
@@ -46,8 +47,11 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 PrivilegesRequired=admin
-AppMutex=TrustTunnelFlutterClient
-CloseApplications=yes
+CloseApplications=no
+UsePreviousAppDir=yes
+UsePreviousTasks=yes
+AllowCancelDuringInstall=no
+RestartIfNeededByRun=no
 RestartApplications=no
 Compression=lzma2/max
 SolidCompression=yes
@@ -78,8 +82,8 @@ Source: "{#X64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "{app}"; Fl
 Source: "{#MixedArm64BuildDir}\trusttunnel_service_installer.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
 Source: "{#X64BuildDir}\WINTUN_LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
 Source: "{#MixedArm64BuildDir}\WINTUN_LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
-Source: "{#X64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64
-Source: "{#MixedArm64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64
+Source: "{#X64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not IsArm64; AfterInstall: InstallAndValidateService
+Source: "{#MixedArm64BuildDir}\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: IsArm64; AfterInstall: InstallAndValidateService
 
 [Dirs]
 Name: "{commonappdata}\TrustTunnel"; Permissions: users-modify
@@ -90,10 +94,10 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: 
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]
-Root: HKCR; Subkey: "tt"; ValueType: string; ValueData: "URL:TrustTunnel Protocol"; Flags: uninsdeletekey
-Root: HKCR; Subkey: "tt"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
-Root: HKCR; Subkey: "tt\DefaultIcon"; ValueType: string; ValueData: "{app}\{#AppExeName},0"
-Root: HKCR; Subkey: "tt\shell\open\command"; ValueType: string; ValueData: """{app}\{#AppExeName}"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\tt"; ValueType: string; ValueData: "URL:TrustTunnel Protocol"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\tt"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKLM; Subkey: "Software\Classes\tt\DefaultIcon"; ValueType: string; ValueData: "{app}\{#AppExeName},0"
+Root: HKLM; Subkey: "Software\Classes\tt\shell\open\command"; ValueType: string; ValueData: """{app}\{#AppExeName}"" ""%1"""
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{commonappdata}\TrustTunnel\logs"
@@ -103,21 +107,25 @@ Type: dirifempty; Name: "{commonappdata}\TrustTunnel"
 [Code]
 
 #include "Common.iss"
+#include "ApplicationLifecycle.iss"
 #include "Service.iss"
 #include "Rollback.iss"
+#include "UpdateMode.iss"
 #include "Uninstall.iss"
 
 function InitializeSetup: Boolean;
 var
   WindowsVersion: TWindowsVersion;
 begin
-  Result := True;
+  Result := InitializeUpdateMode;
+  if not Result then exit;
   if IsArm64 then
   begin
     GetWindowsVersionEx(WindowsVersion);
     if (WindowsVersion.Major < 10) or (WindowsVersion.Build < 22000) then
     begin
-      MsgBox('TrustTunnel requires Windows 11 on ARM64.', mbCriticalError, MB_OK);
+      OperationError := 'TrustTunnel requires Windows 11 on ARM64.';
+      SuppressibleMsgBox(OperationError, mbCriticalError, MB_OK, IDOK);
       Result := False;
     end;
   end;
@@ -176,99 +184,178 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ErrorMessage: String;
-  RestartError: String;
 begin
-  ReadPreviousInstallDirectory;
-  if not InspectExistingService(ErrorMessage) then
+  Result := '';
+  if PreparationCompleted then exit;
+
+  if not OriginalStateCaptured then
+  begin
+    if not ValidateUpdateInstallation(ErrorMessage) or
+       not InspectExistingService(ErrorMessage) then
+    begin
+      Result := ErrorMessage;
+      OperationError := Result;
+      exit;
+    end;
+    AppDirectoryExistedBeforeInstall := DirExists(ExpandConstant('{app}'));
+    OriginalStateCaptured := True;
+  end;
+
+  if not PrerequisitesReady then
+  begin
+    if not InstallVcRedist(ErrorMessage) then
+    begin
+      Result := ErrorMessage;
+      OperationError := Result;
+      exit;
+    end;
+    PrerequisitesReady := True;
+  end;
+
+  if not AcquireInstallationLock(ErrorMessage) or
+     not ValidateUpdateInstallation(ErrorMessage) or
+     not VerifyOriginalService(ErrorMessage) or
+     not PrepareApplicationExit(UpdateMode, AppInitiatedUpdate, ErrorMessage) then
   begin
     Result := ErrorMessage;
+    OperationError := Result;
+    { A timeout before service/file changes must let the still-running GUI
+      resume, even if the interactive setup stays open on its error page. }
+    if not ServiceStopAttempted and not GuiExited then ReleaseInstallationLock;
     exit;
   end;
 
-  if not InstallVcRedist(ErrorMessage) then
-  begin
-    Result := ErrorMessage;
-    exit;
-  end;
-
-  AppDirectoryExistedBeforeInstall := DirExists(ExpandConstant('{app}'));
   if ServiceExistedBeforeInstall then
   begin
+    ServiceStopAttempted := True;
     if not StopServiceAndWait(ErrorMessage) then
     begin
       Result := ErrorMessage;
-      exit;
-    end;
-
-    if not CreateRollbackSnapshot(ErrorMessage) then
-    begin
-      if ServiceWasRunning and not StartServiceAndWait(RestartError) then
-        ErrorMessage := ErrorMessage + ' ' + RestartError;
-      Result := ErrorMessage;
+      OperationError := Result;
       exit;
     end;
   end;
 
-  InstallWorkStarted := True;
-  Result := '';
+  if UpdateMode and not SnapshotReady then
+  begin
+    if not CreateRollbackSnapshot(ErrorMessage) then
+    begin
+      Result := ErrorMessage;
+      OperationError := Result;
+      exit;
+    end;
+    SnapshotReady := True;
+  end;
+  PreparationCompleted := True;
 end;
 
 function NeedRestart: Boolean;
 begin
-  Result := VcRedistNeedsRestart;
+  { No restartreplace files: prerequisite reboot requests are reported via
+    the result file and GetCustomSetupExitCode, never an automatic reboot. }
+  Result := False;
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := (UpdateMode and (PageID = wpSelectDir)) or
+    (AppInitiatedUpdate and (PageID = wpSelectTasks));
+end;
+
+function GetCustomSetupExitCode: Integer;
+begin
+  Result := 0;
+  if FilesReplacementStarted and not InstallationCommitted then Result := 21
+  else if InstallationCommitted and RestartPending then Result := 3010
+  else if GuiLaunchFailed then Result := 20;
+end;
+
+procedure InstallAndValidateService;
 var
   ErrorMessage: String;
 begin
-  if CurStep = ssPostInstall then
+  { AfterInstall on the final bundle file runs inside PerformInstall, where
+    exceptions are fatal. ssPostInstall exceptions are handled by Inno and
+    otherwise allow setup to display success despite service failure. }
+  if ServiceValidated then exit;
+  if not InstallOrUpdateService(ErrorMessage) then
   begin
-    if not InstallOrUpdateService(ErrorMessage) then
-      RaiseException(ErrorMessage);
+    OperationError := ErrorMessage;
+    RaiseException(ErrorMessage);
+  end;
+  ServiceValidated := True;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then
+  begin
+    if not PreparationCompleted or (UpdateMode and not SnapshotReady) then
+      RaiseException('Installation preparation did not complete.');
+    FilesReplacementStarted := True;
   end
   else if CurStep = ssDone then
   begin
-    InstallationCompleted := True;
-    if RollbackReady then
+    InstallationCommitted := ServiceValidated;
+    if not InstallationCommitted then RaiseException('Service validation did not complete.');
+    if SnapshotReady then
     begin
       if not DeleteRollbackSnapshot then
-        Log(
-          '[rollback] Installation succeeded, but the rollback directory ' +
-          'could not be removed: ' + RollbackDirectory
-        );
-      RollbackReady := False;
-      if not DirExists(RollbackDirectory) then
-        Log('[rollback] Installation succeeded; rollback files were removed.');
+        Log('[rollback] Unable to remove snapshot: ' + RollbackDirectory);
+      SnapshotReady := False;
     end;
+    WriteOperationResult('success', '');
+    ReleaseInstallationLock;
+    if UpdateMode and not VcRedistNeedsRestart and not RestartPending then
+      LaunchUpdatedApplication;
   end;
 end;
 
 procedure DeinitializeSetup;
 var
   ErrorMessage: String;
+  RollbackSucceeded: Boolean;
 begin
-  if InstallationCompleted or not InstallWorkStarted then
-    exit;
-
-  if ServiceCreatedByCurrentInstall then
-  begin
-    if not RemoveService(ErrorMessage) then
+  try
+    if InstallationCommitted then exit;
+    { Preparation errors also get a machine-readable result if no competing
+      installer owns the lock. UAC cancellation never reaches setup code. }
+    if InstallationLock = 0 then AcquireInstallationLock(ErrorMessage);
+    RollbackSucceeded := True;
+    if FilesReplacementStarted and SnapshotReady then
+      RollbackSucceeded := RestorePreviousInstallation(ErrorMessage)
+    else if FilesReplacementStarted then
     begin
-      Log('[rollback] ' + ErrorMessage);
+      if ServiceCreatedByCurrentInstall then
+        RollbackSucceeded := RemoveService(ErrorMessage);
+      if RollbackSucceeded and not AppDirectoryExistedBeforeInstall then
+        RollbackSucceeded := DelTree(ExpandConstant('{app}'), True, True, True);
+    end
+    else if ServiceStopAttempted and ServiceWasRunning then
+      RollbackSucceeded := StartServiceAndWait(ErrorMessage);
+
+    if not RollbackSucceeded then
+    begin
+      OperationError := OperationError + ' ' + ErrorMessage;
+      Log('[rollback] ' + OperationError);
+      WriteOperationResult('rollback_failed', OperationError);
       SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
     end
-    else if not AppDirectoryExistedBeforeInstall then
-      DelTree(ExpandConstant('{app}'), True, True, True);
-  end
-  else if ServiceExistedBeforeInstall and RollbackReady then
-  begin
-    if not RestorePreviousInstallation(ErrorMessage) then
+    else
     begin
-      Log('[rollback] ' + ErrorMessage);
-      SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
+      if OperationError = '' then OperationError := 'Setup did not complete.';
+      if FilesReplacementStarted and UpdateMode then
+        WriteOperationResult('rolled_back', OperationError)
+      else
+        WriteOperationResult('failed', OperationError);
+      if SnapshotReady then DeleteRollbackSnapshot;
     end;
-  end
-  else if not AppDirectoryExistedBeforeInstall then
-    DelTree(ExpandConstant('{app}'), True, True, True);
+    ReleaseInstallationLock;
+    if RollbackSucceeded and UpdateMode and GuiExited and
+       not VcRedistNeedsRestart and not RestartPending then
+      LaunchUpdatedApplication;
+  finally
+    ReleaseApplicationHandles;
+    ReleaseInstallationLock;
+  end;
 end;

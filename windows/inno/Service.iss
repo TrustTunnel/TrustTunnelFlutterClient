@@ -1,7 +1,7 @@
 function QueryServiceExistence(var Exists: Boolean): Boolean;
 var
-  Manager: THandle;
-  Service: THandle;
+  Manager: TInstallerHandle;
+  Service: TInstallerHandle;
   ErrorCode: Cardinal;
 begin
   Result := False;
@@ -44,8 +44,8 @@ end;
 
 function QueryCurrentServiceState(var State: Cardinal): Boolean;
 var
-  Manager: THandle;
-  Service: THandle;
+  Manager: TInstallerHandle;
+  Service: TInstallerHandle;
   Status: TTrustTunnelServiceStatus;
 begin
   Result := False;
@@ -95,27 +95,9 @@ end;
 
 
 function IsAllowedServiceExecutable(const ExecutablePath: String): Boolean;
-var
-  CurrentExecutable: String;
-  PreviousExecutable: String;
-  DefaultExecutable: String;
 begin
-  CurrentExecutable :=
-    ExpandConstant('{app}\trusttunnel_service.exe');
-  DefaultExecutable :=
-    ExpandConstant('{autopf}\{#AppName}\trusttunnel_service.exe');
-
-  Result :=
-    PathsEqual(ExecutablePath, CurrentExecutable) or
-    PathsEqual(ExecutablePath, DefaultExecutable);
-
-  if (not Result) and (PreviousInstallDirectory <> '') then
-  begin
-    PreviousExecutable :=
-      EnsureTrailingBackslash(PreviousInstallDirectory) +
-      'trusttunnel_service.exe';
-    Result := PathsEqual(ExecutablePath, PreviousExecutable);
-  end;
+  Result := PathsEqual(ExecutablePath,
+    ExpandConstant('{app}\trusttunnel_service.exe'));
 end;
 
 function IsOwnedServiceImagePath(const ImagePath: String): Boolean;
@@ -151,8 +133,8 @@ end;
 
 function StopServiceAndWait(var ErrorMessage: String): Boolean;
 var
-  Manager: THandle;
-  Service: THandle;
+  Manager: TInstallerHandle;
+  Service: TInstallerHandle;
   Status: TTrustTunnelServiceStatus;
   State: Cardinal;
 begin
@@ -241,8 +223,8 @@ end;
 
 function StartServiceAndWait(var ErrorMessage: String): Boolean;
 var
-  Manager: THandle;
-  Service: THandle;
+  Manager: TInstallerHandle;
+  Service: TInstallerHandle;
   State: Cardinal;
   Status: TTrustTunnelServiceStatus;
 begin
@@ -434,8 +416,8 @@ function ChangeExistingServiceConfiguration(
   var ErrorMessage: String
 ): Boolean;
 var
-  Manager: THandle;
-  Service: THandle;
+  Manager: TInstallerHandle;
+  Service: TInstallerHandle;
 begin
   Result := False;
   ErrorMessage := '';
@@ -813,7 +795,10 @@ begin
   if not ValidateInstalledService(ErrorMessage) then
     exit;
 
-  if ServiceExistedBeforeInstall and ServiceWasRunning then
+  { The helper starts newly created services. Verify that startup actually
+    reached SERVICE_RUNNING before marking a fresh install/repair successful. }
+  if ServiceCreatedByCurrentInstall or AppInitiatedUpdate or
+     (ServiceExistedBeforeInstall and ServiceWasRunning) then
   begin
     if not StartServiceAndWait(ErrorMessage) then
       exit;
@@ -845,6 +830,12 @@ begin
   begin
     Log('[service] No existing TrustTunnelVPN service was found.');
     Result := True;
+    exit;
+  end;
+
+  if not UpdateMode and not IsUninstaller then
+  begin
+    ErrorMessage := 'TrustTunnelVPN exists without a registered TrustTunnel installation. Repair or remove that service first.';
     exit;
   end;
 
@@ -883,5 +874,26 @@ begin
     IntToStr(OldServiceStartType));
   Log('[service] Existing service was running: ' +
     BooleanAsText(ServiceWasRunning));
+  Result := True;
+end;
+
+function VerifyOriginalService(var ErrorMessage: String): Boolean;
+var
+  Exists: Boolean;
+  ImagePath: String;
+  StartType: Cardinal;
+begin
+  Result := False;
+  if not QueryServiceExistence(Exists) or (Exists <> ServiceExistedBeforeInstall) then
+  begin
+    ErrorMessage := 'The service registration changed during setup. Restart the installer.';
+    exit;
+  end;
+  if Exists and (not ReadServiceConfiguration(ImagePath, StartType) or
+    (ImagePath <> OldServiceImagePath) or (StartType <> OldServiceStartType)) then
+  begin
+    ErrorMessage := 'The service configuration changed during setup. Restart the installer.';
+    exit;
+  end;
   Result := True;
 end;

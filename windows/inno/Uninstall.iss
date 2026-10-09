@@ -1,3 +1,19 @@
+function InitializeUninstall: Boolean;
+var
+  ErrorMessage: String;
+begin
+  { Return False before uninstallation starts; do not rely on exceptions from
+    progress notifications to protect files belonging to a running GUI. }
+  Result := AcquireInstallationLock(ErrorMessage) and
+    PrepareApplicationExit(False, False, ErrorMessage);
+  if not Result then
+  begin
+    SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
+    ReleaseApplicationHandles;
+    ReleaseInstallationLock;
+  end;
+end;
+
 procedure SelectUninstallOptions;
 var
   OptionsForm: TSetupForm;
@@ -190,6 +206,12 @@ begin
     SelectUninstallOptions;
 
   ReadPreviousInstallDirectory;
+  if not AcquireInstallationLock(ErrorMessage) or
+     not PrepareApplicationExit(False, False, ErrorMessage) then
+  begin
+    SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
+    Abort;
+  end;
   if not RemoveService(ErrorMessage) then
   begin
     SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
@@ -198,4 +220,10 @@ begin
 
   if DeleteUserData then
     DeleteSelectedUserData(UserSid);
+end;
+
+procedure DeinitializeUninstall;
+begin
+  ReleaseApplicationHandles;
+  ReleaseInstallationLock;
 end;

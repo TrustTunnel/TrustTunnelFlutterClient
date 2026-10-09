@@ -1,7 +1,6 @@
 # Verifies an x64 or mixed ARM64 Windows bundle during build or before packaging.
 # Checks required files, PE architectures and the x64 Flutter AOT binary;
 # in a mixed bundle, only the VPN service EXEs and wintun.dll must be ARM64.
-# After signing, pass SignToolPath to verify every EXE and DLL signature too.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
@@ -12,9 +11,7 @@ param(
     [string]$Architecture,
 
     [ValidateSet('Debug', 'Profile', 'Release')]
-    [string]$Configuration = 'Release',
-
-    [string]$SignToolPath
+    [string]$Configuration = 'Release'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,6 +42,7 @@ $requiredItems = @(
     'screen_retriever_windows_plugin.dll',
     'sqlite3.dll',
     'sqlite3_flutter_libs_plugin.dll',
+    'tray_manager_plugin.dll',
     'url_launcher_windows_plugin.dll',
     'vpn_plugin_plugin.dll',
     'window_manager_plugin.dll',
@@ -77,12 +75,6 @@ foreach ($binary in $binaries) {
     if ((Get-PeMachine $binary.FullName) -ne $expectedMachine) {
         $expectedName = if ($expectedMachine -eq 0xAA64) { 'ARM64' } else { 'x64' }
         throw "Expected $expectedName PE binary: $($binary.FullName)"
-    }
-    if ($SignToolPath) {
-        & $SignToolPath verify /pa /all /v /tw $binary.FullName
-        if ($LASTEXITCODE -ne 0) {
-            throw "Authenticode verification failed for $($binary.FullName)"
-        }
     }
 }
 

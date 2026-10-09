@@ -1,10 +1,15 @@
+{ Inno Setup's default installer process is 32-bit, independently of the
+  target OS/bundle architecture. Use our own alias across Inno 6 and 7. }
+type
+  TInstallerHandle = Integer;
+
 const
   ServiceName = '{#ServiceName}';
   ServiceRegistryKey =
     'SYSTEM\CurrentControlSet\Services\{#ServiceName}';
   AppUninstallRegistryKey =
     'Software\Microsoft\Windows\CurrentVersion\Uninstall\' +
-    '{1343AF0C-89EB-44AE-AE55-6251A45376C5}_is1';
+    '{{#AppGuid}}_is1';
   ServiceStopped = 1;
   ServiceStartPending = 2;
   ServiceStopPending = 3;
@@ -32,8 +37,24 @@ type
 
 var
   VcRedistNeedsRestart: Boolean;
-  InstallationCompleted: Boolean;
-  InstallWorkStarted: Boolean;
+  UpdateMode: Boolean;
+  AppInitiatedUpdate: Boolean;
+  OriginalStateCaptured: Boolean;
+  PrerequisitesReady: Boolean;
+  PreparationCompleted: Boolean;
+  GuiExited: Boolean;
+  ServiceStopAttempted: Boolean;
+  SnapshotReady: Boolean;
+  FilesReplacementStarted: Boolean;
+  ServiceValidated: Boolean;
+  InstallationCommitted: Boolean;
+  GuiLaunchFailed: Boolean;
+  OperationStarted: Boolean;
+  InitiatorPid: Cardinal;
+  OperationId: String;
+  OperationError: String;
+  PreviousVersion: String;
+  PreviousTasks: String;
   DeleteUserData: Boolean;
   UninstallPrepared: Boolean;
   ServiceExistedBeforeInstall: Boolean;
@@ -43,61 +64,61 @@ var
   ServiceCreatedByCurrentInstall: Boolean;
   PreviousInstallDirectory: String;
   RollbackDirectory: String;
-  RollbackReady: Boolean;
+
   AppDirectoryExistedBeforeInstall: Boolean;
   ServiceHelperWasRun: Boolean;
   ServiceHelperExitCode: Integer;
 
 function OpenSCManager(
-  MachineName: THandle;
-  DatabaseName: THandle;
+  MachineName: TInstallerHandle;
+  DatabaseName: TInstallerHandle;
   DesiredAccess: Cardinal
-): THandle;
+): TInstallerHandle;
 external 'OpenSCManagerW@advapi32.dll stdcall';
 
 function OpenService(
-  ScManager: THandle;
+  ScManager: TInstallerHandle;
   ServiceNameValue: String;
   DesiredAccess: Cardinal
-): THandle;
+): TInstallerHandle;
 external 'OpenServiceW@advapi32.dll stdcall';
 
 function QueryServiceStatus(
-  Service: THandle;
+  Service: TInstallerHandle;
   var Status: TTrustTunnelServiceStatus
 ): Boolean;
 external 'QueryServiceStatus@advapi32.dll stdcall';
 
 function ControlService(
-  Service: THandle;
+  Service: TInstallerHandle;
   Control: Cardinal;
   var Status: TTrustTunnelServiceStatus
 ): Boolean;
 external 'ControlService@advapi32.dll stdcall';
 
 function StartService(
-  Service: THandle;
+  Service: TInstallerHandle;
   ArgumentCount: Cardinal;
-  Arguments: THandle
+  Arguments: TInstallerHandle
 ): Boolean;
 external 'StartServiceW@advapi32.dll stdcall';
 
 function ChangeServiceConfig(
-  Service: THandle;
+  Service: TInstallerHandle;
   ServiceType: Cardinal;
   StartType: Cardinal;
   ErrorControl: Cardinal;
   BinaryPathName: String;
-  LoadOrderGroup: THandle;
-  TagId: THandle;
-  Dependencies: THandle;
-  ServiceStartName: THandle;
-  Password: THandle;
-  DisplayName: THandle
+  LoadOrderGroup: TInstallerHandle;
+  TagId: TInstallerHandle;
+  Dependencies: TInstallerHandle;
+  ServiceStartName: TInstallerHandle;
+  Password: TInstallerHandle;
+  DisplayName: TInstallerHandle
 ): Boolean;
 external 'ChangeServiceConfigW@advapi32.dll stdcall';
 
-function CloseServiceHandle(Service: THandle): Boolean;
+function CloseServiceHandle(Service: TInstallerHandle): Boolean;
 external 'CloseServiceHandle@advapi32.dll stdcall';
 
 
@@ -108,7 +129,13 @@ begin
     Result := Result + '\';
 end;
 
+function GetLongPathName(Path, Buffer: String; Capacity: Cardinal): Cardinal;
+external 'GetLongPathNameW@kernel32.dll stdcall';
+
 function NormalizePath(const Path: String): String;
+var
+  LongPath: String;
+  PathLength: Cardinal;
 begin
   Result := Trim(Path);
   StringChangeEx(Result, '/', '\', True);
@@ -119,7 +146,16 @@ begin
     Delete(Result, 1, 4);
 
   if Result <> '' then
+  begin
     Result := ExpandFileName(Result);
+    SetLength(LongPath, 32768);
+    PathLength := GetLongPathName(Result, LongPath, 32768);
+    if (PathLength > 0) and (PathLength < 32768) then
+    begin
+      SetLength(LongPath, PathLength);
+      Result := LongPath;
+    end;
+  end;
 
   while
     (Length(Result) > 3) and
@@ -168,34 +204,8 @@ end;
 procedure ReadPreviousInstallDirectory;
 begin
   PreviousInstallDirectory := '';
-  if not RegQueryStringValue(
-    HKLM64,
-    AppUninstallRegistryKey,
-    'InstallLocation',
-    PreviousInstallDirectory
-  ) then
-  begin
-    if not RegQueryStringValue(
-      HKLM32,
-      AppUninstallRegistryKey,
-      'InstallLocation',
-      PreviousInstallDirectory
-    ) then
-    begin
-      if not RegQueryStringValue(
-        HKCU64,
-        AppUninstallRegistryKey,
-        'InstallLocation',
-        PreviousInstallDirectory
-      ) then
-        RegQueryStringValue(
-          HKCU32,
-          AppUninstallRegistryKey,
-          'InstallLocation',
-          PreviousInstallDirectory
-        );
-    end;
-  end;
+  RegQueryStringValue(HKLM64, AppUninstallRegistryKey,
+    'InstallLocation', PreviousInstallDirectory);
 end;
 
 function BooleanAsText(const Value: Boolean): String;
