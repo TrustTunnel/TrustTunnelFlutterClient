@@ -30,7 +30,7 @@ on:
       artifact-name:
         type: string
         default: ''
-        description: 'Name for uploaded build artifact'
+        description: 'Name for the final signed installer artifact'
 
 permissions:
   contents: read
@@ -223,32 +223,55 @@ jobs:
       team: flutter
       artifact-name: trusttunnel-windows-installer-unsigned
       files: TrustTunnelSetup.exe
-      signed-artifact-name: ${{ inputs.artifact-name }}
+      signed-artifact-name: ${{ inputs.artifact-name || 'trusttunnel-windows-installer' }}
 
   cleanup-artifacts:
-    needs: [sign-installer]
+    # Wait for every producer/consumer, including when signing or packaging fails.
+    needs: [build, sign-binaries, package-installer, sign-installer]
+    if: ${{ always() }}
     runs-on: [team-flutter]
+    timeout-minutes: 5
     permissions:
       actions: write
     steps:
       - name: Delete intermediate artifacts
         uses: actions/github-script@v8
         env:
-          KEEP_ARTIFACTS: ${{ inputs.artifact-name != '' && inputs.artifact-name || 'trusttunnel-windows-installer-unsigned' }},trusttunnel-windows-build-metadata-x64
+          FINAL_ARTIFACT_NAME: ${{ inputs.artifact-name || 'trusttunnel-windows-installer' }}
+          SIGN_INSTALLER_RESULT: ${{ needs.sign-installer.result }}
         with:
+          retries: 3
           script: |
-            const keep = new Set(
-              process.env.KEEP_ARTIFACTS.split(',').map((s) => s.trim()).filter(Boolean),
-            );
+            const keep = new Set([
+              process.env.FINAL_ARTIFACT_NAME,
+              'trusttunnel-windows-build-metadata-x64',
+            ]);
+            // Artifacts from other platform jobs in the caller run must remain intact.
+            const intermediate = new Set([
+              'trusttunnel-windows-bundle-unsigned-x64',
+              'trusttunnel-windows-bundle-unsigned-arm64-mixed',
+              'trusttunnel-windows-bundle-signed-x64',
+              'trusttunnel-windows-bundle-signed-arm64-mixed',
+              'trusttunnel-windows-installer-unsigned',
+            ]);
             const artifacts = await github.paginate(
               github.rest.actions.listWorkflowRunArtifacts,
               { ...context.repo, run_id: context.runId, per_page: 100 },
             );
+            if (process.env.SIGN_INSTALLER_RESULT === 'success') {
+              const missing = [...keep].filter(
+                (name) => !artifacts.some((a) => a.name === name && !a.expired),
+              );
+              if (missing.length) {
+                throw new Error(`Expected final artifact(s) not found: ${missing.join(', ')}`);
+              }
+            }
             const stale = artifacts.filter(
-              (a) => a.name.startsWith('trusttunnel-windows-') && !keep.has(a.name),
+              (a) => intermediate.has(a.name) && !keep.has(a.name),
             );
             for (const a of stale) {
               core.info(`Deleting artifact: ${a.name} (id: ${a.id})`);
               await github.rest.actions.deleteArtifact({ ...context.repo, artifact_id: a.id });
             }
-            core.notice(`Deleted ${stale.length} intermediate artifact(s), kept: ${[...keep].join(', ')}`);
+            const retained = artifacts.filter((a) => keep.has(a.name)).map((a) => a.name);
+            core.notice(`Deleted ${stale.length} intermediate artifact(s), retained: ${retained.join(', ') || 'none'}`);
