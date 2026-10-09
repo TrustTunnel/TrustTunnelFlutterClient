@@ -11,6 +11,7 @@ begin
     SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
     ReleaseApplicationHandles;
     ReleaseInstallationLock;
+    ReleaseResultPublicationLock;
   end;
 end;
 
@@ -173,6 +174,36 @@ begin
   end;
 end;
 
+procedure RemoveInstalledAutostart(const UserSid: String);
+var
+  CleanupPath, Parameters: String;
+  ResultCode: Integer;
+  Output: TExecOutput;
+  Succeeded: Boolean;
+begin
+  CleanupPath := ExpandConstant('{app}\cleanup_user_data_helper.exe');
+  Parameters := '/REMOVEAUTOSTART="' + ExpandConstant('{app}\{#AppExeName}') + '"';
+  if UserSid <> '' then Parameters := Parameters + ' /USERSID="' + UserSid + '"';
+  ResultCode := -1;
+  Succeeded := False;
+  try
+    Succeeded := ExecAndCaptureOutput(CleanupPath, Parameters,
+      ExtractFileDir(CleanupPath), SW_HIDE, ewWaitUntilTerminated,
+      ResultCode, Output);
+    if Succeeded then LogCleanupOutput(Output);
+  except
+    Log('[autostart cleanup] ' + GetExceptionMessage);
+  end;
+  if not Succeeded or (ResultCode <> 0) then
+  begin
+    Log('[autostart cleanup] Failed: ' + IntToStr(ResultCode));
+    SuppressibleMsgBox(
+      'Unable to remove all TrustTunnel login startup registrations. Error code: ' +
+      IntToStr(ResultCode) + '. The uninstall will continue; see the uninstall log for details.',
+      mbError, MB_OK, IDOK);
+  end;
+end;
+
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
@@ -184,7 +215,7 @@ begin
   UninstallPrepared := True;
 
   DeleteUserData := False;
-  UserSid := '';
+  UserSid := ExpandConstant('{param:USERSID|}');
   if UninstallSilent then
   begin
     if CompareText(
@@ -192,7 +223,6 @@ begin
       '1'
     ) = 0 then
     begin
-      UserSid := ExpandConstant('{param:USERSID|}');
       if UserSid = '' then
         Log(
           '[user-data cleanup] /DELETEUSERDATA=1 was ignored because ' +
@@ -218,6 +248,7 @@ begin
     Abort;
   end;
 
+  RemoveInstalledAutostart(UserSid);
   if DeleteUserData then
     DeleteSelectedUserData(UserSid);
 end;
@@ -226,4 +257,5 @@ procedure DeinitializeUninstall;
 begin
   ReleaseApplicationHandles;
   ReleaseInstallationLock;
+  ReleaseResultPublicationLock;
 end;

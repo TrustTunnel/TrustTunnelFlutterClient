@@ -17,6 +17,7 @@
 #include <variant>
 
 #include "resource.h"
+#include "window_icons.h"
 
 namespace {
 
@@ -93,15 +94,6 @@ std::optional<std::wstring> ReadStringArgument(
   const std::string* value = GetStringArgument(arguments, name);
   return value == nullptr ? std::optional<std::wstring>(fallback)
                           : Utf16FromUtf8(*value);
-}
-
-UINT GetWindowDpi(HWND window) {
-  using GetDpiForWindowProc = UINT(WINAPI*)(HWND);
-  static const auto get_dpi_for_window = reinterpret_cast<GetDpiForWindowProc>(
-      ::GetProcAddress(::GetModuleHandleW(L"user32.dll"), "GetDpiForWindow"));
-  return get_dpi_for_window == nullptr || window == nullptr
-             ? USER_DEFAULT_SCREEN_DPI
-             : get_dpi_for_window(window);
 }
 
 const wchar_t* ResolveDialogFont(IDWriteFactory* factory) {
@@ -232,7 +224,7 @@ class WindowsExitDialog::Impl {
     }
 
     configuration_ = configuration;
-    dpi_ = GetWindowDpi(parent_window_);
+    dpi_ = WindowIcons::GetDpi(parent_window_);
     should_quit_ = false;
     is_finished_ = false;
     decision_made_ = false;
@@ -253,6 +245,8 @@ class WindowsExitDialog::Impl {
       return ShowResult::kUnavailable;
     }
 
+    dpi_ = WindowIcons::GetDpi(dialog_window_, dpi_);
+    window_icons_.Update(dialog_window_, dpi_);
     ApplyWindowShape();
     ApplyWindowAppearance();
 
@@ -424,12 +418,6 @@ class WindowsExitDialog::Impl {
     ::DwmSetWindowAttribute(
         dialog_window_, static_cast<DWMWINDOWATTRIBUTE>(kUseImmersiveDarkMode),
         &dark_mode, sizeof(dark_mode));
-
-    HICON icon = static_cast<HICON>(::LoadImageW(
-        ::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APP_ICON), IMAGE_ICON,
-        0, 0, LR_DEFAULTSIZE | LR_SHARED));
-    ::SendMessageW(dialog_window_, WM_SETICON, ICON_SMALL,
-                   reinterpret_cast<LPARAM>(icon));
   }
 
   bool CreateTextFormat(float size, float line_height, float baseline,
@@ -649,11 +637,13 @@ class WindowsExitDialog::Impl {
         is_finished_ = true;
         return 0;
       case WM_NCDESTROY:
+        window_icons_.Reset();
         dialog_window_ = nullptr;
         ::SetWindowLongPtrW(window, GWLP_USERDATA, 0);
         return ::DefWindowProcW(window, message, wparam, lparam);
       case WM_DPICHANGED: {
         dpi_ = HIWORD(wparam);
+        window_icons_.Update(window, dpi_);
         const auto* suggested_rect = reinterpret_cast<RECT*>(lparam);
         ::SetWindowPos(window, nullptr, suggested_rect->left,
                        suggested_rect->top,
@@ -775,6 +765,7 @@ class WindowsExitDialog::Impl {
 
   HWND parent_window_ = nullptr;
   HWND dialog_window_ = nullptr;
+  WindowIcons window_icons_;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
   Microsoft::WRL::ComPtr<ID2D1Factory> drawing_factory_;
   Microsoft::WRL::ComPtr<IDWriteFactory> text_factory_;

@@ -39,9 +39,11 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableReadyPage=yes
+DisableFinishedPage=yes
 OutputDir={#OutputDir}
 OutputBaseFilename=TrustTunnelSetup
 SetupIconFile=..\runner\resources\app_icon.ico
+WizardSmallImageFile=resources\wizard_icon.png
 UninstallDisplayIcon={app}\{#AppExeName}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -57,6 +59,8 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 SetupLogging=yes
+; Refresh Explorer's icon cache after replacing the EXE and registering tt.
+ChangesAssociations=yes
 AppCopyright=Copyright (C) 2026 Adguard Software Limited. All rights reserved.
 VersionInfoVersion={#NumericVersion}
 VersionInfoCompany=Adguard Software Limited
@@ -69,7 +73,7 @@ VersionInfoCopyright=Copyright (C) 2026 Adguard Software Limited. All rights res
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
 Source: "{#VcRedistPath}"; DestName: "vc_redist.exe"; Flags: dontcopy
@@ -165,7 +169,7 @@ begin
     exit;
   end;
 
-  VcRedistNeedsRestart := ResultCode = 3010;
+  InstallationNeedsRestart := ResultCode = 3010;
   if
     (ResultCode <> 0) and
     (ResultCode <> 1638) and
@@ -178,6 +182,8 @@ begin
     exit;
   end;
 
+  if InstallationNeedsRestart then
+    Log('[install] Microsoft Visual C++ Runtime requested a Windows restart (3010).');
   Result := True;
 end;
 
@@ -266,8 +272,9 @@ function GetCustomSetupExitCode: Integer;
 begin
   Result := 0;
   if FilesReplacementStarted and not InstallationCommitted then Result := 21
-  else if InstallationCommitted and RestartPending then Result := 3010
-  else if GuiLaunchFailed then Result := 20;
+  else if AutostartConfigurationFailed then Result := 22
+  else if GuiLaunchFailed then Result := 20
+  else if InstallationCommitted and InstallationNeedsRestart then Result := 3010;
 end;
 
 procedure InstallAndValidateService;
@@ -304,10 +311,22 @@ begin
         Log('[rollback] Unable to remove snapshot: ' + RollbackDirectory);
       SnapshotReady := False;
     end;
-    WriteOperationResult('success', '');
+    ConfigureInstalledAutostart;
+    if AutostartConfigurationFailed then
+      WriteOperationResult('autostart_failed', OperationError)
+    else
+      WriteOperationResult('success', '');
     ReleaseInstallationLock;
-    if UpdateMode and not VcRedistNeedsRestart and not RestartPending then
-      LaunchUpdatedApplication;
+    if AutostartConfigurationFailed then
+      SuppressibleMsgBox(OperationError, mbCriticalError, MB_OK, IDOK);
+    if InstallationNeedsRestart then
+    begin
+      Log('[install] GUI launch skipped: installation requires a Windows restart.');
+      if not WizardSilent then
+        MsgBox('Restart Windows to complete the TrustTunnel installation.', mbInformation, MB_OK);
+    end
+    else
+      LaunchInstalledApplication;
   end;
 end;
 
@@ -352,10 +371,11 @@ begin
     end;
     ReleaseInstallationLock;
     if RollbackSucceeded and UpdateMode and GuiExited and
-       not VcRedistNeedsRestart and not RestartPending then
-      LaunchUpdatedApplication;
+       not InstallationNeedsRestart then
+      LaunchInstalledApplication;
   finally
     ReleaseApplicationHandles;
     ReleaseInstallationLock;
+    ReleaseResultPublicationLock;
   end;
 end;
