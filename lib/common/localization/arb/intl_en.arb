@@ -1,5 +1,9 @@
 {
   "@@locale": "en",
+  "windowMinimize": "Minimize",
+  "windowMaximize": "Maximize",
+  "windowRestore": "Restore",
+  "windowClose": "Close",
   "appTitle": "Vpn",
   "servers": "Servers",
   "routing": "Routing",
