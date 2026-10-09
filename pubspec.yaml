@@ -61,7 +61,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/images/tray/
+    - assets/images/tray/macos/
+    - assets/images/tray/windows/
   fonts:
     - family: IconFont
       fonts:

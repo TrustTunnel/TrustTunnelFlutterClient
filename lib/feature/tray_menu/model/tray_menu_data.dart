@@ -4,12 +4,14 @@ import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/server.dart';
 
-enum ConnectionStateInTrayMenuMacOS {
+enum TrayMenuConnectionState {
   connected,
   connecting,
   disconnected,
 }
 
+/// Native menu item event handlers supplied by the tray controller.
+/// They translate menu clicks into coordinated application actions.
 final class TrayMenuCallbacks {
   final AsyncCallback onAddServerPressed;
   final AsyncCallback onOpenTrustTunnelPressed;
@@ -44,7 +46,7 @@ final class TrayMenuCallbacks {
 
 final class TrayMenuData {
   final AppLocalizations localization;
-  final ConnectionStateInTrayMenuMacOS connectionState;
+  final TrayMenuConnectionState connectionState;
   final String? activeServerId;
   final String? activeServerName;
   final List<Server> servers;

@@ -1,71 +1,31 @@
 import 'dart:async';
 
 import 'package:tray_manager/tray_manager.dart';
-
 import 'package:trusttunnel/common/constants/app_constants.dart';
 import 'package:trusttunnel/common/localization/generated/l10n.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/server.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/tray_menu_data.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/tray_menu_icons.dart';
+import 'package:trusttunnel/feature/tray_menu/model/tray_menu_data.dart';
+import 'package:trusttunnel/feature/tray_menu/platform/tray_menu_items_builder.dart';
 
-final class TrayManagerMacOS {
-  final TrayManagerApi _trayManagerApi;
+/// Defines the Windows tray menu contents and layout.
+final class WindowsTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
   final int _topServersLimitForView;
   final int _maxServerTitleLength;
 
-  TrayManagerMacOS({
-    TrayManagerApi? trayManager,
+  const WindowsTrayMenuItemsBuilder({
     this._topServersLimitForView = 10,
     this._maxServerTitleLength = 40,
-  }) : _trayManagerApi = trayManager ?? TrayManagerApi();
-  bool _isTrayInitialized = false;
+  });
 
-  TrayIcons? _trayIcons;
-
-  Future<void> synchronizeMenu({
+  @override
+  List<TrayItem> build({
     required TrayMenuData data,
-    required TrayMenuCallbacks callbacks,
-  }) async {
-    final trayIcons = await _ensureTrayIcons();
-    final trayItems = _buildTrayItems(
-      data,
-      callbacks: callbacks,
-    );
-
-    if (!_isTrayInitialized) {
-      await _trayManagerApi.initTray(trayItems);
-      _isTrayInitialized = true;
-    } else {
-      await _trayManagerApi.updateMenu(trayItems);
-    }
-
-    await _trayManagerApi.setTrayIcon(
-      trayIcons.iconFor(data.connectionState),
-    );
-  }
-
-  Future<void> dispose() => _trayManagerApi.dispose();
-
-  Future<TrayIcons> _ensureTrayIcons() async {
-    final existingIcons = _trayIcons;
-    if (existingIcons != null) {
-      return existingIcons;
-    }
-
-    final icons = await TrayIcons.create();
-    _trayIcons = icons;
-
-    return icons;
-  }
-
-  List<TrayItem> _buildTrayItems(
-    TrayMenuData data, {
     required TrayMenuCallbacks callbacks,
   }) {
     final items = <TrayItem>[];
-    final connectEnabled = data.connectionState == ConnectionStateInTrayMenuMacOS.disconnected;
+    final connectEnabled = data.connectionState == TrayMenuConnectionState.disconnected;
     final disconnectEnabled = !connectEnabled;
 
     if (data.hasServers) {
@@ -84,6 +44,7 @@ final class TrayManagerMacOS {
       items.add(const TraySeparator());
       items.add(
         TrayButton(
+          id: 'connect',
           title: data.localization.connect,
           isEnabled: connectEnabled,
           onTap: connectEnabled ? () => unawaited(callbacks.onConnectPressed()) : null,
@@ -91,6 +52,7 @@ final class TrayManagerMacOS {
       );
       items.add(
         TrayButton(
+          id: 'disconnect',
           title: data.localization.disconnect,
           isEnabled: disconnectEnabled,
           onTap: disconnectEnabled ? () => unawaited(callbacks.onDisconnectPressed()) : null,
@@ -99,6 +61,7 @@ final class TrayManagerMacOS {
       items.add(const TraySeparator());
       items.add(
         TrayButton(
+          id: 'connectTo',
           title: data.localization.connectTo,
           children: _buildServerTrayItems(
             data.servers,
@@ -112,6 +75,7 @@ final class TrayManagerMacOS {
     } else {
       items.add(
         TrayButton(
+          id: 'addServer',
           title: data.localization.addServer,
           onTap: () => unawaited(callbacks.onAddServerPressed()),
         ),
@@ -121,24 +85,30 @@ final class TrayManagerMacOS {
 
     items.addAll([
       TrayButton(
+        id: 'trayOpenApp',
         title: data.localization.trayOpenApp(AppConstants.appName),
         onTap: () => unawaited(callbacks.onOpenTrustTunnelPressed()),
       ),
       TrayButton(
+        id: 'routing',
         title: data.localization.routing,
         onTap: () => unawaited(callbacks.onRoutingPressed()),
       ),
       TrayButton(
+        id: 'connectionLog',
         title: data.localization.connectionLog,
         onTap: () => unawaited(callbacks.onConnectionLogPressed()),
       ),
       TrayButton(
+        id: 'logging',
         title: data.localization.logging,
         children: [
           TrayButton(
+            id: 'loggingLevel',
             title: data.localization.loggingLevel,
             children: [
               TrayButton(
+                id: 'loggingLevelBasic',
                 title: data.localization.loggingLevelBasic,
                 isChecked: data.loggingLevel == LoggingLevel.defaultLevel,
                 onTap: () => unawaited(
@@ -146,6 +116,7 @@ final class TrayManagerMacOS {
                 ),
               ),
               TrayButton(
+                id: 'loggingLevelDetailed',
                 title: data.localization.loggingLevelDetailed,
                 isChecked: data.loggingLevel == LoggingLevel.debug,
                 onTap: () => unawaited(
@@ -155,9 +126,11 @@ final class TrayManagerMacOS {
             ],
           ),
           TrayButton(
+            id: 'sensitiveData',
             title: data.localization.sensitiveData,
             children: [
               TrayButton(
+                id: 'sensitiveDataExcluded',
                 title: data.localization.sensitiveDataExcluded,
                 isChecked: data.loggingSecurityType == LoggingSecurityType.stripped,
                 onTap: () => unawaited(
@@ -165,6 +138,7 @@ final class TrayManagerMacOS {
                 ),
               ),
               TrayButton(
+                id: 'sensitiveDataIncluded',
                 title: data.localization.sensitiveDataIncluded,
                 isChecked: data.loggingSecurityType == LoggingSecurityType.full,
                 onTap: () => unawaited(
@@ -174,10 +148,12 @@ final class TrayManagerMacOS {
             ],
           ),
           TrayButton(
+            id: 'deleteAppLogs',
             title: data.localization.deleteAppLogs,
             onTap: () => unawaited(callbacks.onDeleteLogsPressed()),
           ),
           TrayButton(
+            id: 'downloadAppLogs',
             title: data.localization.downloadAppLogs,
             onTap: () => unawaited(callbacks.onExportLogsPressed()),
           ),
@@ -185,6 +161,7 @@ final class TrayManagerMacOS {
       ),
       const TraySeparator(),
       TrayButton(
+        id: 'trayQuitApp',
         title: data.localization.trayQuitApp(AppConstants.appName),
         onTap: () => unawaited(callbacks.onQuitPressed()),
       ),
@@ -203,6 +180,7 @@ final class TrayManagerMacOS {
     final items = topLevelServers
         .map(
           (server) => TrayButton(
+            id: 'server:${server.id}',
             title: _truncateServerTitle(server.serverData.name),
             isChecked: server.id == activeServerId,
             onTap: () => unawaited(callbacks.onConnectToServerPressed(server.id)),
@@ -216,6 +194,7 @@ final class TrayManagerMacOS {
 
     items.add(
       TrayButton(
+        id: 'otherServers',
         title: localization.otherServers,
         onTap: () => unawaited(callbacks.onOtherServersPressed()),
       ),
@@ -233,11 +212,11 @@ final class TrayManagerMacOS {
   }
 
   String _getConnectionStateTitleString(
-    ConnectionStateInTrayMenuMacOS state,
+    TrayMenuConnectionState state,
     AppLocalizations localization,
   ) => switch (state) {
-    ConnectionStateInTrayMenuMacOS.connected => localization.trayStatusConnected,
-    ConnectionStateInTrayMenuMacOS.connecting => localization.trayStatusConnecting,
-    ConnectionStateInTrayMenuMacOS.disconnected => localization.trayStatusDisconnected,
+    TrayMenuConnectionState.connected => localization.trayStatusConnected,
+    TrayMenuConnectionState.connecting => localization.trayStatusConnecting,
+    TrayMenuConnectionState.disconnected => localization.trayStatusDisconnected,
   };
 }
