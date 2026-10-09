@@ -5,11 +5,11 @@
 Pod::Spec.new do |s|
   s.name             = 'window_manager'
   s.version          = '0.2.0'
-  s.summary          = 'A new flutter plugin project.'
+  s.summary          = 'Internal window management plugin for TrustTunnel desktop clients.'
   s.description      = <<-DESC
-A new flutter plugin project.
+Internal window management plugin for TrustTunnel desktop clients.
                        DESC
-  s.homepage         = 'https://leanflutter.org'
+  s.homepage         = 'https://github.com/AdGuardSoftwareLimited/trusttunnel-flutter-client'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'LiJianying' => 'lijy91@foxmail.com' }
   s.source           = { :path => '.' }

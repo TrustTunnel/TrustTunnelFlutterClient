@@ -13,23 +13,9 @@
 #include <sstream>
 
 #include "window_manager.cpp"
+#include "windows_title_bar.h"
 
 namespace {
-
-bool IsWindows11OrGreater() {
-  DWORD dwVersion = 0;
-  DWORD dwBuild = 0;
-
-#pragma warning(push)
-#pragma warning(disable : 4996)
-  dwVersion = GetVersion();
-  // Get the build number.
-  if (dwVersion < 0x80000000)
-    dwBuild = (DWORD)(HIWORD(dwVersion));
-#pragma warning(pop)
-
-  return dwBuild < 22000;
-}
 
 std::unique_ptr<
     flutter::MethodChannel<flutter::EncodableValue>,
@@ -46,6 +32,7 @@ class WindowManagerPlugin : public flutter::Plugin {
 
  private:
   WindowManager* window_manager;
+  std::unique_ptr<WindowsTitleBar> title_bar_;
   flutter::PluginRegistrarWindows* registrar;
 
   // The ID of the WindowProc delegate registration.
@@ -63,28 +50,12 @@ class WindowManagerPlugin : public flutter::Plugin {
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   void adjustNCCALCSIZE(HWND hwnd, NCCALCSIZE_PARAMS* sz) {
-    LONG l = 8;
-    LONG t = 8;
-
-    HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-    if (monitor != NULL) {
-      MONITORINFO monitorInfo;
-      monitorInfo.cbSize = sizeof(MONITORINFO);
-      if (TRUE == GetMonitorInfo(monitor, &monitorInfo)) {
-        l = sz->rgrc[0].left - monitorInfo.rcWork.left;
-        t = sz->rgrc[0].top - monitorInfo.rcWork.top;
-      } else {
-        // GetMonitorInfo failed, use (8, 8) as default value
-      }
-    } else {
-      // unreachable code
+    MONITORINFO info{sizeof(info)};
+    if (GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &info)) {
+      sz->rgrc[0] = window_manager->IsFullScreen() ? info.rcMonitor : info.rcWork;
     }
-
-    sz->rgrc[0].left -= l;
-    sz->rgrc[0].top -= t;
-    sz->rgrc[0].right += l;
-    sz->rgrc[0].bottom += t;
   }
+
 };
 
 // static
@@ -116,6 +87,8 @@ WindowManagerPlugin::WindowManagerPlugin(
 
 WindowManagerPlugin::~WindowManagerPlugin() {
   registrar->UnregisterTopLevelWindowProcDelegate(window_proc_id);
+  title_bar_.reset();
+  delete window_manager;
   channel = nullptr;
 }
 
@@ -138,6 +111,16 @@ std::optional<LRESULT> WindowManagerPlugin::HandleWindowProc(HWND hWnd,
   if (message == WM_DPICHANGED) {
     window_manager->pixel_ratio_ =
         (float)LOWORD(wParam) / USER_DEFAULT_SCREEN_DPI;
+  }
+
+  if (message == WM_NCACTIVATE) {
+    _EmitEvent(wParam ? "focus" : "blur");
+  }
+
+  if (title_bar_) {
+    auto custom_result = title_bar_->HandleMessage(
+        message, wParam, lParam, window_manager->is_resizable_);
+    if (custom_result) return custom_result;
   }
 
   if (wParam && message == WM_NCCALCSIZE) {
@@ -166,12 +149,16 @@ std::optional<LRESULT> WindowManagerPlugin::HandleWindowProc(HWND hWnd,
         NCCALCSIZE_PARAMS* sz = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
         // on windows 10, if set to 0, there's a white line at the top
         // of the app and I've yet to find a way to remove that.
-        sz->rgrc[0].top += IsWindows11OrGreater() ? 0 : 1;
+        sz->rgrc[0].top += WindowsTitleBar::IsWindows11OrGreater() ? 0 : 1;
         // The following lines are required for resizing the window.
         // https://github.com/leanflutter/window_manager/issues/483
-        sz->rgrc[0].right -= 8;
-        sz->rgrc[0].bottom -= 8;
-        sz->rgrc[0].left -= -8;
+        const UINT dpi = GetDpiForWindow(hWnd);
+        const int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+        const int x = GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpi) + padding;
+        const int y = GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + padding;
+        sz->rgrc[0].right -= x;
+        sz->rgrc[0].bottom -= y;
+        sz->rgrc[0].left += x;
       }
 
       // Previously (WVR_HREDRAW | WVR_VREDRAW), but returning 0 or 1 doesn't
@@ -184,6 +171,7 @@ std::optional<LRESULT> WindowManagerPlugin::HandleWindowProc(HWND hWnd,
       return HTNOWHERE;
     }
   } else if (message == WM_GETMINMAXINFO) {
+    window_manager->pixel_ratio_ = GetDpiForWindow(hWnd) / 96.0;
     MINMAXINFO* info = reinterpret_cast<MINMAXINFO*>(lParam);
     // For the special "unconstrained" values, leave the defaults.
     if (window_manager->minimum_size_.x != 0)
@@ -200,12 +188,6 @@ std::optional<LRESULT> WindowManagerPlugin::HandleWindowProc(HWND hWnd,
           window_manager->maximum_size_.y * window_manager->pixel_ratio_);
     result = 0;
   } else if (message == WM_NCACTIVATE) {
-    if (wParam != 0) {
-      _EmitEvent("focus");
-    } else {
-      _EmitEvent("blur");
-    }
-
     if (window_manager->title_bar_style_ == "hidden" ||
         window_manager->is_frameless_)
       return 1;
@@ -343,7 +325,53 @@ void WindowManagerPlugin::HandleMethodCall(
   if (method_name.compare("ensureInitialized") == 0) {
     window_manager->native_window =
         ::GetAncestor(registrar->GetView()->GetNativeWindow(), GA_ROOT);
+    window_manager->pixel_ratio_ = GetDpiForWindow(window_manager->native_window) / 96.0;
+    if (!title_bar_) {
+      title_bar_ = std::make_unique<WindowsTitleBar>(
+          window_manager->native_window, registrar->GetView()->GetNativeWindow(),
+          [](const flutter::EncodableMap& state) {
+            if (channel) channel->InvokeMethod(
+                "onWindowsTitleBarStateChanged",
+                std::make_unique<flutter::EncodableValue>(state));
+          });
+    }
     result->Success(flutter::EncodableValue(true));
+  } else if (method_name == "configureWindowsTitleBar") {
+    if (!title_bar_) {
+      result->Error("not_initialized", "Call ensureInitialized first");
+      return;
+    }
+    title_bar_->Configure();
+    result->Success();
+  } else if (method_name == "centerWindowsWindow") {
+    if (!title_bar_) {
+      result->Error("not_initialized", "Call ensureInitialized first");
+      return;
+    }
+    title_bar_->Center();
+    result->Success();
+  } else if (method_name == "setWindowsTitleBarRegions") {
+    const auto* args = std::get_if<flutter::EncodableMap>(method_call.arguments());
+    if (!title_bar_ || !args || !title_bar_->SetRegions(*args)) {
+      result->Error("invalid_regions", "Expected logical rectangles relative to the Flutter view");
+      return;
+    }
+    result->Success();
+  } else if (method_name == "getWindowsTitleBarState") {
+    if (!title_bar_) {
+      result->Error("not_initialized", "Call ensureInitialized first");
+      return;
+    }
+    result->Success(flutter::EncodableValue(title_bar_->State()));
+  } else if (method_name == "invokeWindowsCaptionButton") {
+    const auto* button = std::get_if<std::string>(method_call.arguments());
+    if (!title_bar_ || !button ||
+        (*button != "minimize" && *button != "maximize" && *button != "close")) {
+      result->Error("invalid_button", "Expected minimize, maximize, or close");
+      return;
+    }
+    title_bar_->InvokeButton(*button);
+    result->Success();
   } else if (method_name.compare("waitUntilReadyToShow") == 0) {
     window_manager->WaitUntilReadyToShow();
     result->Success(flutter::EncodableValue(true));

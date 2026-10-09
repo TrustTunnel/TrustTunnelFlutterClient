@@ -9,3 +9,4 @@ export 'src/widgets/window_caption_button.dart';
 export 'src/window_listener.dart';
 export 'src/window_manager.dart';
 export 'src/window_options.dart';
+export 'src/windows_title_bar.dart';

@@ -1,3 +1,22 @@
+### 0.5.0-pre.1
+
+First version of the internal TrustTunnel fork.
+Includes previously unversioned local changes.
+
+* [windows] Add custom title bar configuration, hit regions, caption button actions, and state notifications.
+* [windows] Add native caption input handling and Windows 11 Snap integration.
+* [windows] Add DPI-aware frame geometry, current-monitor centering, and auto-hidden taskbar handling.
+* [windows] Expose system colors, high contrast settings, text scaling, and caption font information.
+* [windows] Correct Windows version detection and existing frame calculations.
+* [windows] Initialize the native window handle and release plugin resources.
+* [windows] Require Windows 10 version 1607 or later.
+* [macos] Add optional Dock hiding and restore regular activation policy when showing the window.
+* [macos] Add notifications before entering and leaving full screen.
+* [macos] Add title bar hiding when leaving full screen.
+* [maintenance] Adopt workspace resolution, require Dart 3.8 or later, update screen_retriever to ^0.2.0, and use Flutter lint configuration.
+
+## Upstream history
+
 ### 0.4.2
 
 * [windows] Update window_manager_plugin.cpp for fix #439 issue #486

@@ -11,6 +11,7 @@ import 'package:window_manager/src/title_bar_style.dart';
 import 'package:window_manager/src/utils/calc_window_position.dart';
 import 'package:window_manager/src/window_listener.dart';
 import 'package:window_manager/src/window_options.dart';
+import 'package:window_manager/src/windows_title_bar.dart';
 
 const kWindowEventClose = 'close';
 const kWindowEventFocus = 'focus';
@@ -48,6 +49,19 @@ class WindowManager {
       ObserverList<WindowListener>();
 
   Future<void> _methodCallHandler(MethodCall call) async {
+    if (call.method == 'onWindowsTitleBarStateChanged') {
+      final state = WindowsTitleBarState.fromMap(
+        call.arguments as Map<Object?, Object?>,
+      );
+
+      for (final listener in listeners) {
+        if (_listeners.contains(listener)) {
+          listener.onWindowsTitleBarStateChanged(state);
+        }
+      }
+      
+      return;
+    }
     for (final WindowListener listener in listeners) {
       if (!_listeners.contains(listener)) {
         return;
@@ -154,6 +168,35 @@ class WindowManager {
     if (callback != null) {
       callback();
     }
+  }
+
+  /// Enables the native custom frame without removing the overlapped styles.
+  /// Window sizes remain outer-window sizes in logical pixels.
+  Future<void> configureWindowsTitleBar() async {
+    await _channel.invokeMethod<void>('configureWindowsTitleBar');
+  }
+
+  /// Centers on the HWND's current monitor using physical work-area bounds.
+  /// Avoids mixing logical desktop coordinates from monitors with different DPI.
+  Future<void> centerWindowsWindow() async {
+    await _channel.invokeMethod<void>('centerWindowsWindow');
+  }
+
+  Future<void> setWindowsTitleBarRegions(WindowsTitleBarRegions regions) async {
+    await _channel.invokeMethod<void>(
+        'setWindowsTitleBarRegions', regions.toMap());
+  }
+
+  Future<WindowsTitleBarState> getWindowsTitleBarState() async {
+    final state = await _channel
+        .invokeMapMethod<Object?, Object?>('getWindowsTitleBarState');
+    return WindowsTitleBarState.fromMap(state!);
+  }
+
+  /// For keyboard and accessibility actions. Pointer actions run natively.
+  Future<void> invokeWindowsCaptionButton(WindowsCaptionButton button) async {
+    await _channel.invokeMethod<void>(
+        'invokeWindowsCaptionButton', button.name);
   }
 
   /// Force closing the window.

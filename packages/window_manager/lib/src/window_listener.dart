@@ -1,4 +1,9 @@
+import 'package:window_manager/src/windows_title_bar.dart';
+
 abstract mixin class WindowListener {
+  /// Native caption input, window state and system appearance updates.
+  void onWindowsTitleBarStateChanged(WindowsTitleBarState state) {}
+
   /// Emitted when the window is going to be closed.
   void onWindowClose() {}
 
