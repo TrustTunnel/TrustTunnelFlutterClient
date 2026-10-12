@@ -1,7 +1,7 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
-#include <VersionHelpers.h>
+#include <winternl.h>
 
 #include <cwchar>
 #include <iterator>
@@ -13,6 +13,22 @@
 #include "windows_update_lifecycle.h"
 
 namespace {
+
+bool IsSupportedWindowsVersion() {
+  // Match the installer minimum using the actual version, independent of the
+  // compatibility version reported by VersionHelpers.
+  using RtlGetVersionProc = LONG(WINAPI*)(PRTL_OSVERSIONINFOW);
+  const auto get_version = reinterpret_cast<RtlGetVersionProc>(
+      GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion"));
+  RTL_OSVERSIONINFOW version{};
+  version.dwOSVersionInfoSize = sizeof(version);
+  if (!get_version || get_version(&version) != 0) {
+    return false;
+  }
+  return version.dwMajorVersion > 10 ||
+         (version.dwMajorVersion == 10 &&
+          (version.dwMinorVersion > 0 || version.dwBuildNumber >= 19045));
+}
 
 constexpr wchar_t kAppMutexName[] = L"TrustTunnelFlutterClient";
 constexpr wchar_t kFlutterWindowClassName[] =
@@ -197,7 +213,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     }
   }
 
-  if (!IsWindows10OrGreater()) {
+  if (!IsSupportedWindowsVersion()) {
     return EXIT_FAILURE;
   }
 

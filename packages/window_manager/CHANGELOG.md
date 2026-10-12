@@ -9,7 +9,7 @@ Includes previously unversioned local changes.
 * [windows] Expose system colors, high contrast settings, text scaling, and caption font information.
 * [windows] Correct Windows version detection and existing frame calculations.
 * [windows] Initialize the native window handle and release plugin resources.
-* [windows] Require Windows 10 version 1607 or later.
+* [windows] The plugin APIs require Windows 10 version 1607 or later. TrustTunnel supports Windows 10 22H2 (build 19045) or later; ARM64 requires Windows 11.
 * [macos] Add optional Dock hiding and restore regular activation policy when showing the window.
 * [macos] Add notifications before entering and leaving full screen.
 * [macos] Add title bar hiding when leaving full screen.
