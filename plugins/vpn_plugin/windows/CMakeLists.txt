@@ -49,6 +49,19 @@ set_target_properties(${PLUGIN_NAME} PROPERTIES
   CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL)
 
+# Dev-only lazy service install. When defined, VpnPlugin::Start() installs the
+# VPN service through the elevated helper if it is missing (dev provisioning).
+# Debug builds get it by default; CI can override it by setting
+# the VPN_SELF_INSTALL environment variable before configuring: "1" forces it
+# on, any other value forces it off.
+if(DEFINED ENV{VPN_SELF_INSTALL})
+  if("$ENV{VPN_SELF_INSTALL}" STREQUAL "1")
+    target_compile_definitions(${PLUGIN_NAME} PRIVATE VPN_SELF_INSTALL=1)
+  endif()
+else()
+  target_compile_definitions(${PLUGIN_NAME} PRIVATE $<$<CONFIG:Debug>:VPN_SELF_INSTALL=1>)
+endif()
+
 # Source include directories and library dependencies. Add any plugin-specific
 # dependencies here.
 target_include_directories(${PLUGIN_NAME} INTERFACE
@@ -57,7 +70,7 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 target_link_libraries(${PLUGIN_NAME} PRIVATE Shell32 Ole32)
 
 # === Download and use prebuilt TrustTunnelClientWindows ===
-set(TRUSTTUNNEL_CLIENT_VERSION "1.3.0-alpha.1")
+set(TRUSTTUNNEL_CLIENT_VERSION "1.3.0-beta.1")
 
 # Determine the archive architecture from the Visual Studio target platform.
 # CMAKE_SYSTEM_PROCESSOR may identify the host instead of the target.
@@ -185,43 +198,22 @@ list(APPEND CMAKE_PREFIX_PATH "${trusttunnelclientwindows_SOURCE_DIR}")
 find_package(TrustTunnelClientWindows REQUIRED)
 target_link_libraries(${PLUGIN_NAME} PRIVATE TrustTunnelClientWindows::trusttunnel)
 
-# --- Bundle required adapter's targets ---
-set(_TT_BIN_DIR "${trusttunnelclientwindows_SOURCE_DIR}/bin")
-
-set(TRUSTTUNNEL_SERVICE_EXE "${_TT_BIN_DIR}/trusttunnel_service.exe")
-if(NOT EXISTS "${TRUSTTUNNEL_SERVICE_EXE}")
-  message(FATAL_ERROR "trusttunnel_service.exe not found at ${TRUSTTUNNEL_SERVICE_EXE}")
+# Controls whether trusttunnel_stage_runtime strips the adapter binaries'
+# Authenticode signatures. The value is read at configure time,
+# so reconfigure after changing it.
+if(DEFINED ENV{VPN_STRIP_SIGNATURES})
+  set(TRUSTTUNNEL_STRIP_SIGNATURES "$ENV{VPN_STRIP_SIGNATURES}")
+else()
+  set(TRUSTTUNNEL_STRIP_SIGNATURES OFF)
 endif()
 
-set(TRUSTTUNNEL_DLL "${_TT_BIN_DIR}/trusttunnel.dll")
-if(NOT EXISTS "${TRUSTTUNNEL_DLL}")
-  message(FATAL_ERROR "trusttunnel.dll not found at ${TRUSTTUNNEL_DLL}")
-endif()
+trusttunnel_stage_runtime(trusttunnel_runtime TRUSTTUNNEL_RUNTIME_BINARIES
+  ${TRUSTTUNNEL_STRIP_SIGNATURES})
+add_dependencies(${PLUGIN_NAME} trusttunnel_runtime)
 
-set(WINTUN_DLL "${_TT_BIN_DIR}/wintun.dll")
-set(WINTUN_LICENSE "${trusttunnelclientwindows_SOURCE_DIR}/WINTUN_LICENSE.txt")
-
-if(NOT EXISTS "${WINTUN_DLL}")
-  message(FATAL_ERROR "wintun.dll not found at ${WINTUN_DLL}")
-endif()
-
-set(TRUSTTUNNEL_SERVICE_INSTALLER_EXE "${_TT_BIN_DIR}/trusttunnel_service_installer.exe")
-if(NOT EXISTS "${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}")
-  message(FATAL_ERROR "trusttunnel_service_installer.exe not found at ${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}")
-endif()
-
-message(STATUS "Using trusttunnel_service.exe: ${TRUSTTUNNEL_SERVICE_EXE}")
-message(STATUS "Using wintun.dll: ${WINTUN_DLL}")
-message(STATUS "Using trusttunnel_service_installer.exe: ${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}")
-
-# Bundle the executables, DLLs and license so the app-level install step copies
-# them next to the main executable at runtime.
 set(vpn_plugin_bundled_libraries
-  "${TRUSTTUNNEL_SERVICE_EXE}"
-  "${TRUSTTUNNEL_DLL}"
-  "${WINTUN_DLL}"
-  "${WINTUN_LICENSE}"
-  "${TRUSTTUNNEL_SERVICE_INSTALLER_EXE}"
+  ${TRUSTTUNNEL_RUNTIME_BINARIES}
+  "${trusttunnelclientwindows_SOURCE_DIR}/WINTUN_LICENSE.txt"
   PARENT_SCOPE
 )
 
