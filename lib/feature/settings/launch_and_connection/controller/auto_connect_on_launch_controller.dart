@@ -42,29 +42,35 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
 
   void disable() => _applyEnabled(enabled: false);
 
-  void setLastServerId(String? serverId) => handle(
-    () async {
-      setState(
-        AutoConnectOnLaunchState.loading(
-          enabled: state.enabled,
-          lastServerId: state.lastServerId,
-          connectOnLaunchHandled: state.connectOnLaunchHandled,
-        ),
-      );
+  Future<bool> setLastServerId(String? serverId) async {
+    bool isSucceeded = false;
+    await handle(
+      () async {
+        setState(
+          AutoConnectOnLaunchState.loading(
+            enabled: state.enabled,
+            lastServerId: state.lastServerId,
+            connectOnLaunchHandled: state.connectOnLaunchHandled,
+          ),
+        );
 
-      await _repository.setLastServerId(serverId);
+        await _repository.setLastServerId(serverId);
 
-      setState(
-        AutoConnectOnLaunchState.idle(
-          enabled: state.enabled,
-          lastServerId: serverId,
-          connectOnLaunchHandled: state.connectOnLaunchHandled,
-        ),
-      );
-    },
-    errorHandler: _onError,
-    completionHandler: _onCompleted,
-  );
+        setState(
+          AutoConnectOnLaunchState.idle(
+            enabled: state.enabled,
+            lastServerId: serverId,
+            connectOnLaunchHandled: state.connectOnLaunchHandled,
+          ),
+        );
+        isSucceeded = true;
+      },
+      errorHandler: _onError,
+      completionHandler: _onCompleted,
+    );
+
+    return isSucceeded;
+  }
 
   void markConnectOnLaunchHandled() => handle(
     () async {

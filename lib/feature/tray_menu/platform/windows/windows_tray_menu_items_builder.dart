@@ -36,11 +36,9 @@ final class WindowsTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
           ),
         ),
       );
-      items.add(
-        TrayStatus(
-          title: _truncateServerTitle(data.activeServerName!),
-        ),
-      );
+      if (data.activeServerName != null) {
+        items.add(TrayStatus(title: _truncateServerTitle(data.activeServerName!)));
+      }
       items.add(const TraySeparator());
       items.add(
         TrayButton(

@@ -8,6 +8,12 @@ abstract class ServersScopeController implements Listenable {
   abstract final PresentationException? error;
   abstract final bool loading;
 
+  /// Starts at zero and increments synchronously for every choice, including repeated or failed choices.
+  /// Observers may invalidate pending work without depending on a persisted change.
+  abstract final int selectionRequestRevision;
+
   abstract final void Function() fetchServers;
-  abstract final void Function(String? serverId) pickServer;
+
+  /// Saves selection and the launch target without starting or switching VPN.
+  Future<bool> selectServer(String? serverId);
 }

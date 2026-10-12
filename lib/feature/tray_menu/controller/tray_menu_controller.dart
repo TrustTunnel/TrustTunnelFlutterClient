@@ -19,16 +19,11 @@ import 'package:trusttunnel/feature/tray_menu/platform/macos/macos_tray_menu_ite
 import 'package:trusttunnel/feature/tray_menu/platform/tray_menu_builder.dart';
 import 'package:trusttunnel/feature/tray_menu/platform/windows/windows_tray_menu_items_builder.dart';
 
-/// Prepares connection parameters before calling [onReady].
-/// Returning false from [onReady] skips starting VPN after selecting another server.
-typedef TrayMenuConnectCallback = Future<void> Function(Server server, {required bool Function() onReady});
-
 /// Handles tray actions and synchronizes native state independently of Flutter frames.
 final class TrayMenuController {
   final ValueListenable<TrayMenuState> _sources;
-  final TrayMenuConnectCallback _connectVpn;
+  final Future<void> Function(String serverId) _connectVpn;
   final AsyncCallback _disconnectVpn;
-  final ValueChanged<String?> _pickServer;
   final ValueChanged<LoggingLevel> _updateLoggingLevel;
   final ValueChanged<LoggingSecurityType> _updateSecurityType;
   final void Function({VoidCallback? onError, VoidCallback? onCancelled}) _exportLogsCallback;
@@ -40,9 +35,8 @@ final class TrayMenuController {
 
   TrayMenuController({
     required this._sources,
-    required TrayMenuConnectCallback connect,
+    required Future<void> Function(String serverId) connect,
     required AsyncCallback disconnect,
-    required this._pickServer,
     required this._updateLoggingLevel,
     required this._updateSecurityType,
     required void Function({VoidCallback? onError, VoidCallback? onCancelled}) exportLogs,
@@ -98,7 +92,6 @@ final class TrayMenuController {
   Timer? _retryTimer;
   Object? _lastServerError;
   Object? _lastLoggingError;
-  String? _lastConnectedServerId;
 
   void updateLocalization(AppLocalizations localization) {
     _localization = localization;
@@ -237,28 +230,29 @@ final class TrayMenuController {
   Future<void> _connect() async {
     final targetServer = _resolveCurrentTargetServer();
     if (targetServer != null) {
-      await _connectToServer(targetServer);
+      await _connectVpn(targetServer.id);
     }
   }
 
   Future<void> _connectToServerId(String serverId) async {
     final targetServer = _sources.value.servers.firstWhereOrNull((server) => server.id == serverId);
     if (targetServer != null) {
-      await _connectToServer(targetServer);
+      await _connectVpn(targetServer.id);
     }
   }
 
   /// Builds a tray menu snapshot from live tray data and localization.
   TrayMenuData _prepareTrayMenuData() {
     final state = _sources.value;
-    final vpnState = state.vpnState;
+    final vpnState = state.hasPendingStart ? VpnState.connecting : state.vpnState;
     final servers = state.servers;
     final selectedServer = state.selectedServer;
     final connectionState = _mapConnectionStateForTray(vpnState);
     final activeServer = _resolveActiveServer(
-      connectionState: connectionState,
+      currentlyConnectedServerId: state.currentlyConnectedServerId,
       servers: servers,
       selectedServer: selectedServer,
+      vpnState: vpnState,
     );
 
     return TrayMenuData(
@@ -272,58 +266,29 @@ final class TrayMenuController {
     );
   }
 
-  /// Remembers the server once connection parameters are ready.
-  Future<void> _connectToServer(Server server) => _connectVpn(
-    server,
-    onReady: () {
-      _lastConnectedServerId = server.id;
-      _enqueueSync();
-
-      if (_sources.value.selectedServer?.id != server.id) {
-        _pickServer(server.id);
-
-        return false;
-      }
-
-      return true;
-    },
-  );
-
   Server? _resolveCurrentTargetServer() {
     final state = _sources.value;
 
-    return _resolveActiveServer(
-      connectionState: _mapConnectionStateForTray(state.vpnState),
-      servers: state.servers,
-      selectedServer: state.selectedServer,
-    );
+    return state.selectedServer ?? state.servers.firstOrNull;
   }
 
   /// Resolves the server shown by the tray, preserving the active server across states.
   Server? _resolveActiveServer({
-    required TrayMenuConnectionState connectionState,
+    required String? currentlyConnectedServerId,
     required List<Server> servers,
     required Server? selectedServer,
+    required VpnState vpnState,
   }) {
     if (servers.isEmpty) {
       return null;
     }
 
     final fallbackServer = selectedServer ?? servers.first;
-    final cachedServer = _lastConnectedServerId == null
+    final connectionServer = currentlyConnectedServerId == null
         ? null
-        : servers.firstWhereOrNull((item) => item.id == _lastConnectedServerId);
+        : servers.firstWhereOrNull((server) => server.id == currentlyConnectedServerId);
 
-    switch (connectionState) {
-      case TrayMenuConnectionState.connected:
-      case TrayMenuConnectionState.connecting:
-        final activeServer = selectedServer ?? cachedServer ?? servers.first;
-        _lastConnectedServerId = activeServer.id;
-
-        return activeServer;
-      case TrayMenuConnectionState.disconnected:
-        return cachedServer ?? fallbackServer;
-    }
+    return vpnState == VpnState.disconnected ? fallbackServer : connectionServer;
   }
 
   /// Maps detailed VPN recovery states to the tray's simplified connection state.

@@ -47,13 +47,13 @@ Future<void> main() async {
             child: AppLoggingScope(
               child: RoutingScope(
                 child: ExcludedRoutesScope(
-                  child: VpnScope(
-                    appWindowController: initializationHelper.dependenciesFactory.appWindowController,
-                    vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
-                    initialState: initializationHelper.initialVpnState,
-                    child: const ServersScope(
-                      child: AutoConnectOnLaunchSettingsScope(
-                        child: VpnUpdateManager(
+                  child: ServersScope(
+                    child: VpnScope(
+                      appWindowController: initializationHelper.dependenciesFactory.appWindowController,
+                      vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
+                      initialState: initializationHelper.initialVpnState,
+                      child: const VpnUpdateManager(
+                        child: AutoConnectOnLaunchSettingsScope(
                           child: DeepLinkScope(
                             child: App(),
                           ),

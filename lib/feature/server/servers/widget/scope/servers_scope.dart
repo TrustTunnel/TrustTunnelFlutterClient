@@ -8,15 +8,14 @@ import 'package:trusttunnel/feature/server/servers/controller/servers_controller
 import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
-import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_controller.dart';
 
-/// {@template products_scope_template}
-/// Provides Products controller to the widget tree
+/// {@template servers_scope_template}
+/// Provides the persisted server list and selection to the widget tree.
 /// {@endtemplate}
 class ServersScope extends StatefulWidget {
   final Widget child;
 
-  /// {@macro products_scope_template}
+  /// {@macro servers_scope_template}
   const ServersScope({
     required this.child,
     super.key,
@@ -39,7 +38,6 @@ class ServersScope extends StatefulWidget {
 
 class _ServersScopeState extends State<ServersScope> implements ServersScopeController {
   late final ServersController _controller;
-  late final AutoConnectOnLaunchSettingsController _autoConnectOnLaunchSettingsController;
 
   @override
   List<Server> get servers => [..._controller.state.servers];
@@ -54,19 +52,19 @@ class _ServersScopeState extends State<ServersScope> implements ServersScopeCont
   bool get loading => _controller.state.loading;
 
   @override
-  void Function() get fetchServers => _controller.fetchServers;
+  int get selectionRequestRevision => _controller.state.selectionRequestRevision;
 
   @override
-  void Function(String? serverId) get pickServer => _selectServer;
+  void Function() get fetchServers => _controller.fetchServers;
 
   @override
   void initState() {
     super.initState();
 
     final repositoryFactory = context.repositoryFactory;
-    _controller = ServersController(repository: repositoryFactory.serverRepository);
-    _autoConnectOnLaunchSettingsController = AutoConnectOnLaunchSettingsController(
-      repository: repositoryFactory.autoConnectOnLaunchSettingsRepository,
+    _controller = ServersController(
+      repository: repositoryFactory.serverRepository,
+      autoConnectOnLaunchSettingsRepository: repositoryFactory.autoConnectOnLaunchSettingsRepository,
     );
 
     _controller.fetchServers();
@@ -83,19 +81,16 @@ class _ServersScopeState extends State<ServersScope> implements ServersScopeCont
   );
 
   @override
+  Future<bool> selectServer(String? serverId) => _controller.selectServer(serverId);
+
+  @override
   void addListener(VoidCallback listener) => _controller.addListener(listener);
 
   @override
   void removeListener(VoidCallback listener) => _controller.removeListener(listener);
 
-  void _selectServer(String? serverId) {
-    _autoConnectOnLaunchSettingsController.setLastServerId(serverId);
-    _controller.selectServer(serverId);
-  }
-
   @override
   void dispose() {
-    _autoConnectOnLaunchSettingsController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -127,7 +122,13 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> {
     BuildContext context, {
     bool listen = true,
     ServersScopeAspect? aspect,
-  }) => _productsScope(context, listen: listen, aspect: aspect) ?? _notFoundInheritedWidgetOfExactType();
+  }) =>
+      _scope(
+        context,
+        listen: listen,
+        aspect: aspect,
+      ) ??
+      _notFoundInheritedWidgetOfExactType();
 
   @override
   bool updateShouldNotifyDependent(
@@ -153,7 +154,7 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> {
     return false;
   }
 
-  static _InheritedServersScope? _productsScope(
+  static _InheritedServersScope? _scope(
     BuildContext context, {
     bool listen = true,
     ServersScopeAspect? aspect,

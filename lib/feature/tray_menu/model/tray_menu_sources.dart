@@ -27,6 +27,8 @@ final class TrayMenuSources implements ValueListenable<TrayMenuState> {
   @override
   TrayMenuState get value => TrayMenuState(
     vpnState: _vpn.state,
+    currentlyConnectedServerId: _vpn.currentlyConnectedServerId,
+    hasPendingStart: _vpn.hasPendingStart,
     servers: _servers.servers,
     selectedServer: _servers.selectedServer,
     loggingLevel: _logging.loggingLevel,

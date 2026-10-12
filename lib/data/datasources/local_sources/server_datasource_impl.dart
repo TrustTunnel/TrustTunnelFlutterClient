@@ -141,16 +141,23 @@ class ServerDataSourceImpl implements ServerDataSource {
 
   /// {@macro server_data_source_set_selected_server_id}
   @override
-  Future<void> setSelectedServerId({required String? id}) async {
-    final updatePrevious = database.servers.update()..where((e) => e.selected.equals(true));
+  Future<void> setSelectedServerId({required String? id}) => database.transaction(() async {
+    final parsedId = id == null ? null : int.parse(id);
+    if (parsedId != null) {
+      final server = await (database.select(database.servers)..where((e) => e.id.equals(parsedId))).getSingleOrNull();
+      if (server == null) {
+        throw StateError('Server not found');
+      }
+    }
 
+    final updatePrevious = database.servers.update()..where((e) => e.selected.equals(true));
     await updatePrevious.write(const db.ServersCompanion(selected: Value(false)));
 
-    if (id != null) {
-      final updateCurrent = database.servers.update()..where((e) => e.id.equals(int.parse(id)));
+    if (parsedId != null) {
+      final updateCurrent = database.servers.update()..where((e) => e.id.equals(parsedId));
       await updateCurrent.write(const db.ServersCompanion(selected: Value(true)));
     }
-  }
+  });
 
   /// {@macro server_data_source_remove_server}
   @override
