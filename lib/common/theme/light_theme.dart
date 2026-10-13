@@ -97,6 +97,13 @@ class LightTheme {
   // New colors (Colors and styles Library)
   static const _accentMainDefault = Color(0xFF3972AA);
 
+  late final appSystemUiOverlayStyle = const SystemUiOverlayStyle(
+    statusBarColor: _background,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemStatusBarContrastEnforced: false,
+  );
+
   late final _customColors = const CustomColors(
     accent: _accent,
     accentHover: _accentHover,
@@ -549,13 +556,6 @@ class LightTheme {
         _textTheme.labelLarge,
       ),
     ),
-  );
-
-  late final appSystemUiOverlayStyle = const SystemUiOverlayStyle(
-    statusBarColor: _background,
-    statusBarIconBrightness: Brightness.dark,
-    statusBarBrightness: Brightness.light,
-    systemStatusBarContrastEnforced: false,
   );
 
   late final _appBarTheme = AppBarTheme(

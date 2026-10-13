@@ -69,7 +69,9 @@ public:
     // IVpnManager implementation
     /**
      * Start the VPN service with the given configuration.
-     * If the service is not installed, it will be installed first (non-MSIX only).
+     * If the service is not installed and the plugin is built with
+     * VPN_SELF_INSTALL (dev builds), it will be installed first; otherwise the
+     * failure is logged and the app stays disconnected.
      * @param config The VPN configuration string.
      * @return Error if the operation cannot be initiated, nullopt otherwise.
      */
@@ -133,17 +135,21 @@ private:
      */
     int32_t RunElevatedHelper(const std::wstring& params);
 
+#ifdef VPN_SELF_INSTALL
     /**
-     * Install the VPN service via the elevated helper (non-MSIX only).
+     * Install the VPN service via the elevated helper.
+     * Compiled only into dev builds: production provisioning is the
+     * installer's job.
      * @return 0 on success, error code otherwise.
      */
     int32_t InstallService();
 
     /**
-     * Uninstall the VPN service via the elevated helper (non-MSIX only).
+     * Uninstall the VPN service via the elevated helper.
      * @return 0 on success, error code otherwise.
      */
     int32_t UninstallService();
+#endif
 
     /**
      * Attach to the running VPN background service.
@@ -171,7 +177,6 @@ private:
     VpnEventStreamHandler* m_query_log_handler = nullptr;
 
     std::wstring m_service_name;
-    std::wstring m_pipe_name;
     std::filesystem::path m_ring_buffer_path;
     std::filesystem::path m_logs_dir;
 

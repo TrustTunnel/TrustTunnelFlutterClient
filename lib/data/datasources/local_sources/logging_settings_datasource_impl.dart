@@ -10,7 +10,7 @@ class LoggingSettingsDataSourceImpl implements LoggingSettingsDataSource {
 
   final SharedPreferences _preferences;
 
-  LoggingSettingsDataSourceImpl({required SharedPreferences preferences}) : _preferences = preferences;
+  LoggingSettingsDataSourceImpl({required this._preferences});
 
   @override
   Future<LoggingLevel> getLoggingLevel() async {

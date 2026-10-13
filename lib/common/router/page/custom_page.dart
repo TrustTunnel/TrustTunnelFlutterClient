@@ -13,9 +13,9 @@ abstract class CustomPageRoute<T> extends ModalRoute<T> implements PageRoute<T> 
     super.settings,
     this.fullscreenDialog = false,
     this.allowSnapshotting = true,
-    bool barrierDismissible = false,
+    this._barrierDismissible = false,
     super.traversalEdgeBehavior,
-  }) : _barrierDismissible = barrierDismissible;
+  });
 
   @override
   bool get opaque => true;

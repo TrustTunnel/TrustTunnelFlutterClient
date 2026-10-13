@@ -16,20 +16,15 @@ class PopUpRoute<T> extends CustomPageRoute<T> {
   final Duration? _reverseTransitionDuration;
 
   PopUpRoute({
-    required WidgetBuilder builder,
-    required BuildContext context,
+    required this._builder,
+    required this._context,
     super.settings,
-    bool fullScreenDialog = true,
-    Duration? transitionDuration,
-    Duration? reverseTransitionDuration,
+    this._fullScreenDialog = true,
+    this._transitionDuration,
+    this._reverseTransitionDuration,
     this.maintainState = true,
     this.opaque = false,
-  }) : _builder = builder,
-       _transitionDuration = transitionDuration,
-       _reverseTransitionDuration = reverseTransitionDuration,
-       _context = context,
-       _fullScreenDialog = fullScreenDialog,
-       super(traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop) {
+  }) : super(traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop) {
     _initSub();
   }
 

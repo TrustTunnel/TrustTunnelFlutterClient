@@ -31,8 +31,8 @@ final class ExportLogsRepositoryImpl implements ExportLogsRepository {
   final LogsLocalSource _localSource;
 
   ExportLogsRepositoryImpl({
-    required LogsLocalSource localSource,
-  }) : _localSource = localSource;
+    required this._localSource,
+  });
 
   @override
   Future<ExportLogsArchive> createArchive() => _localSource.createArchive();

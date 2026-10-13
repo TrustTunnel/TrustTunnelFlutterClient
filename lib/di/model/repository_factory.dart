@@ -36,8 +36,8 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   final DependencyFactory _dependencyFactory;
 
   RepositoryFactoryImpl({
-    required DependencyFactory dependencyFactory,
-  }) : _dependencyFactory = dependencyFactory;
+    required this._dependencyFactory,
+  });
 
   ServerRepository? _serverRepository;
 

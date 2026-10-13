@@ -15,16 +15,14 @@ final class TrayManagerMacOS {
   final int _topServersLimitForView;
   final int _maxServerTitleLength;
 
-  TrayIcons? _trayIcons;
-  bool _isTrayInitialized = false;
-
   TrayManagerMacOS({
     TrayManagerApi? trayManager,
-    int topServersLimitForView = 10,
-    int maxServerTitleLength = 40,
-  }) : _trayManagerApi = trayManager ?? TrayManagerApi(),
-       _topServersLimitForView = topServersLimitForView,
-       _maxServerTitleLength = maxServerTitleLength;
+    this._topServersLimitForView = 10,
+    this._maxServerTitleLength = 40,
+  }) : _trayManagerApi = trayManager ?? TrayManagerApi();
+  bool _isTrayInitialized = false;
+
+  TrayIcons? _trayIcons;
 
   Future<void> synchronizeMenu({
     required TrayMenuData data,

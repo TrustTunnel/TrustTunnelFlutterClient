@@ -5,8 +5,8 @@ final class LoggingNavigatorObserver extends NavigatorObserver {
   final String _navigatorName;
 
   LoggingNavigatorObserver({
-    required String navigatorName,
-  }) : _navigatorName = navigatorName;
+    required this._navigatorName,
+  });
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) => _logNavigationEvent(

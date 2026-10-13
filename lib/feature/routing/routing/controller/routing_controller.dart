@@ -19,9 +19,9 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
 
   /// {@macro products_controller}
   RoutingController({
-    required RoutingRepository repository,
+    required this._repository,
     super.initialState = const RoutingState.initial(),
-  }) : _repository = repository;
+  });
 
   /// Make a purchase for the given product ID
   Future<void> fetchRoutingProfiles() => handle(

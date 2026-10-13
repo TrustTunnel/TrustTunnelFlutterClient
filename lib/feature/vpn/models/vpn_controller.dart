@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show Listenable;
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
@@ -5,6 +6,7 @@ import 'package:trusttunnel/data/model/vpn_state.dart';
 
 mixin VpnController {
   abstract final VpnState state;
+  abstract final Listenable disconnectOnExitErrorListenable;
 
   Future<void> start({
     required Server server,

@@ -88,7 +88,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   final RoutingDetailsState _state;
 
   const _InheritedRoutingDetailsScope({
-    required RoutingDetailsState state,
+    required this._state,
     required this.id,
     required this.changeDefaultRoutingMode,
     required this.changeData,
@@ -97,7 +97,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
     required this.submit,
     required this.editing,
     required super.child,
-  }) : _state = state;
+  });
 
   @override
   final String? id;

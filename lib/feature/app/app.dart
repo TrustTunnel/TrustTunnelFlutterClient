@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/constants/app_constants.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/logging/observers/logging_navigator_observer.dart';
+import 'package:trusttunnel/feature/app/widgets/app_system_actions_handler.dart';
 import 'package:trusttunnel/feature/app/widgets/app_system_ui_shell.dart';
 import 'package:trusttunnel/feature/navigation/navigation_screen.dart';
 
@@ -34,6 +35,9 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) => MaterialApp(
     theme: context.dependencyFactory.lightThemeData,
+    builder: (context, child) => AppSystemActionsHandler(
+      child: child!,
+    ),
     navigatorObservers: [
       LoggingNavigatorObserver(
         navigatorName: 'root',

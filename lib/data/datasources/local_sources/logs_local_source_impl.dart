@@ -22,16 +22,12 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
   final SharedPreferences _sharedPreferences;
 
   LogsLocalSourceImpl({
-    required FileLogAppender logAppender,
-    required AppStateLoggingDataSource appStateLoggingDataSource,
-    required FilePicker filePicker,
-    required VpnPlugin vpnPlugin,
-    required SharedPreferences sharedPreferences,
-  }) : _logAppender = logAppender,
-       _appStateLoggingDataSource = appStateLoggingDataSource,
-       _vpnPlugin = vpnPlugin,
-       _sharedPreferences = sharedPreferences,
-       _filePicker = filePicker;
+    required this._logAppender,
+    required this._appStateLoggingDataSource,
+    required this._filePicker,
+    required this._vpnPlugin,
+    required this._sharedPreferences,
+  });
 
   @override
   Future<ExportLogsArchive> createArchive() async {
@@ -39,8 +35,13 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     final logFiles = <String, Uint8List>{};
 
     for (final group in LogPlatformFiles.platform(defaultTargetPlatform).value) {
-      final regex = RegExp(r'.*' + group + r'(\.\d+)?\.log');
-      final selectedPaths = logPaths.where(regex.hasMatch).toList();
+      // Match only this log group, including rotations before or after .log.
+      final fileNameRegex = RegExp('^${RegExp.escape(group)}(\\.\\d+)?\\.log(\\.\\d+)?\$', caseSensitive: false);
+      final selectedPaths = logPaths.where((path) {
+        final fileName = path.split(RegExp(r'[/\\]')).last;
+
+        return fileNameRegex.hasMatch(fileName);
+      }).toList();
 
       final lines = selectedPaths.isEmpty
           ? <String>[]

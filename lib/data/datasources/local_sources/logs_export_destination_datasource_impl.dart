@@ -9,8 +9,8 @@ final class LogsExportDestinationDataSourceImpl implements LogsExportDestination
   final FilePicker _filePicker;
 
   const LogsExportDestinationDataSourceImpl({
-    required FilePicker filePicker,
-  }) : _filePicker = filePicker;
+    required this._filePicker,
+  });
 
   @override
   Future<void> saveArchive(LogsArchive archive) async {

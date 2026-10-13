@@ -9,9 +9,9 @@ final class OpenMainWindowOnLoginController extends BaseStateController<OpenMain
   final OpenMainWindowOnLoginRepository _repository;
 
   OpenMainWindowOnLoginController({
-    required OpenMainWindowOnLoginRepository repository,
+    required this._repository,
     super.initialState = const OpenMainWindowOnLoginState.initial(),
-  }) : _repository = repository;
+  });
 
   void fetch() => handle(
     () async {
