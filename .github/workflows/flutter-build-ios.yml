@@ -33,14 +33,6 @@ on:
         type: string
         default: 'ipa'
         description: 'ipa | simulator'
-      sentry-project:
-        type: string
-        default: ''
-        description: 'Sentry project slug. If empty, Sentry upload is skipped.'
-      release:
-        type: string
-        default: ''
-        description: 'Release identifier for Sentry (e.g. "5.0")'
     outputs:
       product-name:
         description: 'The application the archive holds (Runner)'
@@ -71,8 +63,6 @@ jobs:
       version: ${{ inputs.version }}
       version-title: ${{ inputs.version-title }}
       build-number: ${{ inputs.build-number }}
-      release: ${{ inputs.release }}
-      sentry-project: ${{ inputs.sentry-project }}
       # The package registry token of the preparation: the one secret the build job receives.
       prepare-secret: PUBLIC_REPO_GPR_KEY
       prepare-secret-env: GPR_KEY
