@@ -12,8 +12,8 @@ class DeepLinkRepositoryImpl implements DeepLinkRepository {
   final ServerDataSource _serverDataSource;
 
   const DeepLinkRepositoryImpl({
-    required ServerDataSource serverDataSource,
-  }) : _serverDataSource = serverDataSource;
+    required this._serverDataSource,
+  });
 
   @override
   Future<ServerData> parseDataFromLink({

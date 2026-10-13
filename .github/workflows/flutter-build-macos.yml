@@ -1,12 +1,10 @@
 name: Flutter Build macOS
 
-# The macOS build of this product through the shared build-macos.yml: the Flutter and CocoaPods
-# preparation of this repository is the prepare-script and the archive is the build-command; the
-# shared workflow builds once without signing material (xcodebuild action), signs every distribution
-# of that build in its own job (sign-apple), notarizes in another job and uploads the artifacts as
-# before. The build is described by the fastlane env file (fastlane-env-path); the outputs are named
-# as the build_macos_app lane named them: macos/build/<name>.app, .pkg or .dmg and
-# macos/build/AppStoreInfo.plist.
+# The macOS build of this product through the shared build-flutter-macos-app.yml (AdGuardSoftwareLimited/actions):
+# the Flutter SDK of the project and the preparation of this repository run in the build job, the shared
+# workflow archives Runner once without signing material, signs every signing type from that archive in its
+# own job, notarizes the Developer ID result in another one and names the artifacts after the product
+# (TrustTunnel); the names are the outputs.
 
 on:
   workflow_call:
@@ -23,29 +21,32 @@ on:
         type: string
         default: ''
         description: 'Human-readable version title'
-      macos-signing-type:
-        type: string
-        default: 'development'
-        description: 'macOS signing type: development, appstore'
       channel:
         type: string
         required: true
         description: 'Build channel (nightly, beta, rc, release)'
-      artifact-name:
+      signing-types:
+        type: string
+        required: true
+        description: 'Distribution methods signed from the one archive, comma-separated: appstore, development'
+      sentry-project:
         type: string
         default: ''
-        description: 'Name for uploaded build artifact'
-      artifact-path:
+        description: 'Sentry project slug. If empty, Sentry upload is skipped.'
+      release:
         type: string
         default: ''
-        description: 'Path to build output file(s)'
-      additional-distributions:
-        type: string
-        default: '[]'
-        description: 'More distributions signed from the same build, as a JSON array of {"signing-type", "artifact-name", "artifact-path", "notarize"}'
-      fastlane-env-path:
-        type: string
-        default: 'macos/fastlane/.env'
+        description: 'Release identifier for Sentry (e.g. "5.0")'
+    outputs:
+      product-name:
+        description: 'The application the archive holds (TrustTunnel)'
+        value: ${{ jobs.build.outputs.product-name }}
+      appstore-artifact:
+        description: 'TrustTunnel-appstore: TrustTunnel.pkg + AppStoreInfo.plist, what deploy-to-testflight.yml takes'
+        value: ${{ jobs.build.outputs.appstore-artifact }}
+      development-artifact:
+        description: 'TrustTunnel-development.app.zip: the Development-signed app for testers, a ditto zip'
+        value: ${{ jobs.build.outputs.development-artifact }}
 
 permissions:
   contents: read
@@ -53,27 +54,25 @@ permissions:
 
 jobs:
   build:
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-macos.yml@AG-55858-phase3-integration
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-flutter-macos-app.yml@AG-55858-phase3-integration
     secrets: inherit
     with:
+      flutter-version: '3.44.9'
+      signing-types: ${{ inputs.signing-types }}
+      app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       channel: ${{ inputs.channel }}
       version: ${{ inputs.version }}
       version-title: ${{ inputs.version-title }}
       build-number: ${{ inputs.build-number }}
-      signing-type: ${{ inputs.macos-signing-type }}
-      app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
-      additional-cert-types: ${{ inputs.macos-signing-type == 'appstore' && 'mac_installer_distribution' || '' }}
-      # The export options of the build_macos_app lane.
-      export-options: ${{ inputs.macos-signing-type == 'appstore' && '{"manageAppVersionAndBuildNumber":true,"generateAppStoreInformation":true,"uploadSymbols":true}' || '{"manageAppVersionAndBuildNumber":false,"generateAppStoreInformation":false}' }}
+      release: ${{ inputs.release }}
+      sentry-project: ${{ inputs.sentry-project }}
+      # The package registry token of the preparation: the one secret the build job receives.
       prepare-secret: PUBLIC_REPO_GPR_KEY
       prepare-secret-env: GPR_KEY
+      # The preparation of this repository, run in the build job with the Flutter SDK on PATH; PROJECT_VERSION
+      # and BUILD_NUMBER are the version inputs.
       prepare-script: |
-        set -euo pipefail
         set -x
-
-        # Flutter of the image (/opt/flutter), owned by another user.
-        git config --global --add safe.directory /opt/flutter
-
         # Ruby for CocoaPods.
         eval "$(rbenv init - bash)"
         rbenv install 3.3.10 --skip-existing
@@ -84,19 +83,15 @@ jobs:
         rbenv rehash
         export BUNDLER_VERSION=2.7.2
         (cd macos && bundle config set --local path '.bundle/vendor' && bundle install)
-
+        # Dependencies and code generation (the package registry token is GPR_KEY), CocoaPods.
+        git config --global --add safe.directory /opt/flutter
         make init
         (cd macos && bundle exec pod install)
-
-        flutter build macos --release \
-          --build-name="${{ inputs.version }}" \
-          --build-number="${{ inputs.build-number }}" \
-          --no-pub \
-          --config-only
-
-        # CocoaPods vendored frameworks may carry pre-release versions ("1.2.3-beta.4", "5.0.0+abc"),
-        # which code signing and App Store validation reject: keep the SemVer core of
-        # CFBundleShortVersionString and CFBundleVersion.
+        # The Xcode configuration of the Flutter tool: the version and the build number.
+        flutter build macos --release --build-name="$PROJECT_VERSION" --build-number="$BUILD_NUMBER" --no-pub --config-only
+        # CocoaPods vendored frameworks may carry pre-release versions ("1.2.3-beta.4", "5.0.0+abc"), which
+        # code signing and App Store validation reject: keep the SemVer core of CFBundleShortVersionString
+        # and CFBundleVersion.
         changed=0
         while IFS= read -r -d '' plist; do
           for key in CFBundleShortVersionString CFBundleVersion; do
@@ -111,20 +106,3 @@ jobs:
           done
         done < <(find macos/Pods -type f -name Info.plist -path '*.framework/*' -print0)
         [ "$changed" -eq 1 ] || echo "No pre-release framework versions found."
-      build-command: |
-        set -euo pipefail
-        set -a; . "${{ inputs.fastlane-env-path }}"; set +a
-        cd macos
-        xcodebuild archive \
-          -workspace Runner.xcworkspace \
-          -scheme "$CUSTOM_FASTLANE_SCHEMA" \
-          -configuration Release \
-          -destination 'generic/platform=macOS' \
-          -archivePath "$FASTLANE_BUILD_DIRECTORY/$CUSTOM_FASTLANE_BUILD_NAME.xcarchive" \
-          -derivedDataPath "$FASTLANE_BUILD_DIRECTORY/derived_data"
-      artifact-name: ${{ inputs.artifact-name }}
-      artifact-path: ${{ inputs.artifact-path }}
-      artifact-archive: true
-      # Developer ID builds for testers were always notarized.
-      notarize: ${{ inputs.macos-signing-type == 'developer_id' }}
-      additional-distributions: ${{ inputs.additional-distributions }}

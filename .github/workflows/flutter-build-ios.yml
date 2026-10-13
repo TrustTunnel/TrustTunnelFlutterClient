@@ -1,12 +1,10 @@
 name: Flutter Build iOS
 
-# The iOS build of this product through the shared build-ios-app.yml: the Flutter and CocoaPods
-# preparation of this repository is the prepare-script, the shared workflow builds the app once
-# without signing material (xcodebuild action), signs every distribution of that build in its own
-# job (sign-apple) and uploads the artifacts as before. The build is described by the fastlane env
-# file (fastlane-env-path: CUSTOM_FASTLANE_SCHEMA, CUSTOM_FASTLANE_BUILD_NAME, FASTLANE_BUILD_DIRECTORY,
-# APP_IDENTIFIERS, TEAM_ID); the outputs land where the fastlane lanes put them: ios/build/<name>.ipa,
-# ios/build/AppStoreInfo.plist and ios/build/<name>.app.zip.
+# The iOS build of this product through the shared build-flutter-ios-app.yml (AdGuardSoftwareLimited/actions):
+# the Flutter SDK of the project and the preparation of this repository run in the build job, the shared
+# workflow archives Runner once without signing material, signs every signing type from that archive in its
+# own job (or builds for the simulator) and names the artifacts after the product; the names are the outputs
+# (the archived app is Runner.app, so the artifacts are Runner-appstore, Runner.ipa and Runner.app.zip).
 
 on:
   workflow_call:
@@ -23,33 +21,39 @@ on:
         type: string
         default: ''
         description: 'Human-readable version title'
-      build-mode:
-        type: string
-        default: 'ipa'
-        description: 'ipa | simulator'
-      signing-type:
-        type: string
-        default: 'adhoc'
-        description: 'iOS signing type: adhoc, appstore, development'
       channel:
         type: string
         required: true
         description: 'Build channel (nightly, beta, rc, release)'
-      artifact-name:
+      signing-types:
         type: string
         default: ''
-        description: 'Name for uploaded build artifact'
-      artifact-path:
+        description: 'Distribution methods signed from the one device archive, comma-separated: appstore, adhoc. Empty for build-mode simulator'
+      build-mode:
+        type: string
+        default: 'ipa'
+        description: 'ipa | simulator'
+      sentry-project:
         type: string
         default: ''
-        description: 'Path to build output file(s)'
-      additional-distributions:
+        description: 'Sentry project slug. If empty, Sentry upload is skipped.'
+      release:
         type: string
-        default: '[]'
-        description: 'More distributions signed from the same device build, as a JSON array of {"signing-type", "artifact-name", "artifact-path"} (not for build-mode simulator)'
-      fastlane-env-path:
-        type: string
-        default: 'ios/fastlane/.env'
+        default: ''
+        description: 'Release identifier for Sentry (e.g. "5.0")'
+    outputs:
+      product-name:
+        description: 'The application the archive holds (Runner)'
+        value: ${{ jobs.build.outputs.product-name }}
+      appstore-artifact:
+        description: 'Runner-appstore: Runner.ipa + AppStoreInfo.plist, what deploy-to-testflight.yml takes'
+        value: ${{ jobs.build.outputs.appstore-artifact }}
+      adhoc-artifact:
+        description: 'Runner.ipa: the Ad Hoc IPA for testers'
+        value: ${{ jobs.build.outputs.adhoc-artifact }}
+      simulator-artifact:
+        description: 'Runner.app.zip: the simulator app, what deploy-to-appetize.yml takes'
+        value: ${{ jobs.build.outputs.simulator-artifact }}
 
 permissions:
   contents: read
@@ -57,25 +61,26 @@ permissions:
 
 jobs:
   build:
-    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-ios-app.yml@AG-55858-phase3-integration
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/build-flutter-ios-app.yml@AG-55858-phase3-integration
     secrets: inherit
     with:
+      flutter-version: '3.44.9'
+      signing-types: ${{ inputs.signing-types }}
+      build-mode: ${{ inputs.build-mode }}
+      app-identifiers: com.adguard.TrustTunnel,com.adguard.TrustTunnel.Extension
       channel: ${{ inputs.channel }}
       version: ${{ inputs.version }}
       version-title: ${{ inputs.version-title }}
       build-number: ${{ inputs.build-number }}
-      signing-type: ${{ inputs.signing-type }}
-      build-mode: ${{ inputs.build-mode }}
-      signing-env-file: ${{ inputs.fastlane-env-path }}
+      release: ${{ inputs.release }}
+      sentry-project: ${{ inputs.sentry-project }}
+      # The package registry token of the preparation: the one secret the build job receives.
       prepare-secret: PUBLIC_REPO_GPR_KEY
       prepare-secret-env: GPR_KEY
+      # The preparation of this repository, run in the build job with the Flutter SDK on PATH; PROJECT_VERSION
+      # and BUILD_NUMBER are the version inputs.
       prepare-script: |
-        set -euo pipefail
         set -x
-
-        # Flutter of the image (/opt/flutter), owned by another user.
-        git config --global --add safe.directory /opt/flutter
-
         # Ruby for CocoaPods.
         eval "$(rbenv init - bash)"
         rbenv install 3.3.10 --skip-existing
@@ -86,20 +91,17 @@ jobs:
         rbenv rehash
         export BUNDLER_VERSION=2.7.2
         (cd ios && bundle config set --local path '.bundle/vendor' && bundle install)
-
+        # Dependencies and code generation (the package registry token is GPR_KEY), the iOS engine
+        # artifacts, CocoaPods.
+        git config --global --add safe.directory /opt/flutter
         make init
         flutter precache --ios
         (cd ios && bundle exec pod install)
-
-        flutter build ios --release \
-          --build-name="${{ inputs.version }}" \
-          --build-number="${{ inputs.build-number }}" \
-          --no-pub \
-          --config-only
-
-        # CocoaPods vendored frameworks may carry pre-release versions ("1.2.3-beta.4", "5.0.0+abc"),
-        # which code signing and App Store validation reject: keep the SemVer core of
-        # CFBundleShortVersionString and CFBundleVersion.
+        # The Xcode configuration of the Flutter tool: the version and the build number.
+        flutter build ios --release --build-name="$PROJECT_VERSION" --build-number="$BUILD_NUMBER" --no-pub --config-only
+        # CocoaPods vendored frameworks may carry pre-release versions ("1.2.3-beta.4", "5.0.0+abc"), which
+        # code signing and App Store validation reject: keep the SemVer core of CFBundleShortVersionString
+        # and CFBundleVersion.
         changed=0
         while IFS= read -r -d '' plist; do
           for key in CFBundleShortVersionString CFBundleVersion; do
@@ -114,7 +116,3 @@ jobs:
           done
         done < <(find ios/Pods -type f -name Info.plist -path '*.framework/*' -print0)
         [ "$changed" -eq 1 ] || echo "No pre-release framework versions found."
-      artifact-name: ${{ inputs.artifact-name }}
-      artifact-path: ${{ inputs.artifact-path }}
-      artifact-archive: true
-      additional-distributions: ${{ inputs.additional-distributions }}

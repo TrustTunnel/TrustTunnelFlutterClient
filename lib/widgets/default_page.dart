@@ -29,13 +29,12 @@ class DefaultPage extends StatelessWidget {
     required this.title,
     required this.imagePath,
     this.imageSize = const Size.square(270),
-    Size desktopImageSize = const Size.square(300),
+    Size this._desktopImageSize = const Size.square(300),
     this.descriptionText,
     this.buttonText,
     this.onButtonPressed,
     String? desktopImagePath,
-  }) : _desktopImagePath = desktopImagePath ?? imagePath,
-       _desktopImageSize = desktopImageSize;
+  }) : _desktopImagePath = desktopImagePath ?? imagePath;
 
   @override
   Widget build(BuildContext context) {

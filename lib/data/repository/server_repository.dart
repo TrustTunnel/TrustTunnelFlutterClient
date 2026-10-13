@@ -26,10 +26,9 @@ class ServerRepositoryImpl implements ServerRepository {
   final CertificateDataSource _certificateDataSource;
 
   ServerRepositoryImpl({
-    required ServerDataSource serverDataSource,
-    required CertificateDataSource certificateDataSource,
-  }) : _serverDataSource = serverDataSource,
-       _certificateDataSource = certificateDataSource;
+    required this._serverDataSource,
+    required this._certificateDataSource,
+  });
 
   @override
   Future<Server> addNewServer({required ServerData request}) async {

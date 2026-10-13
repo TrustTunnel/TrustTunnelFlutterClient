@@ -1,7 +1,6 @@
 enum LoggingLevel {
   defaultLevel('default'),
-  debug('debug')
-  ;
+  debug('debug');
 
   final String value;
 

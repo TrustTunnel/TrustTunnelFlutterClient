@@ -13,9 +13,9 @@ final class ServersController extends BaseStateController<ServersState> with Seq
 
   /// {@macro products_controller}
   ServersController({
-    required ServerRepository repository,
+    required this._repository,
     super.initialState = const ServersState.initial(),
-  }) : _repository = repository;
+  });
 
   /// Make a purchase for the given product ID
   void fetchServers() {

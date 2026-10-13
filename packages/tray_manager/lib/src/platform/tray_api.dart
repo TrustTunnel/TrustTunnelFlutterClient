@@ -21,10 +21,9 @@ class TrayApi {
 
   TrayApi(
     this._channelPrefix, {
-    BinaryMessenger? binaryMessenger,
+    this._binaryMessenger,
     String messageChannelSuffix = '',
-  }) : _binaryMessenger = binaryMessenger,
-       _messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+  }) : _messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
 
   /// Initializes the native tray with menu [items].
   Future<void> initTray(List<Map<String, Object?>> items) async {

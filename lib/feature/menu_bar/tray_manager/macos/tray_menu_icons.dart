@@ -14,12 +14,6 @@ final class TrayIcons {
     required this.disconnected,
   });
 
-  TrayIcon iconFor(ConnectionStateInTrayMenuMacOS state) => switch (state) {
-    ConnectionStateInTrayMenuMacOS.connected => connected,
-    ConnectionStateInTrayMenuMacOS.connecting => connecting,
-    ConnectionStateInTrayMenuMacOS.disconnected => disconnected,
-  };
-
   static Future<TrayIcons> create() async => TrayIcons(
     connected: await _loadIcon(AssetImages.trayOn),
     connecting: await _loadIcon(AssetImages.trayLoading),
@@ -34,4 +28,10 @@ final class TrayIcons {
       isMonochrome: true,
     );
   }
+
+  TrayIcon iconFor(ConnectionStateInTrayMenuMacOS state) => switch (state) {
+    ConnectionStateInTrayMenuMacOS.connected => connected,
+    ConnectionStateInTrayMenuMacOS.connecting => connecting,
+    ConnectionStateInTrayMenuMacOS.disconnected => disconnected,
+  };
 }

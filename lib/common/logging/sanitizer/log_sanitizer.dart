@@ -7,10 +7,9 @@ class LogSanitizer {
   final LoggingSecurityType _securityType;
 
   const LogSanitizer({
-    TrustTunnelSensitiveDataSanitizer sensitiveDataSanitizer = const TrustTunnelSensitiveDataSanitizer(),
-    LoggingSecurityType securityType = LoggingSecurityType.stripped,
-  }) : _securityType = securityType,
-       _sensitiveDataSanitizer = sensitiveDataSanitizer;
+    this._sensitiveDataSanitizer = const TrustTunnelSensitiveDataSanitizer(),
+    this._securityType = LoggingSecurityType.stripped,
+  });
 
   T? sanitize<T extends Object>(T? value) => _sensitiveDataSanitizer.sanitizePayload(value, _securityType);
 

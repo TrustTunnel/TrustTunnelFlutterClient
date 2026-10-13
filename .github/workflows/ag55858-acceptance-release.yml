@@ -1,6 +1,6 @@
-# Round 2 (2026-10-06): build-macos.yml takes the multi-line artifact-path of upload-artifact.
-# TEMPORARY (AG-55858 acceptance, not for merge): the iOS and macOS build calls of deploy-apps.yml in
-# their build-once form, without any deployment and without the Sentry upload.
+# Round: Phase 3 Flutter on the final APIs (actions AG-55858-phase3-flutter-v2, integration AG-55858-phase3-integration), 2026-10-13.
+# TEMPORARY (AG-55858 acceptance, not for merge): the release shape of deploy-apps.yml without the deploys, the changelogs,
+# Android/Windows/web and Slack; the check job takes every artifact by the workflow outputs and verifies it.
 name: AG-55858 acceptance (release shape)
 
 on:
@@ -13,78 +13,205 @@ permissions:
   actions: read
 
 jobs:
-  build-ios-appstore:
+  meta:
+    runs-on: [team-flutter]
+    outputs:
+      version: ${{ steps.epoch.outputs.version }}
+      version-title: ${{ steps.epoch.outputs.version-title }}
+    steps:
+      - id: epoch
+        uses: AdGuardSoftwareLimited/actions/actions/epoch-version-metadata@master
+        with:
+          title-suffix: Acceptance
+
+  resolve-runner:
+    runs-on: [team-flutter]
+    outputs:
+      image: ${{ steps.kv.outputs.value }}
+    steps:
+      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
+        id: kv
+        with:
+          key: build-images/macos
+  build-ios:
+    needs: [meta]
     uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
-      version: '1.0.0'
-      build-number: '9001'
-      version-title: '1.0.0 Nightly 9001'
       channel: nightly
-      signing-type: appstore
-      artifact-name: trusttunnel-ios-appstore
-      artifact-path: |
-        ios/build/TrustTunnel.ipa
-        ios/build/AppStoreInfo.plist
-      additional-distributions: '[{"signing-type": "adhoc", "artifact-name": "trusttunnel-ios-testing", "artifact-path": "ios/build/TrustTunnel.ipa"}]'
+      version: ${{ needs.meta.outputs.version }}
+      build-number: '9103'
+      version-title: ${{ needs.meta.outputs.version-title }}
+      signing-types: appstore,adhoc
 
   build-ios-simulator:
+    needs: [meta]
     uses: ./.github/workflows/flutter-build-ios.yml
     secrets: inherit
     with:
-      version: '1.0.0'
-      build-number: '9001'
-      version-title: '1.0.0 Nightly 9001'
       channel: nightly
+      version: ${{ needs.meta.outputs.version }}
+      build-number: '9103'
+      version-title: ${{ needs.meta.outputs.version-title }}
       build-mode: simulator
-      artifact-name: trusttunnel-ios-simulator
-      artifact-path: ios/build/TrustTunnel.app.zip
 
-  build-macos-appstore:
+  build-macos:
+    needs: [meta]
     uses: ./.github/workflows/flutter-build-macos.yml
     secrets: inherit
     with:
-      version: '1.0.0'
-      build-number: '9001'
-      version-title: '1.0.0 Nightly 9001'
       channel: nightly
-      macos-signing-type: appstore
-      artifact-name: trusttunnel-macos-appstore
-      artifact-path: |
-        macos/build/TrustTunnel.pkg
-        macos/build/AppStoreInfo.plist
-      additional-distributions: '[{"signing-type": "development", "artifact-name": "trusttunnel-macos-testing", "artifact-path": "macos/build/TrustTunnel.app"}]'
+      version: ${{ needs.meta.outputs.version }}
+      build-number: '9103'
+      version-title: ${{ needs.meta.outputs.version-title }}
+      signing-types: appstore,development
 
   check:
-    needs: [build-ios-appstore, build-ios-simulator, build-macos-appstore]
-    runs-on: [team-flutter]
+    needs: [build-ios, build-macos, build-ios-simulator, resolve-runner]
+    runs-on:
+      - ephemeral
+      - ephemeral-mac
+      - ${{ needs.resolve-runner.outputs.image }}
+      - ephemeral-job-key-${{ github.run_id }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: trusttunnel-ios-appstore
-          path: artifacts/trusttunnel-ios-appstore
-      - uses: actions/download-artifact@v8
-        with:
-          name: trusttunnel-ios-testing
-          path: artifacts/trusttunnel-ios-testing
-      - uses: actions/download-artifact@v8
-        with:
-          name: trusttunnel-ios-simulator
-          path: artifacts/trusttunnel-ios-simulator
-      - uses: actions/download-artifact@v8
-        with:
-          name: trusttunnel-macos-appstore
-          path: artifacts/trusttunnel-macos-appstore
-      - uses: actions/download-artifact@v8
-        with:
-          name: trusttunnel-macos-testing
-          path: artifacts/trusttunnel-macos-testing
-      - name: Artifact layout expected by deploy-to-testflight, deploy-to-appetize and the testers
+      - name: The outputs name the products
+        env:
+          IOS_PRODUCT: ${{ needs.build-ios.outputs.product-name }}
+          MAC_PRODUCT: ${{ needs.build-macos.outputs.product-name }}
         run: |
           set -e -x
-          find artifacts -maxdepth 2 | sort
-          test "$(ls artifacts/trusttunnel-ios-appstore | LC_ALL=C sort)" = "$(printf '%s\n' AppStoreInfo.plist TrustTunnel.ipa | LC_ALL=C sort)"
-          test "$(ls artifacts/trusttunnel-ios-testing)" = "TrustTunnel.ipa"
-          test "$(ls artifacts/trusttunnel-ios-simulator)" = "TrustTunnel.app.zip"
-          test "$(ls artifacts/trusttunnel-macos-appstore | LC_ALL=C sort)" = "$(printf '%s\n' AppStoreInfo.plist TrustTunnel.pkg | LC_ALL=C sort)"
-          test "$(ls artifacts/trusttunnel-macos-testing)" = "TrustTunnel.app.zip"
+          test "$IOS_PRODUCT" = Runner
+          test "$MAC_PRODUCT" = "TrustTunnel"
+      - name: "download appstore by the output"
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build-ios.outputs.appstore-artifact }}
+          path: artifacts/appstore
+          skip-decompress: false
+      - name: "download adhoc by the output"
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build-ios.outputs.adhoc-artifact }}
+          path: artifacts/adhoc
+          skip-decompress: true
+      - name: "download simulator by the output"
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build-ios-simulator.outputs.simulator-artifact }}
+          path: artifacts/simulator
+          skip-decompress: true
+      - name: "download mas by the output"
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build-macos.outputs.appstore-artifact }}
+          path: artifacts/mas
+          skip-decompress: false
+      - name: "download dev by the output"
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build-macos.outputs.development-artifact }}
+          path: artifacts/dev
+          skip-decompress: true
+
+      - name: "iOS App Store: the IPA is signed for the App Store with the App Store profile"
+        env:
+          ARTIFACT: ${{ needs.build-ios.outputs.appstore-artifact }}
+          DIR: artifacts/appstore
+          IPA: artifacts/appstore/Runner.ipa
+          BUNDLE: com.adguard.TrustTunnel
+        run: |
+          set -euo pipefail
+          test "$ARTIFACT" = "Runner-appstore"
+          ls -la "$DIR"
+          test -f "$DIR/AppStoreInfo.plist" && plutil -lint "$DIR/AppStoreInfo.plist"
+          rm -rf "$DIR/x"; mkdir -p "$DIR/x"; unzip -q -o "$IPA" -d "$DIR/x"
+          app="$DIR/x/Payload/Runner.app"; test -d "$app"
+          codesign -dvv "$app" 2>&1 | tee "$RUNNER_TEMP/appstore-codesign.txt"
+          grep -q 'Authority=Apple Distribution: Adguard Software Limited (TC3Q7MAJXF)' "$RUNNER_TEMP/appstore-codesign.txt"
+          grep -q "Identifier=$BUNDLE" "$RUNNER_TEMP/appstore-codesign.txt"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -d --entitlements :- "$app" 2>/dev/null | tee "$RUNNER_TEMP/appstore-entitlements.plist" | head -c 4000
+          /usr/libexec/PlistBuddy -c 'Print :application-identifier' "$RUNNER_TEMP/appstore-entitlements.plist" | grep -q "^TC3Q7MAJXF\.$BUNDLE$"
+          security cms -D -i "$app/embedded.mobileprovision" > "$RUNNER_TEMP/appstore-profile.plist"
+          /usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/appstore-profile.plist"
+          ! /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$RUNNER_TEMP/appstore-profile.plist" > /dev/null 2>&1 || { echo "::error::an App Store profile lists no devices"; exit 1; }
+          # the nested bundles are signed by the same identity
+          find "$app" -depth 1 -maxdepth 3 \( -name '*.framework' -o -name '*.appex' \) | while read -r nested; do codesign -dvv "$nested" 2>&1 | grep -q 'Authority=Apple Distribution: Adguard Software Limited' || { echo "::error::$nested is not signed by Apple Distribution"; exit 1; }; done
+
+      - name: "iOS Ad Hoc: the IPA is signed for testers with the Ad Hoc profile"
+        env:
+          ARTIFACT: ${{ needs.build-ios.outputs.adhoc-artifact }}
+          DIR: artifacts/adhoc
+          IPA: artifacts/adhoc/Runner.ipa
+          BUNDLE: com.adguard.TrustTunnel
+        run: |
+          set -euo pipefail
+          test "$ARTIFACT" = "Runner.ipa"
+          ls -la "$DIR"
+          true
+          rm -rf "$DIR/x"; mkdir -p "$DIR/x"; unzip -q -o "$IPA" -d "$DIR/x"
+          app="$DIR/x/Payload/Runner.app"; test -d "$app"
+          codesign -dvv "$app" 2>&1 | tee "$RUNNER_TEMP/adhoc-codesign.txt"
+          grep -q 'Authority=Apple Distribution: Adguard Software Limited (TC3Q7MAJXF)' "$RUNNER_TEMP/adhoc-codesign.txt"
+          grep -q "Identifier=$BUNDLE" "$RUNNER_TEMP/adhoc-codesign.txt"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -d --entitlements :- "$app" 2>/dev/null | tee "$RUNNER_TEMP/adhoc-entitlements.plist" | head -c 4000
+          /usr/libexec/PlistBuddy -c 'Print :application-identifier' "$RUNNER_TEMP/adhoc-entitlements.plist" | grep -q "^TC3Q7MAJXF\.$BUNDLE$"
+          security cms -D -i "$app/embedded.mobileprovision" > "$RUNNER_TEMP/adhoc-profile.plist"
+          /usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/adhoc-profile.plist"
+          /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$RUNNER_TEMP/adhoc-profile.plist" | grep -q -E '^ +[0-9a-f]{8}' || { echo "::error::an Ad Hoc profile must list devices"; exit 1; }
+          # the nested bundles are signed by the same identity
+          find "$app" -depth 1 -maxdepth 3 \( -name '*.framework' -o -name '*.appex' \) | while read -r nested; do codesign -dvv "$nested" 2>&1 | grep -q 'Authority=Apple Distribution: Adguard Software Limited' || { echo "::error::$nested is not signed by Apple Distribution"; exit 1; }; done
+
+      - name: "simulator: the zip holds the simulator app"
+        env:
+          ARTIFACT: ${{ needs.build-ios-simulator.outputs.simulator-artifact }}
+        run: |
+          set -euo pipefail
+          test "$ARTIFACT" = "Runner.app.zip"
+          rm -rf artifacts/simulator/x; mkdir -p artifacts/simulator/x
+          ditto -x -k "artifacts/simulator/Runner.app.zip" artifacts/simulator/x
+          app=artifacts/simulator/x/Runner.app; test -d "$app"
+          /usr/libexec/PlistBuddy -c 'Print :DTPlatformName' "$app/Info.plist" | grep -q iphonesimulator
+          test -f "$app/Frameworks/Flutter.framework/Flutter" || test -f "$app/Frameworks/Flutter.framework/Versions/A/Flutter"
+          lipo -archs "$app/Runner"
+
+      - name: "macOS App Store: the package and AppStoreInfo.plist, signed by the installer certificate"
+        env:
+          ARTIFACT: ${{ needs.build-macos.outputs.appstore-artifact }}
+          PRODUCT: ${{ needs.build-macos.outputs.product-name }}
+          BUNDLE: com.adguard.TrustTunnel
+        run: |
+          set -euo pipefail
+          test "$PRODUCT" = "TrustTunnel" && test "$ARTIFACT" = "TrustTunnel-appstore"
+          ls -la artifacts/mas
+          test -f "artifacts/mas/TrustTunnel.pkg" && test -f artifacts/mas/AppStoreInfo.plist && plutil -lint artifacts/mas/AppStoreInfo.plist
+          pkgutil --check-signature "artifacts/mas/TrustTunnel.pkg" | tee "$RUNNER_TEMP/pkg.txt"
+          grep -q -E '3rd Party Mac Developer Installer|Mac Installer Distribution' "$RUNNER_TEMP/pkg.txt"
+          rm -rf "$RUNNER_TEMP/pkgx"; pkgutil --expand-full "artifacts/mas/TrustTunnel.pkg" "$RUNNER_TEMP/pkgx"
+          app=$(find "$RUNNER_TEMP/pkgx" -maxdepth 3 -name '*.app' | head -n 1); test -n "$app"
+          codesign -dvv "$app" 2>&1 | tee "$RUNNER_TEMP/mas-codesign.txt"
+          grep -q 'Authority=Apple Distribution: Adguard Software Limited (TC3Q7MAJXF)' "$RUNNER_TEMP/mas-codesign.txt"
+          grep -q "Identifier=$BUNDLE" "$RUNNER_TEMP/mas-codesign.txt"
+          test -f "$app/Contents/embedded.provisionprofile"
+          codesign -d --entitlements :- "$app" 2>/dev/null | head -c 4000
+
+      - name: "macOS Development: the app zip for testers is signed Apple Development with its nested code"
+        env:
+          ARTIFACT: ${{ needs.build-macos.outputs.development-artifact }}
+          BUNDLE: com.adguard.TrustTunnel
+        run: |
+          set -euo pipefail
+          test "$ARTIFACT" = "TrustTunnel-development.app.zip"
+          rm -rf artifacts/dev/x; mkdir -p artifacts/dev/x
+          ditto -x -k "artifacts/dev/TrustTunnel-development.app.zip" artifacts/dev/x
+          app="artifacts/dev/x/TrustTunnel-development.app"; test -d "$app" || app="artifacts/dev/x/TrustTunnel.app"; test -d "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dvv "$app" 2>&1 | tee "$RUNNER_TEMP/dev-codesign.txt"
+          grep -q 'Authority=Apple Development:' "$RUNNER_TEMP/dev-codesign.txt"
+          grep -q "Identifier=$BUNDLE" "$RUNNER_TEMP/dev-codesign.txt"
+          test -f "$app/Contents/embedded.provisionprofile"
+          find "$app/Contents" -maxdepth 3 \( -name '*.appex' -o -name '*.app' -o -name '*.systemextension' \) | while read -r nested; do echo "$nested"; codesign -dvv "$nested" 2>&1 | grep -E 'Authority=Apple Development|Identifier=' | head -n 2; done

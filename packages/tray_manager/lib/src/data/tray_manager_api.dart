@@ -35,9 +35,8 @@ final class TrayManagerApi {
 
   TrayManagerApi({
     TrayApi? api,
-    void Function(Object, StackTrace)? onError,
-  }) : _onError = onError,
-       _api = api ?? TrayApi(_kChannelPrefix),
+    this._onError,
+  }) : _api = api ?? TrayApi(_kChannelPrefix),
        _converter = TrayItemConverter() {
     _becomeActive();
   }

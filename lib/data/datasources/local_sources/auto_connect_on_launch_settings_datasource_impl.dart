@@ -8,8 +8,8 @@ class AutoConnectOnLaunchSettingsDataSourceImpl implements AutoConnectOnLaunchSe
   final SharedPreferences _preferences;
 
   AutoConnectOnLaunchSettingsDataSourceImpl({
-    required SharedPreferences preferences,
-  }) : _preferences = preferences;
+    required this._preferences,
+  });
 
   @override
   Future<String?> getLastServerId() async => _preferences.getString(_lastServerIdKey);

@@ -66,7 +66,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 
 Before working with the application, ensure that your environment is ready:
 
-- **Flutter SDK 3.38.3 or newer**
+- **Flutter SDK 3.44.8 or newer**
 - Android, iOS, and/or macOS development tooling configured on your system
 - Basic build utilities, including `make`
 

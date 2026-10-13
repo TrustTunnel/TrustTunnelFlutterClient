@@ -16,8 +16,8 @@ class AutoConnectOnLaunchSettingsRepositoryImpl implements AutoConnectOnLaunchSe
   final AutoConnectOnLaunchSettingsDataSource _dataSource;
 
   AutoConnectOnLaunchSettingsRepositoryImpl({
-    required AutoConnectOnLaunchSettingsDataSource dataSource,
-  }) : _dataSource = dataSource;
+    required this._dataSource,
+  });
 
   @override
   Future<String?> getLastServerId() => _dataSource.getLastServerId();
