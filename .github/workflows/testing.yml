@@ -66,9 +66,7 @@ jobs:
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
-      build-mode: adhoc
-      artifact-name: trusttunnel-ios-pr
-      artifact-path: ios/build/TrustTunnel.ipa
+      signing-types: adhoc
 
   build-macos:
     needs: [prepare]
@@ -81,9 +79,7 @@ jobs:
       version: ${{ needs.prepare.outputs.version }}
       build-number: ${{ github.run_number }}
       version-title: ${{ needs.prepare.outputs.version-title }}
-      macos-signing-type: development
-      artifact-name: trusttunnel-macos-pr
-      artifact-path: macos/build/TrustTunnel.app
+      signing-types: development
 
   build-windows:
     needs: [prepare]

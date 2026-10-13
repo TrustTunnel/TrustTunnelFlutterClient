@@ -171,8 +171,9 @@ jobs:
       artifact-name: trusttunnel-android-testing
       artifact-path: build/app/outputs/flutter-apk/app-release.apk
 
-  # iOS Build Steps
-  build-ios-appstore:
+  # iOS Build Steps: one device archive signed for the App Store and for testers (Ad Hoc), and the simulator
+  # build; the artifacts are named after the product and taken by the deploy jobs from the outputs.
+  build-ios:
     needs: [meta, build-number]
     if: inputs.deploy-ios
     uses: ./.github/workflows/flutter-build-ios.yml
@@ -182,25 +183,7 @@ jobs:
       build-number: ${{ needs.build-number.outputs.build-number }}
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
-      signing-type: appstore
-      artifact-name: trusttunnel-ios-appstore
-      artifact-path: |
-        ios/build/TrustTunnel.ipa
-        ios/build/AppStoreInfo.plist
-
-  build-ios-adhoc:
-    needs: [meta, build-number]
-    if: inputs.deploy-ios
-    uses: ./.github/workflows/flutter-build-ios.yml
-    secrets: inherit
-    with:
-      channel: ${{ needs.meta.outputs.release-channel }}
-      version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
-      version-title: ${{ needs.meta.outputs.version-title }}
-      build-mode: adhoc
-      artifact-name: trusttunnel-ios-testing
-      artifact-path: ios/build/TrustTunnel.ipa
+      signing-types: appstore,adhoc
 
   build-ios-simulator:
     needs: [meta, build-number]
@@ -213,11 +196,9 @@ jobs:
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
       build-mode: simulator
-      artifact-name: trusttunnel-ios-simulator
-      artifact-path: ios/build/TrustTunnel.app.zip
 
-  # macOS Build Steps
-  build-macos-appstore:
+  # macOS Build Steps: one archive signed for the App Store and for testers (the Development-signed app).
+  build-macos:
     needs: [meta, build-number]
     if: inputs.deploy-macos
     uses: ./.github/workflows/flutter-build-macos.yml
@@ -227,25 +208,7 @@ jobs:
       build-number: ${{ needs.build-number.outputs.build-number }}
       version-title: ${{ needs.meta.outputs.version-title }}
       channel: ${{ needs.meta.outputs.release-channel }}
-      macos-signing-type: appstore
-      artifact-name: trusttunnel-macos-appstore
-      artifact-path: |
-        macos/build/TrustTunnel.pkg
-        macos/build/AppStoreInfo.plist
-
-  build-macos-adhoc:
-    needs: [meta, build-number]
-    if: inputs.deploy-macos
-    uses: ./.github/workflows/flutter-build-macos.yml
-    secrets: inherit
-    with:
-      channel: ${{ needs.meta.outputs.release-channel }}
-      version: ${{ needs.meta.outputs.version }}
-      build-number: ${{ needs.build-number.outputs.build-number }}
-      version-title: ${{ needs.meta.outputs.version-title }}
-      macos-signing-type: development
-      artifact-name: trusttunnel-macos-testing
-      artifact-path: macos/build/TrustTunnel.app
+      signing-types: appstore,development
 
   # Windows Build Steps
   # One signed TrustTunnelSetup.exe for Windows 10-11 x64 and Windows 11 ARM64.
@@ -262,7 +225,7 @@ jobs:
       artifact-name: trusttunnel-windows-installer
 
   notify-slack:
-    needs: [meta, build-android-google-play, build-android-apk, build-ios-appstore, build-ios-adhoc, build-ios-simulator, build-macos-appstore, build-macos-adhoc, build-windows]
+    needs: [meta, build-android-google-play, build-android-apk, build-ios, build-ios-simulator, build-macos, build-windows]
     if: >-
       !cancelled() && !failure() &&
       inputs.slack-channel != ''
@@ -303,12 +266,12 @@ jobs:
 
   # iOS Deployment Steps
   deploy-testflight-ios:
-    needs: [meta, build-ios-appstore, changelog-public]
+    needs: [meta, build-ios, changelog-public]
     if: inputs.deploy-ios
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
-      asset-artifact-name: trusttunnel-ios-appstore
+      asset-artifact-name: ${{ needs.build-ios.outputs.appstore-artifact }}
       changelog-artifact-name: changelog.txt
       groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
       distribute-external: true
@@ -321,19 +284,19 @@ jobs:
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-appetize.yml@master
     with:
       team: flutter
-      artifact-name: trusttunnel-ios-simulator
+      artifact-name: ${{ needs.build-ios-simulator.outputs.simulator-artifact }}
       platform: ios
       note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
       environment: ${{ needs.meta.outputs.release-channel }}-appetize-ios
 
   # macOS Deployment Steps
   deploy-testflight-macos:
-    needs: [meta, build-macos-appstore, changelog-public]
+    needs: [meta, build-macos, changelog-public]
     if: inputs.deploy-macos
     uses: AdGuardSoftwareLimited/actions/.github/workflows/deploy-to-testflight.yml@master
     with:
       team: flutter
-      asset-artifact-name: trusttunnel-macos-appstore
+      asset-artifact-name: ${{ needs.build-macos.outputs.appstore-artifact }}
       changelog-artifact-name: changelog.txt
       groups: ${{ needs.meta.outputs.release-channel == 'nightly' && 'Nightly testers' || 'Review testers' }}
       distribute-external: true
