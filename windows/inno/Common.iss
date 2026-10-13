@@ -36,7 +36,7 @@ type
   end;
 
 var
-  VcRedistNeedsRestart: Boolean;
+  InstallationNeedsRestart: Boolean;
   UpdateMode: Boolean;
   AppInitiatedUpdate: Boolean;
   OriginalStateCaptured: Boolean;
@@ -49,6 +49,7 @@ var
   ServiceValidated: Boolean;
   InstallationCommitted: Boolean;
   GuiLaunchFailed: Boolean;
+  AutostartConfigurationFailed: Boolean;
   OperationStarted: Boolean;
   InitiatorPid: Cardinal;
   OperationId: String;

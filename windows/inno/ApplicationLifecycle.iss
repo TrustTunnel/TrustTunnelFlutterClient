@@ -2,6 +2,7 @@
   the installer owns the handle, so a crash cannot leave a stale lock. }
 const
   InstallationLockName = 'Global\TrustTunnel.Installation';
+  ResultPublicationLockName = 'Global\TrustTunnel.InstallationResult';
   ProcessQueryLimitedInformation = $1000;
   SynchronizeAccess = $00100000;
   WaitObject0 = 0;
@@ -27,6 +28,7 @@ type
 
 var
   InstallationLock: TInstallerHandle;
+  ResultPublicationLock: TInstallerHandle;
   ApplicationProcesses: array of TApplicationProcess;
   WindowSearchPid: Cardinal;
   ApplicationWindow: TInstallerHandle;
@@ -84,12 +86,30 @@ var
 begin
   Result := True;
   if InstallationLock <> 0 then exit;
+  { Keep result publication exclusive until the post-install GUI handoff has
+    completed. The GUI only checks InstallationLockName, so it can start after
+    that lock is released while another setup still cannot replace our result. }
+  if ResultPublicationLock = 0 then
+  begin
+    ResultPublicationLock := CreateInstallationMutex(0, False, ResultPublicationLockName);
+    Error := DLLGetLastError;
+    if (ResultPublicationLock = 0) or (Error = 183) then
+    begin
+      if ResultPublicationLock <> 0 then CloseHandle(ResultPublicationLock);
+      ResultPublicationLock := 0;
+      ErrorMessage := 'Another TrustTunnel installation or uninstall is running.';
+      Result := False;
+      exit;
+    end;
+  end;
   InstallationLock := CreateInstallationMutex(0, False, InstallationLockName);
   Error := DLLGetLastError;
   if (InstallationLock = 0) or (Error = 183) then
   begin
     if InstallationLock <> 0 then CloseHandle(InstallationLock);
     InstallationLock := 0;
+    CloseHandle(ResultPublicationLock);
+    ResultPublicationLock := 0;
     ErrorMessage := 'Another TrustTunnel installation or uninstall is running.';
     Result := False;
   end
@@ -101,6 +121,12 @@ procedure ReleaseInstallationLock;
 begin
   if InstallationLock <> 0 then CloseHandle(InstallationLock);
   InstallationLock := 0;
+end;
+
+procedure ReleaseResultPublicationLock;
+begin
+  if ResultPublicationLock <> 0 then CloseHandle(ResultPublicationLock);
+  ResultPublicationLock := 0;
 end;
 
 procedure ReleaseApplicationHandles;

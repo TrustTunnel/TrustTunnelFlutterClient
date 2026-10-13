@@ -474,7 +474,7 @@ begin
   Result :=
     '"' + ExpandConstant('{app}\trusttunnel_service.exe') + '" ' +
     '"' + ExpandConstant('{commonappdata}\TrustTunnel\logs') + '" ' +
-    '"\\.\pipe\trusttunnel_vpn" ' +
+    '"" ' +
     '"' +
       ExpandConstant('{commonappdata}\TrustTunnel\vpn_query_log.ring') +
     '"';
@@ -510,7 +510,7 @@ begin
     'install ' +
     '"' + ExpandConstant('{app}\trusttunnel_service.exe') + '" ' +
     '"' + ExpandConstant('{commonappdata}\TrustTunnel\logs') + '" ' +
-    '"\\.\pipe\trusttunnel_vpn" ' +
+    '"" ' +
     '"' + ServiceName + '" ' +
     '"TrustTunnel VPN Service" ' +
     '"Provides VPN connectivity for the TrustTunnel client." ' +
@@ -599,28 +599,8 @@ begin
 end;
 
 function ServiceImagePathMatchesExpected(const ImagePath: String): Boolean;
-var
-  LowerImagePath: String;
 begin
-  LowerImagePath := LowerCase(ImagePath);
-  Result :=
-    PathsEqual(
-      ExtractServiceExecutable(ImagePath),
-      ExpandConstant('{app}\trusttunnel_service.exe')
-    ) and
-    (Pos(
-      LowerCase(ExpandConstant('{commonappdata}\TrustTunnel\logs')),
-      LowerImagePath
-    ) > 0) and
-    (Pos('\\.\pipe\trusttunnel_vpn', LowerImagePath) > 0) and
-    (Pos(
-      LowerCase(
-        ExpandConstant(
-          '{commonappdata}\TrustTunnel\vpn_query_log.ring'
-        )
-      ),
-      LowerImagePath
-    ) > 0);
+  Result := CompareText(ImagePath, BuildExpectedServiceImagePath) = 0;
 end;
 
 

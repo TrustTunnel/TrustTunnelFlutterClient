@@ -7,7 +7,7 @@ apply_standard_settings(cleanup_user_data_helper)
 target_compile_definitions(cleanup_user_data_helper PRIVATE
   "NOMINMAX"
   "_WIN32_WINNT=0x0A00")
-target_link_libraries(cleanup_user_data_helper PRIVATE advapi32 wtsapi32)
+target_link_libraries(cleanup_user_data_helper PRIVATE windows_user_context)
 
 install(TARGETS cleanup_user_data_helper
   RUNTIME DESTINATION "$<TARGET_FILE_DIR:TrustTunnel>"

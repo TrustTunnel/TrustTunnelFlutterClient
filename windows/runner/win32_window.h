@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include "window_icons.h"
+
 // A class abstraction for a high DPI-aware Win32 Window. Intended to be
 // inherited from by classes that wish to specialize with custom
 // rendering and input handling
@@ -97,6 +99,8 @@ class Win32Window {
 
   // window handle for hosted content.
   HWND child_content_ = nullptr;
+
+  WindowIcons window_icons_;
 };
 
 #endif  // RUNNER_WIN32_WINDOW_H_

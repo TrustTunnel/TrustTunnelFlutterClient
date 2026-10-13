@@ -1,18 +1,20 @@
-// Elevated Inno helper that removes selected TrustTunnel user data.
+// Elevated Inno helper that cleans up uninstall data or matching Run values.
 //
-// - Dart application logs — cleanup_user_data_helper.exe.
-// - Drift database and Shared Preferences — cleanup_user_data_helper.exe.
-// - Temporary native-log exports — cleanup_user_data_helper.exe.
-// - Native client and service VPN logs — Inno uninstaller.
-// - VPN connection-log ring buffer — Inno uninstaller.
+// - Dart application logs and temporary native-log exports — always removed
+//   (the default mode is /DELETEUSERDATA=0).
+// - Drift database and Shared Preferences — removed with /DELETEUSERDATA=1.
+// - Native client/service VPN logs and connection-log ring buffer — always
+//   removed by the Inno uninstaller.
 
 // clang-format off: Windows types must be declared before SDDL/WTS APIs.
 #include <windows.h>
-#include <sddl.h>
-#include <wtsapi32.h>
+#include "../user_context/user_context.h"
+#include "../user_context/launch_at_login_registry.h"
 // clang-format on
 
 #include <string>
+#include <algorithm>
+#include <iterator>
 #include <utility>
 #include <vector>
 
@@ -25,7 +27,7 @@ enum class CleanupExitCode : int {
   kPartialFailure = 1,
   // User/profile lookup failed; Inno warns and continues uninstalling.
   kUserResolutionFailure = 2,
-  // A target escaped its allowed root; Inno warns and continues uninstalling.
+  // An unsafe target was skipped; Inno warns and continues uninstalling.
   kPathOutsideAllowedRoot = 3,
   // Helper setup/path resolution failed; Inno warns and continues uninstalling.
   kInternalError = 4,
@@ -46,6 +48,7 @@ enum class CleanupStage {
   kOpenPath,
   kReadAttributes,
   kDeletePath,
+  kRemoveAutostart,
 };
 
 struct CleanupError {
@@ -54,8 +57,6 @@ struct CleanupError {
   DWORD win32_error;
 };
 
-constexpr wchar_t kProfileListKey[] =
-    L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 constexpr wchar_t kUserShellFoldersKey[] =
     L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell "
     L"Folders";
@@ -95,6 +96,8 @@ const wchar_t* CleanupStageName(CleanupStage stage) {
       return L"read_attributes";
     case CleanupStage::kDeletePath:
       return L"delete_path";
+    case CleanupStage::kRemoveAutostart:
+      return L"remove_autostart";
   }
   return L"unknown";
 }
@@ -112,6 +115,7 @@ CleanupExitCode ExitCodeForError(const CleanupError& error) {
     case CleanupStage::kOpenPath:
     case CleanupStage::kReadAttributes:
     case CleanupStage::kDeletePath:
+    case CleanupStage::kRemoveAutostart:
       return CleanupExitCode::kPartialFailure;
     case CleanupStage::kParseOptions:
     case CleanupStage::kReadRoamingAppData:
@@ -294,164 +298,36 @@ bool IsStrictChildPath(const std::wstring& parent, const std::wstring& child) {
 
 bool ReadProfilePath(const std::wstring& sid, std::wstring* profile_path,
                      CleanupError* error) {
-  const std::wstring key = std::wstring(kProfileListKey) + sid;
-  DWORD byte_count = 0;
-  LSTATUS status = ::RegGetValueW(
-      HKEY_LOCAL_MACHINE, key.c_str(), L"ProfileImagePath",
-      RRF_RT_REG_SZ | RRF_RT_REG_EXPAND_SZ, nullptr, nullptr, &byte_count);
-  if (status != ERROR_SUCCESS) {
-    *error = {CleanupStage::kReadProfilePath, key, static_cast<DWORD>(status)};
-    return false;
-  }
-  if (byte_count < sizeof(wchar_t)) {
-    *error = {CleanupStage::kReadProfilePath, key, ERROR_INVALID_DATA};
-    return false;
-  }
-
-  std::wstring value(byte_count / sizeof(wchar_t), L'\0');
-  status = ::RegGetValueW(HKEY_LOCAL_MACHINE, key.c_str(), L"ProfileImagePath",
-                          RRF_RT_REG_SZ | RRF_RT_REG_EXPAND_SZ, nullptr,
-                          value.data(), &byte_count);
-  if (status != ERROR_SUCCESS) {
-    *error = {CleanupStage::kReadProfilePath, key, static_cast<DWORD>(status)};
-    return false;
-  }
-
-  while (!value.empty() && value.back() == L'\0') {
-    value.pop_back();
-  }
-  if (value.empty()) {
-    *error = {CleanupStage::kReadProfilePath, key, ERROR_INVALID_DATA};
-    return false;
-  }
-
-  *profile_path = std::move(value);
-  return true;
+  const DWORD status = windows_user_context::ReadProfilePath(sid, *profile_path);
+  if (status == ERROR_SUCCESS) return true;
+  *error = {CleanupStage::kReadProfilePath, sid, status};
+  return false;
 }
 
-bool CanonicalizeSid(const std::wstring& input, std::wstring* canonical_sid,
+bool CanonicalizeSid(const std::wstring& input, std::wstring* sid,
                      CleanupError* error) {
-  PSID sid = nullptr;
-  if (!::ConvertStringSidToSidW(input.c_str(), &sid)) {
-    *error = {CleanupStage::kCanonicalizeSid, input, ::GetLastError()};
-    return false;
-  }
-
-  bool result = false;
-  if (::IsValidSid(sid)) {
-    LPWSTR sid_string = nullptr;
-    if (::ConvertSidToStringSidW(sid, &sid_string)) {
-      *canonical_sid = sid_string;
-      ::LocalFree(sid_string);
-      result = true;
-    } else {
-      *error = {CleanupStage::kCanonicalizeSid, input, ::GetLastError()};
-    }
-  } else {
-    *error = {CleanupStage::kCanonicalizeSid, input, ERROR_INVALID_SID};
-  }
-
-  ::LocalFree(sid);
-  return result;
+  const DWORD status = windows_user_context::CanonicalizeSid(input, *sid);
+  if (status == ERROR_SUCCESS) return true;
+  *error = {CleanupStage::kCanonicalizeSid, input, status};
+  return false;
 }
 
-bool GetInteractiveSessionSid(std::wstring* sid_string, CleanupError* error) {
-  DWORD session_id = 0;
-  if (!::ProcessIdToSessionId(::GetCurrentProcessId(), &session_id)) {
-    *error = {CleanupStage::kResolveInteractiveUser, L"session",
-              ::GetLastError()};
-    return false;
-  }
-
-  LPWSTR user_buffer = nullptr;
-  LPWSTR domain_buffer = nullptr;
-  DWORD user_bytes = 0;
-  DWORD domain_bytes = 0;
-  if (!::WTSQuerySessionInformationW(WTS_CURRENT_SERVER_HANDLE, session_id,
-                                     WTSUserName, &user_buffer, &user_bytes) ||
-      user_buffer == nullptr || user_buffer[0] == L'\0') {
-    const DWORD win32_error = ::GetLastError();
-    if (user_buffer != nullptr) {
-      ::WTSFreeMemory(user_buffer);
-    }
-    *error = {CleanupStage::kResolveInteractiveUser, L"WTSUserName",
-              win32_error};
-    return false;
-  }
-
-  ::WTSQuerySessionInformationW(WTS_CURRENT_SERVER_HANDLE, session_id,
-                                WTSDomainName, &domain_buffer, &domain_bytes);
-  std::wstring account_name;
-  if (domain_buffer != nullptr && domain_buffer[0] != L'\0') {
-    account_name = std::wstring(domain_buffer) + L"\\" + user_buffer;
-  } else {
-    account_name = user_buffer;
-  }
-  ::WTSFreeMemory(user_buffer);
-  if (domain_buffer != nullptr) {
-    ::WTSFreeMemory(domain_buffer);
-  }
-
-  DWORD sid_bytes = 0;
-  DWORD referenced_domain_chars = 0;
-  SID_NAME_USE sid_type = SidTypeUnknown;
-  ::SetLastError(ERROR_SUCCESS);
-  ::LookupAccountNameW(nullptr, account_name.c_str(), nullptr, &sid_bytes,
-                       nullptr, &referenced_domain_chars, &sid_type);
-  if (::GetLastError() != ERROR_INSUFFICIENT_BUFFER || sid_bytes == 0) {
-    *error = {CleanupStage::kResolveInteractiveUser, account_name,
-              ::GetLastError()};
-    return false;
-  }
-
-  std::vector<unsigned char> sid(sid_bytes);
-  std::wstring referenced_domain(referenced_domain_chars, L'\0');
-  if (!::LookupAccountNameW(
-          nullptr, account_name.c_str(), sid.data(), &sid_bytes,
-          referenced_domain.empty() ? nullptr : referenced_domain.data(),
-          &referenced_domain_chars, &sid_type)) {
-    *error = {CleanupStage::kResolveInteractiveUser, account_name,
-              ::GetLastError()};
-    return false;
-  }
-
-  LPWSTR converted_sid = nullptr;
-  if (!::ConvertSidToStringSidW(sid.data(), &converted_sid)) {
-    *error = {CleanupStage::kResolveInteractiveUser, account_name,
-              ::GetLastError()};
-    return false;
-  }
-  *sid_string = converted_sid;
-  ::LocalFree(converted_sid);
-  return true;
+bool GetInteractiveSessionSid(std::wstring* sid, CleanupError* error) {
+  const DWORD status = windows_user_context::GetSessionUserSid(*sid);
+  if (status == ERROR_SUCCESS) return true;
+  *error = {CleanupStage::kResolveInteractiveUser, L"session", status};
+  return false;
 }
 
 bool OpenUserRegistry(const std::wstring& sid, const std::wstring& profile_path,
-                      ScopedRegistryKey* user_registry, CleanupError* error) {
-  LSTATUS status = ::RegOpenKeyExW(HKEY_USERS, sid.c_str(), 0, KEY_READ,
-                                   user_registry->receive());
-  if (status == ERROR_SUCCESS) {
-    return true;
-  }
-
-  const std::wstring hive_path = JoinPath(profile_path, L"NTUSER.DAT");
-  const DWORD hive_attributes = ::GetFileAttributesW(hive_path.c_str());
-  if (hive_attributes == INVALID_FILE_ATTRIBUTES ||
-      (hive_attributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-    const DWORD win32_error = hive_attributes == INVALID_FILE_ATTRIBUTES
-                                  ? ::GetLastError()
-                                  : ERROR_INVALID_DATA;
-    *error = {CleanupStage::kOpenUserRegistry, hive_path, win32_error};
-    return false;
-  }
-  status = ::RegLoadAppKeyW(hive_path.c_str(), user_registry->receive(),
-                            KEY_READ, REG_PROCESS_APPKEY, 0);
-  if (status != ERROR_SUCCESS) {
-    *error = {CleanupStage::kOpenUserRegistry, hive_path,
-              static_cast<DWORD>(status)};
-    return false;
-  }
-  return true;
+                      ScopedRegistryKey* user_registry,
+                      windows_user_context::RegistryHiveType& hive_type,
+                      CleanupError* error, REGSAM access = KEY_READ) {
+  const LSTATUS status = windows_user_context::OpenUserRegistry(
+      sid, profile_path, access, user_registry->receive(), hive_type);
+  if (status == ERROR_SUCCESS) return true;
+  *error = {CleanupStage::kOpenUserRegistry, sid, static_cast<DWORD>(status)};
+  return false;
 }
 
 enum class RegistryStringResult { kFound, kNotFound, kError };
@@ -790,6 +666,51 @@ bool RemoveKnownPath(const std::wstring& path, const Logger& logger,
   return true;
 }
 
+void RemoveApplicationLogs(const std::wstring& application_directory,
+                           const Logger& logger,
+                           std::vector<CleanupError>* errors) {
+  // Logs-only cleanup must not traverse a junction at the application root.
+  // Keep the root open without FILE_SHARE_DELETE while removing its logs.
+  const HANDLE raw_handle = ::CreateFileW(
+      application_directory.c_str(), FILE_READ_ATTRIBUTES,
+      FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+      FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
+  if (raw_handle == INVALID_HANDLE_VALUE) {
+    const DWORD win32_error = ::GetLastError();
+    if (win32_error == ERROR_FILE_NOT_FOUND ||
+        win32_error == ERROR_PATH_NOT_FOUND) {
+      logger.Write(L"Not found: " + application_directory);
+      return;
+    }
+    const CleanupError error{CleanupStage::kOpenPath, application_directory,
+                             win32_error};
+    errors->push_back(error);
+    logger.WriteError(error);
+    return;
+  }
+  const ScopedHandle handle(raw_handle);
+
+  FILE_ATTRIBUTE_TAG_INFO tag_info = {};
+  if (!::GetFileInformationByHandleEx(handle.get(), FileAttributeTagInfo,
+                                      &tag_info, sizeof(tag_info))) {
+    const CleanupError error{CleanupStage::kReadAttributes,
+                             application_directory, ::GetLastError()};
+    errors->push_back(error);
+    logger.WriteError(error);
+    return;
+  }
+  if ((tag_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0 ||
+      (tag_info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
+    const CleanupError error{CleanupStage::kValidatePath, application_directory,
+                             ERROR_ACCESS_DENIED};
+    errors->push_back(error);
+    logger.WriteError(error);
+    return;
+  }
+
+  RemoveKnownPath(JoinPath(application_directory, L"Logs"), logger, errors);
+}
+
 bool IsTemporaryExportName(const std::wstring& name) {
   if (!StartsWithIgnoreCase(name, kTemporaryExportPrefix) ||
       name.size() == kTemporaryExportPrefixLength) {
@@ -859,6 +780,8 @@ void RemoveTemporaryExportLogs(const std::wstring& temporary_directory,
 
 struct Options {
   std::wstring sid;
+  std::wstring autostart_executable;
+  bool delete_user_data = false;
 };
 
 bool ParseOption(const std::wstring& argument, const std::wstring& name,
@@ -878,10 +801,97 @@ bool ParseOptions(int argument_count, wchar_t* arguments[], Options* options,
     if (ParseOption(argument, L"USERSID", &options->sid)) {
       continue;
     }
+    std::wstring delete_user_data;
+    if (ParseOption(argument, L"DELETEUSERDATA", &delete_user_data)) {
+      if (delete_user_data == L"0" || delete_user_data == L"1") {
+        options->delete_user_data = delete_user_data == L"1";
+        continue;
+      }
+      *error = {CleanupStage::kParseOptions, argument, ERROR_INVALID_PARAMETER};
+      return false;
+    }
+    if (ParseOption(argument, L"REMOVEAUTOSTART",
+                    &options->autostart_executable)) {
+      if (!options->autostart_executable.empty()) continue;
+    }
     *error = {CleanupStage::kParseOptions, argument, ERROR_INVALID_PARAMETER};
     return false;
   }
   return true;
+}
+
+CleanupExitCode RemoveAutostart(const Options& options, const Logger& logger) {
+  // Setup is machine-wide, but Run is per user. Enumerate profiles so uninstall
+  // by another administrator also removes the original user's stale command.
+  std::vector<std::wstring> sids;
+  CleanupError error{};
+  if (!options.sid.empty()) {
+    std::wstring sid;
+    if (!CanonicalizeSid(options.sid, &sid, &error)) {
+      logger.WriteError(error);
+      return ExitCodeForError(error);
+    }
+    sids.push_back(sid);
+  }
+  ScopedRegistryKey profiles;
+  LSTATUS status = ::RegOpenKeyExW(
+      HKEY_LOCAL_MACHINE,
+      L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList",
+      0, KEY_READ | KEY_WOW64_64KEY, profiles.receive());
+  if (status != ERROR_SUCCESS) {
+    logger.WriteError({CleanupStage::kRemoveAutostart, L"ProfileList",
+                       static_cast<DWORD>(status)});
+    return CleanupExitCode::kPartialFailure;
+  }
+  for (DWORD index = 0;; ++index) {
+    wchar_t name[256] = {};
+    DWORD length = static_cast<DWORD>(std::size(name));
+    status = ::RegEnumKeyExW(profiles.get(), index, name, &length, nullptr,
+                             nullptr, nullptr, nullptr);
+    if (status == ERROR_NO_MORE_ITEMS) break;
+    if (status != ERROR_SUCCESS) {
+      logger.WriteError({CleanupStage::kRemoveAutostart, L"ProfileList",
+                         static_cast<DWORD>(status)});
+      return CleanupExitCode::kPartialFailure;
+    }
+    std::wstring sid;
+    // ProfileList may also contain .bak keys and built-in service profiles.
+    if (windows_user_context::CanonicalizeSid(name, sid) != ERROR_SUCCESS ||
+        sid == L"S-1-5-18" || sid == L"S-1-5-19" || sid == L"S-1-5-20") {
+      continue;
+    }
+    if (std::find(sids.begin(), sids.end(), sid) == sids.end()) {
+      sids.push_back(sid);
+    }
+  }
+  std::vector<CleanupError> errors;
+  for (const auto& sid : sids) {
+    std::wstring profile;
+    ScopedRegistryKey user;
+    windows_user_context::RegistryHiveType hive_type;
+    if (!ReadProfilePath(sid, &profile, &error) ||
+        !OpenUserRegistry(sid, profile, &user, hive_type, &error,
+                          KEY_READ | KEY_WRITE)) {
+      // Deleted profiles cannot retain a Run value. Other lookup/access errors
+      // are reported instead of pretending all registrations were removed.
+      if (error.win32_error != ERROR_FILE_NOT_FOUND &&
+          error.win32_error != ERROR_PATH_NOT_FOUND) {
+        errors.push_back(error);
+        logger.WriteError(error);
+      }
+      continue;
+    }
+    status = windows_launch_at_login::RemoveForExecutable(
+        user.get(), options.autostart_executable, hive_type);
+    if (status != ERROR_SUCCESS) {
+      error = {CleanupStage::kRemoveAutostart, sid, static_cast<DWORD>(status)};
+      errors.push_back(error);
+      logger.WriteError(error);
+    } else {
+      logger.Write(L"Autostart cleanup completed for SID: " + sid);
+    }
+  }
+  return ExitCodeForErrors(errors);
 }
 
 }  // namespace
@@ -893,6 +903,9 @@ int wmain(int argument_count, wchar_t* arguments[]) {
   if (!ParseOptions(argument_count, arguments, &options, &error)) {
     logger.WriteError(error);
     return ToProcessExitCode(ExitCodeForError(error));
+  }
+  if (!options.autostart_executable.empty()) {
+    return ToProcessExitCode(RemoveAutostart(options, logger));
   }
 
   std::wstring sid;
@@ -906,6 +919,10 @@ int wmain(int argument_count, wchar_t* arguments[]) {
     return ToProcessExitCode(ExitCodeForError(error));
   }
   logger.Write(L"Target user SID: " + sid);
+  logger.Write(options.delete_user_data
+                   ? L"Cleanup mode: logs, temporary files, settings, and "
+                     L"server configurations"
+                   : L"Cleanup mode: logs and temporary files only");
 
   std::wstring profile_path;
   if (!ReadProfilePath(sid, &profile_path, &error)) {
@@ -920,47 +937,56 @@ int wmain(int argument_count, wchar_t* arguments[]) {
   }
 
   ScopedRegistryKey user_registry;
-  if (!OpenUserRegistry(sid, absolute_profile, &user_registry, &error)) {
+  windows_user_context::RegistryHiveType hive_type;
+  if (!OpenUserRegistry(sid, absolute_profile, &user_registry, hive_type,
+                        &error)) {
     logger.WriteError(error);
     return ToProcessExitCode(ExitCodeForError(error));
   }
 
+  std::vector<CleanupError> errors;
   std::wstring roaming_app_data;
   if (!ResolveRoamingAppData(user_registry.get(), absolute_profile,
                              &roaming_app_data, &error)) {
+    errors.push_back(error);
     logger.WriteError(error);
-    return ToProcessExitCode(ExitCodeForError(error));
+  } else {
+    logger.Write(L"Resolved Roaming AppData: " + roaming_app_data);
+
+    std::vector<std::wstring> relative_paths = {L"TrustTunnel"};
+    if (options.delete_user_data) {
+      relative_paths.push_back(L"Adguard Software Limited\\TrustTunnel");
+    }
+    for (const std::wstring& relative_path : relative_paths) {
+      const std::wstring candidate = JoinPath(roaming_app_data, relative_path);
+      std::wstring target_path;
+      if (!MakeAbsoluteLexicalPath(candidate, &target_path, &error)) {
+        errors.push_back(error);
+        logger.WriteError(error);
+        continue;
+      }
+      if (!IsStrictChildPath(roaming_app_data, target_path)) {
+        error = {CleanupStage::kValidatePath, target_path, ERROR_ACCESS_DENIED};
+        errors.push_back(error);
+        logger.WriteError(error);
+        continue;
+      }
+      if (options.delete_user_data) {
+        RemoveKnownPath(target_path, logger, &errors);
+      } else {
+        RemoveApplicationLogs(target_path, logger, &errors);
+      }
+    }
   }
-  logger.Write(L"Resolved Roaming AppData: " + roaming_app_data);
 
   std::wstring temporary_directory;
   if (!ResolveTemporaryDirectory(user_registry.get(), absolute_profile,
                                  &temporary_directory, &error)) {
+    errors.push_back(error);
     logger.WriteError(error);
-    return ToProcessExitCode(ExitCodeForError(error));
+  } else {
+    logger.Write(L"Resolved temporary directory: " + temporary_directory);
+    RemoveTemporaryExportLogs(temporary_directory, logger, &errors);
   }
-  logger.Write(L"Resolved temporary directory: " + temporary_directory);
-
-  const std::vector<std::wstring> relative_paths = {
-      L"TrustTunnel", L"Adguard Software Limited\\TrustTunnel"};
-  std::vector<CleanupError> errors;
-  for (const std::wstring& relative_path : relative_paths) {
-    const std::wstring candidate = JoinPath(roaming_app_data, relative_path);
-    std::wstring target_path;
-    if (!MakeAbsoluteLexicalPath(candidate, &target_path, &error)) {
-      errors.push_back(error);
-      logger.WriteError(error);
-      continue;
-    }
-    if (!IsStrictChildPath(roaming_app_data, target_path)) {
-      error = {CleanupStage::kValidatePath, target_path, ERROR_ACCESS_DENIED};
-      errors.push_back(error);
-      logger.WriteError(error);
-      continue;
-    }
-    RemoveKnownPath(target_path, logger, &errors);
-  }
-
-  RemoveTemporaryExportLogs(temporary_directory, logger, &errors);
   return ToProcessExitCode(ExitCodeForErrors(errors));
 }

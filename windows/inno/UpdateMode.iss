@@ -12,25 +12,12 @@ begin
   Result := True;
 end;
 
-function RestartPending: Boolean;
-var
-  Operations: String;
-begin
-  Result := VcRedistNeedsRestart or
-    RegKeyExists(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') or
-    RegKeyExists(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired');
-  if RegQueryMultiStringValue(HKLM64,
-    'SYSTEM\CurrentControlSet\Control\Session Manager',
-    'PendingFileRenameOperations', Operations) then
-    Result := Result or (Length(Operations) > 2);
-end;
-
 procedure WriteOperationResult(const Status, MessageText: String);
 var
   Path, TemporaryPath, Content, CleanMessage: String;
   Lines: TArrayOfString;
 begin
-  if not OperationStarted or (InstallationLock = 0) then exit;
+  if not OperationStarted or (ResultPublicationLock = 0) then exit;
   { Fixed machine metadata directory under protected Program Files. Unlike
     the VPN log directory, ordinary users cannot create a redirected .tmp
     file here for the elevated setup to overwrite. Never accept /RESULT paths. }
@@ -46,7 +33,7 @@ begin
     'committed=' + BooleanAsText(InstallationCommitted) + #13#10 +
     'version={#AppVersion}' + #13#10 +
     'previous_version=' + PreviousVersion + #13#10 +
-    'restart_required=' + BooleanAsText(RestartPending) + #13#10 +
+    'restart_required=' + BooleanAsText(InstallationNeedsRestart) + #13#10 +
     'time=' + GetDateTimeString('yyyy-mm-dd hh:nn:ss', '-', ':') + #13#10 +
     'message=' + CleanMessage + #13#10;
   SetArrayLength(Lines, 1);
@@ -178,15 +165,71 @@ begin
   Result := True;
 end;
 
-procedure LaunchUpdatedApplication;
+procedure ConfigureInstalledAutostart;
 var
   ResultCode: Integer;
   Started: Boolean;
+  Parameters, UserSid: String;
 begin
-  ResultCode := 0;
+  if UpdateMode then exit;
+  Parameters := '--configure-launch-at-login';
+  UserSid := ExpandConstant('{param:USERSID|}');
+  if UserSid <> '' then Parameters := Parameters + ' --user-sid="' + UserSid + '"';
+  ResultCode := -1;
   try
-    Started := ExecAsOriginalUser(ExpandConstant('{app}\{#AppExeName}'), '',
-      ExpandConstant('{app}'), SW_SHOWNORMAL, ewNoWait, ResultCode);
+    Started := ExecAsOriginalUser(ExpandConstant('{app}\{#AppExeName}'), Parameters,
+      ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  except
+    Started := False;
+    Log('[install] Autostart configuration exception: ' + GetExceptionMessage);
+  end;
+  if not Started or (ResultCode <> 0) then
+  begin
+    AutostartConfigurationFailed := True;
+    OperationError := 'TrustTunnel was installed, but login startup could not be configured for the target Windows user. Error code: ' +
+      IntToStr(ResultCode) + ' (' + SysErrorMessage(ResultCode) + ').';
+    Log('[install] ' + OperationError);
+  end;
+end;
+
+procedure LaunchInstalledApplication;
+var
+  ResultCode: Integer;
+  Session: Cardinal;
+  Started: Boolean;
+  MessageText: String;
+begin
+  ResultCode := -1;
+  try
+    if not ProcessIdToSessionId(GetCurrentProcessId, Session) then
+    begin
+      ResultCode := DLLGetLastError;
+      RaiseException('Unable to determine the setup Windows session.');
+    end;
+    if Session = 0 then
+    begin
+      Log('[install] GUI launch skipped: Session 0 has no interactive user session.');
+      exit;
+    end;
+    { Inno cannot de-elevate a setup started from an elevated process. Probe the
+      actual original-user context before starting Flutter or creating a tray. }
+    Started := ExecAsOriginalUser(ExpandConstant('{app}\{#AppExeName}'),
+      '--check-install-launch-context', ExpandConstant('{app}'), SW_HIDE,
+      ewWaitUntilTerminated, ResultCode);
+    if Started and (ResultCode = 0) then
+      Started := ExecAsOriginalUser(ExpandConstant('{app}\{#AppExeName}'), '',
+        ExpandConstant('{app}'), SW_SHOWNORMAL, ewNoWait, ResultCode)
+    else if Started and (ResultCode = 740) then
+    begin
+      { The elevated native dispatcher starts the GUI asynchronously with the
+        verified shell user's token and reports CreateProcess failures here. }
+      Started := Exec(ExpandConstant('{app}\{#AppExeName}'),
+        '--launch-installed-application', ExpandConstant('{app}'), SW_HIDE,
+        ewWaitUntilTerminated, ResultCode);
+      Started := Started and (ResultCode = 0);
+    end
+    else
+      Started := False;
   except
     Started := False;
     Log('[update] GUI launch exception: ' + GetExceptionMessage);
@@ -195,9 +238,19 @@ begin
   begin
     GuiLaunchFailed := True;
     Log('[update] Unable to launch GUI: ' + IntToStr(ResultCode));
+    MessageText := 'Windows could not launch TrustTunnel for the user of this session. Error code: ' +
+      IntToStr(ResultCode) + ' (' + SysErrorMessage(ResultCode) + ').';
+    if AutostartConfigurationFailed then
+      MessageText := OperationError + ' ' + MessageText;
     if InstallationCommitted then
-      WriteOperationResult('launch_failed', 'The update succeeded, but Windows could not launch the GUI.')
+    begin
+      if AutostartConfigurationFailed then
+        WriteOperationResult('autostart_failed', MessageText)
+      else
+        WriteOperationResult('launch_failed', MessageText);
+    end
     else
-      WriteOperationResult('rollback_launch_failed', 'The previous version was restored, but Windows could not launch the GUI.');
+      WriteOperationResult('rollback_launch_failed', MessageText);
+    SuppressibleMsgBox(MessageText, mbCriticalError, MB_OK, IDOK);
   end;
 end;

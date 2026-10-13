@@ -10,6 +10,7 @@
 
 #include "flutter_window.h"
 #include "utils.h"
+#include "windows_installer.h"
 #include "windows_update_lifecycle.h"
 
 namespace {
@@ -198,6 +199,9 @@ void ActivateWindow(HWND window) {
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  if (const auto installer_result = RunWindowsInstallerCommand()) {
+    return *installer_result;
+  }
   if (IsTrustTunnelInstallationActive()) return EXIT_SUCCESS;
   std::vector<std::string> command_line_arguments = GetCommandLineArguments();
   LaunchMode launch_mode = LaunchMode::kManual;
