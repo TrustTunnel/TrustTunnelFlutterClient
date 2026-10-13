@@ -14,6 +14,13 @@ set(PLUGIN_NAME "vpn_plugin_plugin")
 # Any new source files that you add to the plugin should be added here.
 list(APPEND PLUGIN_SOURCES
   "vpn_plugin.cc"
+  "platform_api.g.cc"
+)
+
+# The Pigeon-generated channel plumbing trips -Wunused-parameter and
+# -Wunused-function; vpn_plugin.cc stays under the full -Wall -Werror.
+set_source_files_properties(platform_api.g.cc PROPERTIES
+  COMPILE_FLAGS "-Wno-unused-parameter -Wno-unused-function"
 )
 
 # Define the plugin library target. Its name must not be changed (see comment
