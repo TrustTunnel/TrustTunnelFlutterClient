@@ -1,5 +1,6 @@
 # Round: Phase 3 Flutter on the final APIs (actions AG-55858-phase3-flutter-v2, integration AG-55858-phase3-integration), 2026-10-13,
-# round 2: the nested-bundle check looks two levels deep; round 3: the iOS wrapper passes no app-identifiers, the preparation is a script.
+# round 2: the nested-bundle check looks two levels deep; round 3: the iOS wrapper passes no app-identifiers,
+# the preparation is a script; round 4: contract 6cd59f2 (prebuilt frameworks and Apple-signed toolchain code are not the build's signatures).
 # TEMPORARY (AG-55858 acceptance, not for merge): the PR shape of testing.yml without the deploys, the changelogs,
 # Android/Windows/web and Slack; the check job takes every artifact by the workflow outputs and verifies it.
 name: AG-55858 acceptance (PR shape)
