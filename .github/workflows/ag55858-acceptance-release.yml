@@ -1,4 +1,5 @@
-# Round: Phase 3 Flutter on the final APIs (actions AG-55858-phase3-flutter-v2, integration AG-55858-phase3-integration), 2026-10-13.
+# Round: Phase 3 Flutter on the final APIs (actions AG-55858-phase3-flutter-v2, integration AG-55858-phase3-integration), 2026-10-13,
+# round 2: the nested-bundle check looks two levels deep.
 # TEMPORARY (AG-55858 acceptance, not for merge): the release shape of deploy-apps.yml without the deploys, the changelogs,
 # Android/Windows/web and Slack; the check job takes every artifact by the workflow outputs and verifies it.
 name: AG-55858 acceptance (release shape)
@@ -139,7 +140,7 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/appstore-profile.plist"
           ! /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$RUNNER_TEMP/appstore-profile.plist" > /dev/null 2>&1 || { echo "::error::an App Store profile lists no devices"; exit 1; }
           # the nested bundles are signed by the same identity
-          find "$app" -depth 1 -maxdepth 3 \( -name '*.framework' -o -name '*.appex' \) | while read -r nested; do codesign -dvv "$nested" 2>&1 | grep -q 'Authority=Apple Distribution: Adguard Software Limited' || { echo "::error::$nested is not signed by Apple Distribution"; exit 1; }; done
+          find "$app" -mindepth 2 -maxdepth 3 \( -name '*.framework' -o -name '*.appex' \) | while read -r nested; do codesign -dvv "$nested" 2>&1 | grep -q 'Authority=Apple Distribution: Adguard Software Limited' || { echo "::error::$nested is not signed by Apple Distribution"; exit 1; }; done
 
       - name: "iOS Ad Hoc: the IPA is signed for testers with the Ad Hoc profile"
         env:
@@ -164,7 +165,7 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/adhoc-profile.plist"
           /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$RUNNER_TEMP/adhoc-profile.plist" | grep -q -E '^ +[0-9a-f]{8}' || { echo "::error::an Ad Hoc profile must list devices"; exit 1; }
           # the nested bundles are signed by the same identity
-          find "$app" -depth 1 -maxdepth 3 \( -name '*.framework' -o -name '*.appex' \) | while read -r nested; do codesign -dvv "$nested" 2>&1 | grep -q 'Authority=Apple Distribution: Adguard Software Limited' || { echo "::error::$nested is not signed by Apple Distribution"; exit 1; }; done
+          find "$app" -mindepth 2 -maxdepth 3 \( -name '*.framework' -o -name '*.appex' \) | while read -r nested; do codesign -dvv "$nested" 2>&1 | grep -q 'Authority=Apple Distribution: Adguard Software Limited' || { echo "::error::$nested is not signed by Apple Distribution"; exit 1; }; done
 
       - name: "simulator: the zip holds the simulator app"
         env:
