@@ -69,40 +69,6 @@ jobs:
       # The package registry token of the preparation: the one secret the build job receives.
       prepare-secret: PUBLIC_REPO_GPR_KEY
       prepare-secret-env: GPR_KEY
-      # The preparation of this repository, run in the build job with the Flutter SDK on PATH; PROJECT_VERSION
-      # and BUILD_NUMBER are the version inputs.
-      prepare-script: |
-        set -x
-        # Ruby for CocoaPods.
-        eval "$(rbenv init - bash)"
-        rbenv install 3.3.10 --skip-existing
-        rbenv local 3.3.10
-        rbenv rehash
-        printf '%s\n' "$HOME/.rbenv/bin" "$HOME/.rbenv/shims" >> "$GITHUB_PATH"
-        gem install bundler -v 2.7.2
-        rbenv rehash
-        export BUNDLER_VERSION=2.7.2
-        (cd macos && bundle config set --local path '.bundle/vendor' && bundle install)
-        # Dependencies and code generation (the package registry token is GPR_KEY), CocoaPods.
-        git config --global --add safe.directory /opt/flutter
-        make init
-        (cd macos && bundle exec pod install)
-        # The Xcode configuration of the Flutter tool: the version and the build number.
-        flutter build macos --release --build-name="$PROJECT_VERSION" --build-number="$BUILD_NUMBER" --no-pub --config-only
-        # CocoaPods vendored frameworks may carry pre-release versions ("1.2.3-beta.4", "5.0.0+abc"), which
-        # code signing and App Store validation reject: keep the SemVer core of CFBundleShortVersionString
-        # and CFBundleVersion.
-        changed=0
-        while IFS= read -r -d '' plist; do
-          for key in CFBundleShortVersionString CFBundleVersion; do
-            value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)"
-            [ -z "$value" ] && continue
-            clean="${value%%[-+]*}"
-            if [ "$clean" != "$value" ]; then
-              echo "Sanitizing $key '$value' -> '$clean' in $plist"
-              /usr/libexec/PlistBuddy -c "Set :$key $clean" "$plist"
-              changed=1
-            fi
-          done
-        done < <(find macos/Pods -type f -name Info.plist -path '*.framework/*' -print0)
-        [ "$changed" -eq 1 ] || echo "No pre-release framework versions found."
+      # The preparation of this repository (.github/scripts/prepare-apple.sh), run in the build job with the
+      # Flutter SDK on PATH; PROJECT_VERSION and BUILD_NUMBER are the version inputs.
+      prepare-script: .github/scripts/prepare-apple.sh macos
