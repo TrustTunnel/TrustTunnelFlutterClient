@@ -1,8 +1,9 @@
 #include "include/vpn_plugin/vpn_plugin.h"
 
+#include "linux_vpn_engine.h"
 #include "platform_api.g.h"
 
-#include <string.h>
+#include <string>
 
 #define VPN_PLUGIN(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), vpn_plugin_get_type(), VpnPlugin))
@@ -11,23 +12,18 @@ static const char kStateEventChannelName[] = "vpn_plugin_event_channel";
 static const char kQueryLogEventChannelName[] = "vpn_plugin_event_channel_query_log";
 
 // The stub VPN engine transitions connecting -> connected after this delay.
-static const guint kConnectTimeoutMs = 2000;
+static const int kConnectDelayMs = 2000;
 
 struct _VpnPlugin {
   GObject parent_instance;
 
-  VpnPluginVpnManagerState state;
-  guint connect_timeout_id;
+  // Managed manually: g_object_new does not run C++ constructors.
+  vpn_plugin::LinuxVpnEngine* engine;
 
-  // EventChannel "vpn_plugin_event_channel": bare VpnManagerState ints.
-  // Not part of the Pigeon schema, so it stays hand-written.
   FlEventChannel* state_event_channel;
   gboolean state_listening;
 
-  // EventChannel "vpn_plugin_event_channel_query_log": no events in the stub,
-  // handlers are registered so the Dart broadcast stream does not error.
   FlEventChannel* query_log_event_channel;
-
   FlBinaryMessenger* messenger;
 };
 
@@ -36,41 +32,36 @@ G_DEFINE_TYPE(VpnPlugin, vpn_plugin, g_object_get_type())
 // -------- VPN state (EventChannel "vpn_plugin_event_channel") --------
 
 static void emit_vpn_state(VpnPlugin* self) {
-  if (self->state_event_channel == NULL || !self->state_listening) return;
-  g_autoptr(FlValue) event = fl_value_new_int(self->state);
+  if (self->engine == nullptr || self->state_event_channel == NULL ||
+      !self->state_listening) {
+    return;
+  }
+  g_autoptr(FlValue) event = fl_value_new_int(self->engine->GetCurrentState());
   fl_event_channel_send(self->state_event_channel, event, NULL, NULL);
 }
 
-static void set_vpn_state(VpnPlugin* self, VpnPluginVpnManagerState state) {
-  self->state = state;
-  emit_vpn_state(self);
+static gboolean emit_state_idle(gpointer user_data) {
+  emit_vpn_state(VPN_PLUGIN(user_data));
+  return G_SOURCE_REMOVE;
 }
 
-static gboolean on_connect_timeout(gpointer user_data) {
-  VpnPlugin* self = VPN_PLUGIN(user_data);
-  self->connect_timeout_id = 0;
-  set_vpn_state(self, VPN_PLUGIN_VPN_MANAGER_STATE_CONNECTED);
-  return G_SOURCE_REMOVE;
+static void on_engine_state(void* user_data, int /*state*/) {
+  g_idle_add_full(G_PRIORITY_DEFAULT, emit_state_idle, g_object_ref(user_data),
+                  g_object_unref);
 }
 
 // -------- IVpnManager implementation (Pigeon-generated vtable) --------
 
-static VpnPluginIVpnManagerStartResponse* start(const gchar* /*config*/,
+static VpnPluginIVpnManagerStartResponse* start(const gchar* config,
                                                 gpointer user_data) {
-  VpnPlugin* self = VPN_PLUGIN(user_data);
-  if (self->connect_timeout_id != 0) g_source_remove(self->connect_timeout_id);
-  set_vpn_state(self, VPN_PLUGIN_VPN_MANAGER_STATE_CONNECTING);
-  self->connect_timeout_id = g_timeout_add(kConnectTimeoutMs, on_connect_timeout, self);
+  // TODO: Wire the backend configuration into the real VPN engine.
+  // The stub engine ignores the configuration string and transitions state on a timer.
+  VPN_PLUGIN(user_data)->engine->Start(config);
   return vpn_plugin_i_vpn_manager_start_response_new();
 }
 
 static VpnPluginIVpnManagerStopResponse* stop(gpointer user_data) {
-  VpnPlugin* self = VPN_PLUGIN(user_data);
-  if (self->connect_timeout_id != 0) {
-    g_source_remove(self->connect_timeout_id);
-    self->connect_timeout_id = 0;
-  }
-  set_vpn_state(self, VPN_PLUGIN_VPN_MANAGER_STATE_DISCONNECTED);
+  VPN_PLUGIN(user_data)->engine->Stop();
   return vpn_plugin_i_vpn_manager_stop_response_new();
 }
 
@@ -83,12 +74,11 @@ static VpnPluginIVpnManagerUpdateConfigurationResponse* update_configuration(
 
 static VpnPluginIVpnManagerGetCurrentStateResponse* get_current_state(gpointer user_data) {
   VpnPlugin* self = VPN_PLUGIN(user_data);
-  return vpn_plugin_i_vpn_manager_get_current_state_response_new(self->state);
+  const auto state = static_cast<VpnPluginVpnManagerState>(self->engine->GetCurrentState());
+  return vpn_plugin_i_vpn_manager_get_current_state_response_new(state);
 }
 
 static VpnPluginIVpnManagerExportLogsResponse* export_logs(gpointer /*user_data*/) {
-  // Exported log file paths; none in the stub. The response keeps a reference
-  // of its own, so release ours after handing the list over.
   FlValue* paths = fl_value_new_list();
   VpnPluginIVpnManagerExportLogsResponse* response =
       vpn_plugin_i_vpn_manager_export_logs_response_new(paths);
@@ -102,52 +92,18 @@ static VpnPluginIVpnManagerClearLogsResponse* clear_logs(gpointer /*user_data*/)
 
 // -------- IDeepLink implementation (Pigeon-generated vtable) --------
 
-static gboolean is_base64_char(char c) {
-  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
-         c == '+' || c == '/' || c == '=';
-}
-
-// Decodes standard and URL-safe base64 into a freshly allocated
-// NUL-terminated byte string; returns NULL when nothing could be decoded.
-static gchar* base64_decode_string(const gchar* input) {
-  if (input == NULL) return NULL;
-
-  const size_t input_len = strlen(input);
-  GString* cleaned = g_string_sized_new(input_len + 4);
-  for (size_t i = 0; i < input_len; i++) {
-    char c = input[i];
-    if (c == '-') c = '+';  // URL-safe alphabet
-    else if (c == '_') c = '/';
-    else if (!is_base64_char(c)) continue;  // skip whitespace/newlines
-    g_string_append_c(cleaned, c);
-  }
-  while (cleaned->len % 4 != 0) g_string_append_c(cleaned, '=');
-
-  gsize decoded_len = 0;
-  guchar* decoded = g_base64_decode(cleaned->str, &decoded_len);
-  g_string_free(cleaned, TRUE);
-
-  if (decoded_len == 0) {
-    g_free(decoded);
-    return NULL;
-  }
-  return (gchar*)g_realloc(decoded, decoded_len + 1);
-}
-
 static VpnPluginIDeepLinkDecodeResponse* decode(const gchar* uri, gpointer /*user_data*/) {
-  // Best effort: percent-decode first (deep links carry the base64 payload in
-  // the URI), fall back to the raw string, then base64-decode the result.
   gchar* unescaped = g_uri_unescape_string(uri != NULL ? uri : "", NULL);
-  gchar* decoded = base64_decode_string(unescaped != NULL ? unescaped : uri);
+  std::string payload;
+  gboolean decoded = vpn_plugin::LinuxVpnEngine::DecodeDeepLink(
+      unescaped != NULL ? unescaped : uri, &payload);
   g_free(unescaped);
-  if (decoded == NULL) {
+  if (!decoded) {
     return vpn_plugin_i_deep_link_decode_response_new_error(
         "decode_error", "Failed to decode deep link URI.", NULL);
   }
 
-  VpnPluginIDeepLinkDecodeResponse* response = vpn_plugin_i_deep_link_decode_response_new(decoded);
-  g_free(decoded);
-  return response;
+  return vpn_plugin_i_deep_link_decode_response_new(payload.c_str());
 }
 
 // -------- EventChannel stream handlers --------
@@ -185,10 +141,9 @@ static FlMethodErrorResponse* query_log_cancel_cb(FlEventChannel* /*channel*/,
 static void vpn_plugin_dispose(GObject* object) {
   VpnPlugin* self = VPN_PLUGIN(object);
 
-  if (self->connect_timeout_id != 0) {
-    g_source_remove(self->connect_timeout_id);
-    self->connect_timeout_id = 0;
-  }
+  delete self->engine;
+  self->engine = nullptr;
+
   if (self->messenger != NULL) {
     vpn_plugin_i_vpn_manager_clear_method_handlers(self->messenger, NULL);
     vpn_plugin_i_deep_link_clear_method_handlers(self->messenger, NULL);
@@ -205,8 +160,7 @@ static void vpn_plugin_class_init(VpnPluginClass* klass) {
 }
 
 static void vpn_plugin_init(VpnPlugin* self) {
-  self->state = VPN_PLUGIN_VPN_MANAGER_STATE_DISCONNECTED;
-  self->connect_timeout_id = 0;
+  self->engine = new vpn_plugin::LinuxVpnEngine(kConnectDelayMs, on_engine_state, self);
   self->state_listening = FALSE;
 }
 
