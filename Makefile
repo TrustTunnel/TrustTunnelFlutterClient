@@ -8,7 +8,7 @@
 
 gen:
 	@echo "* Starting code generation... *"
-	@dart run build_runner build --delete-conflicting-outputs
+	@dart run build_runner build
 	@$(MAKE) -C plugins/vpn_plugin gen
 	@echo "* Code generation successful *"
 
@@ -22,7 +22,7 @@ init:
 	@echo "* Getting latest dependencies *"
 	@flutter pub get
 	@echo "* Running build runner *"
-	@dart run build_runner build --delete-conflicting-outputs
+	@dart run build_runner build
 	@dart pub run intl_utils:generate
 	@$(MAKE) -C plugins/vpn_plugin init
 
@@ -49,7 +49,7 @@ lib/common/localization/generated/l10n.dart: .dart_tool/package_config.json lib/
 
 .dart_tool/build/entrypoint/build.dart: lib/common/localization/generated/l10n.dart
 	@echo "* Starting code generation... *"
-	@dart run build_runner build --delete-conflicting-outputs
+	@dart run build_runner build
 	@$(MAKE) -C plugins/vpn_plugin gen
 	@echo "* Code generation successful *"
 
