@@ -87,6 +87,9 @@ abstract final class ConfigurationCodecKeys {
   /// Endpoint TLS client random key.
   static const clientRandom = 'client_random';
 
+  /// Endpoint TLS client random authentication key.
+  static const clientRandomAuthKey = 'client_random_auth_key';
+
   /// Endpoint skip verification key.
   static const skipVerification = 'skip_verification';
 
@@ -178,6 +181,7 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     endpoint.setString(ConfigurationCodecKeys.username, config.endpoint.username);
     endpoint.setString(ConfigurationCodecKeys.password, config.endpoint.password);
     endpoint.setString(ConfigurationCodecKeys.clientRandom, config.endpoint.clientRandom);
+    endpoint.setString(ConfigurationCodecKeys.clientRandomAuthKey, config.endpoint.clientRandomAuthKey);
     endpoint.setString(ConfigurationCodecKeys.customSni, config.endpoint.customSni);
     endpoint.setBool(ConfigurationCodecKeys.skipVerification, config.endpoint.skipVerification);
     endpoint.setMultilinePem(ConfigurationCodecKeys.certificate, config.endpoint.certificate);
@@ -262,6 +266,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final String username = endpoint.getString(ConfigurationCodecKeys.username) ?? '';
     final String password = endpoint.getString(ConfigurationCodecKeys.password) ?? '';
     final String clientRandom = endpoint.getString(ConfigurationCodecKeys.clientRandom) ?? '';
+    final String clientRandomAuthKey = endpoint.getString(ConfigurationCodecKeys.clientRandomAuthKey) ?? '';
     final bool skipVerification = endpoint.getBool(ConfigurationCodecKeys.skipVerification) ?? false;
     final String customSni = endpoint.getString(ConfigurationCodecKeys.customSni) ?? '';
 
@@ -321,6 +326,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
         dnsUpStreams: dnsUpStreams,
         exclusions: exclusions,
         clientRandom: clientRandom,
+        clientRandomAuthKey: clientRandomAuthKey,
         skipVerification: skipVerification,
         certificate: certificate,
         antiDpi: antiDpi,

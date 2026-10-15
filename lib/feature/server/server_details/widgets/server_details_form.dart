@@ -10,6 +10,7 @@ import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope_aspect.dart';
@@ -62,23 +63,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
 
   @override
   Widget build(BuildContext context) {
-    final clientRandomError = [
-      ValidationUtils.getErrorString(
-        context,
-        _fieldErrors,
-        PresentationFieldName.clientRandom,
-      ),
-      ValidationUtils.getErrorString(
-        context,
-        _fieldErrors,
-        PresentationFieldName.clientRandomMask,
-      ),
-      ValidationUtils.getErrorString(
-        context,
-        _fieldErrors,
-        PresentationFieldName.clientRandomValue,
-      ),
-    ].whereType<String>().firstOrNull;
+    final isTlsAuthByAuthKey = _formData.tlsAuthenticationType == TlsAuthenticationType.clientRandomAuthKey;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -225,24 +210,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
           const SizedBox(
             height: 12,
           ),
-          CustomTextField(
-            value: _formData.tlsPrefix,
-            hint: context.ln.clientRandomHint,
-            label: context.ln.clientRandomLabel,
-            helper: context.ln.clientRandomHelper,
-            counter: const SizedBox.shrink(),
-            maxLength: 64,
-            onChanged: (tls) => _onDataChanged(
-              context,
-              clientRandom: ValueData(
-                tls.isEmpty ? null : tls,
-              ),
-            ),
-            error: clientRandomError,
-          ),
-          const SizedBox(
-            height: 16,
-          ),
           CustomTextField.customSuffixIcon(
             value: _formData.certificate?.name,
             label: context.ln.pemLabel,
@@ -270,6 +237,29 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
           const SizedBox(
             height: 16,
           ),
+          CustomDropdownMenu<TlsAuthenticationType>.expanded(
+            value: _formData.tlsAuthenticationType,
+            values: TlsAuthenticationType.values,
+            toText: (value) => value.localized(context),
+            labelText: context.ln.tlsAuthenticationType,
+            onChanged: (type) => _onDataChanged(context, tlsAuthenticationType: type),
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            value: isTlsAuthByAuthKey ? _formData.clientRandomAuthKey : _formData.tlsPrefix,
+            hint: isTlsAuthByAuthKey ? context.ln.clientRandomAuthKeyHint : context.ln.clientRandomHint,
+            label: isTlsAuthByAuthKey ? context.ln.clientRandomAuthKeyLabel : context.ln.clientRandomLabel,
+            helper: isTlsAuthByAuthKey ? context.ln.clientRandomAuthKeyHelper : context.ln.clientRandomHelper,
+            counter: const SizedBox.shrink(),
+            maxLength: 64,
+            onChanged: (value) => _onDataChanged(
+              context,
+              clientRandom: isTlsAuthByAuthKey ? null : ValueData(value.isEmpty ? null : value),
+              clientRandomAuthKey: isTlsAuthByAuthKey ? ValueData(value.isEmpty ? null : value) : null,
+            ),
+            error: _getTlsError(context),
+          ),
+          const SizedBox(height: 16),
           CheckboxListTile(
             value: _formData.ipv6,
             title: Text(
@@ -284,6 +274,31 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
         ],
       ),
     );
+  }
+
+  String? _getTlsError(BuildContext context) {
+    final tlsErrorFields = _formData.tlsAuthenticationType == TlsAuthenticationType.clientRandomAuthKey
+        ? const [
+            PresentationFieldName.clientRandomAuthKeySlash,
+            PresentationFieldName.clientRandomAuthKey,
+            PresentationFieldName.clientRandomAuthKeyValue,
+          ]
+        : const [
+            PresentationFieldName.clientRandom,
+            PresentationFieldName.clientRandomMask,
+            PresentationFieldName.clientRandomValue,
+          ];
+
+    return tlsErrorFields
+        .map(
+          (field) => ValidationUtils.getErrorString(
+            context,
+            _fieldErrors,
+            field,
+          ),
+        )
+        .whereType<String>()
+        .firstOrNull;
   }
 
   RoutingProfile _getSelectedRoutingProfile(List<RoutingProfile> availableRoutingProfiles, String routingProfileId) =>
@@ -306,6 +321,8 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
     String? username,
     String? password,
     ValueData<String>? clientRandom,
+    TlsAuthenticationType? tlsAuthenticationType,
+    ValueData<String>? clientRandomAuthKey,
     bool? enableIpv6,
     VpnProtocol? protocol,
     String? routingProfileId,
@@ -323,6 +340,8 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
         password: password,
         protocol: protocol,
         clientRandom: clientRandom,
+        tlsAuthenticationType: tlsAuthenticationType,
+        clientRandomAuthKey: clientRandomAuthKey,
         enableIpv6: enableIpv6,
         routingProfileId: routingProfileId,
         dnsServers: dnsServers,

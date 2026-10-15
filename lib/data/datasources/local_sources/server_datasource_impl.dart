@@ -5,6 +5,7 @@ import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
 import 'package:vpn_plugin/models/upstream_protocol.dart';
@@ -45,6 +46,8 @@ class ServerDataSourceImpl implements ServerDataSource {
         vpnProtocolId: request.vpnProtocol.value,
         ipv6Enabled: Value(request.ipv6),
         tlsPrefix: Value(request.tlsPrefix),
+        tlsAuthenticationType: Value(request.tlsAuthenticationType.value),
+        clientRandomAuthKey: Value(request.clientRandomAuthKey),
         routingProfileId: int.parse(
           request.routingProfileId,
         ),
@@ -81,6 +84,8 @@ class ServerDataSourceImpl implements ServerDataSource {
         ipv6: request.ipv6,
         certificate: request.certificate,
         tlsPrefix: request.tlsPrefix,
+        tlsAuthenticationType: request.tlsAuthenticationType,
+        clientRandomAuthKey: request.clientRandomAuthKey,
         customSni: request.customSni,
       ),
     );
@@ -130,6 +135,8 @@ class ServerDataSourceImpl implements ServerDataSource {
             routingProfileId: e.routingProfileId.toString(),
             certificate: cert,
             tlsPrefix: e.tlsPrefix,
+            tlsAuthenticationType: TlsAuthenticationType.values.firstWhere((t) => t.value == e.tlsAuthenticationType),
+            clientRandomAuthKey: e.clientRandomAuthKey,
             ipv6: e.ipv6Enabled,
             selected: e.selected,
             customSni: e.customSni,
@@ -193,6 +200,8 @@ class ServerDataSourceImpl implements ServerDataSource {
         ),
         ipv6Enabled: Value(request.ipv6),
         tlsPrefix: Value(request.tlsPrefix),
+        tlsAuthenticationType: Value(request.tlsAuthenticationType.value),
+        clientRandomAuthKey: Value(request.clientRandomAuthKey),
         customSni: Value(request.customSni),
       ),
     );
@@ -243,6 +252,8 @@ class ServerDataSourceImpl implements ServerDataSource {
         selected: server.selected,
         ipv6: server.ipv6Enabled,
         tlsPrefix: server.tlsPrefix,
+        tlsAuthenticationType: TlsAuthenticationType.values.firstWhere((t) => t.value == server.tlsAuthenticationType),
+        clientRandomAuthKey: server.clientRandomAuthKey,
         certificate: cert == null ? null : _parseCert(cert),
         customSni: server.customSni,
       ),
@@ -271,6 +282,10 @@ class ServerDataSourceImpl implements ServerDataSource {
       routingProfileId: routingProfileId,
       ipv6: configuration.endpoint.hasIpv6,
       tlsPrefix: configuration.endpoint.clientRandom,
+      tlsAuthenticationType: configuration.endpoint.clientRandomAuthKey.isNotEmpty
+          ? TlsAuthenticationType.clientRandomAuthKey
+          : TlsAuthenticationType.clientRandom,
+      clientRandomAuthKey: configuration.endpoint.clientRandomAuthKey,
       certificate: configuration.endpoint.certificate.isEmpty
           ? null
           : Certificate(

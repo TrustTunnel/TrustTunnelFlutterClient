@@ -1,10 +1,12 @@
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
@@ -148,12 +150,14 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     String? routingProfileId,
     List<String>? dnsServers,
     ValueData<String>? clientRandom,
+    TlsAuthenticationType? tlsAuthenticationType,
+    ValueData<String>? clientRandomAuthKey,
     ValueData<String>? customSni,
   }) => handle(
     () {
       setState(
         ServerDetailsState.idle(
-          fieldErrors: state.fieldErrors,
+          fieldErrors: _getFieldErrors(tlsAuthenticationType),
           initialData: state.initialData,
           routingProfiles: state.routingProfiles,
           data: state.data.copyWith(
@@ -167,6 +171,8 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             dnsServers: (dnsServers ?? state.data.dnsServers).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
             ipv6: enableIpv6 ?? state.data.ipv6,
             tlsPrefix: clientRandom == null ? null : ValueData(clientRandom.value?.trim()),
+            tlsAuthenticationType: tlsAuthenticationType,
+            clientRandomAuthKey: clientRandomAuthKey == null ? null : ValueData(clientRandomAuthKey.value?.trim()),
             customSni: customSni == null ? null : ValueData(customSni.value?.trim()),
           ),
         ),
@@ -189,6 +195,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             dnsServers: state.data.dnsServers.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
             ipv6: state.data.ipv6,
             tlsPrefix: ValueData(state.data.tlsPrefix?.trim()),
+            clientRandomAuthKey: ValueData(state.data.clientRandomAuthKey?.trim()),
             customSni: ValueData(state.data.customSni?.trim()),
           ),
           initialData: state.initialData,
@@ -267,6 +274,25 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     errorHandler: _onError,
     completionHandler: _onCompleted,
   );
+
+  List<PresentationField> _getFieldErrors(TlsAuthenticationType? tlsAuthenticationType) {
+    if (tlsAuthenticationType == null || tlsAuthenticationType == state.data.tlsAuthenticationType) {
+      return state.fieldErrors;
+    }
+
+    return state.fieldErrors
+        .where(
+          (field) => !const {
+            PresentationFieldName.clientRandom,
+            PresentationFieldName.clientRandomMask,
+            PresentationFieldName.clientRandomValue,
+            PresentationFieldName.clientRandomAuthKey,
+            PresentationFieldName.clientRandomAuthKeySlash,
+            PresentationFieldName.clientRandomAuthKeyValue,
+          }.contains(field.fieldName),
+        )
+        .toList();
+  }
 
   PresentationException _parseException(Object? exception) =>
       ExceptionUtils.toPresentationException(exception: exception);

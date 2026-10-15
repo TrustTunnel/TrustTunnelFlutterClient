@@ -1,5 +1,6 @@
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 
 final class VpnLoggingPayload {
   final VpnLoggingServerPayload serverPayload;
@@ -36,7 +37,9 @@ final class VpnLoggingServerPayload {
   final String? customSni;
   final String username;
   final List<String> dnsServers;
+  final String tlsAuthenticationType;
   final String? clientRandom;
+  final String? clientRandomAuthKey;
   final String? certificate;
   final String vpnProtocol;
   final bool allowIpv6Connections;
@@ -48,7 +51,9 @@ final class VpnLoggingServerPayload {
     required this.customSni,
     required this.username,
     required this.dnsServers,
+    required this.tlsAuthenticationType,
     required this.clientRandom,
+    required this.clientRandomAuthKey,
     required this.certificate,
     required this.vpnProtocol,
     required this.allowIpv6Connections,
@@ -61,7 +66,11 @@ final class VpnLoggingServerPayload {
     customSni: server.customSni,
     username: server.username,
     dnsServers: List.unmodifiable(server.dnsServers),
-    clientRandom: server.tlsPrefix,
+    tlsAuthenticationType: server.tlsAuthenticationType.name,
+    clientRandom: server.tlsAuthenticationType == TlsAuthenticationType.clientRandom ? server.tlsPrefix : null,
+    clientRandomAuthKey: server.tlsAuthenticationType == TlsAuthenticationType.clientRandomAuthKey
+        ? server.clientRandomAuthKey
+        : null,
     certificate: server.certificate?.data,
     vpnProtocol: server.vpnProtocol.name,
     allowIpv6Connections: server.ipv6,
@@ -74,7 +83,9 @@ final class VpnLoggingServerPayload {
     'customSni': customSni,
     'username': username,
     'dnsServers': dnsServers,
+    'tlsAuthenticationType': tlsAuthenticationType,
     'clientRandom': clientRandom,
+    'clientRandomAuthKey': clientRandomAuthKey,
     'certificate': certificate,
     'vpnProtocol': vpnProtocol,
     'allowIpv6Connections': allowIpv6Connections,

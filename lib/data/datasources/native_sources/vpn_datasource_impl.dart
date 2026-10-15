@@ -10,6 +10,7 @@ import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_logging_payload.dart';
@@ -101,26 +102,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
   }) async {
-    final exclusions = _getExclusionsByMode(routingProfile);
-
-    final endPoint = Endpoint(
-      name: server.name,
-      hostName: server.domain,
-      hasIpv6: server.ipv6,
-      certificate: server.certificate?.data ?? '',
-      clientRandom: server.tlsPrefix ?? '',
-      customSni: server.customSni ?? '',
-      username: server.username,
-      password: server.password,
-      addresses: [
-        server.ipAddress,
-      ],
-      exclusions: exclusions,
-      dnsUpStreams: server.dnsServers,
-      upStreamProtocol: UpStreamProtocolEncoder().convert(
-        server.vpnProtocol,
-      ),
-    );
+    final endPoint = _createEndpoint(server, routingProfile);
 
     Future<void> command() => _platformApi.start(
       configuration: Configuration(
@@ -178,26 +160,7 @@ class VpnDataSourceImpl implements VpnDataSource {
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
   }) async {
-    final exclusions = _getExclusionsByMode(routingProfile);
-
-    final endPoint = Endpoint(
-      name: server.name,
-      hostName: server.domain,
-      hasIpv6: server.ipv6,
-      username: server.username,
-      password: server.password,
-      addresses: [
-        server.ipAddress,
-      ],
-      exclusions: exclusions,
-      dnsUpStreams: server.dnsServers,
-      upStreamProtocol: UpStreamProtocolEncoder().convert(
-        server.vpnProtocol,
-      ),
-      customSni: server.customSni ?? '',
-      certificate: server.certificate?.data ?? '',
-      clientRandom: server.tlsPrefix ?? '',
-    );
+    final endPoint = _createEndpoint(server, routingProfile);
 
     Future<void> command() => _platformApi.updateConfiguration(
       configuration: Configuration(
@@ -237,6 +200,28 @@ class VpnDataSourceImpl implements VpnDataSource {
         () => _platformApi.updateConfiguration(configuration: null),
       ) ??
       _platformApi.updateConfiguration(configuration: null);
+
+  Endpoint _createEndpoint(ServerData server, RoutingProfileData routingProfile) => Endpoint(
+    name: server.name,
+    hostName: server.domain,
+    hasIpv6: server.ipv6,
+    certificate: server.certificate?.data ?? '',
+    clientRandom: server.tlsAuthenticationType == TlsAuthenticationType.clientRandom ? (server.tlsPrefix ?? '') : '',
+    clientRandomAuthKey: server.tlsAuthenticationType == TlsAuthenticationType.clientRandomAuthKey
+        ? (server.clientRandomAuthKey ?? '')
+        : '',
+    customSni: server.customSni ?? '',
+    username: server.username,
+    password: server.password,
+    addresses: [
+      server.ipAddress,
+    ],
+    exclusions: _getExclusionsByMode(routingProfile),
+    dnsUpStreams: server.dnsServers,
+    upStreamProtocol: UpStreamProtocolEncoder().convert(
+      server.vpnProtocol,
+    ),
+  );
 
   /// Computes the effective exclusion list based on routing mode.
   ///
