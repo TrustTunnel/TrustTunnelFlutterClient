@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 typedef DataChangedCallback =
@@ -16,6 +17,7 @@ typedef DataChangedCallback =
       bool? enableIpv6,
       String? pathToPemFile,
       VpnProtocol? protocol,
+      TlsFingerprint? tlsFingerprint,
       String? routingProfileId,
       List<String>? dnsServers,
       ValueData<String>? clientRandom,

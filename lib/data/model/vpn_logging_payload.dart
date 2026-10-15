@@ -1,3 +1,4 @@
+import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 
@@ -39,6 +40,7 @@ final class VpnLoggingServerPayload {
   final String? clientRandom;
   final String? certificate;
   final String vpnProtocol;
+  final String tlsProfile;
   final bool allowIpv6Connections;
 
   const VpnLoggingServerPayload({
@@ -51,6 +53,7 @@ final class VpnLoggingServerPayload {
     required this.clientRandom,
     required this.certificate,
     required this.vpnProtocol,
+    required this.tlsProfile,
     required this.allowIpv6Connections,
   });
 
@@ -64,6 +67,11 @@ final class VpnLoggingServerPayload {
     clientRandom: server.tlsPrefix,
     certificate: server.certificate?.data,
     vpnProtocol: server.vpnProtocol.name,
+    tlsProfile: const TlsProfileEncoder()
+        .convert(
+          server.tlsFingerprint,
+        )
+        .value,
     allowIpv6Connections: server.ipv6,
   );
 
@@ -77,6 +85,7 @@ final class VpnLoggingServerPayload {
     'clientRandom': clientRandom,
     'certificate': certificate,
     'vpnProtocol': vpnProtocol,
+    'tlsProfile': tlsProfile,
     'allowIpv6Connections': allowIpv6Connections,
   };
 }

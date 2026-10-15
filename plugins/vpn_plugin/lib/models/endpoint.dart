@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:vpn_plugin/models/tls_profile.dart';
 import 'package:vpn_plugin/models/upstream_protocol.dart';
 
 /// {@template endpoint}
@@ -90,6 +91,9 @@ final class Endpoint {
   /// {@endtemplate}
   final UpStreamProtocol upStreamProtocol;
 
+  /// TLS ClientHello fingerprint selected for this endpoint.
+  final TlsProfile tlsProfile;
+
   /// {@template endpoint_upstream_fallback_protocol}
   /// Optional fallback protocol used when [upStreamProtocol] fails.
   ///
@@ -136,6 +140,7 @@ final class Endpoint {
     this.clientRandom = '',
     this.certificate = '',
     this.customSni = '',
+    this.tlsProfile = TlsProfile.chrome,
     this.upStreamFallbackProtocol,
     this.antiDpi = false,
     this.skipVerification = false,
@@ -149,7 +154,23 @@ final class Endpoint {
 
   @override
   String toString() =>
-      'Endpoint(name: $name, addresses: $addresses, dnsUpStreams: $dnsUpStreams, exclusions: $exclusions, hostName: $hostName, username: $username, password: $password, clientRandom: $clientRandom, certificate: $certificate, upStreamProtocol: $upStreamProtocol, upStreamFallbackProtocol: $upStreamFallbackProtocol, antiDpi: $antiDpi, hasIpv6: $hasIpv6, skipVerification: $skipVerification)';
+      'Endpoint('
+      'name: $name, '
+      'addresses: $addresses, '
+      'dnsUpStreams: $dnsUpStreams, '
+      'exclusions: $exclusions, '
+      'hostName: $hostName, '
+      'username: $username, '
+      'password: $password, '
+      'clientRandom: $clientRandom, '
+      'certificate: $certificate, '
+      'upStreamProtocol: $upStreamProtocol, '
+      'tlsProfile: $tlsProfile, '
+      'upStreamFallbackProtocol: $upStreamFallbackProtocol, '
+      'antiDpi: $antiDpi, '
+      'hasIpv6: $hasIpv6, '
+      'skipVerification: $skipVerification'
+      ')';
 
   @override
   bool operator ==(covariant Endpoint other) {
@@ -165,6 +186,7 @@ final class Endpoint {
         other.clientRandom == clientRandom &&
         other.certificate == certificate &&
         other.upStreamProtocol == upStreamProtocol &&
+        other.tlsProfile == tlsProfile &&
         other.upStreamFallbackProtocol == upStreamFallbackProtocol &&
         other.antiDpi == antiDpi &&
         other.hasIpv6 == hasIpv6 &&
@@ -183,6 +205,7 @@ final class Endpoint {
     clientRandom,
     certificate,
     upStreamProtocol,
+    tlsProfile,
     upStreamFallbackProtocol,
     antiDpi,
     hasIpv6,

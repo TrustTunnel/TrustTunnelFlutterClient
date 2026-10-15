@@ -5,6 +5,7 @@ import 'package:trusttunnel/common/error/model/presentation_code_exception.dart'
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
+import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
@@ -145,6 +146,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     bool? enableIpv6,
     String? pathToPemFile,
     VpnProtocol? protocol,
+    TlsFingerprint? tlsFingerprint,
     String? routingProfileId,
     List<String>? dnsServers,
     ValueData<String>? clientRandom,
@@ -163,6 +165,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             username: (username ?? state.data.username).trim(),
             password: (password ?? state.data.password).trim(),
             vpnProtocol: protocol ?? state.data.vpnProtocol,
+            tlsFingerprint: tlsFingerprint ?? state.data.tlsFingerprint,
             routingProfileId: routingProfileId ?? state.data.routingProfileId,
             dnsServers: (dnsServers ?? state.data.dnsServers).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
             ipv6: enableIpv6 ?? state.data.ipv6,
