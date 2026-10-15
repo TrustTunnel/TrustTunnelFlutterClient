@@ -73,9 +73,14 @@ public:
      * VPN_SELF_INSTALL (dev builds), it will be installed first; otherwise the
      * failure is logged and the app stays disconnected.
      * @param config The VPN configuration string.
+     * @param fall_into_recovery If true, failures during the initial connection
+     *        establishment enter the recovery algorithm instead of retrying a
+     *        fixed number of times.
      * @return Error if the operation cannot be initiated, nullopt otherwise.
      */
-    std::optional<FlutterError> Start(const std::string& config) override;
+    std::optional<FlutterError> Start(
+            const std::string& config,
+            bool fall_into_recovery) override;
 
     /**
      * Stop the VPN service.
@@ -160,9 +165,14 @@ private:
     /**
      * Start the VPN background service with the given configuration.
      * @param config The VPN configuration string.
+     * @param fall_into_recovery If true, failures during the initial connection
+     *        establishment enter the recovery algorithm instead of retrying a
+     *        fixed number of times.
      * @return 0 on success, error code otherwise.
      */
-    int32_t StartService(const std::string& config);
+    int32_t StartService(
+            const std::string& config,
+            bool fall_into_recovery);
 
     flutter::PluginRegistrarWindows* m_registrar;
     UIThreadDispatcher m_dispatcher;

@@ -36,6 +36,7 @@ void TrusttunnelStubState::Reset() {
     start_return_value = 0;
     start_call_count = 0;
     last_start_config.clear();
+    last_start_fall_into_recovery = false;
 
     stop_return_value = 0;
     stop_call_count = 0;
@@ -87,10 +88,11 @@ int32_t trusttunnel_service_attach(
 }
 
 int32_t trusttunnel_service_start(
-        const char* toml_config) {
+        const char* toml_config, bool fall_into_recovery) {
     auto& s = g_stub;
     s.start_call_count++;
     s.last_start_config = toml_config ? toml_config : "";
+    s.last_start_fall_into_recovery = fall_into_recovery;
     return s.start_return_value;
 }
 
@@ -139,9 +141,9 @@ void trusttunnel_log_clear(void) {
 
 // Stubs for the non-service trusttunnel API (not used by VpnPlugin but
 // required to resolve all symbols from the header).
-void trusttunnel_start(const char*, on_state_changed_t, void*) {}
+void trusttunnel_start(const char*, bool, on_state_changed_t, void*) {}
 void trusttunnel_stop() {}
-trusttunnel_t* trusttunnel_start_ex(const char*, on_state_changed_t, void*,
+trusttunnel_t* trusttunnel_start_ex(const char*, bool, on_state_changed_t, void*,
         on_connection_info_t, void*) { return nullptr; }
 void trusttunnel_stop_ex(trusttunnel_t*) {}
 int32_t trusttunnel_service_install(const wchar_t*, const wchar_t*,
