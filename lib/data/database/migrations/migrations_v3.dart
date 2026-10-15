@@ -11,30 +11,31 @@ class MigrationsV3 implements Migrations {
   Future<void> migrate(GeneratedDatabase db, Migrator m) async {
     await m.addColumn(Servers(db), Servers(db).customSni);
 
+    final servers = Servers(db);
     final serversWithSni =
-        await (db.select(Servers(db))..where(
-              (s) => s.domain.contains(_sniDivider),
-            ))
+        await (db.selectOnly(servers)
+              ..addColumns([servers.id, servers.domain])
+              ..where(servers.domain.contains(_sniDivider)))
             .get();
 
-    final List<Server> updatingRows = [];
-
-    for (final server in serversWithSni) {
-      final parts = server.domain.split(_sniDivider);
-      if (parts.length != 2) {
-        continue;
-      }
-
-      updatingRows.add(
-        server.copyWith(
-          customSni: Value(parts[0]),
-          domain: parts[1],
-        ),
-      );
-    }
-
     await db.batch(
-      (batch) => batch.replaceAll(Servers(db), updatingRows),
+      (batch) {
+        for (final server in serversWithSni) {
+          final parts = server.read(servers.domain)!.split(_sniDivider);
+          if (parts.length != 2) {
+            continue;
+          }
+
+          batch.update(
+            servers,
+            ServersCompanion(
+              customSni: Value(parts[0]),
+              domain: Value(parts[1]),
+            ),
+            where: (row) => row.id.equals(server.read(servers.id)!),
+          );
+        }
+      },
     );
   }
 }
