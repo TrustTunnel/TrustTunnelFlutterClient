@@ -200,5 +200,23 @@
   "openHomeScreenAutomatically": "Open Home screen automatically",
   "connection": "Connection",
   "autoConnectOnAppLaunch": "Auto-connect on app launch",
-  "autoConnectNoServersAdded": "No servers added. To apply the setting, add a server"
+  "autoConnectNoServersAdded": "No servers added. To apply the setting, add a server",
+  "copyLink": "Copy link",
+  "duplicate": "Duplicate",
+  "serverLinkCopied": "Server link copied",
+  "serverDuplicated": "Server duplicated",
+  "edit": "Edit",
+  "serverCopyName": "{name} (copy)",
+  "@serverCopyName": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "serverNumberedName": "{name} {number}",
+  "@serverNumberedName": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "number": {"type": "int"}
+    }
+  }
 }
