@@ -6,6 +6,7 @@ import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
+import 'package:trusttunnel/feature/server/server_sharing/widgets/scope/server_sharing_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card.dart';
@@ -37,8 +38,13 @@ class _ServersScreenViewState extends State<ServersScreenView> {
     final initialController = ServersScope.controllerOf(context, listen: false);
     _servers = initialController.servers;
     _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
     if (widget.deepLinkData != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+
         _pushServerDetailsScreen(
           context,
           preloadedData: widget.deepLinkData,
@@ -61,34 +67,50 @@ class _ServersScreenViewState extends State<ServersScreenView> {
   Widget build(BuildContext context) => ScaffoldWrapper(
     child: ScaffoldMessenger(
       key: _scaffoldMessengerKey,
-      child: Scaffold(
-        appBar: CustomAppBar(
-          title: context.ln.servers,
-        ),
-        body: _servers.isEmpty
-            ? const ServersEmptyPlaceholder()
-            : ListView.builder(
-                padding: const EdgeInsets.only(bottom: 80),
-                itemCount: _servers.length,
-                itemBuilder: (_, index) => Column(
-                  children: [
-                    ServersCard(
-                      server: _servers[index],
-                    ),
+      child: Builder(
+        builder: (context) => Scaffold(
+          appBar: CustomAppBar(
+            title: context.ln.servers,
+          ),
+          body: _servers.isEmpty
+              ? const ServersEmptyPlaceholder()
+              : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 80),
+                  itemCount: _servers.length,
+                  findChildIndexCallback: (key) {
+                    final index = _servers.indexWhere((server) => ValueKey(server.id) == key);
 
-                    if (index != _servers.length - 1) const Divider(),
-                  ],
+                    return index < 0 ? null : index;
+                  },
+                  itemBuilder: (_, index) {
+                    final server = _servers[index];
+
+                    return Column(
+                      key: ValueKey(server.id),
+                      children: [
+                        ServersCard(
+                          server: server,
+                          onEdit: () => _pushServerDetailsScreen(context, serverId: server.id),
+                          onShare: (origin) => _shareServer(context, server, origin),
+                          onCopyLink: () => _copyServerLink(context, server),
+                          onDuplicate: () => _duplicateServer(context, server),
+                        ),
+
+                        if (index != _servers.length - 1) const Divider(),
+                      ],
+                    );
+                  },
                 ),
-              ),
-        floatingActionButton: _servers.isEmpty
-            ? null
-            : Builder(
-                builder: (context) => CustomFloatingActionButton.extended(
-                  icon: AssetIcons.add,
-                  onPressed: () => _pushServerDetailsScreen(context),
-                  label: context.ln.addServer,
+          floatingActionButton: _servers.isEmpty
+              ? null
+              : Builder(
+                  builder: (context) => CustomFloatingActionButton.extended(
+                    icon: AssetIcons.add,
+                    onPressed: () => _pushServerDetailsScreen(context),
+                    label: context.ln.addServer,
+                  ),
                 ),
-              ),
+        ),
       ),
     ),
   );
@@ -96,6 +118,7 @@ class _ServersScreenViewState extends State<ServersScreenView> {
   void _pushServerDetailsScreen(
     BuildContext context, {
     ServerData? preloadedData,
+    String? serverId,
   }) async {
     final controller = ServersScope.controllerOf(context, listen: false);
     final Widget serverDetailsScreen;
@@ -105,7 +128,7 @@ class _ServersScreenViewState extends State<ServersScreenView> {
         preloadedData: preloadedData,
       );
     } else {
-      serverDetailsScreen = const ServerDetailsPopUp();
+      serverDetailsScreen = ServerDetailsPopUp(serverId: serverId);
     }
 
     await context.push(
@@ -116,6 +139,76 @@ class _ServersScreenViewState extends State<ServersScreenView> {
       route: AppRoutes.serverDetails,
     );
 
+    if (!mounted || !context.mounted) {
+      return;
+    }
+
     controller.fetchServers();
+  }
+
+  void _copyServerLink(BuildContext context, Server server) =>
+      ServerSharingScope.controllerOf(context, listen: false).copyLink(
+        server: server.serverData,
+        onCopied: () {
+          if (!mounted || !context.mounted) {
+            return;
+          }
+
+          context.showInfoSnackBar(message: context.ln.serverLinkCopied);
+        },
+        onError: () => _showOperationError(context),
+      );
+
+  void _shareServer(
+    BuildContext context,
+    Server server,
+    Rect origin,
+  ) => ServerSharingScope.controllerOf(context, listen: false).share(
+    server: server.serverData,
+    sharePositionOrigin: origin,
+    onError: () => _showOperationError(context),
+  );
+
+  void _duplicateServer(BuildContext context, Server server) =>
+      ServersScope.controllerOf(context, listen: false).duplicateServer(
+        serverId: server.id,
+        copyName: context.ln.serverCopyName,
+        numberedName: context.ln.serverNumberedName,
+        onDuplicated: (duplicate) {
+          if (!mounted || !context.mounted) {
+            return;
+          }
+
+          context.showInfoSnackBar(
+            message: context.ln.serverDuplicated,
+            trailingActions: [
+              TextButton(
+                onPressed: () {
+                  if (!mounted || !context.mounted) {
+                    return;
+                  }
+
+                  context.closeCurrentSnackBar();
+                  _pushServerDetailsScreen(context, serverId: duplicate.id);
+                },
+                child: Text(
+                  context.ln.edit,
+                  style: context.textTheme.labelLarge?.copyWith(
+                    color: context.colors.specialStaticWhite,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+        onError: () => _showOperationError(context),
+      );
+
+  void _showOperationError(BuildContext context) {
+    if (!mounted || !context.mounted) {
+      return;
+    }
+
+    context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 }

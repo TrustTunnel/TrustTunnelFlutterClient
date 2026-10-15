@@ -29,8 +29,15 @@ abstract class ServerDataSource {
     required String routingProfileId,
   });
 
+  /// Creates an unselected copy immediately after the original, atomically.
+  Future<Server> duplicateServer({
+    required String serverId,
+    required String Function(String name) copyName,
+    required String Function(String name, int number) numberedName,
+  });
+
   /// {@template server_data_source_get_all_servers}
-  /// Loads all servers stored in persistence.
+  /// Loads all servers in their persisted order.
   ///
   /// Returns an empty list if no servers exist.
   /// {@endtemplate}

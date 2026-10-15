@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
+import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
 import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 
@@ -70,6 +72,31 @@ final class ServersController extends BaseStateController<ServersState> with Seq
       completionHandler: _onCompleted,
     );
   }
+
+  void duplicateServer({
+    required String serverId,
+    required String Function(String name) copyName,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<Server>? onDuplicated,
+    VoidCallback? onError,
+  }) => handle(
+    () async {
+      setState(ServersState.loading(servers: state.servers));
+      final duplicate = await _repository.duplicateServer(
+        serverId: serverId,
+        copyName: copyName,
+        numberedName: numberedName,
+      );
+      final servers = await _repository.getAllServers();
+      setState(ServersState.idle(servers: servers));
+      if (!isDisposed) onDuplicated?.call(duplicate);
+    },
+    errorHandler: (error, stackTrace) async {
+      await _onError(error, stackTrace);
+      onError?.call();
+    },
+    completionHandler: _onCompleted,
+  );
 
   PresentationException _parseException(
     Object? exception,
