@@ -5,6 +5,7 @@ class CustomListTileSeparated extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget? trailing;
+  final Widget? actionBeforeDivider;
   final VoidCallback? onTileTap;
   final bool showVerticalDivider;
   final TextStyle? titleStyle;
@@ -15,6 +16,7 @@ class CustomListTileSeparated extends StatelessWidget {
     required this.title,
     this.onTileTap,
     this.trailing,
+    this.actionBeforeDivider,
     this.showVerticalDivider = true,
     this.titleStyle,
     this.subtitle,
@@ -53,6 +55,7 @@ class CustomListTileSeparated extends StatelessWidget {
             ),
           ),
         ),
+        if (actionBeforeDivider != null) actionBeforeDivider!,
         if (showVerticalDivider)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
