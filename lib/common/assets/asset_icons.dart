@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 abstract class AssetIcons {
   static const IconData add = IconData(0xe800, fontFamily: _kFontFam);
-
   static const IconData anon = IconData(0xe801, fontFamily: _kFontFam);
   static const IconData arrowBack = IconData(0xe802, fontFamily: _kFontFam);
   static const IconData arrowDropDown = IconData(0xe803, fontFamily: _kFontFam);
@@ -44,5 +43,7 @@ abstract class AssetIcons {
   static const IconData unlink = IconData(0xe824, fontFamily: _kFontFam);
   static const IconData up = IconData(0xe825, fontFamily: _kFontFam);
   static const IconData update = IconData(0xe826, fontFamily: _kFontFam);
+  static const IconData duplicate = IconData(0xe82b, fontFamily: _kFontFam);
+
   static const _kFontFam = 'IconFont';
 }
