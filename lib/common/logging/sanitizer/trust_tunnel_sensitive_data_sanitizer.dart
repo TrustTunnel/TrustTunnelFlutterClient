@@ -14,6 +14,8 @@ class TrustTunnelSensitiveDataSanitizer {
   /// Rules that are masked in all logging modes.
   static const Set<String> _alwaysMaskedKeys = {
     'password',
+    'clientRandomAuthKey',
+    'client_random_auth_key',
     'pass',
     'subscription',
     'subscriptionUrl',
