@@ -334,6 +334,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
                   TlsProfile.values,
                   tlsProfileStr,
                   (e) => e.value,
+                  fallback: TlsProfile.chrome,
                 ),
         skipVerification: skipVerification,
         certificate: certificate,
