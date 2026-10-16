@@ -149,7 +149,7 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
       return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKeySlash);
     }
 
-    if (RegExp(r'[^0-9a-f]').hasMatch(value)) {
+    if (RegExp(r'[^0-9a-fA-F]').hasMatch(value)) {
       return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKey);
     }
 
