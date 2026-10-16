@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
-import 'package:trusttunnel/common/utils/server_name_utils.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/model/certificate.dart';
@@ -46,19 +45,12 @@ class ServerDataSourceImpl implements ServerDataSource {
   @override
   Future<Server> duplicateServer({
     required String serverId,
-    required String Function(String name) copyName,
-    required String Function(String name, int number) numberedName,
+    required String name,
   }) => database.transaction(() async {
-    // Read the original and choose a name inside the same transaction as insertion.
     final originalServer = await getServerById(id: serverId);
-    final rows = await database.select(database.servers).get();
-    final row = rows.firstWhere((row) => row.id == int.parse(serverId));
-    final name = ServerNameUtils.findAvailable(
-      baseName: originalServer.serverData.name,
-      otherNames: rows.map((row) => row.name),
-      preferredName: copyName(originalServer.serverData.name.trim()),
-      numberedName: numberedName,
-    );
+    final row = await (database.select(
+      database.servers,
+    )..where((row) => row.id.equals(int.parse(serverId)))).getSingle();
 
     await database.customUpdate(
       'UPDATE servers SET sort_order = sort_order + 1 '
@@ -68,7 +60,7 @@ class ServerDataSourceImpl implements ServerDataSource {
     );
 
     return _insertServer(
-      request: originalServer.serverData.copyWith(name: name, selected: false),
+      request: originalServer.serverData.copyWith(name: name),
       sortOrder: row.sortOrder + 1,
     );
   });
@@ -273,11 +265,14 @@ class ServerDataSourceImpl implements ServerDataSource {
     );
   }
 
+  /// Creates a new unselected server, intentionally ignoring [ServerData.selected]
+  /// from [request]. Selection is managed separately by [setSelectedServerId].
   Future<Server> _insertServer({required ServerData request, required int sortOrder}) async {
     final serverId = await database.servers.insertOnConflictUpdate(
       db.ServersCompanion.insert(
         ipAddress: request.ipAddress,
         sortOrder: Value(sortOrder),
+        selected: const Value(false),
         name: request.name,
         domain: request.domain,
         login: request.username,
@@ -322,6 +317,9 @@ class ServerDataSourceImpl implements ServerDataSource {
         certificate: request.certificate,
         tlsPrefix: request.tlsPrefix,
         customSni: request.customSni,
+        // Keep the creation contract explicit even though this is the default.
+        // ignore: avoid_redundant_argument_values
+        selected: false,
       ),
     );
   }

@@ -32,8 +32,7 @@ abstract class ServerDataSource {
   /// Creates an unselected copy immediately after the original, atomically.
   Future<Server> duplicateServer({
     required String serverId,
-    required String Function(String name) copyName,
-    required String Function(String name, int number) numberedName,
+    required String name,
   });
 
   /// {@template server_data_source_get_all_servers}

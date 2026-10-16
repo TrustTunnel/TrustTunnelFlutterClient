@@ -10,8 +10,7 @@ abstract class ServerRepository {
 
   Future<Server> duplicateServer({
     required String serverId,
-    required String Function(String name) copyName,
-    required String Function(String name, int number) numberedName,
+    required String name,
   });
 
   Future<List<Server>> getAllServers();
@@ -48,12 +47,10 @@ class ServerRepositoryImpl implements ServerRepository {
   @override
   Future<Server> duplicateServer({
     required String serverId,
-    required String Function(String name) copyName,
-    required String Function(String name, int number) numberedName,
+    required String name,
   }) => _serverDataSource.duplicateServer(
     serverId: serverId,
-    copyName: copyName,
-    numberedName: numberedName,
+    name: name,
   );
 
   @override

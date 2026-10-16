@@ -4,7 +4,6 @@ import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
-import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/common/utils/server_name_utils.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
@@ -32,7 +31,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
   });
 
   /// Make a purchase for the given product ID
-  void fetch() {
+  void fetch({required String Function(String name, int number) numberedName}) {
     handle(
       () async {
         setState(
@@ -53,7 +52,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             serverName = ServerNameUtils.findAvailable(
               baseName: serverName,
               otherNames: servers.map((server) => server.serverData.name),
-              numberedName: Localization.ln.serverNumberedName,
+              numberedName: numberedName,
             );
           }
 
