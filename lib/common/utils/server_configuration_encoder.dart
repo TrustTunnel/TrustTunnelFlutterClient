@@ -20,6 +20,12 @@ class ServerConfigurationEncoder extends Converter<ServerData, String> {
       throw const FormatException('Missing required server configuration field');
     }
 
+    // The export format cannot preserve a Client Random mask.
+    final prefix = input.tlsPrefix;
+    if (prefix != null && prefix.contains('/')) {
+      throw const FormatException('Exporting Client Random with a mask is not supported');
+    }
+
     final payload = BytesBuilder();
     void field(int tag, List<int> value) {
       payload
@@ -37,8 +43,6 @@ class ServerConfigurationEncoder extends Converter<ServerData, String> {
     text(0x06, input.password);
     text(0x02, input.ipAddress);
 
-    // The import format carries the TLS prefix without its local mask.
-    final prefix = input.tlsPrefix?.split('/').first;
     if (prefix != null && prefix.isNotEmpty) {
       text(0x0b, prefix);
     }
