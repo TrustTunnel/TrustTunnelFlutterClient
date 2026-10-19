@@ -15,6 +15,7 @@ set(PLUGIN_NAME "vpn_plugin_plugin")
 list(APPEND PLUGIN_SOURCES
   "vpn_plugin.cc"
   "linux_vpn_engine.cc"
+  "trusttunnel_dbus_transport.cc"
   "platform_api.g.cc"
 )
 

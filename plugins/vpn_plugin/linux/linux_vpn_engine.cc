@@ -1,12 +1,10 @@
 #include "linux_vpn_engine.h"
 
-#include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <utility>
 
 namespace vpn_plugin {
-
-static const int kPollIntervalMs = 10;
 
 static bool IsBase64Char(char c) {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
@@ -22,60 +20,107 @@ static int Base64Value(char c) {
   return -1;
 }
 
-LinuxVpnEngine::LinuxVpnEngine(int connect_delay_ms,
+LinuxVpnEngine::LinuxVpnEngine(TrustTunnelTransport* transport,
                                VpnEngineStateCallback callback,
                                void* user_data)
-    : connect_delay_ms_(connect_delay_ms),
+    : transport_(transport),
       callback_(callback),
       user_data_(user_data),
-      state_(kEngineStateDisconnected),
-      cancel_(false) {}
-
-LinuxVpnEngine::~LinuxVpnEngine() {
-  cancel_ = true;
-  if (worker_.joinable()) {
-    worker_.join();
+      state_(kEngineStateDisconnected) {
+  if (transport_ != nullptr) {
+    TransportHandlers handlers;
+    handlers.on_state = [this](int state) { OnDaemonState(state); };
+    handlers.on_connection_info = [this](const std::string& json) {
+      OnDaemonConnectionInfo(json);
+    };
+    transport_->SetHandlers(std::move(handlers));
+    // Idempotent: transport stays uninitialized if the daemon is absent yet;
+    // Start() retries the attachment.
+    transport_->Init();
   }
 }
 
-void LinuxVpnEngine::Start(const char* /*config*/) {
-  // TODO: Parse the backend configuration and set up the tun interface and routes.
-  cancel_ = true;
-  if (worker_.joinable()) {
-    worker_.join();
+LinuxVpnEngine::~LinuxVpnEngine() = default;
+
+void LinuxVpnEngine::SetConnectionInfoSink(ConnectionInfoSink sink) {
+  connection_info_sink_ = std::move(sink);
+}
+
+void LinuxVpnEngine::OnDaemonState(int state) {
+  const int prev = state_.exchange(state);
+  if (prev != state && callback_ != nullptr) {
+    callback_(user_data_, state);
   }
-  cancel_ = false;
-  state_ = kEngineStateConnecting;
-  if (callback_ != nullptr) {
-    callback_(user_data_, state_);
+}
+
+void LinuxVpnEngine::OnDaemonConnectionInfo(const std::string& json) {
+  if (connection_info_sink_ != nullptr) {
+    connection_info_sink_(json);
   }
-  worker_ = std::thread(&LinuxVpnEngine::WorkerMain, this);
+}
+
+bool LinuxVpnEngine::Start(const std::string& config, std::string* error_message) {
+  if (transport_ == nullptr) {
+    if (error_message != nullptr) {
+      *error_message = "transport is not available";
+    }
+    return false;
+  }
+  // Retry attaching in case the daemon was not present during construction.
+  if (!transport_->Init()) {
+    if (error_message != nullptr) {
+      *error_message = "trusttunneld is not available on the system bus";
+    }
+    return false;
+  }
+
+  // Report a consistent in-flight state while the request is being processed.
+  const int prev = state_.exchange(kEngineStateConnecting);
+  if (prev != kEngineStateConnecting && callback_ != nullptr) {
+    callback_(user_data_, kEngineStateConnecting);
+  }
+
+  const TransportCallResult result = transport_->Start(config);
+  switch (result) {
+    case TransportCallResult::kSuccess:
+    case TransportCallResult::kAlreadyRunning: {
+      // A session started (or one was already running, e.g. adopted from
+      // another client): synchronize with the daemon-reported state, since
+      // a transition happened while this request was in flight.
+      const int daemon_state = transport_->GetState();
+      if (daemon_state >= 0) {
+        OnDaemonState(daemon_state);
+      }
+      return true;
+    }
+    case TransportCallResult::kInvalidConfig:
+      if (error_message != nullptr) {
+        *error_message = "daemon rejected the configuration (invalid config)";
+      }
+      break;
+    case TransportCallResult::kUnavailable:
+      if (error_message != nullptr) {
+        *error_message = "trusttunneld is not available on the system bus";
+      }
+      break;
+  }
+
+  // Roll the optimistic state back.
+  const int restored = state_.exchange(kEngineStateDisconnected);
+  if (restored != kEngineStateDisconnected && callback_ != nullptr) {
+    callback_(user_data_, kEngineStateDisconnected);
+  }
+  return false;
 }
 
 void LinuxVpnEngine::Stop() {
-  cancel_ = true;
-  if (worker_.joinable()) {
-    worker_.join();
+  if (transport_ == nullptr) {
+    return;
   }
-  int prev = state_.exchange(kEngineStateDisconnected);
+  transport_->Stop();
+  const int prev = state_.exchange(kEngineStateDisconnected);
   if (prev != kEngineStateDisconnected && callback_ != nullptr) {
     callback_(user_data_, kEngineStateDisconnected);
-  }
-}
-
-void LinuxVpnEngine::WorkerMain() {
-  const std::chrono::steady_clock::time_point deadline =
-      std::chrono::steady_clock::now() +
-      std::chrono::milliseconds(connect_delay_ms_);
-  while (!cancel_) {
-    if (std::chrono::steady_clock::now() >= deadline) {
-      state_ = kEngineStateConnected;
-      if (callback_ != nullptr) {
-        callback_(user_data_, state_);
-      }
-      break;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(kPollIntervalMs));
   }
 }
 

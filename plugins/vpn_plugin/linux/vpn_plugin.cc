@@ -2,7 +2,10 @@
 
 #include "linux_vpn_engine.h"
 #include "platform_api.g.h"
+#include "trusttunnel_dbus_transport.h"
+#include "trusttunnel_transport.h"
 
+#include <deque>
 #include <string>
 
 #define VPN_PLUGIN(obj) \
@@ -11,19 +14,25 @@
 static const char kStateEventChannelName[] = "vpn_plugin_event_channel";
 static const char kQueryLogEventChannelName[] = "vpn_plugin_event_channel_query_log";
 
-// The stub VPN engine transitions connecting -> connected after this delay.
-static const int kConnectDelayMs = 2000;
+// Maximum number of connection telemetry records kept for replay when
+// a listener subscribes to the query-log EventChannel after they arrive.
+static const size_t kConnectionInfoRingSize = 256;
 
 struct _VpnPlugin {
   GObject parent_instance;
 
-  // Managed manually: g_object_new does not run C++ constructors.
+  // Owned manually: g_object_new does not run C++ constructors.
+  vpn_plugin::TrustTunnelTransport* transport;
   vpn_plugin::LinuxVpnEngine* engine;
 
   FlEventChannel* state_event_channel;
   gboolean state_listening;
 
   FlEventChannel* query_log_event_channel;
+  gboolean query_log_listening;
+  // Connection telemetry records received before a listener attached.
+  std::deque<std::string>* connection_info_ring;
+
   FlBinaryMessenger* messenger;
 };
 
@@ -50,13 +59,44 @@ static void on_engine_state(void* user_data, int /*state*/) {
                   g_object_unref);
 }
 
+// -------- Connection telemetry (EventChannel "vpn_plugin_event_channel_query_log") --------
+
+static void send_connection_info(VpnPlugin* self, const std::string& json) {
+  if (self->query_log_event_channel == NULL || !self->query_log_listening) {
+    if (self->connection_info_ring != nullptr) {
+      if (self->connection_info_ring->size() >= kConnectionInfoRingSize) {
+        self->connection_info_ring->pop_front();
+      }
+      self->connection_info_ring->push_back(json);
+    }
+    return;
+  }
+  g_autoptr(FlValue) event = fl_value_new_string(json.c_str());
+  fl_event_channel_send(self->query_log_event_channel, event, NULL, NULL);
+}
+
+static gboolean replay_ring_idle(gpointer user_data) {
+  VpnPlugin* self = VPN_PLUGIN(user_data);
+  if (self->connection_info_ring != nullptr && self->query_log_listening &&
+      self->query_log_event_channel != NULL) {
+    for (const std::string& json : *self->connection_info_ring) {
+      g_autoptr(FlValue) event = fl_value_new_string(json.c_str());
+      fl_event_channel_send(self->query_log_event_channel, event, NULL, NULL);
+    }
+  }
+  return G_SOURCE_REMOVE;
+}
+
 // -------- IVpnManager implementation (Pigeon-generated vtable) --------
 
 static VpnPluginIVpnManagerStartResponse* start(const gchar* config,
                                                 gpointer user_data) {
-  // TODO: Wire the backend configuration into the real VPN engine.
-  // The stub engine ignores the configuration string and transitions state on a timer.
-  VPN_PLUGIN(user_data)->engine->Start(config);
+  VpnPlugin* self = VPN_PLUGIN(user_data);
+  std::string error;
+  if (!self->engine->Start(config != NULL ? config : "", &error)) {
+    return vpn_plugin_i_vpn_manager_start_response_new_error(
+        "vpn_start_failed", error.c_str(), NULL);
+  }
   return vpn_plugin_i_vpn_manager_start_response_new();
 }
 
@@ -79,6 +119,7 @@ static VpnPluginIVpnManagerGetCurrentStateResponse* get_current_state(gpointer u
 }
 
 static VpnPluginIVpnManagerExportLogsResponse* export_logs(gpointer /*user_data*/) {
+  // TODO: implement log export on Linux (the daemon does not persist logs yet).
   FlValue* paths = fl_value_new_list();
   VpnPluginIVpnManagerExportLogsResponse* response =
       vpn_plugin_i_vpn_manager_export_logs_response_new(paths);
@@ -86,7 +127,11 @@ static VpnPluginIVpnManagerExportLogsResponse* export_logs(gpointer /*user_data*
   return response;
 }
 
-static VpnPluginIVpnManagerClearLogsResponse* clear_logs(gpointer /*user_data*/) {
+static VpnPluginIVpnManagerClearLogsResponse* clear_logs(gpointer user_data) {
+  VpnPlugin* self = VPN_PLUGIN(user_data);
+  if (self->transport != nullptr) {
+    self->transport->ClearLogs();
+  }
   return vpn_plugin_i_vpn_manager_clear_logs_response_new();
 }
 
@@ -126,13 +171,19 @@ static FlMethodErrorResponse* state_cancel_cb(FlEventChannel* /*channel*/,
 
 static FlMethodErrorResponse* query_log_listen_cb(FlEventChannel* /*channel*/,
                                                   FlValue* /*args*/,
-                                                  gpointer /*user_data*/) {
+                                                  gpointer user_data) {
+  VpnPlugin* self = VPN_PLUGIN(user_data);
+  self->query_log_listening = TRUE;
+  // Replay the records buffered before the listener attached.
+  g_idle_add_full(G_PRIORITY_DEFAULT, replay_ring_idle, g_object_ref(self),
+                  g_object_unref);
   return NULL;
 }
 
 static FlMethodErrorResponse* query_log_cancel_cb(FlEventChannel* /*channel*/,
                                                   FlValue* /*args*/,
-                                                  gpointer /*user_data*/) {
+                                                  gpointer user_data) {
+  VPN_PLUGIN(user_data)->query_log_listening = FALSE;
   return NULL;
 }
 
@@ -143,6 +194,10 @@ static void vpn_plugin_dispose(GObject* object) {
 
   delete self->engine;
   self->engine = nullptr;
+  delete self->transport;
+  self->transport = nullptr;
+  delete self->connection_info_ring;
+  self->connection_info_ring = nullptr;
 
   if (self->messenger != NULL) {
     vpn_plugin_i_vpn_manager_clear_method_handlers(self->messenger, NULL);
@@ -160,8 +215,17 @@ static void vpn_plugin_class_init(VpnPluginClass* klass) {
 }
 
 static void vpn_plugin_init(VpnPlugin* self) {
-  self->engine = new vpn_plugin::LinuxVpnEngine(kConnectDelayMs, on_engine_state, self);
+  self->transport = new vpn_plugin::TrustTunnelDBusTransport();
+  self->engine = new vpn_plugin::LinuxVpnEngine(self->transport, on_engine_state, self);
+  self->connection_info_ring = new std::deque<std::string>();
   self->state_listening = FALSE;
+  self->query_log_listening = FALSE;
+
+  // Daemon signals are delivered on the GLib main context, so publishing them
+  // to the Flutter EventChannels is safe here without extra marshalling.
+  self->engine->SetConnectionInfoSink([self](const std::string& json) {
+    send_connection_info(self, json);
+  });
 }
 
 void vpn_plugin_register_with_registrar(FlPluginRegistrar* registrar) {
