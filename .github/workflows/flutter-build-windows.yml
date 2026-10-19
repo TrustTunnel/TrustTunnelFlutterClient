@@ -69,7 +69,7 @@ jobs:
 
       - name: Select Flutter
         env:
-          FLUTTER_VERSION: '3.44.9'
+          FLUTTER_VERSION: '3.47.7'
         run: |
           set -euo pipefail
           : "${FLUTTER_SDKS_ROOT:?image does not provide versioned Flutter SDKs}"
@@ -154,7 +154,6 @@ jobs:
         flutter_windows.dll
         screen_retriever_windows_plugin.dll
         sqlite3.dll
-        sqlite3_flutter_libs_plugin.dll
         tray_manager_plugin.dll
         url_launcher_windows_plugin.dll
         vpn_plugin_plugin.dll

@@ -24,9 +24,19 @@ abstract class VpnPlugin {
   /// The connection process is asynchronous. To monitor the actual connection
   /// state, observe the [states] stream.
   ///
+  /// [fallIntoRecovery] selects the initial connection failure policy:
+  /// - `false` (default): the engine retries the configured number of times
+  ///   and then transitions to [VpnManagerState.disconnected];
+  /// - `true`: on failure the engine falls into the connection recovery
+  ///   algorithm and transitions to [VpnManagerState.waitingForRecovery]
+  ///   instead.
+  ///
+  /// Failures that happen after a successful connection are always handled by
+  /// the recovery algorithm, regardless of this parameter.
+  ///
   /// Throws a [PlatformException] if the VPN service fails to start.
   /// {@endtemplate}
-  Future<void> start({required Configuration configuration});
+  Future<void> start({required Configuration configuration, bool fallIntoRecovery = false});
 
   /// {@template vpn_plugin_stop}
   /// Stops the active VPN connection.
@@ -119,9 +129,9 @@ class VpnPluginImpl implements VpnPlugin {
 
   /// {@macro vpn_plugin_start}
   @override
-  Future<void> start({required Configuration configuration}) {
+  Future<void> start({required Configuration configuration, bool fallIntoRecovery = false}) {
     final config = _codec.encode(configuration);
-    return _api.start(config: config);
+    return _api.start(config: config, fallIntoRecovery: fallIntoRecovery);
   }
 
   /// {@macro vpn_plugin_update_configuration}

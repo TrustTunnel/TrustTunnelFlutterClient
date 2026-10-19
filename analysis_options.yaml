@@ -5,14 +5,17 @@ formatter:
   page_width: 120
 
 analyzer:
-  plugins:
-    - drift
   exclude:
     - .fvm/**
     - build/**
     - lib/common/localization/generated/**
     - lib/data/api/swagger/**
     - '**.g.dart'
+    - android/**
+    - ios/**
+    - windows/**
+    - macos/**
+    - linux/**
   language:
     strict-raw-types: true
     strict-casts: true
