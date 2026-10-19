@@ -122,7 +122,7 @@ class CustomAlertDialog extends StatelessWidget {
                         color: context.colors.neutralDark,
                       ),
                     ),
-                  if (closeIconVariant != null) closeIconVariant!,
+                  ?closeIconVariant,
                 ],
               ),
             )

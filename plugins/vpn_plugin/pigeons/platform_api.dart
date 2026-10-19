@@ -68,11 +68,21 @@ abstract class IVpnManager {
   /// - initiating any required permissions or service start,
   /// - transitioning the engine state accordingly.
   ///
+  /// [fallIntoRecovery] selects the initial connection failure policy:
+  /// - `false` (default): the engine retries the configured number of times
+  ///   and transitions to [VpnManagerState.disconnected] once all attempts
+  ///   fail;
+  /// - `true`: the engine enters the connection recovery algorithm and
+  ///   transitions to [VpnManagerState.waitingForRecovery] instead.
+  ///
+  /// Failures that happen after a successful connection are always handled by
+  /// the recovery algorithm, regardless of this parameter.
+  ///
   /// This call is executed on a serial background task queue to avoid blocking
   /// the platform UI thread.
   /// {@endtemplate}
   @TaskQueue(type: TaskQueueType.serialBackgroundThread)
-  void start({required String config});
+  void start({required String config, bool fallIntoRecovery = false});
 
   /// {@template i_vpn_manager_stop}
   /// Stops the VPN engine.

@@ -133,19 +133,17 @@ class TrustTunnelSensitiveDataSanitizer {
     LoggingSecurityType securityType,
     List<_SensitiveKeyMatcher> keyMatchers,
     Set<Object> visited,
-  ) =>
-      (switch (value) {
-            null || num() || bool() || DateTime() => value,
-            String() => _sanitizeText(value, securityType),
-            Uri() => _sanitizeText(value.toString(), securityType),
-            Object() => _sanitizeTrackedPayload(
-              value,
-              securityType,
-              keyMatchers,
-              visited,
-            ),
-          })
-          as T?;
+  ) => (switch (value) {
+    null || num() || bool() || DateTime() => value,
+    String() => _sanitizeText(value, securityType),
+    Uri() => _sanitizeText(value.toString(), securityType),
+    Object() => _sanitizeTrackedPayload(
+      value,
+      securityType,
+      keyMatchers,
+      visited,
+    ),
+  }) as T?;
 
   Object? _sanitizeTrackedPayload(
     Object value,

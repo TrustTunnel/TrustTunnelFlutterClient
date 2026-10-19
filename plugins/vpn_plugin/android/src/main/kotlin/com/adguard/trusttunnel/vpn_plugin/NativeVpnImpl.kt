@@ -29,9 +29,9 @@ class NativeVpnImpl(
         VpnService.setAppNotifier(queryLogFile, this)
     }
 
-    fun startPrepared(ctx: Context, config: String) {
-        log.info("startPrepared()")
-        VpnService.start(ctx, config)
+    fun startPrepared(ctx: Context, config: String, fallIntoRecovery: Boolean) {
+        log.info("startPrepared(fallIntoRecovery=$fallIntoRecovery)")
+        VpnService.start(ctx, config, fallIntoRecovery)
     }
 
     fun stop() {

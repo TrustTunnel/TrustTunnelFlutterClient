@@ -26,6 +26,7 @@ struct TrusttunnelStubState {
     int32_t start_return_value = 0;
     int start_call_count = 0;
     std::string last_start_config;
+    bool last_start_fall_into_recovery = false;
 
     // trusttunnel_service_stop
     int32_t stop_return_value = 0;
