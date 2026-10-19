@@ -300,17 +300,19 @@ int32_t VpnPlugin::AttachService() {
             s_notify_state_changed, this, s_notify_connection_info, this);
 }
 
-int32_t VpnPlugin::StartService(const std::string& config) {
-    return trusttunnel_service_start(config.c_str());
+int32_t VpnPlugin::StartService(
+        const std::string& config, bool fall_into_recovery) {
+    return trusttunnel_service_start(config.c_str(), fall_into_recovery);
 }
 
-std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
+std::optional<FlutterError> VpnPlugin::Start(
+        const std::string& config, bool fall_into_recovery) {
     if (m_ring_buffer_path.empty()) {
         return RuntimeDataUnavailableError();
     }
 
-    m_worker.Post([this, config = config]() {
-        int32_t start_result = StartService(config);
+    m_worker.Post([this, config = config, fall_into_recovery]() {
+        int32_t start_result = StartService(config, fall_into_recovery);
 
         if (start_result == TRUSTTUNNEL_SVC_ERR_NO_SUCH_SERVICE) {
 #ifdef VPN_SELF_INSTALL
@@ -321,7 +323,7 @@ std::optional<FlutterError> VpnPlugin::Start(const std::string& config) {
                 return;
             }
 
-            start_result = StartService(config);
+            start_result = StartService(config, fall_into_recovery);
 #else
             // Production builds never self-install: the installer provisions
             // the service. The user sees a failed connection and finds the
