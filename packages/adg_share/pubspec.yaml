@@ -12,8 +12,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  meta: 1.18.3
-  mime: 2.0.0
+  meta: 1.19.0
+  mime: 2.1.0
   path: 1.9.1
   plugin_platform_interface: 2.1.8
 

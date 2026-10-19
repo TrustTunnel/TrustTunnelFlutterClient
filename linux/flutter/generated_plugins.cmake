@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links_linux
-  screen_retriever_linux
   url_launcher_linux
   vpn_plugin
   window_manager

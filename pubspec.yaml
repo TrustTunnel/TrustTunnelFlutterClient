@@ -19,25 +19,25 @@ dependencies:
     git:
       url: https://github.com/AdguardTeam/adguard-dart-logger
       ref: v1.0.3
-  app_links: 7.0.0
+  app_links: 7.2.2
   collection: 1.19.1
   drift: 2.35.2
-  file_picker: 10.3.10
+  file_picker: 13.1.0
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  flutter_native_splash: 2.4.7
-  html: 0.15.6
+  flutter_native_splash: 2.4.8
+  html: 0.15.7
   intl: 0.20.3
   intl_utils: 2.8.17
-  package_info_plus: 9.0.0
+  package_info_plus: 10.2.2
   path_provider: 2.1.6
   punycoder: 0.2.2
   rxdart: 0.28.0
-  screen_retriever: 0.2.0
+  screen_retriever: 0.3.0
   shared_preferences: 2.5.5
-  url_launcher: 6.3.2
+  url_launcher: 6.3.3
   vpn_plugin:
     path: plugins/vpn_plugin
   tray_manager:
