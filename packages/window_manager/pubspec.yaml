@@ -25,13 +25,13 @@ dependencies:
   flutter:
     sdk: flutter
   path: ^1.8.2
-  screen_retriever: 0.3.0
+  screen_retriever: ^0.2.0
 
 dev_dependencies:
   dependency_validator: ^5.1.0
   flutter_test:
     sdk: flutter
-  flutter_lints: 6.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   plugin:

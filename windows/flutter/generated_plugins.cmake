@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
+  screen_retriever_windows
   url_launcher_windows
   vpn_plugin
   window_manager
