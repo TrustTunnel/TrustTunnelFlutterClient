@@ -48,7 +48,7 @@ jobs:
       - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
         id: kv
         with:
-          key: build-images/macos
+          key: build-images/macos-27
 
   build:
     needs: [resolve-runner]
@@ -77,7 +77,7 @@ jobs:
 
       - name: Select Flutter
         env:
-          FLUTTER_VERSION: '3.44.9'
+          FLUTTER_VERSION: '3.47.7'
         run: |
           set -euo pipefail
           : "${FLUTTER_SDKS_ROOT:?image does not provide versioned Flutter SDKs}"
@@ -112,8 +112,9 @@ jobs:
       - name: Pod install
         run: |
           set -euo pipefail
+          BUNDLE_GEMFILE="$PWD/macos/Gemfile" bundle exec pod --version
           cd macos
-          bundle exec pod install
+          BUNDLE_GEMFILE="$PWD/Gemfile" bundle exec pod install
           cd ..
 
       - name: Sync macOS signing assets
@@ -134,7 +135,8 @@ jobs:
           BUILD_NUMBER: ${{ inputs.build-number }}
         run: |
           set -euo pipefail
-          flutter build macos --release \
+          # Run via bundler so the implicit `pod install` uses the Gemfile-pinned CocoaPods.
+          BUNDLE_GEMFILE="$PWD/macos/Gemfile" bundle exec flutter build macos --release \
             --build-name="$PROJECT_VERSION" \
             --build-number="$BUILD_NUMBER" \
             --no-pub \
