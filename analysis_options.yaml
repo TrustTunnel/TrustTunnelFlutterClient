@@ -91,9 +91,9 @@ linter:
     prefer_expression_function_bodies: true
     avoid_redundant_argument_values: true
     non_constant_identifier_names: true
-    # prefer_final_locals: true
     prefer_final_fields: true
     type_literal_in_constant_pattern: false
+    unawaited_futures: true
     
 dart_code_metrics:
   formatter:

@@ -233,22 +233,24 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
 
     _selectedTabNotifier.value = selectedIndex;
-    navigatorState.pushAndRemoveUntil(
-      PageRouteBuilder(
-        settings: AppRoutes.byNavigationIndex(selectedIndex).settings,
-        pageBuilder:
-            (
-              context,
-              animation,
-              secondaryAnimation,
-            ) => getScreenByIndex(
-              selectedIndex,
-              deepLinkData: deepLinkData,
-            ),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
+    unawaited(
+      navigatorState.pushAndRemoveUntil(
+        PageRouteBuilder(
+          settings: AppRoutes.byNavigationIndex(selectedIndex).settings,
+          pageBuilder:
+              (
+                context,
+                animation,
+                secondaryAnimation,
+              ) => getScreenByIndex(
+                selectedIndex,
+                deepLinkData: deepLinkData,
+              ),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+        (_) => false,
       ),
-      (_) => false,
     );
 
     await SchedulerBinding.instance.endOfFrame;

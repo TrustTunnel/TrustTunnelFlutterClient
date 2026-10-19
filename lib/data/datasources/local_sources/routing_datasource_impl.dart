@@ -203,7 +203,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
                 ..limit(1))
               .getSingle();
 
-      _database.batch((batch) {
+      await _database.batch((batch) {
         batch.update(
           _database.servers,
           db.ServersCompanion(
