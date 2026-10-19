@@ -28,13 +28,12 @@ import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 /// start request has been handed off to the backend (not necessarily after a
 /// successful connection).
 /// {@endtemplate}
-typedef UpdateVpnCallback =
-    Future<void> Function({
-      required Server server,
-      required RoutingProfile routingProfile,
-      required List<String> excludedRoutes,
-      required VpnConfigurationLogLevel logLevel,
-    });
+typedef UpdateVpnCallback = Future<void> Function({
+  required Server server,
+  required RoutingProfile routingProfile,
+  required List<String> excludedRoutes,
+  required VpnConfigurationLogLevel logLevel,
+});
 
 /// {@template vpn_scope}
 /// Provides access to VPN state, logs, and control operations to a widget subtree.

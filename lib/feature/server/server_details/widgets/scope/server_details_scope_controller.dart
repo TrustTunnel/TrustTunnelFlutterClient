@@ -7,22 +7,21 @@ import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
-typedef DataChangedCallback =
-    void Function({
-      String? serverName,
-      String? ipAddress,
-      String? domain,
-      String? username,
-      String? password,
-      bool? enableIpv6,
-      String? pathToPemFile,
-      VpnProtocol? protocol,
-      TlsFingerprint? tlsFingerprint,
-      String? routingProfileId,
-      List<String>? dnsServers,
-      ValueData<String>? clientRandom,
-      ValueData<String>? customSni,
-    });
+typedef DataChangedCallback = void Function({
+  String? serverName,
+  String? ipAddress,
+  String? domain,
+  String? username,
+  String? password,
+  bool? enableIpv6,
+  String? pathToPemFile,
+  VpnProtocol? protocol,
+  TlsFingerprint? tlsFingerprint,
+  String? routingProfileId,
+  List<String>? dnsServers,
+  ValueData<String>? clientRandom,
+  ValueData<String>? customSni,
+});
 
 abstract class ServerDetailsScopeController {
   abstract final ServerData data;

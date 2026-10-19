@@ -44,7 +44,6 @@ $requiredItems = @(
     'flutter_windows.dll',
     'screen_retriever_windows_plugin.dll',
     'sqlite3.dll',
-    'sqlite3_flutter_libs_plugin.dll',
     'url_launcher_windows_plugin.dll',
     'vpn_plugin_plugin.dll',
     'window_manager_plugin.dll',

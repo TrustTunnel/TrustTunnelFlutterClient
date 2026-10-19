@@ -3,11 +3,10 @@ import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
-typedef RoutingDataChangedCallback =
-    void Function({
-      RoutingProfileData? data,
-      bool? hasInvalidRules,
-    });
+typedef RoutingDataChangedCallback = void Function({
+  RoutingProfileData? data,
+  bool? hasInvalidRules,
+});
 
 abstract class RoutingDetailsScopeController {
   abstract final String? id;
