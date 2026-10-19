@@ -55,7 +55,7 @@ class CustomListTileSeparated extends StatelessWidget {
             ),
           ),
         ),
-        if (actionBeforeDivider != null) actionBeforeDivider!,
+        ?actionBeforeDivider,
         if (showVerticalDivider)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
