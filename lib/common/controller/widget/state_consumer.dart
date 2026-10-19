@@ -8,8 +8,12 @@ import '../controller/state_controller.dart';
 ///
 /// Provides access to the [BuildContext], the controller instance,
 /// as well as the previous and current state values.
-typedef StateConsumerListener<Controller extends StateController<State>, State extends Object> =
-    void Function(BuildContext context, Controller controller, State previous, State current);
+typedef StateConsumerListener<Controller extends StateController<State>, State extends Object> = void Function(
+  BuildContext context,
+  Controller controller,
+  State previous,
+  State current,
+);
 
 /// Condition that decides whether a rebuild should be triggered
 /// for a given pair of previous and current state values.

@@ -2,11 +2,10 @@ import 'dart:ui';
 
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 
-typedef ExcludedRoutesDataChangedCallback =
-    void Function({
-      List<String>? excludedRoutes,
-      bool? hasInvalidRoutes,
-    });
+typedef ExcludedRoutesDataChangedCallback = void Function({
+  List<String>? excludedRoutes,
+  bool? hasInvalidRoutes,
+});
 
 abstract class ExcludedRoutesScopeController {
   abstract final List<String> excludedRoutes;
