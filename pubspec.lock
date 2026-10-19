@@ -810,10 +810,10 @@ packages:
     dependency: "direct main"
     description:
       name: punycoder
-      sha256: "982734df864d9588eb13e28ac1c5a46b57e22117b3696032ac58739966cec190"
+      sha256: aed79c05986a18782caa9bad649a4a786e840e1baaf6a2e1aa3a25d143d28e6e
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.2.2"
   recase:
     dependency: transitive
     description:
