@@ -4,8 +4,8 @@ import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card_connection_button.dart';
-import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_controller.dart';
 import 'package:trusttunnel/widgets/common/custom_list_tile_separated.dart';
 
 class ServersCard extends StatefulWidget {
@@ -21,7 +21,7 @@ class ServersCard extends StatefulWidget {
 }
 
 class _ServersCardState extends State<ServersCard> {
-  late VpnController _vpnController;
+  late VpnScopeController _vpnController;
 
   @override
   void didChangeDependencies() {
@@ -32,7 +32,7 @@ class _ServersCardState extends State<ServersCard> {
 
   @override
   Widget build(BuildContext context) {
-    final vpnConnectionState = _vpnController.hasPendingStart ? VpnState.connecting : _vpnController.state;
+    final vpnConnectionState = _vpnController.state;
     final vpnManagerState = _vpnController.currentlyConnectedServerId == widget.server.id
         ? vpnConnectionState
         : VpnState.disconnected;
@@ -48,8 +48,7 @@ class _ServersCardState extends State<ServersCard> {
       trailing: ServersCardConnectionButton(
         vpnManagerState: vpnManagerState,
         onPressed: () {
-          final isCurrentlyConnecting =
-              (_vpnController.state != VpnState.disconnected || _vpnController.hasPendingStart);
+          final isCurrentlyConnecting = _vpnController.state != VpnState.disconnected;
           if (_vpnController.currentlyConnectedServerId == widget.server.id && isCurrentlyConnecting) {
             _vpnController.disconnect();
           } else {

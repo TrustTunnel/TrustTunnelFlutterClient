@@ -22,8 +22,8 @@ import 'package:trusttunnel/feature/tray_menu/platform/windows/windows_tray_menu
 /// Handles tray actions and synchronizes native state independently of Flutter frames.
 final class TrayMenuController {
   final ValueListenable<TrayMenuState> _sources;
-  final Future<void> Function(String serverId) _connectVpn;
-  final AsyncCallback _disconnectVpn;
+  final ValueChanged<String> _connectVpn;
+  final VoidCallback _disconnectVpn;
   final ValueChanged<LoggingLevel> _updateLoggingLevel;
   final ValueChanged<LoggingSecurityType> _updateSecurityType;
   final void Function({VoidCallback? onError, VoidCallback? onCancelled}) _exportLogsCallback;
@@ -35,8 +35,8 @@ final class TrayMenuController {
 
   TrayMenuController({
     required this._sources,
-    required Future<void> Function(String serverId) connect,
-    required AsyncCallback disconnect,
+    required ValueChanged<String> connect,
+    required VoidCallback disconnect,
     required this._updateLoggingLevel,
     required this._updateSecurityType,
     required void Function({VoidCallback? onError, VoidCallback? onCancelled}) exportLogs,
@@ -63,7 +63,7 @@ final class TrayMenuController {
       onRoutingPressed: () => _runTrayMenuAction(() => _route(AppRoutes.routing)),
       onConnectionLogPressed: () => _runTrayMenuAction(() => _route(AppRoutes.queryLog)),
       onConnectPressed: () => _runTrayMenuAction(_connect),
-      onDisconnectPressed: () => _runTrayMenuAction(_disconnectVpn),
+      onDisconnectPressed: () => _runTrayMenuAction(() async => _disconnectVpn()),
       onConnectToServerPressed: (id) => _runTrayMenuAction(() => _connectToServerId(id)),
       onOtherServersPressed: () => _runTrayMenuAction(() => _route(AppRoutes.servers)),
       onLoggingLevelPressed: (level) => _runTrayMenuAction(() async => _updateLoggingLevel(level)),
@@ -230,21 +230,21 @@ final class TrayMenuController {
   Future<void> _connect() async {
     final targetServer = _resolveCurrentTargetServer();
     if (targetServer != null) {
-      await _connectVpn(targetServer.id);
+      _connectVpn(targetServer.id);
     }
   }
 
   Future<void> _connectToServerId(String serverId) async {
     final targetServer = _sources.value.servers.firstWhereOrNull((server) => server.id == serverId);
     if (targetServer != null) {
-      await _connectVpn(targetServer.id);
+      _connectVpn(targetServer.id);
     }
   }
 
   /// Builds a tray menu snapshot from live tray data and localization.
   TrayMenuData _prepareTrayMenuData() {
     final state = _sources.value;
-    final vpnState = state.hasPendingStart ? VpnState.connecting : state.vpnState;
+    final vpnState = state.vpnState;
     final servers = state.servers;
     final selectedServer = state.selectedServer;
     final connectionState = _mapConnectionStateForTray(vpnState);

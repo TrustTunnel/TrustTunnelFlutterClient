@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:ui' show AppExitResponse;
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
@@ -8,7 +10,7 @@ import 'package:trusttunnel/feature/app/controller/windows_app_window_controller
 import 'package:trusttunnel/feature/tray_menu/platform/macos/macos_exit_dialog.dart';
 import 'package:trusttunnel/feature/tray_menu/platform/windows/windows_exit_dialog.dart';
 
-/// Handles platform exit requests using the VPN state and queue owned by the scope.
+/// Owns platform exit dialogs, the Flutter response waiter and its timeout.
 mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
   /// On Windows, `stop()` only queues service work, so `disconnected` may never arrive if it fails.
   /// Limit the wait to avoid leaving the app exit request pending forever.
@@ -16,6 +18,13 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
 
   /// The pending exit request for Windows (the same reason as with the timeout)
   Future<AppExitResponse>? _windowsExitRequest;
+
+  /// Waits for the controller to confirm disconnection or report that the exit stop failed.
+  /// Keeping this resource here lets scope disposal finish the Flutter response synchronously.
+  Completer<bool>? _exitStopCompleter;
+
+  /// One timeout covers an in-flight start, the stop command and its native state confirmation.
+  Timer? _exitStopTimer;
 
   @protected
   bool get shouldShowExitDialog;
@@ -34,7 +43,7 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
   void cancelVpnExit();
 
   @protected
-  Future<void> stopVpnForExit({Duration? timeout});
+  void requestVpnStopForExit();
 
   @protected
   Future<void> notifyVpnOperationError();
@@ -56,7 +65,11 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
           Object error,
           StackTrace stackTrace,
         ) async {
-          FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+          logger.logError(
+            'VPN exit failed',
+            error: error,
+            stackTrace: stackTrace,
+          );
           await notifyVpnOperationError();
 
           return AppExitResponse.cancel;
@@ -86,7 +99,11 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
         if (mounted) {
           cancelVpnExit();
         }
-        FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+        logger.logError(
+          'VPN exit failed',
+          error: error,
+          stackTrace: stackTrace,
+        );
         await notifyVpnOperationError();
 
         return AppExitResponse.cancel;
@@ -112,10 +129,12 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
             message: localization.exitDialogDescription,
             quitButtonText: localization.quit,
             dontQuitButtonText: localization.dontQuit,
-          ).onError((_, _) async {
-            // Here, we ignore the error and the stack trace, since these are native dialogs,
-            // and we don't need to know the full stack trace anyway, as the relevant section will be visible
-            // (showing that the error occurred in them).
+          ).onError((Object error, StackTrace stackTrace) async {
+            logger.logError(
+              'VPN exit dialog failed',
+              error: error,
+              stackTrace: stackTrace,
+            );
             await notifyVpnOperationError();
 
             return MacosExitDialogResult.cancel;
@@ -126,7 +145,10 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
     }
 
     beginVpnExit();
-    await stopVpnForExit();
+    final stopped = await stopVpnForExit();
+    if (!stopped || !mounted) {
+      return AppExitResponse.cancel;
+    }
     await appWindowController.setPreventClose(false);
 
     return AppExitResponse.exit;
@@ -146,10 +168,12 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
             message: localization.exitDialogDescription,
             quitButtonText: localization.quit,
             dontQuitButtonText: localization.dontQuit,
-          ).onError((_, _) async {
-            // Here, we ignore the error and the stack trace, since these are native dialogs,
-            // and we don't need to know the full stack trace anyway, as the relevant section will be visible
-            // (showing that the error occurred in them).
+          ).onError((Object error, StackTrace stackTrace) async {
+            logger.logError(
+              'VPN exit dialog failed',
+              error: error,
+              stackTrace: stackTrace,
+            );
             await notifyVpnOperationError();
 
             return WindowsExitDialogResult.cancel;
@@ -164,8 +188,14 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
     }
 
     beginVpnExit();
-    final disconnected = await _stopWindowsVpnWithWaitForDisconnection();
-    if (disconnected || (mounted && isVpnDisconnectedForExit)) {
+
+    final disconnected = await stopVpnForExit(timeout: _windowsDisconnectOnExitTimeout);
+
+    if (!mounted) {
+      return AppExitResponse.cancel;
+    }
+
+    if (disconnected || isVpnDisconnectedForExit) {
       final window = appWindowController;
       if (window is WindowsAppWindowController) {
         await window.prepareToExit();
@@ -174,14 +204,54 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
       return AppExitResponse.exit;
     }
 
-    await notifyVpnOperationError();
-
     return AppExitResponse.cancel;
   }
 
-  Future<bool> _stopWindowsVpnWithWaitForDisconnection() =>
-      stopVpnForExit(timeout: _windowsDisconnectOnExitTimeout).then(
-        (_) => true,
-        onError: (_) => false,
-      );
+  /// Technical waiting belongs to the widget lifecycle, not immutable VPN state.
+  @protected
+  Future<bool> stopVpnForExit({Duration? timeout}) async {
+    final pending = _exitStopCompleter;
+    if (pending != null) {
+      return pending.future;
+    }
+
+    final completer = Completer<bool>();
+    _exitStopCompleter = completer;
+
+    if (timeout != null) {
+      _exitStopTimer = Timer(timeout, _onExitStopTimeout);
+    }
+
+    requestVpnStopForExit();
+
+    try {
+      return await completer.future;
+    } finally {
+      _exitStopTimer?.cancel();
+      _exitStopTimer = null;
+      _exitStopCompleter = null;
+    }
+  }
+
+  /// Receives the controller result without reporting a command error a second time in the mixin.
+  @protected
+  void completeVpnExitStop(bool stopped) {
+    final completer = _exitStopCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(stopped);
+    }
+  }
+
+  @protected
+  void disposeVpnExitHandling() {
+    _exitStopTimer?.cancel();
+    completeVpnExitStop(false);
+  }
+
+  void _onExitStopTimeout() {
+    // A timed-out exit must not submit a delayed stop after exit has been cancelled.
+    cancelVpnExit();
+    completeVpnExitStop(false);
+    unawaited(notifyVpnOperationError());
+  }
 }

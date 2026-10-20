@@ -1,15 +1,14 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
-import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_controller.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope_controller.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope_controller.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_configuration.dart';
 
 /// Reads saved VPN settings without caching state or owning the controllers.
 final class VpnConfigurationSources implements Listenable {
@@ -47,9 +46,7 @@ final class VpnConfigurationSources implements Listenable {
       _appLoggingScopeController.error != null ||
       _excludedRoutesScopeController.error != null;
 
-  bool get serversLoading => _serversScopeController.loading;
-
-  PresentationException? get serversError => _serversScopeController.error;
+  int get selectionRequestRevision => _serversScopeController.selectionRequestRevision;
 
   List<Server> get servers => _serversScopeController.servers;
 
@@ -61,13 +58,7 @@ final class VpnConfigurationSources implements Listenable {
   @override
   void removeListener(VoidCallback listener) => _sources.removeListener(listener);
 
-  ({
-    Server server,
-    RoutingProfile routingProfile,
-    List<String> excludedRoutes,
-    VpnConfigurationLogLevel logLevel,
-  })?
-  configurationFor(String? serverId) {
+  VpnConfiguration? configurationFor(String? serverId) {
     final server = _serversScopeController.servers.firstWhereOrNull((server) => server.id == serverId);
     if (server == null) {
       return null;
@@ -79,11 +70,10 @@ final class VpnConfigurationSources implements Listenable {
       return null;
     }
 
-    return (
-      // Selection is metadata and must not participate in configuration equality.
-      server: server.copyWith(serverData: server.serverData.copyWith(selected: false)),
+    return VpnConfiguration(
+      server: server,
       routingProfile: profile,
-      excludedRoutes: List<String>.of(_excludedRoutesScopeController.initialExcludedRoutes),
+      excludedRoutes: _excludedRoutesScopeController.initialExcludedRoutes,
       logLevel: switch (_appLoggingScopeController.securityType) {
         LoggingSecurityType.stripped => VpnConfigurationLogLevel.error,
         LoggingSecurityType.full => switch (_appLoggingScopeController.loggingLevel) {

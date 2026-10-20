@@ -50,10 +50,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final vpnOperationErrorListenable = VpnScope.vpnControllerOf(
-      context,
-      listen: false,
-    ).operationErrorListenable;
+    final vpnOperationErrorListenable = VpnScope.operationErrorsOf(context);
     if (!identical(_vpnOperationErrorListenable, vpnOperationErrorListenable)) {
       _vpnOperationErrorListenable?.removeListener(_onVpnOperationError);
       _vpnOperationErrorListenable = vpnOperationErrorListenable;
