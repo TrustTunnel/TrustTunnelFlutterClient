@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:screen_retriever/screen_retriever.dart';
+import 'package:trusttunnel/common/platform/windows_exit_dialog.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
-import 'package:trusttunnel/feature/tray_menu/platform/windows/windows_exit_dialog.dart';
 import 'package:window_manager/window_manager.dart';
 
 final class WindowsAppWindowController implements AppWindowController {
