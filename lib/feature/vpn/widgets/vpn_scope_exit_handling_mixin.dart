@@ -5,10 +5,10 @@ import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/common/platform/macos_exit_dialog.dart';
+import 'package:trusttunnel/common/platform/windows_exit_dialog.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
-import 'package:trusttunnel/feature/tray_menu/platform/macos/macos_exit_dialog.dart';
-import 'package:trusttunnel/feature/tray_menu/platform/windows/windows_exit_dialog.dart';
 
 /// Owns platform exit dialogs, the Flutter response waiter and its timeout.
 mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
@@ -160,9 +160,7 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
         return AppExitResponse.cancel;
       }
       final localization = Localization.ln;
-      WindowsExitDialogResult result;
-
-      result =
+      final WindowsExitDialogResult result =
           await WindowsExitDialog.show(
             title: localization.exitDialogTitle,
             message: localization.exitDialogDescription,
@@ -178,7 +176,6 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
 
             return WindowsExitDialogResult.cancel;
           });
-
       if (!mounted || result != WindowsExitDialogResult.quit) {
         return AppExitResponse.cancel;
       }
