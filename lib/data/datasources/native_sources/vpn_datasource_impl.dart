@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:trusttunnel/common/extensions/model_extensions.dart';
 import 'package:trusttunnel/common/logging/extensions/vpn_logger_extension.dart';
+import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
 import 'package:trusttunnel/common/utils/upstream_protocol_encoder.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
@@ -107,6 +108,9 @@ class VpnDataSourceImpl implements VpnDataSource {
       name: server.name,
       hostName: server.domain,
       hasIpv6: server.ipv6,
+      tlsProfile: const TlsProfileEncoder().convert(
+        server.tlsFingerprint,
+      ),
       certificate: server.certificate?.data ?? '',
       clientRandom: server.tlsPrefix ?? '',
       customSni: server.customSni ?? '',
@@ -184,6 +188,9 @@ class VpnDataSourceImpl implements VpnDataSource {
       name: server.name,
       hostName: server.domain,
       hasIpv6: server.ipv6,
+      tlsProfile: const TlsProfileEncoder().convert(
+        server.tlsFingerprint,
+      ),
       username: server.username,
       password: server.password,
       addresses: [

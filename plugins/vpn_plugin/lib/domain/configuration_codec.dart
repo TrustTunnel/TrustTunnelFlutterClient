@@ -18,6 +18,7 @@ import 'package:vpn_plugin/models/configuration_log_level.dart';
 import 'package:vpn_plugin/models/endpoint.dart';
 import 'package:vpn_plugin/models/ini_document.dart';
 import 'package:vpn_plugin/models/socks.dart';
+import 'package:vpn_plugin/models/tls_profile.dart';
 import 'package:vpn_plugin/models/tun.dart';
 import 'package:vpn_plugin/models/upstream_protocol.dart';
 import 'package:vpn_plugin/models/vpn_mode.dart';
@@ -86,6 +87,9 @@ abstract final class ConfigurationCodecKeys {
 
   /// Endpoint TLS client random key.
   static const clientRandom = 'client_random';
+
+  /// Endpoint TLS ClientHello fingerprint key.
+  static const tlsProfile = 'tls_profile';
 
   /// Endpoint skip verification key.
   static const skipVerification = 'skip_verification';
@@ -178,6 +182,7 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     endpoint.setString(ConfigurationCodecKeys.username, config.endpoint.username);
     endpoint.setString(ConfigurationCodecKeys.password, config.endpoint.password);
     endpoint.setString(ConfigurationCodecKeys.clientRandom, config.endpoint.clientRandom);
+    endpoint.setString(ConfigurationCodecKeys.tlsProfile, config.endpoint.tlsProfile.value);
     endpoint.setString(ConfigurationCodecKeys.customSni, config.endpoint.customSni);
     endpoint.setBool(ConfigurationCodecKeys.skipVerification, config.endpoint.skipVerification);
     endpoint.setMultilinePem(ConfigurationCodecKeys.certificate, config.endpoint.certificate);
@@ -262,6 +267,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final String username = endpoint.getString(ConfigurationCodecKeys.username) ?? '';
     final String password = endpoint.getString(ConfigurationCodecKeys.password) ?? '';
     final String clientRandom = endpoint.getString(ConfigurationCodecKeys.clientRandom) ?? '';
+    final String tlsProfileStr = endpoint.getString(ConfigurationCodecKeys.tlsProfile) ?? '';
     final bool skipVerification = endpoint.getBool(ConfigurationCodecKeys.skipVerification) ?? false;
     final String customSni = endpoint.getString(ConfigurationCodecKeys.customSni) ?? '';
 
@@ -321,6 +327,12 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
         dnsUpStreams: dnsUpStreams,
         exclusions: exclusions,
         clientRandom: clientRandom,
+        tlsProfile: _enumByValue(
+          TlsProfile.values,
+          tlsProfileStr,
+          (e) => e.value,
+          fallback: TlsProfile.chrome,
+        ),
         skipVerification: skipVerification,
         certificate: certificate,
         antiDpi: antiDpi,

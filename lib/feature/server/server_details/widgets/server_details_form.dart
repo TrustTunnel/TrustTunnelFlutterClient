@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/extensions/locale_enum_extension.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
@@ -10,6 +11,7 @@ import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/scope/server_details_scope_aspect.dart';
@@ -132,20 +134,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
                 ),
               ),
               CustomTextField(
-                value: _formData.customSni,
-                label: context.ln.customSniLabel,
-                hint: context.ln.customSniHint,
-                onChanged: (domain) => _onDataChanged(
-                  context,
-                  customSni: ValueData(domain.trim().isEmpty ? null : domain),
-                ),
-                error: ValidationUtils.getErrorString(
-                  context,
-                  _fieldErrors,
-                  PresentationFieldName.sni,
-                ),
-              ),
-              CustomTextField(
                 value: _formData.username,
                 label: context.ln.username,
                 hint: context.ln.enterUsername,
@@ -183,16 +171,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
                   ),
                 ),
               ),
-              CustomDropdownMenu<VpnProtocol>.expanded(
-                value: _formData.vpnProtocol,
-                values: VpnProtocol.values,
-                toText: (value) => value.localized(context),
-                labelText: context.ln.protocol,
-                onChanged: (protocol) => _onDataChanged(
-                  context,
-                  protocol: protocol,
-                ),
-              ),
               CustomDropdownMenu<RoutingProfile>.expanded(
                 value: _pickedRoutingProfile,
                 values: _routingProfiles,
@@ -203,42 +181,95 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
                   routingProfileId: profile?.id,
                 ),
               ),
-              CustomTextField(
-                value: _formData.dnsServers.join('\n'),
-                hint: context.ln.enterDnsServerHint,
-                label: context.ln.enterDnsServerLabel,
-                helper: context.ln.enterDnsServerHelper,
-                minLines: 1,
-                maxLines: 4,
-                onChanged: (dns) => _onDataChanged(
-                  context,
-                  dnsServers: dns.trim().split('\n'),
-                ),
-                error: ValidationUtils.getErrorString(
-                  context,
-                  _fieldErrors,
-                  PresentationFieldName.dnsServers,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: CustomTextField(
+                  value: _formData.dnsServers.join('\n'),
+                  hint: context.ln.enterDnsServerHint,
+                  label: context.ln.enterDnsServerLabel,
+                  helper: context.ln.enterDnsServerHelper,
+                  minLines: 1,
+                  maxLines: 4,
+                  onChanged: (dns) => _onDataChanged(
+                    context,
+                    dnsServers: dns.trim().split('\n'),
+                  ),
+                  error: ValidationUtils.getErrorString(
+                    context,
+                    _fieldErrors,
+                    PresentationFieldName.dnsServers,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(
-            height: 12,
-          ),
-          CustomTextField(
-            value: _formData.tlsPrefix,
-            hint: context.ln.clientRandomHint,
-            label: context.ln.clientRandomLabel,
-            helper: context.ln.clientRandomHelper,
-            counter: const SizedBox.shrink(),
-            maxLength: 64,
-            onChanged: (tls) => _onDataChanged(
-              context,
-              clientRandom: ValueData(
-                tls.isEmpty ? null : tls,
+          Padding(
+            padding: EdgeInsets.only(top: context.isMobileBreakpoint ? 32 : 16, bottom: 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                context.ln.advanced,
+                style: context.textTheme.titleMedium,
               ),
             ),
-            error: clientRandomError,
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 32,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: CustomDropdownMenu<VpnProtocol>.expanded(
+                  value: _formData.vpnProtocol,
+                  values: VpnProtocol.values,
+                  toText: (value) => value.localized(context),
+                  labelText: context.ln.protocol,
+                  onChanged: (protocol) => _onDataChanged(
+                    context,
+                    protocol: protocol,
+                  ),
+                ),
+              ),
+              CustomDropdownMenu<TlsFingerprint>.expanded(
+                value: _formData.tlsFingerprint,
+                values: TlsFingerprint.values,
+                toText: (value) => value.localized(context),
+                labelText: context.ln.tlsFingerprint,
+                onChanged: (fingerprint) => _onDataChanged(
+                  context,
+                  tlsFingerprint: fingerprint,
+                ),
+              ),
+              CustomTextField(
+                value: _formData.customSni,
+                label: context.ln.customSniLabel,
+                hint: context.ln.customSniHint,
+                onChanged: (domain) => _onDataChanged(
+                  context,
+                  customSni: ValueData(domain.trim().isEmpty ? null : domain),
+                ),
+                error: ValidationUtils.getErrorString(
+                  context,
+                  _fieldErrors,
+                  PresentationFieldName.sni,
+                ),
+              ),
+              CustomTextField(
+                value: _formData.tlsPrefix,
+                hint: context.ln.clientRandomHint,
+                label: context.ln.clientRandomLabel,
+                helper: context.ln.clientRandomHelper,
+                counter: const SizedBox.shrink(),
+                maxLength: 64,
+                onChanged: (tls) => _onDataChanged(
+                  context,
+                  clientRandom: ValueData(
+                    tls.isEmpty ? null : tls,
+                  ),
+                ),
+                error: clientRandomError,
+              ),
+            ],
           ),
           const SizedBox(
             height: 16,
@@ -308,6 +339,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
     ValueData<String>? clientRandom,
     bool? enableIpv6,
     VpnProtocol? protocol,
+    TlsFingerprint? tlsFingerprint,
     String? routingProfileId,
     List<String>? dnsServers,
     ValueData<String>? customSni,
@@ -322,6 +354,7 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
         username: username,
         password: password,
         protocol: protocol,
+        tlsFingerprint: tlsFingerprint,
         clientRandom: clientRandom,
         enableIpv6: enableIpv6,
         routingProfileId: routingProfileId,
