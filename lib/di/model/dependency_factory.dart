@@ -14,13 +14,11 @@ import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_dat
 import 'package:trusttunnel/data/datasources/local_sources/auto_connect_on_launch_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
-import 'package:trusttunnel/data/datasources/local_sources/logs_export_destination_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_local_source_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
-import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/native_sources/launch_at_login_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/native_sources/open_main_window_on_login_datasource_impl.dart';
@@ -64,8 +62,6 @@ abstract class DependencyFactory {
   AppStateLoggingDataSource get appStateLoggingDataSource;
 
   LogsLocalSource get exportLogsLocalSource;
-
-  LogsExportDestinationDataSource get logsExportDestinationDataSource;
 
   LaunchAtLoginDataSource get launchAtLoginDataSource;
 
@@ -117,8 +113,6 @@ class DependencyFactoryImpl implements DependencyFactory {
   AppStateLoggingDataSource? _appStateLoggingDataSource;
 
   LogsLocalSource? _exportLogsLocalSource;
-
-  LogsExportDestinationDataSource? _logsExportDestinationDataSource;
 
   LaunchAtLoginDataSource? _launchAtLoginDataSource;
 
@@ -189,12 +183,6 @@ class DependencyFactoryImpl implements DependencyFactory {
     vpnPlugin: vpnPlugin,
     sharedPreferences: sharedPreferences,
   );
-
-  @override
-  LogsExportDestinationDataSource get logsExportDestinationDataSource =>
-      _logsExportDestinationDataSource ??= LogsExportDestinationDataSourceImpl(
-        filePicker: FilePicker.platform,
-      );
 
   @override
   LaunchAtLoginDataSource get launchAtLoginDataSource => _launchAtLoginDataSource ??= LaunchAtLoginDataSourceImpl();
