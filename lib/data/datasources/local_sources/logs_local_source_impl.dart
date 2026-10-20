@@ -75,18 +75,19 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     List<String>? allowedExtensions,
     Uint8List? data,
   }) async {
-    // This is necessary to handle a couple of corner cases where we need to make absolutely sure that the dialog “knows” which window it belongs to.
-    if (defaultTargetPlatform == TargetPlatform.windows &&
-        type == ExportFileType.custom &&
-        listEquals(allowedExtensions, ['zip'])) {
-      // The runner supplies the real main HWND as owner and reveals it just
-      // before the dialog, even if archive creation ran with the window hidden.
+    // Log export is available from the tray, and the main window may be hidden
+    // while the archive is being created. The native dialog restores the window
+    // immediately before opening and explicitly uses its HWND as the owner.
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      final extensions = type == ExportFileType.custom ? allowedExtensions : null;
       final path = await const MethodChannel('trusttunnel/windows_main_window').invokeMethod<String>(
-        'pickLogExportPath',
+        'pickSaveFilePath',
         {
           'dialogTitle': dialogTitle,
           'fileName': fileName,
           'initialDirectory': initialDirectory,
+          'allowedExtensions': extensions,
+          'defaultExtension': extensions == null || extensions.isEmpty ? null : extensions.first,
         },
       );
       if (path != null && data != null)

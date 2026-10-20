@@ -33,7 +33,7 @@ public:
 private:
   void Show();
   void Hide();
-  void PickLogExportPath(
+  void PickSaveFilePath(
       const flutter::EncodableMap &arguments,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
   void TryShow();

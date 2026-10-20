@@ -14,12 +14,8 @@ namespace {
 constexpr UINT_PTR kTrayWaitTimer = 0x5454;
 constexpr UINT kTrayWaitMilliseconds = 30000;
 
-std::wstring WideArgument(const flutter::EncodableMap &arguments,
-                          const char *key) {
-  const auto item = arguments.find(flutter::EncodableValue(key));
-  if (item == arguments.end())
-    return {};
-  const auto *text = std::get_if<std::string>(&item->second);
+std::wstring WideString(const flutter::EncodableValue &value) {
+  const auto *text = std::get_if<std::string>(&value);
   if (!text || text->empty())
     return {};
   const int length =
@@ -31,6 +27,12 @@ std::wstring WideArgument(const flutter::EncodableMap &arguments,
   MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text->data(),
                       static_cast<int>(text->size()), wide.data(), length);
   return wide;
+}
+
+std::wstring WideArgument(const flutter::EncodableMap &arguments,
+                          const char *key) {
+  const auto item = arguments.find(flutter::EncodableValue(key));
+  return item == arguments.end() ? std::wstring{} : WideString(item->second);
 }
 } // namespace
 
@@ -66,16 +68,16 @@ WindowsMainWindow::WindowsMainWindow(flutter::BinaryMessenger *messenger,
       TryShow();
     } else if (call.method_name() == "hide") {
       Hide();
-    } else if (call.method_name() == "pickLogExportPath") {
+    } else if (call.method_name() == "pickSaveFilePath") {
       const auto *arguments =
           call.arguments()
               ? std::get_if<flutter::EncodableMap>(call.arguments())
               : nullptr;
       if (!arguments) {
-        result->Error("argument-error", "Expected log export dialog arguments");
+        result->Error("argument-error", "Expected save file dialog arguments");
         return;
       }
-      PickLogExportPath(*arguments, std::move(result));
+      PickSaveFilePath(*arguments, std::move(result));
       return;
     } else if (call.method_name() == "prepareToExit") {
       // Also covers a close request received before the tray became ready:
@@ -103,7 +105,7 @@ WindowsMainWindow::~WindowsMainWindow() {
   channel_->SetMethodCallHandler(nullptr);
 }
 
-void WindowsMainWindow::PickLogExportPath(
+void WindowsMainWindow::PickSaveFilePath(
     const flutter::EncodableMap &arguments,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (!IsWindowEnabled(window_)) {
@@ -116,23 +118,56 @@ void WindowsMainWindow::PickLogExportPath(
   const auto title = WideArgument(arguments, "dialogTitle");
   const auto name = WideArgument(arguments, "fileName");
   const auto directory = WideArgument(arguments, "initialDirectory");
+  const auto default_extension = WideArgument(arguments, "defaultExtension");
+  std::wstring pattern;
+  const auto extensions =
+      arguments.find(flutter::EncodableValue("allowedExtensions"));
+  if (extensions != arguments.end() && !extensions->second.IsNull()) {
+    const auto *values =
+        std::get_if<flutter::EncodableList>(&extensions->second);
+    if (!values) {
+      result->Error("argument-error", "Expected a list of file extensions");
+      return;
+    }
+    for (const auto &value : *values) {
+      const auto extension = WideString(value);
+      if (extension.empty() ||
+          extension.find_first_of(L"\\/:*?\"<>|; ") != std::wstring::npos ||
+          extension.find(L'\0') != std::wstring::npos ||
+          extension.front() == L'.') {
+        result->Error("argument-error", "Invalid file extension");
+        return;
+      }
+      if (!pattern.empty())
+        pattern += L";";
+      pattern += L"*." + extension;
+    }
+  }
+  const bool all_files = pattern.empty();
+  if (all_files)
+    pattern = L"*.*";
+  std::wstring filter =
+      (all_files ? L"All files (" : L"Files (") + pattern + L")";
+  filter.push_back(L'\0');
+  filter += pattern;
+  filter.push_back(L'\0');
+  filter.push_back(L'\0');
   std::vector<wchar_t> path(32768, L'\0');
   if (name.size() >= path.size()) {
-    result->Error("argument-error", "Log archive name is too long");
+    result->Error("argument-error", "File name is too long");
     return;
   }
   name.copy(path.data(), name.size());
   OPENFILENAMEW dialog = {};
   dialog.lStructSize = sizeof(dialog);
-  // Explicit ownership remains correct even when Windows declines foreground
-  // activation. Show again here, after potentially lengthy archive creation.
   dialog.hwndOwner = window_;
   dialog.lpstrTitle = title.empty() ? nullptr : title.c_str();
   dialog.lpstrFile = path.data();
   dialog.nMaxFile = static_cast<DWORD>(path.size());
   dialog.lpstrInitialDir = directory.empty() ? nullptr : directory.c_str();
-  dialog.lpstrFilter = L"ZIP archive (*.zip)\0*.zip\0\0";
-  dialog.lpstrDefExt = L"zip";
+  dialog.lpstrFilter = filter.c_str();
+  dialog.lpstrDefExt =
+      default_extension.empty() ? nullptr : default_extension.c_str();
   dialog.Flags =
       OFN_EXPLORER | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST;
   if (GetSaveFileNameW(&dialog)) {
@@ -140,10 +175,10 @@ void WindowsMainWindow::PickLogExportPath(
   } else {
     const DWORD error = CommDlgExtendedError();
     if (error)
-      result->Error("dialog-error", "Failed to open log export dialog",
+      result->Error("dialog-error", "Failed to open save file dialog",
                     flutter::EncodableValue(static_cast<int64_t>(error)));
     else
-      result->Success(); // User cancelled.
+      result->Success();
   }
 }
 
