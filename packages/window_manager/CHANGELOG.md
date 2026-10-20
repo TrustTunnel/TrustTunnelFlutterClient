@@ -1,4 +1,4 @@
-### 0.5.0-pre.1
+### 0.5.0-rc.1
 
 First version of the internal TrustTunnel fork.
 Includes previously unversioned local changes.
