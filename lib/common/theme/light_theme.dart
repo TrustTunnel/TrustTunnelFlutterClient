@@ -1,7 +1,3 @@
-// because some of the Windows values must be `final`, not `const`, so without this rule
-// the block containing the system colors would have to be split up
-//
-// ignore_for_file: member-ordering
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
@@ -68,9 +64,9 @@ class LightTheme {
   static const _windowsSystemTitleBarCloseButtonBackgroundHover = Color(0xFFE81123);
   static const _windowsSystemTitleBarCloseButtonBackgroundPressed = Color(0xFFC50F1F);
   static const _windowsSystemTitleBarCloseButtonForeground = Colors.white;
-  static final _windowsSystemTitleBarTitleInactive = _windowsSystemTitleBarTitle.withValues(alpha: 0.6);
-  static final _windowsSystemTitleBarButtonBackgroundHover = Colors.black.withValues(alpha: 0.08);
-  static final _windowsSystemTitleBarButtonBackgroundPressed = Colors.black.withValues(alpha: 0.16);
+  static const _windowsSystemTitleBarTitleInactive = Color(0x993D3D3D);
+  static const _windowsSystemTitleBarButtonBackgroundHover = Color(0x14000000);
+  static const _windowsSystemTitleBarButtonBackgroundPressed = Color(0x29000000);
 
   // Legacy colors
   static const _primary1 = Color(0xFF67B279);
@@ -118,7 +114,7 @@ class LightTheme {
     systemStatusBarContrastEnforced: false,
   );
 
-  late final _customColors = CustomColors(
+  late final _customColors = const CustomColors(
     accent: _accent,
     accentHover: _accentHover,
     accentPressed: _accentPressed,
@@ -853,6 +849,8 @@ class LightTheme {
   );
 
   late final _dialogTheme = DialogThemeData(
+    // TODO: investigate why this color is used and if it's correct
+    barrierColor: Colors.black54,
     backgroundColor: _background,
     surfaceTintColor: _transparent,
     titleTextStyle: _textTheme.headlineSmall,
