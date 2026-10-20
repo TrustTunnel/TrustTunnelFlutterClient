@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -18,15 +19,13 @@ final class WindowsAppWindowController implements AppWindowController {
         'WindowsAppWindowController is only supported on Windows',
       );
 
-  /// Report the error and exit the application by invoking native method.
+  /// Logs the error and exits the application by invoking the native method.
   static Future<void> failLaunch(Object error, StackTrace stackTrace) async {
     try {
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'Windows startup',
-        ),
+      logger.logError(
+        'Windows app launch failed',
+        error: error,
+        stackTrace: stackTrace,
       );
     } finally {
       await _mainWindowChannel.invokeMethod<void>('failLaunch');
@@ -72,13 +71,11 @@ final class WindowsAppWindowController implements AppWindowController {
         ),
       );
     } catch (error, stackTrace) {
-      // Report without rethrowing so startup can continue with the default bounds.
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'Windows startup',
-        ),
+      // Continue startup with the default bounds.
+      logger.logError(
+        'Unable to get the primary display for Windows app sizing',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
     await windowManager.waitUntilReadyToShow(
@@ -127,12 +124,10 @@ final class WindowsAppWindowController implements AppWindowController {
     } catch (error, stackTrace) {
       // Leave the process alive if exit preparation failed. Setup aborts preparation on
       // timeout and releases the launch lock.
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'Windows installer exit',
-        ),
+      logger.logError(
+        'Unable to exit the Windows app for installation',
+        error: error,
+        stackTrace: stackTrace,
       );
 
       rethrow;

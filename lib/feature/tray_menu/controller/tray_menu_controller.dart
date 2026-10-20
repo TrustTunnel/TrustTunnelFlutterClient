@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' show AppExitType;
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -55,7 +56,11 @@ final class TrayMenuController {
            TargetPlatform.windows => const WindowsTrayMenuItemsBuilder(),
            _ => throw UnsupportedError('Tray menu is not supported on $defaultTargetPlatform'),
          },
-         onNativeError: (error) => _reportBackgroundError(error, StackTrace.current),
+         onNativeError: (error) => logger.logError(
+           'Native tray menu operation failed',
+           error: error,
+           stackTrace: StackTrace.current,
+         ),
        ) {
     _callbacks = TrayMenuCallbacks(
       onAddServerPressed: () => _runTrayMenuAction(() => _route(AppRoutes.serverDetails)),
@@ -75,14 +80,6 @@ final class TrayMenuController {
     _sources.addListener(_onSourcesChanged);
     _enqueueSync();
   }
-
-  static void _reportBackgroundError(Object error, StackTrace stackTrace) => FlutterError.reportError(
-    FlutterErrorDetails(
-      exception: error,
-      stack: stackTrace,
-      library: 'tray menu',
-    ),
-  );
 
   late final TrayMenuCallbacks _callbacks;
   TrayMenuLabels _labels;
@@ -142,12 +139,10 @@ final class TrayMenuController {
   Future<void> _quit() async => await ServicesBinding.instance.exitApplication(AppExitType.cancelable);
 
   Future<void> _onError(Object error, StackTrace stack) async {
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: error,
-        stack: stack,
-        library: 'tray menu',
-      ),
+    logger.logError(
+      'Tray menu operation failed',
+      error: error,
+      stackTrace: stack,
     );
 
     await _showMessage();
@@ -217,13 +212,21 @@ final class TrayMenuController {
 
             if (!_syncErrorReported) {
               _syncErrorReported = true;
-              _reportBackgroundError(error, stackTrace);
+              logger.logError(
+                'Unable to synchronize tray menu',
+                error: error,
+                stackTrace: stackTrace,
+              );
             }
           }
         })
         .catchError((Object error, StackTrace stackTrace) {
-          // Report and resolve this Future so later menu synchronizations can still run.
-          FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+          // Resolve this Future so later menu synchronizations can still run.
+          logger.logError(
+            'Tray menu synchronization queue failed',
+            error: error,
+            stackTrace: stackTrace,
+          );
         });
   }
 

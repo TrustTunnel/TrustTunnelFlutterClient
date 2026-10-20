@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/assets/font_families.dart';
@@ -112,13 +113,11 @@ class _AppCustomWindowsTitleBarState extends State<AppCustomWindowsTitleBar> wit
       final state = await windowManager.getWindowsTitleBarState();
       onWindowsTitleBarStateChanged(state);
     } catch (error, stackTrace) {
-      // Report without rethrowing: the default caption state is sufficient for startup.
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'Windows title bar',
-        ),
+      // The default caption state is sufficient for startup.
+      logger.logError(
+        'Unable to synchronize Windows title bar state',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }
@@ -184,13 +183,11 @@ class _AppCustomWindowsTitleBarState extends State<AppCustomWindowsTitleBar> wit
       if (!_launchCompleted) {
         await WindowsAppWindowController.failLaunch(error, stackTrace);
       } else {
-        // Launch already succeeded; report the update failure and keep the app running.
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stackTrace,
-            library: 'Windows title bar',
-          ),
+        // Launch already succeeded; keep the app running.
+        logger.logError(
+          'Unable to update Windows title bar regions',
+          error: error,
+          stackTrace: stackTrace,
         );
       }
     }

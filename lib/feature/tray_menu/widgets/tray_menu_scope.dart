@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/constants/app_constants.dart';
@@ -129,11 +130,10 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
         Object error,
         StackTrace stackTrace,
       ) {
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stackTrace,
-          ),
+        logger.logError(
+          'Unable to dispose tray menu controller',
+          error: error,
+          stackTrace: stackTrace,
         );
       }),
     );

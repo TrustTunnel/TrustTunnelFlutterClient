@@ -91,13 +91,11 @@ class InitializationHelperIo extends InitializationHelper {
     try {
       await dependenciesFactory.exportLogsLocalSource.clearTempFiles();
     } catch (error, stackTrace) {
-      // Report without rethrowing: stale exports must not abort startup.
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'app initialization',
-        ),
+      logger.logError(
+        'Unable to clear temporary log exports',
+        error: error,
+        stackTrace: stackTrace,
+        additionalTags: ['app', 'initialization'],
       );
     }
 
