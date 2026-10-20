@@ -73,6 +73,12 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
   bool _showFocusHighlight = false;
   Timer? _tooltipTimer;
 
+  Set<WidgetState> get _widgetStates => {
+    if (widget.isHovered) WidgetState.hovered,
+    if (widget.isPressed) WidgetState.pressed,
+    if (!widget.windowState.active) WidgetState.disabled,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -98,37 +104,19 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = widget.windowState.highContrast
+    final foregroundColor = widget.windowState.highContrast
         ? widget.windowState.captionForegroundColor
         : context.colors.windowsSystemTitleBarTitle;
-    final highlighted = widget.isHovered || widget.isPressed;
     final isCloseButton = widget.buttonType == WindowsCaptionButton.close;
-    final Color background;
-    final Color iconColor;
 
-    if (!highlighted) {
-      background = context.colors.transparent;
-    } else if (widget.windowState.highContrast) {
-      background = widget.windowState.highlightColor;
-    } else if (isCloseButton) {
-      background = widget.isPressed
-          ? context.colors.windowsSystemTitleBarCloseButtonBackgroundPressed
-          : context.colors.windowsSystemTitleBarCloseButtonBackgroundHover;
-    } else {
-      background = widget.isPressed
-          ? context.colors.windowsSystemTitleBarButtonBackgroundPressed
-          : context.colors.windowsSystemTitleBarButtonBackgroundHover;
-    }
-
-    if (highlighted && widget.windowState.highContrast) {
-      iconColor = widget.windowState.highlightTextColor;
-    } else if (highlighted && isCloseButton) {
-      iconColor = context.colors.windowsSystemTitleBarCloseButtonForeground;
-    } else {
-      iconColor = widget.windowState.active || widget.windowState.highContrast
-          ? foreground
-          : context.colors.windowsSystemTitleBarTitleInactive;
-    }
+    final backgroundColor = _getBackgroundColor(
+      isCloseButton: isCloseButton,
+      defaultColor: context.colors.transparent,
+    );
+    final iconColor = _getIconColor(
+      isCloseButton: isCloseButton,
+      defaultColor: foregroundColor,
+    );
 
     return Semantics(
       button: true,
@@ -148,14 +136,14 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
           height: widget.height,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: background,
-              border: _showFocusHighlight ? Border.all(color: foreground) : null,
+              color: backgroundColor.resolve(_widgetStates),
+              border: _showFocusHighlight ? Border.all(color: foregroundColor) : null,
             ),
             child: Center(
               child: AppWindowsCaptionIcon(
                 button: widget.buttonType,
                 maximized: widget.windowState.maximized,
-                color: iconColor,
+                color: iconColor.resolve(_widgetStates),
               ),
             ),
           ),
@@ -163,6 +151,46 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
       ),
     );
   }
+
+  WidgetStateColor _getBackgroundColor({
+    required bool isCloseButton,
+    required Color defaultColor,
+  }) => WidgetStateColor.resolveWith((states) {
+    final pressed = states.contains(WidgetState.pressed);
+    if (!pressed && !states.contains(WidgetState.hovered)) {
+      return context.colors.transparent;
+    }
+    if (widget.windowState.highContrast) {
+      return widget.windowState.highlightColor;
+    }
+    if (isCloseButton) {
+      return pressed
+          ? context.colors.windowsSystemTitleBarCloseButtonBackgroundPressed
+          : context.colors.windowsSystemTitleBarCloseButtonBackgroundHover;
+    }
+
+    return pressed
+        ? context.colors.windowsSystemTitleBarButtonBackgroundPressed
+        : context.colors.windowsSystemTitleBarButtonBackgroundHover;
+  });
+
+  WidgetStateColor _getIconColor({
+    required bool isCloseButton,
+    required Color defaultColor,
+  }) => WidgetStateColor.resolveWith((states) {
+    final highlighted = states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed);
+    if (highlighted && widget.windowState.highContrast) {
+      return widget.windowState.highlightTextColor;
+    }
+    if (highlighted && isCloseButton) {
+      return context.colors.windowsSystemTitleBarCloseButtonForeground;
+    }
+    if (states.contains(WidgetState.disabled) && !widget.windowState.highContrast) {
+      return context.colors.windowsSystemTitleBarTitleInactive;
+    }
+
+    return defaultColor;
+  });
 
   void _activate() => unawaited(windowManager.invokeWindowsCaptionButton(widget.buttonType));
 
@@ -173,8 +201,9 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
   }
 
   void _scheduleTooltip() {
-    // Non-client hover does not reach Flutter's MouseRegion. This state is
-    // already below Tooltip, so no GlobalKey is needed to display it.
+    // Native non-client hover bypasses Flutter's MouseRegion, so Tooltip.waitDuration
+    // cannot schedule this display. TooltipState only exposes immediate showing;
+    // keep the cancellable delay here until Flutter provides a controller for it.
     _tooltipTimer = Timer(const Duration(milliseconds: 700), () {
       if (!mounted) {
         return;
