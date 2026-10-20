@@ -20,6 +20,7 @@ dependencies:
       url: https://github.com/AdguardTeam/adguard-dart-logger
       ref: v1.0.3
   app_links: 7.0.0
+  async: 2.13.1
   collection: 1.19.1
   drift: 2.35.2
   file_picker: 10.3.10

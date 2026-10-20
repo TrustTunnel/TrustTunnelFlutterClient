@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -32,9 +33,9 @@ final class WindowsAppWindowController implements AppWindowController {
     }
   }
 
-  /// It is used to ensure that the exit is only performed once.
-  /// It is set when the installer exit is requested and cleared when the exit is complete.
-  Future<void>? _installerExit;
+  // Run installer exit once per attempt, retaining success or failure
+  // until shutdownCancelled allows a new attempt.
+  AsyncMemoizer<void> _installerExit = AsyncMemoizer<void>();
 
   @override
   Future<void> showMainWindow() async => await _mainWindowChannel.invokeMethod<void>('show');
@@ -105,10 +106,9 @@ final class WindowsAppWindowController implements AppWindowController {
     _installerExitChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'exitForUpdate':
-          _installerExit ??= _exitForInstaller();
-          await _installerExit;
+          await _installerExit.runOnce(_exitForInstaller);
         case 'shutdownCancelled':
-          _installerExit = null;
+          _installerExit = AsyncMemoizer<void>();
           await _mainWindowChannel.invokeMethod<void>('cancelUpdateExit');
         default:
           throw MissingPluginException('Unknown installer exit method: ${call.method}');
