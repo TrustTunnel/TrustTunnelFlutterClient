@@ -67,7 +67,7 @@ class InitializationHelperIo extends InitializationHelper {
     );
 
     if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) {
-      await dependenciesFactory.appWindowController!.configureMainWindow(
+      await dependenciesFactory.appWindowController.configureMainWindow(
         minimumWindowSize: const Size(905, 680),
         defaultWindowSize: const Size(1024, 768),
         isDebugMode: kDebugMode,
@@ -103,8 +103,8 @@ class InitializationHelperIo extends InitializationHelper {
 
     final initialVpnState = await repositoryFactory.vpnRepository.requestState();
 
-    final appWindowController = dependenciesFactory.appWindowController;
-    if (appWindowController is WindowsAppWindowController) {
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      final appWindowController = dependenciesFactory.appWindowController as WindowsAppWindowController;
       // Setup can request exit even when launched outside the app.
       await appWindowController.initializeInstallerExitHandler();
     }

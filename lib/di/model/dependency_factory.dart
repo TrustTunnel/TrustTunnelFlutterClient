@@ -74,8 +74,8 @@ abstract class DependencyFactory {
   AutoConnectOnLaunchSettingsDataSource get autoConnectOnLaunchSettingsDataSource;
 
   /// Returns the cached native window controller on macOS and Windows.
-  /// Returns `null` on other platforms because window control is not implemented there.
-  AppWindowController? get appWindowController;
+  /// Throws on platforms without native window control.
+  AppWindowController get appWindowController;
 
   db.AppDatabase get database;
 }
@@ -210,10 +210,10 @@ class DependencyFactoryImpl implements DependencyFactory {
       );
 
   @override
-  AppWindowController? get appWindowController => switch (defaultTargetPlatform) {
+  AppWindowController get appWindowController => switch (defaultTargetPlatform) {
     TargetPlatform.macOS => _appWindowController ??= MacOSAppWindowController(),
     TargetPlatform.windows => _appWindowController ??= WindowsAppWindowController(),
-    _ => null,
+    _ => throw UnsupportedError('AppWindowController is not supported on ${defaultTargetPlatform.name}'),
   };
 
   @override

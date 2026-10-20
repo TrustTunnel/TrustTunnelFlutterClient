@@ -49,7 +49,7 @@ class _AppSystemActionsHandlerState extends State<AppSystemActionsHandler> with 
   @override
   void onWindowClose() => _hideMainWindow();
 
-  void _hideMainWindow() => unawaited(context.dependencyFactory.appWindowController!.hideMainWindow());
+  void _hideMainWindow() => unawaited(context.dependencyFactory.appWindowController.hideMainWindow());
 
   @override
   void dispose() {

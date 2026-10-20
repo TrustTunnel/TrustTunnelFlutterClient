@@ -173,7 +173,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Future<void> _openRouteFromTray(AppRoute route) async {
-    await context.dependencyFactory.appWindowController!.showMainWindow();
+    await context.dependencyFactory.appWindowController.showMainWindow();
 
     switch (route) {
       case AppRoutes.servers:

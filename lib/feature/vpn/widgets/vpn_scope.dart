@@ -89,9 +89,9 @@ import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_exit_handling_mixin.da
 /// `*MaybeOf` variants if you want a nullable result instead.
 /// {@endtemplate}
 class VpnScope extends StatefulWidget {
-  /// Provided on macOS and Windows to show the window on errors and coordinate app exit.
-  /// `null` on other platforms because native window control is not implemented there.
-  final AppWindowController? appWindowController;
+  /// Resolves the native window controller for error feedback and app exit.
+  /// Invoked only on macOS and Windows.
+  final ValueGetter<AppWindowController> appWindowControllerProvider;
 
   /// Repository used to start/stop the VPN and to listen for state/log updates.
   final VpnRepository vpnRepository;
@@ -106,7 +106,7 @@ class VpnScope extends StatefulWidget {
 
   /// {@macro vpn_scope}
   const VpnScope({
-    required this.appWindowController,
+    required this.appWindowControllerProvider,
     required this.child,
     required this.vpnRepository,
     this.initialState = VpnState.disconnected,
@@ -250,7 +250,10 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
   bool get isVpnDisconnectedForExit => _controller.state.isDisconnectedForExit;
 
   @override
-  AppWindowController? get appWindowController => widget.appWindowController;
+  AppWindowController? get appWindowController => switch (defaultTargetPlatform) {
+    TargetPlatform.macOS || TargetPlatform.windows => widget.appWindowControllerProvider(),
+    _ => null,
+  };
 
   @override
   void initState() {
@@ -346,7 +349,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
     }
 
     try {
-      await widget.appWindowController?.showMainWindow();
+      await appWindowController?.showMainWindow();
     } catch (error, stackTrace) {
       // Continue notifying the UI even if revealing the window itself fails.
       logger.logError(
