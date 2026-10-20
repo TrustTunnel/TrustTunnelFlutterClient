@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:trusttunnel/common/localization/generated/l10n.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/feature/tray_menu/model/tray_menu_labels.dart';
 
 enum TrayMenuConnectionState {
   connected,
@@ -45,7 +45,7 @@ final class TrayMenuCallbacks {
 }
 
 final class TrayMenuData {
-  final AppLocalizations localization;
+  final TrayMenuLabels labels;
   final TrayMenuConnectionState connectionState;
   final String? activeServerId;
   final String? activeServerName;
@@ -54,7 +54,7 @@ final class TrayMenuData {
   final LoggingSecurityType loggingSecurityType;
 
   const TrayMenuData({
-    required this.localization,
+    required this.labels,
     required this.connectionState,
     required this.activeServerId,
     required this.activeServerName,

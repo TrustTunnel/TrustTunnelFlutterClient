@@ -5,7 +5,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
-import 'package:trusttunnel/common/localization/generated/l10n.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/router/app_route.dart';
@@ -14,6 +13,7 @@ import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/tray_menu/model/tray_menu_data.dart';
+import 'package:trusttunnel/feature/tray_menu/model/tray_menu_labels.dart';
 import 'package:trusttunnel/feature/tray_menu/model/tray_menu_state.dart';
 import 'package:trusttunnel/feature/tray_menu/platform/macos/macos_tray_menu_items_builder.dart';
 import 'package:trusttunnel/feature/tray_menu/platform/tray_menu_builder.dart';
@@ -41,7 +41,7 @@ final class TrayMenuController {
     required this._updateSecurityType,
     required void Function({VoidCallback? onError, VoidCallback? onCancelled}) exportLogs,
     required void Function({VoidCallback? onError}) deleteLogs,
-    required this._localization,
+    required this._labels,
     required this._windowController,
     required this._onRouteRequested,
     required this._onMessage,
@@ -85,7 +85,7 @@ final class TrayMenuController {
   );
 
   late final TrayMenuCallbacks _callbacks;
-  AppLocalizations _localization;
+  TrayMenuLabels _labels;
   Future<void> _syncQueue = Future<void>.value();
   bool _isDisposed = false;
   bool _syncErrorReported = false;
@@ -93,8 +93,8 @@ final class TrayMenuController {
   Object? _lastServerError;
   Object? _lastLoggingError;
 
-  void updateLocalization(AppLocalizations localization) {
-    _localization = localization;
+  void updateLabels(TrayMenuLabels labels) {
+    _labels = labels;
     _enqueueSync();
   }
 
@@ -241,7 +241,7 @@ final class TrayMenuController {
     }
   }
 
-  /// Builds a tray menu snapshot from live tray data and localization.
+  /// Builds a tray menu snapshot from live tray data and labels.
   TrayMenuData _prepareTrayMenuData() {
     final state = _sources.value;
     final vpnState = state.vpnState;
@@ -256,7 +256,7 @@ final class TrayMenuController {
     );
 
     return TrayMenuData(
-      localization: _localization,
+      labels: _labels,
       connectionState: connectionState,
       activeServerId: activeServer?.id,
       activeServerName: activeServer?.serverData.name,

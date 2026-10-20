@@ -1,12 +1,11 @@
 import 'dart:async';
 
 import 'package:tray_manager/tray_manager.dart';
-import 'package:trusttunnel/common/constants/app_constants.dart';
-import 'package:trusttunnel/common/localization/generated/l10n.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
 import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/feature/tray_menu/model/tray_menu_data.dart';
+import 'package:trusttunnel/feature/tray_menu/model/tray_menu_labels.dart';
 import 'package:trusttunnel/feature/tray_menu/platform/tray_menu_items_builder.dart';
 
 /// Defines the macOS tray menu contents and layout.
@@ -31,9 +30,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
     if (data.hasServers) {
       items.add(
         TrayStatus(
-          title: data.localization.trayStatus(
-            _getConnectionStateTitleString(data.connectionState, data.localization),
-          ),
+          title: data.labels.statusTitles[data.connectionState]!,
         ),
       );
       if (data.activeServerName != null) {
@@ -43,7 +40,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
       items.add(
         TrayButton(
           id: 'connect',
-          title: data.localization.connect,
+          title: data.labels.connect,
           isEnabled: connectEnabled,
           onTap: connectEnabled ? () => unawaited(callbacks.onConnectPressed()) : null,
         ),
@@ -51,7 +48,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
       items.add(
         TrayButton(
           id: 'disconnect',
-          title: data.localization.disconnect,
+          title: data.labels.disconnect,
           isEnabled: disconnectEnabled,
           onTap: disconnectEnabled ? () => unawaited(callbacks.onDisconnectPressed()) : null,
         ),
@@ -60,11 +57,11 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
       items.add(
         TrayButton(
           id: 'connectTo',
-          title: data.localization.connectTo,
+          title: data.labels.connectTo,
           children: _buildServerTrayItems(
             data.servers,
             activeServerId: data.activeServerId,
-            localization: data.localization,
+            labels: data.labels,
             callbacks: callbacks,
           ),
         ),
@@ -74,7 +71,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
       items.add(
         TrayButton(
           id: 'addServer',
-          title: data.localization.addServer,
+          title: data.labels.addServer,
           onTap: () => unawaited(callbacks.onAddServerPressed()),
         ),
       );
@@ -84,30 +81,30 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
     items.addAll([
       TrayButton(
         id: 'trayOpenApp',
-        title: data.localization.trayOpenApp(AppConstants.appName),
+        title: data.labels.trayOpenApp,
         onTap: () => unawaited(callbacks.onOpenTrustTunnelPressed()),
       ),
       TrayButton(
         id: 'routing',
-        title: data.localization.routing,
+        title: data.labels.routing,
         onTap: () => unawaited(callbacks.onRoutingPressed()),
       ),
       TrayButton(
         id: 'connectionLog',
-        title: data.localization.connectionLog,
+        title: data.labels.connectionLog,
         onTap: () => unawaited(callbacks.onConnectionLogPressed()),
       ),
       TrayButton(
         id: 'logging',
-        title: data.localization.logging,
+        title: data.labels.logging,
         children: [
           TrayButton(
             id: 'loggingLevel',
-            title: data.localization.loggingLevel,
+            title: data.labels.loggingLevel,
             children: [
               TrayButton(
                 id: 'loggingLevelBasic',
-                title: data.localization.loggingLevelBasic,
+                title: data.labels.loggingLevelBasic,
                 isChecked: data.loggingLevel == LoggingLevel.defaultLevel,
                 onTap: () => unawaited(
                   callbacks.onLoggingLevelPressed(LoggingLevel.defaultLevel),
@@ -115,7 +112,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
               ),
               TrayButton(
                 id: 'loggingLevelDetailed',
-                title: data.localization.loggingLevelDetailed,
+                title: data.labels.loggingLevelDetailed,
                 isChecked: data.loggingLevel == LoggingLevel.debug,
                 onTap: () => unawaited(
                   callbacks.onLoggingLevelPressed(LoggingLevel.debug),
@@ -125,11 +122,11 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
           ),
           TrayButton(
             id: 'sensitiveData',
-            title: data.localization.sensitiveData,
+            title: data.labels.sensitiveData,
             children: [
               TrayButton(
                 id: 'sensitiveDataExcluded',
-                title: data.localization.sensitiveDataExcluded,
+                title: data.labels.sensitiveDataExcluded,
                 isChecked: data.loggingSecurityType == LoggingSecurityType.stripped,
                 onTap: () => unawaited(
                   callbacks.onLoggingSecurityTypePressed(LoggingSecurityType.stripped),
@@ -137,7 +134,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
               ),
               TrayButton(
                 id: 'sensitiveDataIncluded',
-                title: data.localization.sensitiveDataIncluded,
+                title: data.labels.sensitiveDataIncluded,
                 isChecked: data.loggingSecurityType == LoggingSecurityType.full,
                 onTap: () => unawaited(
                   callbacks.onLoggingSecurityTypePressed(LoggingSecurityType.full),
@@ -147,12 +144,12 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
           ),
           TrayButton(
             id: 'deleteAppLogs',
-            title: data.localization.deleteAppLogs,
+            title: data.labels.deleteAppLogs,
             onTap: () => unawaited(callbacks.onDeleteLogsPressed()),
           ),
           TrayButton(
             id: 'downloadAppLogs',
-            title: data.localization.downloadAppLogs,
+            title: data.labels.downloadAppLogs,
             onTap: () => unawaited(callbacks.onExportLogsPressed()),
           ),
         ],
@@ -160,7 +157,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
       const TraySeparator(),
       TrayButton(
         id: 'trayQuitApp',
-        title: data.localization.trayQuitApp(AppConstants.appName),
+        title: data.labels.trayQuitApp,
         onTap: () => unawaited(callbacks.onQuitPressed()),
       ),
     ]);
@@ -171,7 +168,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
   List<TrayItem> _buildServerTrayItems(
     List<Server> servers, {
     required String? activeServerId,
-    required AppLocalizations localization,
+    required TrayMenuLabels labels,
     required TrayMenuCallbacks callbacks,
   }) {
     final topLevelServers = servers.take(_topServersLimitForView).toList();
@@ -193,7 +190,7 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
     items.add(
       TrayButton(
         id: 'otherServers',
-        title: localization.otherServers,
+        title: labels.otherServers,
         onTap: () => unawaited(callbacks.onOtherServersPressed()),
       ),
     );
@@ -208,13 +205,4 @@ final class MacosTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
 
     return '${value.substring(0, _maxServerTitleLength - 1)}…';
   }
-
-  String _getConnectionStateTitleString(
-    TrayMenuConnectionState state,
-    AppLocalizations localization,
-  ) => switch (state) {
-    TrayMenuConnectionState.connected => localization.trayStatusConnected,
-    TrayMenuConnectionState.connecting => localization.trayStatusConnecting,
-    TrayMenuConnectionState.disconnected => localization.trayStatusDisconnected,
-  };
 }

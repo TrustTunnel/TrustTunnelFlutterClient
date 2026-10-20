@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:trusttunnel/common/constants/app_constants.dart';
-import 'package:trusttunnel/common/localization/generated/l10n.dart';
 import 'package:trusttunnel/feature/tray_menu/model/tray_menu_data.dart';
 import 'package:trusttunnel/feature/tray_menu/platform/tray_menu_icons.dart';
 import 'package:trusttunnel/feature/tray_menu/platform/tray_menu_items_builder.dart';
@@ -43,7 +42,7 @@ final class TrayMenuBuilder {
     }
     await _trayManagerApi.setTrayIcon(
       trayIcons.iconFor(data.connectionState),
-      tooltip: '${AppConstants.appName} — ${_getConnectionStateTitleString(data.connectionState, data.localization)}',
+      tooltip: '${AppConstants.appName} — ${data.labels.connectionTitles[data.connectionState]}',
     );
   }
 
@@ -63,13 +62,4 @@ final class TrayMenuBuilder {
 
     return icons;
   }
-
-  String _getConnectionStateTitleString(
-    TrayMenuConnectionState state,
-    AppLocalizations localization,
-  ) => switch (state) {
-    TrayMenuConnectionState.connected => localization.trayStatusConnected,
-    TrayMenuConnectionState.connecting => localization.trayStatusConnecting,
-    TrayMenuConnectionState.disconnected => localization.trayStatusDisconnected,
-  };
 }
