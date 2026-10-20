@@ -1,11 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
+import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/tls_authentication_type.dart';
+import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
 import 'package:vpn_plugin/models/upstream_protocol.dart';
@@ -44,6 +46,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         login: request.username,
         password: request.password,
         vpnProtocolId: request.vpnProtocol.value,
+        tlsFingerprint: Value(request.tlsFingerprint.value),
         ipv6Enabled: Value(request.ipv6),
         tlsPrefix: Value(request.tlsPrefix),
         tlsAuthenticationType: Value(request.tlsAuthenticationType.value),
@@ -79,6 +82,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         username: request.username,
         password: request.password,
         vpnProtocol: request.vpnProtocol,
+        tlsFingerprint: request.tlsFingerprint,
         routingProfileId: request.routingProfileId,
         dnsServers: request.dnsServers,
         ipv6: request.ipv6,
@@ -131,6 +135,7 @@ class ServerDataSourceImpl implements ServerDataSource {
             username: e.login,
             password: e.password,
             vpnProtocol: VpnProtocol.values.firstWhere((p) => p.value == e.vpnProtocolId),
+            tlsFingerprint: TlsFingerprint.values.firstWhere((f) => f.value == e.tlsFingerprint),
             dnsServers: dnsByServer[e.id] ?? const <String>[],
             routingProfileId: e.routingProfileId.toString(),
             certificate: cert,
@@ -195,6 +200,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         login: Value(request.username),
         password: Value(request.password),
         vpnProtocolId: Value(request.vpnProtocol.value),
+        tlsFingerprint: Value(request.tlsFingerprint.value),
         routingProfileId: Value(
           int.parse(request.routingProfileId),
         ),
@@ -247,6 +253,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         username: server.login,
         password: server.password,
         vpnProtocol: VpnProtocol.values.firstWhere((p) => p.value == server.vpnProtocolId),
+        tlsFingerprint: TlsFingerprint.values.firstWhere((f) => f.value == server.tlsFingerprint),
         dnsServers: dnsServers.map((e) => e.data).toList(),
         routingProfileId: server.routingProfileId.toString(),
         selected: server.selected,
@@ -269,6 +276,9 @@ class ServerDataSourceImpl implements ServerDataSource {
 
     return ServerData.empty(
       name: configuration.endpoint.name,
+      tlsFingerprint: const TlsProfileDecoder().convert(
+        configuration.endpoint.tlsProfile,
+      ),
       ipAddress: configuration.endpoint.addresses.first,
       domain: configuration.endpoint.hostName,
       username: configuration.endpoint.username,

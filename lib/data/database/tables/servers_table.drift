@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS servers(
   login TEXT NOT NULL,
   password TEXT NOT NULL,
   vpn_protocol_id INTEGER NOT NULL,                         
+  tls_fingerprint INTEGER NOT NULL DEFAULT 1,
   routing_profile_id INTEGER NOT NULL,
   selected BOOLEAN NOT NULL DEFAULT false,
   ipv6_enabled BOOLEAN NOT NULL DEFAULT true,

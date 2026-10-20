@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/tls_authentication_type.dart';
+import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 /// {@template server}
@@ -33,6 +34,9 @@ class ServerData {
 
   /// Transport protocol used to communicate with the server.
   final VpnProtocol vpnProtocol;
+
+  /// TLS ClientHello fingerprint used when connecting to the server.
+  final TlsFingerprint tlsFingerprint;
 
   /// DNS upstream addresses associated with this server.
   ///
@@ -74,6 +78,7 @@ class ServerData {
     this.clientRandomAuthKey,
     this.customSni,
     this.selected = false,
+    this.tlsFingerprint = TlsFingerprint.chrome,
   });
 
   const ServerData.empty({
@@ -92,6 +97,7 @@ class ServerData {
     this.clientRandomAuthKey,
     this.customSni,
     this.selected = false,
+    this.tlsFingerprint = TlsFingerprint.chrome,
   });
 
   @override
@@ -102,6 +108,7 @@ class ServerData {
     username,
     password,
     vpnProtocol,
+    tlsFingerprint,
     Object.hashAll(dnsServers),
     routingProfileId,
     selected,
@@ -122,6 +129,7 @@ class ServerData {
       'customSni: $customSni, '
       'username: $username, '
       'vpnProtocol: $vpnProtocol, '
+      'tlsFingerprint: $tlsFingerprint, '
       'dnsServers: $dnsServers, '
       'routingProfile: $routingProfileId, '
       'selected: $selected,'
@@ -142,6 +150,7 @@ class ServerData {
         other.username == username &&
         other.password == password &&
         other.vpnProtocol == vpnProtocol &&
+        other.tlsFingerprint == tlsFingerprint &&
         listEquals(other.dnsServers, dnsServers) &&
         other.routingProfileId == routingProfileId &&
         other.selected == selected &&
@@ -163,6 +172,7 @@ class ServerData {
     String? username,
     String? password,
     VpnProtocol? vpnProtocol,
+    TlsFingerprint? tlsFingerprint,
     List<String>? dnsServers,
     String? routingProfileId,
     bool? selected,
@@ -179,6 +189,7 @@ class ServerData {
     username: username ?? this.username,
     password: password ?? this.password,
     vpnProtocol: vpnProtocol ?? this.vpnProtocol,
+    tlsFingerprint: tlsFingerprint ?? this.tlsFingerprint,
     dnsServers: dnsServers ?? this.dnsServers,
     routingProfileId: routingProfileId ?? this.routingProfileId,
     selected: selected ?? this.selected,
