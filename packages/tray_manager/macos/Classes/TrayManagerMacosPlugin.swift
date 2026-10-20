@@ -295,15 +295,10 @@ public class TrayManagerMacosPlugin: NSObject, FlutterPlugin {
   }
 
   private func defaultTrayIcon() -> NSImage? {
-    let image: NSImage?
-    if #available(macOS 11.0, *) {
-      image = NSImage(
-        systemSymbolName: "shield.lefthalf.filled",
-        accessibilityDescription: "TrustTunnel"
-      )
-    } else {
-      image = NSImage(named: NSImage.applicationIconName)
-    }
+    let image = NSImage(
+      systemSymbolName: "shield.lefthalf.filled",
+      accessibilityDescription: "TrustTunnel"
+    )
 
     image?.size = Self.trayIconSize
     return image
