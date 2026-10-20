@@ -81,7 +81,8 @@ class _ServersScopeState extends State<ServersScope> implements ServersScopeCont
   );
 
   @override
-  Future<bool> selectServer(String? serverId) => _controller.selectServer(serverId);
+  void selectServer(String? serverId, {ValueChanged<bool>? onSelected}) =>
+      _controller.selectServer(serverId, onSelected: onSelected);
 
   @override
   void addListener(VoidCallback listener) => _controller.addListener(listener);

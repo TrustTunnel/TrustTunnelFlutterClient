@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
@@ -54,9 +55,9 @@ final class ServersController extends BaseStateController<ServersState> with Seq
   }
 
   /// Saves selection and the launch target without changing the VPN connection.
-  Future<bool> selectServer(String? serverId) {
+  void selectServer(String? serverId, {ValueChanged<bool>? onSelected}) {
     if (isDisposed) {
-      return Future<bool>.value(false);
+      return;
     }
 
     // Notify immediately: repeated and failed choices also cancel older VPN intentions.
@@ -67,10 +68,7 @@ final class ServersController extends BaseStateController<ServersState> with Seq
       ),
     );
 
-    // The handler reports errors through state, so track the result explicitly.
-    bool isSucceeded = false;
-
-    return handle(
+    handle(
       () async {
         final operatingServers = state.servers;
 
@@ -111,11 +109,13 @@ final class ServersController extends BaseStateController<ServersState> with Seq
             pendingSelections: state.pendingSelections,
           ),
         );
-        isSucceeded = true;
       },
       errorHandler: _onError,
-      completionHandler: _onSelectionCompleted,
-    ).then((_) => isSucceeded);
+      completionHandler: () {
+        _onSelectionCompleted();
+        onSelected?.call(state.error == null);
+      },
+    );
   }
 
   PresentationException _parseException(

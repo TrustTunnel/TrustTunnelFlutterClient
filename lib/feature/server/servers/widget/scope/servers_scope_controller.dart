@@ -15,5 +15,5 @@ abstract class ServersScopeController implements Listenable {
   abstract final void Function() fetchServers;
 
   /// Saves selection and the launch target without starting or switching VPN.
-  Future<bool> selectServer(String? serverId);
+  void selectServer(String? serverId, {ValueChanged<bool>? onSelected});
 }

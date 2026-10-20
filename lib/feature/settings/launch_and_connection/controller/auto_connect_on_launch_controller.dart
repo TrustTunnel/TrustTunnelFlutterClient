@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
@@ -42,35 +43,33 @@ final class AutoConnectOnLaunchSettingsController extends BaseStateController<Au
 
   void disable() => _applyEnabled(enabled: false);
 
-  Future<bool> setLastServerId(String? serverId) async {
-    bool isSucceeded = false;
-    await handle(
-      () async {
-        setState(
-          AutoConnectOnLaunchState.loading(
-            enabled: state.enabled,
-            lastServerId: state.lastServerId,
-            connectOnLaunchHandled: state.connectOnLaunchHandled,
-          ),
-        );
+  void setLastServerId(String? serverId, {ValueChanged<bool>? onResult}) => handle(
+    () async {
+      setState(
+        AutoConnectOnLaunchState.loading(
+          enabled: state.enabled,
+          lastServerId: state.lastServerId,
+          connectOnLaunchHandled: state.connectOnLaunchHandled,
+        ),
+      );
 
-        await _repository.setLastServerId(serverId);
+      await _repository.setLastServerId(serverId);
 
-        setState(
-          AutoConnectOnLaunchState.idle(
-            enabled: state.enabled,
-            lastServerId: serverId,
-            connectOnLaunchHandled: state.connectOnLaunchHandled,
-          ),
-        );
-        isSucceeded = true;
-      },
-      errorHandler: _onError,
-      completionHandler: _onCompleted,
-    );
-
-    return isSucceeded;
-  }
+      setState(
+        AutoConnectOnLaunchState.idle(
+          enabled: state.enabled,
+          lastServerId: serverId,
+          connectOnLaunchHandled: state.connectOnLaunchHandled,
+        ),
+      );
+      onResult?.call(true);
+    },
+    errorHandler: (error, stackTrace) {
+      _onError(error, stackTrace);
+      onResult?.call(false);
+    },
+    completionHandler: _onCompleted,
+  );
 
   void markConnectOnLaunchHandled() => handle(
     () async {

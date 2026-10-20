@@ -19,7 +19,7 @@ import 'package:trusttunnel/feature/vpn/models/vpn_configuration_sources.dart';
 final class VpnController extends BaseStateController<VpnControllerState> with SequentialControllerHandler {
   final VpnRepository _repository;
   final VpnConfigurationSources _sources;
-  final Future<bool> Function(String serverId) _saveSelection;
+  final void Function(String serverId, {ValueChanged<bool>? onSelected}) _saveSelection;
   final VoidCallback _notifyOperationError;
   final ValueChanged<bool> _onExitStopped;
 
@@ -185,12 +185,20 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
   }
 
   /// Saving does not occupy the VPN mutation slot or delay disconnect and exit processing.
-  void _saveServerSelection(String serverId, int requestId) => unawaited(
-    Future<bool>.sync(() => _saveSelection(serverId)).then(
-      (saved) => _onSelectionSaved(requestId, saved),
-      onError: (Object error, StackTrace stackTrace) => _onSelectionFailed(requestId, error, stackTrace),
-    ),
-  );
+  void _saveServerSelection(String serverId, int requestId) {
+    try {
+      _saveSelection(
+        serverId,
+        onSelected: (saved) => _onSelectionSaved(requestId, saved),
+      );
+    } catch (error, stackTrace) {
+      _onSelectionFailed(
+        requestId,
+        error,
+        stackTrace,
+      );
+    }
+  }
 
   void _onSelectionSaved(int requestId, bool saved) => handle(
     () {
