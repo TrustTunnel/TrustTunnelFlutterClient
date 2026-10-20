@@ -37,9 +37,7 @@ final class VpnLoggingServerPayload {
   final String? customSni;
   final String username;
   final List<String> dnsServers;
-  final String tlsAuthenticationType;
-  final String? clientRandom;
-  final String? clientRandomAuthKey;
+  final VpnLoggingTlsAuthentication tlsAuthentication;
   final String? certificate;
   final String vpnProtocol;
   final bool allowIpv6Connections;
@@ -51,9 +49,7 @@ final class VpnLoggingServerPayload {
     required this.customSni,
     required this.username,
     required this.dnsServers,
-    required this.tlsAuthenticationType,
-    required this.clientRandom,
-    required this.clientRandomAuthKey,
+    required this.tlsAuthentication,
     required this.certificate,
     required this.vpnProtocol,
     required this.allowIpv6Connections,
@@ -66,11 +62,10 @@ final class VpnLoggingServerPayload {
     customSni: server.customSni,
     username: server.username,
     dnsServers: List.unmodifiable(server.dnsServers),
-    tlsAuthenticationType: server.tlsAuthenticationType.name,
-    clientRandom: server.tlsAuthenticationType == TlsAuthenticationType.clientRandom ? server.tlsPrefix : null,
-    clientRandomAuthKey: server.tlsAuthenticationType == TlsAuthenticationType.clientRandomAuthKey
-        ? server.clientRandomAuthKey
-        : null,
+    tlsAuthentication: switch (server.tlsAuthenticationType) {
+      TlsAuthenticationType.clientRandom => VpnLoggingClientRandom(value: server.tlsPrefix),
+      TlsAuthenticationType.clientRandomAuthKey => VpnLoggingClientRandomAuthKey(value: server.clientRandomAuthKey),
+    },
     certificate: server.certificate?.data,
     vpnProtocol: server.vpnProtocol.name,
     allowIpv6Connections: server.ipv6,
@@ -83,13 +78,36 @@ final class VpnLoggingServerPayload {
     'customSni': customSni,
     'username': username,
     'dnsServers': dnsServers,
-    'tlsAuthenticationType': tlsAuthenticationType,
-    'clientRandom': clientRandom,
-    'clientRandomAuthKey': clientRandomAuthKey,
+    ...switch (tlsAuthentication) {
+      VpnLoggingClientRandom(:final value) => {
+        'tlsAuthenticationType': TlsAuthenticationType.clientRandom.name,
+        'clientRandom': value,
+        'clientRandomAuthKey': null,
+      },
+      VpnLoggingClientRandomAuthKey(:final value) => {
+        'tlsAuthenticationType': TlsAuthenticationType.clientRandomAuthKey.name,
+        'clientRandom': null,
+        'clientRandomAuthKey': value,
+      },
+    },
     'certificate': certificate,
     'vpnProtocol': vpnProtocol,
     'allowIpv6Connections': allowIpv6Connections,
   };
+}
+
+sealed class VpnLoggingTlsAuthentication {
+  final String? value;
+
+  const VpnLoggingTlsAuthentication({required this.value});
+}
+
+final class VpnLoggingClientRandom extends VpnLoggingTlsAuthentication {
+  const VpnLoggingClientRandom({required super.value});
+}
+
+final class VpnLoggingClientRandomAuthKey extends VpnLoggingTlsAuthentication {
+  const VpnLoggingClientRandomAuthKey({required super.value});
 }
 
 final class VpnLoggingRoutingProfilePayload {
