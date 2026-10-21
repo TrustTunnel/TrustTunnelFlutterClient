@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
 /// Encodes the version 1 TrustTunnel TLV payload as unpadded base64url.
+///
+/// The deep-link format has no field for the TLS fingerprint.
 class ServerConfigurationEncoder extends Converter<ServerData, String> {
   const ServerConfigurationEncoder();
 
@@ -37,10 +40,14 @@ class ServerConfigurationEncoder extends Converter<ServerData, String> {
     text(0x06, input.password);
     text(0x02, input.ipAddress);
 
-    // Preserve the full Client Random value, including its optional mask.
-    final prefix = input.tlsPrefix;
-    if (prefix != null && prefix.isNotEmpty) {
-      text(0x0b, prefix);
+    // Export only the selected authentication mode. Preserve the full
+    // Client Random value, including its optional mask.
+    final (authenticationTag, authenticationValue) = switch (input.tlsAuthenticationType) {
+      TlsAuthenticationType.clientRandom => (0x0b, input.tlsPrefix),
+      TlsAuthenticationType.clientRandomAuthKey => (0x0f, input.clientRandomAuthKey),
+    };
+    if (authenticationValue != null && authenticationValue.isNotEmpty) {
+      text(authenticationTag, authenticationValue);
     }
     final sni = input.customSni;
     if (sni != null && sni.isNotEmpty) {

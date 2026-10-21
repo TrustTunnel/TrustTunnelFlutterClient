@@ -36,6 +36,16 @@ abstract class ExceptionUtils {
       ln.tlsWrongMaskError,
     PresentationFieldExceptionCode.fieldWrongValue when field.fieldName == PresentationFieldName.clientRandomValue =>
       ln.tlsWrongValueError,
+    PresentationFieldExceptionCode.fieldWrongValue when field.fieldName == PresentationFieldName.clientRandomAuthKey =>
+      ln.tlsWrongFieldError,
+    PresentationFieldExceptionCode.fieldWrongValue
+        when field.fieldName == PresentationFieldName.clientRandomAuthKeySlash =>
+      ln.clientRandomAuthKeySlashError,
+    PresentationFieldExceptionCode.fieldWrongValue
+        when field.fieldName == PresentationFieldName.clientRandomAuthKeyValue =>
+      ln.tlsWrongValueError,
+    PresentationFieldExceptionCode.outOfBounds when field.fieldName == PresentationFieldName.clientRandomAuthKey =>
+      ln.clientRandomAuthKeyHelper,
     PresentationFieldExceptionCode.fieldRequired
         when field.fieldName == PresentationFieldName.userName ||
             field.fieldName == PresentationFieldName.ipAddress ||

@@ -11,27 +11,25 @@ class MigrationsV3 implements Migrations {
   Future<void> migrate(GeneratedDatabase db, Migrator m) async {
     await m.addColumn(Servers(db), Servers(db).customSni);
 
-    final servers = Servers(db);
-    // Read only columns available at this migration step. Later schema
-    // additions (such as sort_order in v5) do not exist yet.
-    final serversWithSni =
-        await (db.selectOnly(servers)
-              ..addColumns([servers.id, servers.domain])
-              ..where(servers.domain.contains(_sniDivider)))
-            .get();
+    final serversWithSni = await db
+        .customSelect(
+          'SELECT id, domain FROM servers WHERE domain LIKE ?',
+          variables: [Variable.withString('%$_sniDivider%')],
+        )
+        .get();
 
-    for (final server in serversWithSni) {
-      final parts = server.read(servers.domain)!.split(_sniDivider);
-      if (parts.length != 2) {
-        continue;
+    await db.batch((batch) {
+      for (final server in serversWithSni) {
+        final parts = server.read<String>('domain').split(_sniDivider);
+        if (parts.length != 2) {
+          continue;
+        }
+
+        batch.customStatement(
+          'UPDATE servers SET domain = ?, custom_sni = ? WHERE id = ?',
+          [parts[1], parts[0], server.read<int>('id')],
+        );
       }
-
-      await (db.update(servers)..where((row) => row.id.equals(server.read(servers.id)!))).write(
-        ServersCompanion(
-          customSni: Value(parts[0]),
-          domain: Value(parts[1]),
-        ),
-      );
-    }
+    });
   }
 }
