@@ -153,7 +153,7 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
       return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKey);
     }
 
-    if (!value.length.isEven) {
+    if (!_isEvenLengthHex(value)) {
       return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKeyValue);
     }
 
