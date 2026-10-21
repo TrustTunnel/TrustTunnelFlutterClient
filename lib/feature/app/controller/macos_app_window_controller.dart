@@ -17,13 +17,13 @@ final class MacOSAppWindowController implements AppWindowController {
       );
 
   @override
-  Future<void> showMainWindow() async => await _mainWindowChannel.invokeMethod<void>('show');
+  Future<void> showMainWindow() => _mainWindowChannel.invokeMethod<void>('show');
 
   @override
-  Future<void> hideMainWindow() async => await _mainWindowChannel.invokeMethod<void>('hide');
+  Future<void> hideMainWindow() => _mainWindowChannel.invokeMethod<void>('hide');
 
   @override
-  Future<void> setPreventClose(bool preventClose) async => await windowManager.setPreventClose(preventClose);
+  Future<void> setPreventClose(bool preventClose) => windowManager.setPreventClose(preventClose);
 
   /// Configure the main window for macOS.
   ///
@@ -79,7 +79,7 @@ final class MacOSAppWindowController implements AppWindowController {
     });
   }
 
-  Future<void> _completeLaunch() async => await _mainWindowChannel.invokeMethod<void>('completeLaunch');
+  Future<void> _completeLaunch() => _mainWindowChannel.invokeMethod<void>('completeLaunch');
 
   Future<bool> _shouldShowMainWindowOnLaunch() async =>
       await _mainWindowChannel.invokeMethod<bool>('shouldShowMainWindowOnLaunch') ?? true;

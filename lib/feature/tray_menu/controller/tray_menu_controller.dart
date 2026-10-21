@@ -136,7 +136,7 @@ final class TrayMenuController {
     );
   }
 
-  Future<void> _quit() async => await ServicesBinding.instance.exitApplication(AppExitType.cancelable);
+  Future<void> _quit() => ServicesBinding.instance.exitApplication(AppExitType.cancelable);
 
   Future<void> _onError(Object error, StackTrace stack) async {
     logger.logError(

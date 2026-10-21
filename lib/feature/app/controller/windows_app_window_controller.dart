@@ -37,13 +37,13 @@ final class WindowsAppWindowController implements AppWindowController {
   AsyncMemoizer<void> _installerExit = AsyncMemoizer<void>();
 
   @override
-  Future<void> showMainWindow() async => await _mainWindowChannel.invokeMethod<void>('show');
+  Future<void> showMainWindow() => _mainWindowChannel.invokeMethod<void>('show');
 
   @override
-  Future<void> hideMainWindow() async => await _mainWindowChannel.invokeMethod<void>('hide');
+  Future<void> hideMainWindow() => _mainWindowChannel.invokeMethod<void>('hide');
 
   @override
-  Future<void> setPreventClose(bool preventClose) async => await windowManager.setPreventClose(preventClose);
+  Future<void> setPreventClose(bool preventClose) => windowManager.setPreventClose(preventClose);
 
   /// Sizes describe the entire window in logical pixels, including its native
   /// border and Flutter title bar. The plugin converts outer bounds at the
@@ -91,7 +91,7 @@ final class WindowsAppWindowController implements AppWindowController {
     // have been installed. The runner additionally waits for a rendered frame.
   }
 
-  Future<void> prepareToExit() async => await _mainWindowChannel.invokeMethod<void>('prepareToExit');
+  Future<void> prepareToExit() => _mainWindowChannel.invokeMethod<void>('prepareToExit');
 
   /// Initializes the installer exit handler.
   ///
