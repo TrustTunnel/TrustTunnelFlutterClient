@@ -86,18 +86,7 @@ final class VpnLoggingServerPayload {
     'customSni': customSni,
     'username': username,
     'dnsServers': dnsServers,
-    ...switch (tlsAuthentication) {
-      VpnLoggingClientRandom(:final value) => {
-        'tlsAuthenticationType': TlsAuthenticationType.clientRandom.name,
-        'clientRandom': value,
-        'clientRandomAuthKey': null,
-      },
-      VpnLoggingClientRandomAuthKey(:final value) => {
-        'tlsAuthenticationType': TlsAuthenticationType.clientRandomAuthKey.name,
-        'clientRandom': null,
-        'clientRandomAuthKey': value,
-      },
-    },
+    ...tlsAuthentication.toJson(),
     'certificate': certificate,
     'vpnProtocol': vpnProtocol,
     'tlsProfile': tlsProfile,
@@ -109,14 +98,30 @@ sealed class VpnLoggingTlsAuthentication {
   final String? value;
 
   const VpnLoggingTlsAuthentication({required this.value});
+
+  Map<String, Object?> toJson();
 }
 
 final class VpnLoggingClientRandom extends VpnLoggingTlsAuthentication {
   const VpnLoggingClientRandom({required super.value});
+
+  @override
+  Map<String, Object?> toJson() => {
+    'tlsAuthenticationType': TlsAuthenticationType.clientRandom.name,
+    'clientRandom': value,
+    'clientRandomAuthKey': null,
+  };
 }
 
 final class VpnLoggingClientRandomAuthKey extends VpnLoggingTlsAuthentication {
   const VpnLoggingClientRandomAuthKey({required super.value});
+
+  @override
+  Map<String, Object?> toJson() => {
+    'tlsAuthenticationType': TlsAuthenticationType.clientRandomAuthKey.name,
+    'clientRandom': null,
+    'clientRandomAuthKey': value,
+  };
 }
 
 final class VpnLoggingRoutingProfilePayload {
