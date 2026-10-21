@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// Icons for the app.
+///
+/// All icons sorted by the alphabetical order.
+///
+/// New icons are added by editing the font.
+/// Example: we get a new icon in SVG format, import it into the font using a specialized service or something similar,
+/// apply the same style to it as all the other icons, and then use the new, edited font and add the icon to the list.
 abstract class AssetIcons {
   static const IconData add = IconData(0xe800, fontFamily: _kFontFam);
   static const IconData anon = IconData(0xe801, fontFamily: _kFontFam);
