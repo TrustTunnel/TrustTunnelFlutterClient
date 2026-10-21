@@ -173,7 +173,7 @@ class _ServersScreenViewState extends State<ServersScreenView> {
       ServersScope.controllerOf(context, listen: false).duplicateServer(
         serverId: server.id,
         copyName: context.ln.serverCopyName,
-        numberedName: context.ln.serverNumberedName,
+        numberedName: context.ln.serverCopyNumberedName,
         onDuplicated: (duplicate) {
           if (!mounted || !context.mounted) {
             return;

@@ -1,5 +1,6 @@
 abstract final class ServerNameUtils {
   /// Finds a free name using the same normalization as server validation.
+  /// Builds numbered candidates from the trimmed [baseName].
   static String findAvailable({
     required String baseName,
     required Iterable<String> otherNames,
@@ -15,7 +16,7 @@ abstract final class ServerNameUtils {
     }
 
     for (int number = 2; ; number++) {
-      final candidate = numberedName(baseCandidate, number);
+      final candidate = numberedName(baseNameTrimmed, number);
       if (!normalizedNames.contains(candidate.trim().toLowerCase())) {
         return candidate;
       }

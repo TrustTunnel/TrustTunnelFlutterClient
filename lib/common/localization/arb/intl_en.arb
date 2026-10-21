@@ -228,6 +228,13 @@
       "name": {"type": "String"}
     }
   },
+  "serverCopyNumberedName": "{name} (copy {number})",
+  "@serverCopyNumberedName": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "number": {"type": "int"}
+    }
+  },
   "serverNumberedName": "{name} {number}",
   "@serverNumberedName": {
     "placeholders": {
