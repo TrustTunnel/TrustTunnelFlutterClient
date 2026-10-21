@@ -106,8 +106,8 @@ final class ServersController extends BaseStateController<ServersState> with Seq
       setState(ServersState.idle(servers: servers));
       if (!isDisposed) onDuplicated?.call(duplicate);
     },
-    errorHandler: (error, stackTrace) async {
-      await _onError(error, stackTrace);
+    errorHandler: (error, stackTrace) {
+      _onError(error, stackTrace);
       onError?.call();
     },
     completionHandler: _onCompleted,
@@ -119,7 +119,7 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     exception: exception,
   );
 
-  Future<void> _onError(Object? error, StackTrace _) async {
+  void _onError(Object? error, StackTrace _) {
     final presentationException = _parseException(error);
 
     setState(

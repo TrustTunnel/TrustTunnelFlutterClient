@@ -17,7 +17,7 @@ import 'package:trusttunnel/widgets/common/custom_list_tile_separated.dart';
 
 class ServersCard extends StatefulWidget {
   final Server server;
-  final ValueChanged<Rect> onShare;
+  final VoidCallback? onShare;
   final VoidCallback onCopyLink;
   final VoidCallback onDuplicate;
   final VoidCallback onEdit;
@@ -25,10 +25,10 @@ class ServersCard extends StatefulWidget {
   const ServersCard({
     super.key,
     required this.server,
-    required this.onShare,
     required this.onCopyLink,
     required this.onDuplicate,
     required this.onEdit,
+    this.onShare,
   });
 
   @override

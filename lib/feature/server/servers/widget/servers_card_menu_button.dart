@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
@@ -13,16 +12,16 @@ enum ServersCardMenuButtonAction {
 }
 
 class ServersCardMenuButton extends StatelessWidget {
-  final ValueChanged<Rect> onShare;
+  final VoidCallback? onShare;
   final VoidCallback onCopyLink;
   final VoidCallback onDuplicate;
   final double menuWidth;
   final double buttonWidth;
 
   const ServersCardMenuButton({
-    required this.onShare,
     required this.onCopyLink,
     required this.onDuplicate,
+    this.onShare,
     this.menuWidth = 200,
     this.buttonWidth = 40,
     super.key,
@@ -30,94 +29,77 @@ class ServersCardMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+    final canShare = onShare != null;
     final isLoading = ServerSharingScope.controllerOf(context).loading;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Builder(
-        builder: (context) => PopupMenuButton<ServersCardMenuButtonAction>(
-          tooltip: '',
-          position: PopupMenuPosition.under,
-          offset: Offset((menuWidth - buttonWidth) / 2 - 16, 0),
-          constraints: BoxConstraints.tightFor(width: menuWidth),
-          menuPadding: EdgeInsets.zero,
-          style: ButtonStyle(
-            minimumSize: WidgetStatePropertyAll(Size(buttonWidth, 48)),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          icon: CustomIcon(
-            icon: AssetIcons.moreVert,
-            size: 24,
-            color: context.colors.neutralLight,
-          ),
-          onSelected: (action) => _onSelected(context, action),
-          itemBuilder: (context) => [
-            PopupMenuItem<ServersCardMenuButtonAction>(
-              value: isMobile ? ServersCardMenuButtonAction.share : ServersCardMenuButtonAction.copyLink,
-              enabled: !isLoading,
-              height: 64,
-              padding: const EdgeInsets.only(
-                left: 12,
-                right: 12,
-                top: 24,
-                bottom: 16,
-              ),
-              child: Row(
-                spacing: 12,
-                children: [
-                  CustomIcon(
-                    icon: isMobile ? AssetIcons.share : AssetIcons.copy,
-                    size: 24,
-                    color: context.colors.neutralBlack,
-                  ),
-                  Text(
-                    isMobile ? context.ln.share : context.ln.copyLink,
-                    style: context.textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
-            PopupMenuItem<ServersCardMenuButtonAction>(
-              value: ServersCardMenuButtonAction.duplicate,
-              height: 64,
-              padding: const EdgeInsets.only(
-                left: 12,
-                right: 12,
-                top: 16,
-                bottom: 24,
-              ),
-              child: Row(
-                spacing: 12,
-                children: [
-                  CustomIcon(
-                    icon: AssetIcons.duplicate,
-                    size: 24,
-                    color: context.colors.neutralBlack,
-                  ),
-                  Text(context.ln.duplicate, style: context.textTheme.bodyLarge),
-                ],
-              ),
-            ),
-          ],
+      child: PopupMenuButton<ServersCardMenuButtonAction>(
+        tooltip: '',
+        position: PopupMenuPosition.under,
+        offset: Offset((menuWidth - buttonWidth) / 2 - 16, 0),
+        constraints: BoxConstraints.tightFor(width: menuWidth),
+        menuPadding: EdgeInsets.zero,
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(Size(buttonWidth, 48)),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
+        icon: CustomIcon(
+          icon: AssetIcons.moreVert,
+          size: 24,
+          color: context.colors.neutralLight,
+        ),
+        onSelected: _onSelected,
+        itemBuilder: (context) => [
+          PopupMenuItem<ServersCardMenuButtonAction>(
+            value: canShare ? ServersCardMenuButtonAction.share : ServersCardMenuButtonAction.copyLink,
+            enabled: !isLoading,
+            height: 64,
+            padding: const EdgeInsets.only(
+              left: 12,
+              right: 12,
+              top: 24,
+              bottom: 16,
+            ),
+            child: Row(
+              spacing: 12,
+              children: [
+                CustomIcon(
+                  icon: canShare ? AssetIcons.share : AssetIcons.copy,
+                ),
+                Text(
+                  canShare ? context.ln.share : context.ln.copyLink,
+                  style: context.textTheme.bodyLarge,
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<ServersCardMenuButtonAction>(
+            value: ServersCardMenuButtonAction.duplicate,
+            height: 64,
+            padding: const EdgeInsets.only(
+              left: 12,
+              right: 12,
+              top: 16,
+              bottom: 24,
+            ),
+            child: Row(
+              spacing: 12,
+              children: [
+                const CustomIcon(icon: AssetIcons.duplicate),
+                Text(context.ln.duplicate, style: context.textTheme.bodyLarge),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  void _onSelected(BuildContext context, ServersCardMenuButtonAction action) {
-    if (!context.mounted) {
-      return;
-    }
-
+  void _onSelected(ServersCardMenuButtonAction action) {
     switch (action) {
       case ServersCardMenuButtonAction.share:
-        final box = context.findRenderObject();
-        if (box is! RenderBox || !box.hasSize) {
-          return;
-        }
-
-        onShare(box.localToGlobal(Offset.zero) & box.size);
+        onShare?.call();
       case ServersCardMenuButtonAction.copyLink:
         onCopyLink();
       case ServersCardMenuButtonAction.duplicate:

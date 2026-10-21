@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
@@ -31,6 +32,9 @@ class ServersScreenView extends StatefulWidget {
 class _ServersScreenViewState extends State<ServersScreenView> {
   late List<Server> _servers;
   late final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey;
+
+  bool get canShareServers =>
+      defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   void initState() {
@@ -91,7 +95,7 @@ class _ServersScreenViewState extends State<ServersScreenView> {
                         ServersCard(
                           server: server,
                           onEdit: () => _pushServerDetailsScreen(context, serverId: server.id),
-                          onShare: (origin) => _shareServer(context, server, origin),
+                          onShare: canShareServers ? () => _shareServer(context, server) : null,
                           onCopyLink: () => _copyServerLink(context, server),
                           onDuplicate: () => _duplicateServer(context, server),
                         ),
@@ -162,10 +166,8 @@ class _ServersScreenViewState extends State<ServersScreenView> {
   void _shareServer(
     BuildContext context,
     Server server,
-    Rect origin,
   ) => ServerSharingScope.controllerOf(context, listen: false).share(
     server: server.serverData,
-    sharePositionOrigin: origin,
     onError: () => _showOperationError(context),
   );
 

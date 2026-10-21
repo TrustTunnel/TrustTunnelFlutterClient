@@ -39,7 +39,6 @@ final class ServerSharingController extends BaseStateController<ServerSharingSta
 
   void share({
     required ServerData server,
-    required Rect sharePositionOrigin,
     VoidCallback? onError,
   }) => handle(
     () async {
@@ -48,7 +47,6 @@ final class ServerSharingController extends BaseStateController<ServerSharingSta
       final result = await _shareClient.share(
         ShareRequest(
           content: [ShareText(_getLink(server))],
-          sharePositionOrigin: sharePositionOrigin,
         ),
       );
 

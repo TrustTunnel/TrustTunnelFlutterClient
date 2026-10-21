@@ -61,7 +61,6 @@ class _InheritedServerSharingScope extends InheritedWidget implements ServerShar
   @override
   final void Function({
     required ServerData server,
-    required Rect sharePositionOrigin,
     VoidCallback? onError,
   })
   share;

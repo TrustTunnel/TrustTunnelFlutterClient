@@ -14,7 +14,6 @@ abstract class ServerSharingScopeController {
 
   abstract final void Function({
     required ServerData server,
-    required Rect sharePositionOrigin,
     VoidCallback? onError,
   })
   share;
