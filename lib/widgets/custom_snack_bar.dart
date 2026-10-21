@@ -11,7 +11,6 @@ class CustomSnackBar extends SnackBar {
     super.key,
     required super.content,
     super.action,
-    super.backgroundColor,
     super.behavior,
     super.duration,
     super.elevation,
@@ -20,6 +19,9 @@ class CustomSnackBar extends SnackBar {
     this._trailingActions = const [],
     this._showCloseIcon = false,
   });
+
+  @override
+  Color get backgroundColor => Colors.transparent;
 
   @override
   bool get showCloseIcon => false;
