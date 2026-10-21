@@ -1,6 +1,7 @@
 import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 
 final class VpnLoggingPayload {
   final VpnLoggingServerPayload serverPayload;
@@ -37,7 +38,7 @@ final class VpnLoggingServerPayload {
   final String? customSni;
   final String username;
   final List<String> dnsServers;
-  final String? clientRandom;
+  final VpnLoggingTlsAuthentication tlsAuthentication;
   final String? certificate;
   final String vpnProtocol;
   final String tlsProfile;
@@ -50,7 +51,7 @@ final class VpnLoggingServerPayload {
     required this.customSni,
     required this.username,
     required this.dnsServers,
-    required this.clientRandom,
+    required this.tlsAuthentication,
     required this.certificate,
     required this.vpnProtocol,
     required this.tlsProfile,
@@ -64,7 +65,10 @@ final class VpnLoggingServerPayload {
     customSni: server.customSni,
     username: server.username,
     dnsServers: List.unmodifiable(server.dnsServers),
-    clientRandom: server.tlsPrefix,
+    tlsAuthentication: switch (server.tlsAuthenticationType) {
+      TlsAuthenticationType.clientRandom => VpnLoggingClientRandom(value: server.tlsPrefix),
+      TlsAuthenticationType.clientRandomAuthKey => VpnLoggingClientRandomAuthKey(value: server.clientRandomAuthKey),
+    },
     certificate: server.certificate?.data,
     vpnProtocol: server.vpnProtocol.name,
     tlsProfile: const TlsProfileEncoder()
@@ -82,11 +86,41 @@ final class VpnLoggingServerPayload {
     'customSni': customSni,
     'username': username,
     'dnsServers': dnsServers,
-    'clientRandom': clientRandom,
+    ...tlsAuthentication.toJson(),
     'certificate': certificate,
     'vpnProtocol': vpnProtocol,
     'tlsProfile': tlsProfile,
     'allowIpv6Connections': allowIpv6Connections,
+  };
+}
+
+sealed class VpnLoggingTlsAuthentication {
+  final String? value;
+
+  const VpnLoggingTlsAuthentication({required this.value});
+
+  Map<String, Object?> toJson();
+}
+
+final class VpnLoggingClientRandom extends VpnLoggingTlsAuthentication {
+  const VpnLoggingClientRandom({required super.value});
+
+  @override
+  Map<String, Object?> toJson() => {
+    'tlsAuthenticationType': TlsAuthenticationType.clientRandom.name,
+    'clientRandom': value,
+    'clientRandomAuthKey': null,
+  };
+}
+
+final class VpnLoggingClientRandomAuthKey extends VpnLoggingTlsAuthentication {
+  const VpnLoggingClientRandomAuthKey({required super.value});
+
+  @override
+  Map<String, Object?> toJson() => {
+    'tlsAuthenticationType': TlsAuthenticationType.clientRandomAuthKey.name,
+    'clientRandom': null,
+    'clientRandomAuthKey': value,
   };
 }
 

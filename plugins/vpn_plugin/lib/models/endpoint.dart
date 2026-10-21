@@ -78,6 +78,9 @@ final class Endpoint {
   /// {@endtemplate}
   final String clientRandom;
 
+  /// Secret TLS authentication key represented as a hex string.
+  final String clientRandomAuthKey;
+
   /// {@template endpoint_certificate}
   /// Endpoint certificate in PEM format.
   ///
@@ -138,6 +141,7 @@ final class Endpoint {
     this.dnsUpStreams = const [],
     this.exclusions = const [],
     this.clientRandom = '',
+    this.clientRandomAuthKey = '',
     this.certificate = '',
     this.customSni = '',
     this.tlsProfile = TlsProfile.chrome,
@@ -184,6 +188,7 @@ final class Endpoint {
         other.username == username &&
         other.password == password &&
         other.clientRandom == clientRandom &&
+        other.clientRandomAuthKey == clientRandomAuthKey &&
         other.certificate == certificate &&
         other.upStreamProtocol == upStreamProtocol &&
         other.tlsProfile == tlsProfile &&
@@ -203,6 +208,7 @@ final class Endpoint {
     username,
     password,
     clientRandom,
+    clientRandomAuthKey,
     certificate,
     upStreamProtocol,
     tlsProfile,

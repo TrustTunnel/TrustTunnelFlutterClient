@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/certificate.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
@@ -54,6 +55,10 @@ class ServerData {
 
   final String? tlsPrefix;
 
+  final TlsAuthenticationType tlsAuthenticationType;
+
+  final String? clientRandomAuthKey;
+
   final String? customSni;
 
   /// {@macro server}
@@ -69,6 +74,8 @@ class ServerData {
     required this.ipv6,
     this.certificate,
     this.tlsPrefix,
+    this.tlsAuthenticationType = TlsAuthenticationType.clientRandom,
+    this.clientRandomAuthKey,
     this.customSni,
     this.selected = false,
     this.tlsFingerprint = TlsFingerprint.chrome,
@@ -86,6 +93,8 @@ class ServerData {
     this.ipv6 = true,
     this.certificate,
     this.tlsPrefix,
+    this.tlsAuthenticationType = TlsAuthenticationType.clientRandom,
+    this.clientRandomAuthKey,
     this.customSni,
     this.selected = false,
     this.tlsFingerprint = TlsFingerprint.chrome,
@@ -106,6 +115,8 @@ class ServerData {
     certificate,
     ipv6,
     tlsPrefix,
+    tlsAuthenticationType,
+    clientRandomAuthKey,
     customSni,
   );
 
@@ -124,6 +135,7 @@ class ServerData {
       'selected: $selected,'
       'ipv6: $ipv6,'
       'tlsPrefix: $tlsPrefix,'
+      'tlsAuthenticationType: $tlsAuthenticationType,'
       'certificate: $certificate,'
       ')';
 
@@ -144,6 +156,8 @@ class ServerData {
         other.selected == selected &&
         other.ipv6 == ipv6 &&
         other.tlsPrefix == tlsPrefix &&
+        other.tlsAuthenticationType == tlsAuthenticationType &&
+        other.clientRandomAuthKey == clientRandomAuthKey &&
         other.certificate == certificate &&
         other.customSni == customSni;
   }
@@ -165,6 +179,8 @@ class ServerData {
     bool? ipv6,
     ValueData<Certificate>? certificate,
     ValueData<String>? tlsPrefix,
+    TlsAuthenticationType? tlsAuthenticationType,
+    ValueData<String>? clientRandomAuthKey,
     ValueData<String>? customSni,
   }) => ServerData(
     name: name ?? this.name,
@@ -180,6 +196,8 @@ class ServerData {
     ipv6: ipv6 ?? this.ipv6,
     certificate: certificate != null ? certificate.value : this.certificate,
     tlsPrefix: tlsPrefix != null ? tlsPrefix.value : this.tlsPrefix,
+    tlsAuthenticationType: tlsAuthenticationType ?? this.tlsAuthenticationType,
+    clientRandomAuthKey: clientRandomAuthKey != null ? clientRandomAuthKey.value : this.clientRandomAuthKey,
     customSni: customSni != null ? customSni.value : this.customSni,
   );
 }

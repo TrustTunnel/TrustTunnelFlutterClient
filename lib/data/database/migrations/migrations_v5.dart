@@ -9,5 +9,7 @@ class MigrationsV5 implements Migrations {
   Future<void> migrate(GeneratedDatabase database, Migrator m) async {
     final appDatabase = database as db.AppDatabase;
     await m.addColumn(appDatabase.servers, appDatabase.servers.tlsFingerprint);
+    await m.addColumn(appDatabase.servers, appDatabase.servers.tlsAuthenticationType);
+    await m.addColumn(appDatabase.servers, appDatabase.servers.clientRandomAuthKey);
   }
 }

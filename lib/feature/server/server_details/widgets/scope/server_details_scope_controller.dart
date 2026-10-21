@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
@@ -20,6 +21,8 @@ typedef DataChangedCallback = void Function({
   String? routingProfileId,
   List<String>? dnsServers,
   ValueData<String>? clientRandom,
+  TlsAuthenticationType? tlsAuthenticationType,
+  ValueData<String>? clientRandomAuthKey,
   ValueData<String>? customSni,
 });
 

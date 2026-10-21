@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 
@@ -15,6 +16,13 @@ extension LocaleVpnProtocolEnumExtension on VpnProtocol {
   String localized(BuildContext context) => switch (this) {
     VpnProtocol.http2 => context.ln.http2,
     VpnProtocol.quic => context.ln.quic,
+  };
+}
+
+extension LocaleTlsAuthenticationTypeEnumExtension on TlsAuthenticationType {
+  String localized(BuildContext context) => switch (this) {
+    TlsAuthenticationType.clientRandom => context.ln.tlsAuthenticationClientRandom,
+    TlsAuthenticationType.clientRandomAuthKey => context.ln.tlsAuthenticationClientRandomAuthKey,
   };
 }
 
