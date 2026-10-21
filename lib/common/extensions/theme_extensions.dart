@@ -513,6 +513,78 @@ class CustomColors extends ThemeExtension<CustomColors> {
   }
 }
 
+class CustomWindowsCaptionButtonTheme extends ThemeExtension<CustomWindowsCaptionButtonTheme> {
+  final ButtonStyle regular;
+  final ButtonStyle close;
+  final Color focusBorderColor;
+
+  const CustomWindowsCaptionButtonTheme({
+    required this.regular,
+    required this.close,
+    required this.focusBorderColor,
+  });
+
+  @override
+  CustomWindowsCaptionButtonTheme copyWith({
+    ButtonStyle? regular,
+    ButtonStyle? close,
+    Color? focusBorderColor,
+  }) => CustomWindowsCaptionButtonTheme(
+    regular: regular ?? this.regular,
+    close: close ?? this.close,
+    focusBorderColor: focusBorderColor ?? this.focusBorderColor,
+  );
+
+  @override
+  CustomWindowsCaptionButtonTheme lerp(
+    covariant ThemeExtension<CustomWindowsCaptionButtonTheme>? other,
+    double t,
+  ) {
+    if (other is! CustomWindowsCaptionButtonTheme) {
+      return this;
+    }
+
+    return CustomWindowsCaptionButtonTheme(
+      regular: ButtonStyle.lerp(regular, other.regular, t)!,
+      close: ButtonStyle.lerp(close, other.close, t)!,
+      focusBorderColor: Color.lerp(focusBorderColor, other.focusBorderColor, t)!,
+    );
+  }
+
+  CustomWindowsCaptionButtonTheme withHighContrastColors({
+    required Color foregroundColor,
+    required Color highlightColor,
+    required Color highlightTextColor,
+  }) {
+    final backgroundColor = WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
+        return highlightColor;
+      }
+
+      return regular.backgroundColor?.resolve(states);
+    });
+    final iconColor = WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
+        return highlightTextColor;
+      }
+
+      return foregroundColor;
+    });
+
+    return copyWith(
+      regular: regular.copyWith(
+        backgroundColor: backgroundColor,
+        foregroundColor: iconColor,
+      ),
+      close: close.copyWith(
+        backgroundColor: backgroundColor,
+        foregroundColor: iconColor,
+      ),
+      focusBorderColor: foregroundColor,
+    );
+  }
+}
+
 class CustomFilledButtonTheme extends ThemeExtension<CustomFilledButtonTheme> {
   final FilledButtonThemeData danger;
   final FilledButtonThemeData attention;

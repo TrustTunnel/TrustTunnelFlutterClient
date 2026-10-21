@@ -367,6 +367,50 @@ class LightTheme {
     padding: const EdgeInsets.symmetric(horizontal: 4),
   );
 
+  late final _windowsCaptionButtonStyle = ButtonStyle(
+    backgroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.pressed)) {
+        return _windowsSystemTitleBarButtonBackgroundPressed;
+      }
+      if (states.contains(WidgetState.hovered)) {
+        return _windowsSystemTitleBarButtonBackgroundHover;
+      }
+
+      return _transparent;
+    }),
+    foregroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) {
+        return _windowsSystemTitleBarTitleInactive;
+      }
+
+      return _windowsSystemTitleBarTitle;
+    }),
+  );
+
+  late final _customWindowsCaptionButtonTheme = CustomWindowsCaptionButtonTheme(
+    regular: _windowsCaptionButtonStyle,
+    close: _windowsCaptionButtonStyle.copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          return _windowsSystemTitleBarCloseButtonBackgroundPressed;
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return _windowsSystemTitleBarCloseButtonBackgroundHover;
+        }
+
+        return _transparent;
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
+          return _windowsSystemTitleBarCloseButtonForeground;
+        }
+
+        return _windowsCaptionButtonStyle.foregroundColor?.resolve(states);
+      }),
+    ),
+    focusBorderColor: _windowsSystemTitleBarTitle,
+  );
+
   late final _customFilledButtonTheme = CustomFilledButtonTheme(
     danger: FilledButtonThemeData(
       style: _filledButtonTheme.style?.copyWith(
@@ -1060,6 +1104,7 @@ class LightTheme {
     useMaterial3: true,
     extensions: [
       _customColors,
+      _customWindowsCaptionButtonTheme,
       _customFilledButtonTheme,
       _customElevatedButtonTheme,
       _customOutlinedButtonTheme,

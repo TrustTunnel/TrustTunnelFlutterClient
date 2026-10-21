@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/extensions/theme_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/feature/app/widgets/app_windows_caption_icon.dart';
 import 'package:window_manager/window_manager.dart';
@@ -104,19 +105,18 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor = widget.windowState.highContrast
-        ? widget.windowState.captionForegroundColor
-        : context.colors.windowsSystemTitleBarTitle;
-    final isCloseButton = widget.buttonType == WindowsCaptionButton.close;
-
-    final backgroundColor = _getBackgroundColor(
-      isCloseButton: isCloseButton,
-      defaultColor: context.colors.transparent,
-    );
-    final iconColor = _getIconColor(
-      isCloseButton: isCloseButton,
-      defaultColor: foregroundColor,
-    );
+    CustomWindowsCaptionButtonTheme captionButtonTheme = context.theme.extension<CustomWindowsCaptionButtonTheme>()!;
+    if (widget.windowState.highContrast) {
+      captionButtonTheme = captionButtonTheme.withHighContrastColors(
+        foregroundColor: widget.windowState.captionForegroundColor,
+        highlightColor: widget.windowState.highlightColor,
+        highlightTextColor: widget.windowState.highlightTextColor,
+      );
+    }
+    final style = widget.buttonType == WindowsCaptionButton.close
+        ? captionButtonTheme.close
+        : captionButtonTheme.regular;
+    final states = _widgetStates;
 
     return Semantics(
       button: true,
@@ -136,14 +136,14 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
           height: widget.height,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: backgroundColor.resolve(_widgetStates),
-              border: _showFocusHighlight ? Border.all(color: foregroundColor) : null,
+              color: style.backgroundColor?.resolve(states),
+              border: _showFocusHighlight ? Border.all(color: captionButtonTheme.focusBorderColor) : null,
             ),
             child: Center(
               child: AppWindowsCaptionIcon(
                 button: widget.buttonType,
                 maximized: widget.windowState.maximized,
-                color: iconColor.resolve(_widgetStates),
+                color: style.foregroundColor!.resolve(states)!,
               ),
             ),
           ),
@@ -151,46 +151,6 @@ class _CaptionButtonControlState extends State<_CaptionButtonControl> {
       ),
     );
   }
-
-  WidgetStateColor _getBackgroundColor({
-    required bool isCloseButton,
-    required Color defaultColor,
-  }) => WidgetStateColor.resolveWith((states) {
-    final pressed = states.contains(WidgetState.pressed);
-    if (!pressed && !states.contains(WidgetState.hovered)) {
-      return context.colors.transparent;
-    }
-    if (widget.windowState.highContrast) {
-      return widget.windowState.highlightColor;
-    }
-    if (isCloseButton) {
-      return pressed
-          ? context.colors.windowsSystemTitleBarCloseButtonBackgroundPressed
-          : context.colors.windowsSystemTitleBarCloseButtonBackgroundHover;
-    }
-
-    return pressed
-        ? context.colors.windowsSystemTitleBarButtonBackgroundPressed
-        : context.colors.windowsSystemTitleBarButtonBackgroundHover;
-  });
-
-  WidgetStateColor _getIconColor({
-    required bool isCloseButton,
-    required Color defaultColor,
-  }) => WidgetStateColor.resolveWith((states) {
-    final highlighted = states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed);
-    if (highlighted && widget.windowState.highContrast) {
-      return widget.windowState.highlightTextColor;
-    }
-    if (highlighted && isCloseButton) {
-      return context.colors.windowsSystemTitleBarCloseButtonForeground;
-    }
-    if (states.contains(WidgetState.disabled) && !widget.windowState.highContrast) {
-      return context.colors.windowsSystemTitleBarTitleInactive;
-    }
-
-    return defaultColor;
-  });
 
   void _activate() => unawaited(windowManager.invokeWindowsCaptionButton(widget.buttonType));
 
