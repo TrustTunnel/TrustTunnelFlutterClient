@@ -29,6 +29,8 @@ abstract class ServerDataSource {
     required String routingProfileId,
   });
 
+  Future<String> createLink({required ServerData server});
+
   /// Creates an unselected copy immediately after the original, atomically.
   Future<Server> duplicateServer({
     required String serverId,

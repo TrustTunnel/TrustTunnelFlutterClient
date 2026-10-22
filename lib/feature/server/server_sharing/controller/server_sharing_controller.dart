@@ -1,20 +1,18 @@
-import 'dart:convert';
-
 import 'package:adg_share/adg_share.dart';
 import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
-import 'package:trusttunnel/common/utils/server_configuration_encoder.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/repository/deep_link_repository.dart';
 import 'package:trusttunnel/feature/server/server_sharing/controller/server_sharing_state.dart';
 
 final class ServerSharingController extends BaseStateController<ServerSharingState> with SequentialControllerHandler {
-  final Converter<ServerData, String> _encoder;
+  final DeepLinkRepository _repository;
   final ShareClient _shareClient;
 
   ServerSharingController({
-    this._encoder = const ServerConfigurationEncoder(),
+    required this._repository,
     this._shareClient = const AdgShare(),
     super.initialState = const ServerSharingState.initial(),
   });
@@ -27,7 +25,9 @@ final class ServerSharingController extends BaseStateController<ServerSharingSta
     () async {
       setState(const ServerSharingState.loading());
 
-      await Clipboard.setData(ClipboardData(text: _getLink(server)));
+      final link = await _repository.createLink(server: server);
+
+      await Clipboard.setData(ClipboardData(text: link));
 
       if (!isDisposed) {
         onCopied?.call();
@@ -44,9 +44,11 @@ final class ServerSharingController extends BaseStateController<ServerSharingSta
     () async {
       setState(const ServerSharingState.loading());
 
+      final link = await _repository.createLink(server: server);
+
       final result = await _shareClient.share(
         ShareRequest(
-          content: [ShareText(_getLink(server))],
+          content: [ShareText(link)],
         ),
       );
 
@@ -62,8 +64,6 @@ final class ServerSharingController extends BaseStateController<ServerSharingSta
     errorHandler: (error, stackTrace) => _onError(error, onError),
     completionHandler: _onCompleted,
   );
-
-  String _getLink(ServerData server) => 'tt://?${_encoder.convert(server)}';
 
   void _onError(Object error, VoidCallback? onError) {
     setState(ServerSharingState.error(ExceptionUtils.toPresentationException(exception: error)));

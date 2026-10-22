@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
+import 'package:trusttunnel/common/utils/server_endpoint_encoder.dart';
 import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
@@ -244,6 +245,11 @@ class ServerDataSourceImpl implements ServerDataSource {
       ),
     );
   }
+
+  @override
+  Future<String> createLink({required ServerData server}) => deepLinkManager.createLink(
+    endpoint: const ServerEndpointEncoder().convert(server),
+  );
 
   @override
   Future<ServerData> getServerByBase64({

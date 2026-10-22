@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
+import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/server/server_sharing/controller/server_sharing_controller.dart';
 import 'package:trusttunnel/feature/server/server_sharing/controller/server_sharing_state.dart';
@@ -25,7 +26,7 @@ class _ServerSharingScopeState extends State<ServerSharingScope> {
   @override
   void initState() {
     super.initState();
-    _controller = ServerSharingController();
+    _controller = ServerSharingController(repository: context.repositoryFactory.deepLinkRepository);
   }
 
   @override

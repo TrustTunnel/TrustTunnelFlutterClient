@@ -161,8 +161,6 @@ final class ConfigurationCodec extends Codec<Configuration, String> {
 ///
 @immutable
 final class ConfigurationEncoder extends Converter<Configuration, String> {
-  static const _escapeCharsEncoder = _EscapeCharsEncoder();
-
   /// Creates an encoder.
   const ConfigurationEncoder();
 
@@ -177,27 +175,10 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     top.setBool(ConfigurationCodecKeys.postQuantumGroupEnabled, config.postQuantumGroupEnabled);
     top.setStringList(ConfigurationCodecKeys.exclusions, config.endpoint.exclusions);
 
-    final IniSection endpoint = document.section(ConfigurationCodecKeys.endpointSection);
-
-    endpoint.setString(ConfigurationCodecKeys.hostname, config.endpoint.hostName);
-    endpoint.setStringList(ConfigurationCodecKeys.addresses, _normalizeAddresses(config.endpoint.addresses));
-    endpoint.setBool(ConfigurationCodecKeys.hasIpv6, config.endpoint.hasIpv6);
-    endpoint.setString(ConfigurationCodecKeys.username, config.endpoint.username);
-    endpoint.setString(ConfigurationCodecKeys.password, config.endpoint.password);
-    endpoint.setString(ConfigurationCodecKeys.clientRandom, config.endpoint.clientRandom);
-    endpoint.setString(ConfigurationCodecKeys.clientRandomAuthKey, config.endpoint.clientRandomAuthKey);
-    endpoint.setString(ConfigurationCodecKeys.tlsProfile, config.endpoint.tlsProfile.value);
-    endpoint.setString(ConfigurationCodecKeys.customSni, config.endpoint.customSni);
-    endpoint.setBool(ConfigurationCodecKeys.skipVerification, config.endpoint.skipVerification);
-    endpoint.setMultilinePem(ConfigurationCodecKeys.certificate, config.endpoint.certificate);
-    endpoint.setString(ConfigurationCodecKeys.upstreamProtocol, config.endpoint.upStreamProtocol.value);
-    endpoint.setString(
-      ConfigurationCodecKeys.upstreamFallbackProtocol,
-      config.endpoint.upStreamFallbackProtocol?.value ?? '',
+    const EndpointEncoder()._writeSection(
+      document.section(ConfigurationCodecKeys.endpointSection),
+      config.endpoint,
     );
-    endpoint.setBool(ConfigurationCodecKeys.antiDpi, config.endpoint.antiDpi);
-    endpoint.setStringList(ConfigurationCodecKeys.dnsUpStreams, config.endpoint.dnsUpStreams);
-    endpoint.setString(ConfigurationCodecKeys.name, _escapeCharsEncoder.convert(config.endpoint.name));
 
     document.section(ConfigurationCodecKeys.listenerSection);
 
@@ -212,6 +193,41 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     // socks.setString(ConfigurationCodecKeys.socksPassword, config.socks.password);
 
     return document.toString();
+  }
+}
+
+@immutable
+final class EndpointEncoder extends Converter<Endpoint, String> {
+  const EndpointEncoder();
+
+  @override
+  String convert(Endpoint input) {
+    final document = IniDocument();
+    _writeSection(document.section(ConfigurationCodecKeys.endpointSection), input);
+
+    return document.toString();
+  }
+
+  void _writeSection(IniSection endpoint, Endpoint input) {
+    endpoint.setString(ConfigurationCodecKeys.hostname, input.hostName);
+    endpoint.setStringList(ConfigurationCodecKeys.addresses, _normalizeAddresses(input.addresses));
+    endpoint.setBool(ConfigurationCodecKeys.hasIpv6, input.hasIpv6);
+    endpoint.setString(ConfigurationCodecKeys.username, input.username);
+    endpoint.setString(ConfigurationCodecKeys.password, input.password);
+    endpoint.setString(ConfigurationCodecKeys.clientRandom, input.clientRandom);
+    endpoint.setString(ConfigurationCodecKeys.clientRandomAuthKey, input.clientRandomAuthKey);
+    endpoint.setString(ConfigurationCodecKeys.tlsProfile, input.tlsProfile.value);
+    endpoint.setString(ConfigurationCodecKeys.customSni, input.customSni);
+    endpoint.setBool(ConfigurationCodecKeys.skipVerification, input.skipVerification);
+    endpoint.setMultilinePem(ConfigurationCodecKeys.certificate, input.certificate);
+    endpoint.setString(ConfigurationCodecKeys.upstreamProtocol, input.upStreamProtocol.value);
+    endpoint.setString(
+      ConfigurationCodecKeys.upstreamFallbackProtocol,
+      input.upStreamFallbackProtocol?.value ?? '',
+    );
+    endpoint.setBool(ConfigurationCodecKeys.antiDpi, input.antiDpi);
+    endpoint.setStringList(ConfigurationCodecKeys.dnsUpStreams, input.dnsUpStreams);
+    endpoint.setString(ConfigurationCodecKeys.name, input.name);
   }
 
   /// Normalizes endpoint addresses:
@@ -242,8 +258,6 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
 /// Decodes backend INI-like configuration text into a [Configuration].
 @immutable
 final class ConfigurationDecoder extends Converter<String, Configuration> {
-  static const _escapeCharsDecoder = _EscapeCharsDecoder();
-
   /// Creates a decoder.
   const ConfigurationDecoder();
 
@@ -277,7 +291,7 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     final String customSni = endpoint.getString(ConfigurationCodecKeys.customSni) ?? '';
 
     final List<String> dnsUpStreams = endpoint.getStringList(ConfigurationCodecKeys.dnsUpStreams) ?? const <String>[];
-    final String name = _escapeCharsDecoder.convert(endpoint.getString(ConfigurationCodecKeys.name) ?? 'Server');
+    final String name = endpoint.getString(ConfigurationCodecKeys.name) ?? 'Server';
 
     final String certificate = _normalizePem(endpoint.getString(ConfigurationCodecKeys.certificate) ?? '');
 
@@ -376,21 +390,4 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     if (fallback != null) return fallback;
     throw FormatException('Unknown enum value "$raw" for $T');
   }
-}
-
-class _EscapeCharsEncoder extends Converter<String, String> {
-  const _EscapeCharsEncoder();
-
-  @override
-  String convert(String input) {
-    final encoded = jsonEncode(input);
-    return encoded.substring(1, encoded.length - 1);
-  }
-}
-
-class _EscapeCharsDecoder extends Converter<String, String> {
-  const _EscapeCharsDecoder();
-
-  @override
-  String convert(String input) => jsonDecode('"$input"') as String;
 }
