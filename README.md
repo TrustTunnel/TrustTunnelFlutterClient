@@ -1,8 +1,10 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_dark.svg" width="300px" alt="TrustTunnel" />
-    <img src="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg" width="300px" alt="TrustTunnel" />
-  </picture>
+  <a href="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg#gh-light-mode-only">
+    <img src="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg#gh-light-mode-only" width="300" alt="TrustTunnel" />
+  </a>
+  <a href="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_dark.svg#gh-dark-mode-only">
+    <img src="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_dark.svg#gh-dark-mode-only" width="300" alt="TrustTunnel" />
+  </a>
 </p>
 
 # <p align="center">TrustTunnel Flutter Client</p>
