@@ -74,6 +74,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
       }
 
       _acceptConnectionUserCommand(serverId, saveSelection: false);
+      _handlePendingWork();
     },
     errorHandler: _onHandlerError,
   );
@@ -82,9 +83,11 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     () {
       if (!state.isExitProcessing) {
         _acceptConnectionUserCommand(serverId, saveSelection: true);
+        _handlePendingWork();
       }
     },
     errorHandler: _onHandlerError,
+    completionHandler: _savePendingServerSelection,
   );
 
   void disconnect() => handle(
@@ -210,12 +213,6 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         needsSynchronization: true,
       ),
     );
-
-    if (saveSelection) {
-      _saveServerSelection(serverId, requestId);
-    }
-
-    _handlePendingWork();
   }
 
   bool _isCurrentUserCommand(int requestId) {
@@ -232,10 +229,18 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     ),
   );
 
-  void _saveServerSelection(String serverId, int requestId) {
+  /// Runs after the selection handler yields, before the queue can replace its command.
+  /// Saving synchronously notifies sources; those notifications must enqueue behind this handler.
+  void _savePendingServerSelection() {
+    final command = _vpnOperationsProcessingInfo.pendingUserCommand;
+    if (state.isExitProcessing || command == null || !command.isSavingSelection) {
+      return;
+    }
+
+    final requestId = command.requestId;
     try {
       _saveSelection(
-        serverId,
+        command.serverId,
         shouldReportError: () => _isCurrentUserCommand(requestId),
         onSelected: (saved) => _onSelectionSaved(requestId, saved),
       );

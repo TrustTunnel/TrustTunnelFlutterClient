@@ -66,11 +66,11 @@ SPEC CHECKSUMS:
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   screen_retriever_macos: c5508cc3c66ff0d4db650480cf0ab691e220d933
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  tray_manager: 5deff50c21a2fc8d0b93ce0cc9281cc26397e580
+  tray_manager: ba21ca14c7c3af1da04e6efcf0c1ee0b042e7ed0
   TrustTunnelClient: 1a205f189dfa1896c4f1d9e1c06f9fa16ec7de61
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   vpn_plugin: 39c007f1c0d89394e9446539110f46a63caf53c6
-  window_manager: 13452825a41c58abaef4fd0eab57ca99606f36d4
+  window_manager: 749451531a8cfb273dca203d66a9e53b0ca4adaa
 
 PODFILE CHECKSUM: f9a74aa5bb75efcd6b97f11abd1096902b27acab
 
