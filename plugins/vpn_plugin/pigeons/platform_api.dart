@@ -263,4 +263,9 @@ class PlatformFieldError {
 @HostApi()
 abstract class IDeepLink {
   String decode({required String uri});
+
+  /// Encodes an `[endpoint]` TOML section string into a deep-link URI.
+  ///
+  /// [endpointToml] must use the same layout that [decode] produces.
+  String encode({required String endpointToml});
 }
