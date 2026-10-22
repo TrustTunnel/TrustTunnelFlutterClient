@@ -14,7 +14,47 @@ set(PLUGIN_NAME "vpn_plugin_plugin")
 # Any new source files that you add to the plugin should be added here.
 list(APPEND PLUGIN_SOURCES
   "vpn_plugin.cc"
+  "linux_vpn_engine.cc"
+  "platform_api.g.cc"
 )
+
+# The Pigeon-generated channel plumbing trips -Wunused-parameter and
+# -Wunused-function; vpn_plugin.cc stays under the full -Wall -Werror.
+set_source_files_properties(platform_api.g.cc PROPERTIES
+  COMPILE_FLAGS "-Wno-unused-parameter -Wno-unused-function"
+)
+
+# === Tests ===
+if (include_vpn_plugin_tests)
+set(TEST_RUNNER "${PROJECT_NAME}_test")
+enable_testing()
+
+find_package(GTest REQUIRED)
+
+add_executable(${TEST_RUNNER}
+  test/linux_vpn_engine_test.cc
+  linux_vpn_engine.cc
+)
+target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+if(COMMAND apply_standard_settings)
+  apply_standard_settings(${TEST_RUNNER})
+endif()
+target_link_libraries(${TEST_RUNNER} PRIVATE GTest::gtest_main pthread)
+
+include(GoogleTest)
+gtest_discover_tests(${TEST_RUNNER})
+
+# Stop here if configured standalone without the Flutter app wrapper.
+if(NOT COMMAND apply_standard_settings)
+  return()
+endif()
+
+endif()  # include_vpn_plugin_tests
+
+if(NOT COMMAND apply_standard_settings)
+  message(FATAL_ERROR
+    "vpn_plugin: configure from Flutter build or pass -Dinclude_vpn_plugin_tests=ON")
+endif()
 
 # Define the plugin library target. Its name must not be changed (see comment
 # on PLUGIN_NAME above).
@@ -48,47 +88,3 @@ set(vpn_plugin_bundled_libraries
   ""
   PARENT_SCOPE
 )
-
-# === Tests ===
-# These unit tests can be run from a terminal after building the example.
-
-# Only enable test builds when building the example (which sets this variable)
-# so that plugin clients aren't building the tests.
-if (${include_${PROJECT_NAME}_tests})
-if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
-message("Unit tests require CMake 3.11.0 or later")
-else()
-set(TEST_RUNNER "${PROJECT_NAME}_test")
-enable_testing()
-
-# Add the Google Test dependency.
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/release-1.11.0.zip
-)
-# Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-# Disable install commands for gtest so it doesn't end up in the bundle.
-set(INSTALL_GTEST OFF CACHE BOOL "Disable installation of googletest" FORCE)
-
-FetchContent_MakeAvailable(googletest)
-
-# The plugin's exported API is not very useful for unit testing, so build the
-# sources directly into the test binary rather than using the shared library.
-add_executable(${TEST_RUNNER}
-  test/vpn_plugin_test.cc
-  ${PLUGIN_SOURCES}
-)
-apply_standard_settings(${TEST_RUNNER})
-target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(${TEST_RUNNER} PRIVATE flutter)
-target_link_libraries(${TEST_RUNNER} PRIVATE PkgConfig::GTK)
-target_link_libraries(${TEST_RUNNER} PRIVATE gtest_main gmock)
-
-# Enable automatic test discovery.
-include(GoogleTest)
-gtest_discover_tests(${TEST_RUNNER})
-
-endif()  # CMake version check
-endif()  # include_${PROJECT_NAME}_tests
