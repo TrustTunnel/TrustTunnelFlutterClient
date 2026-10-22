@@ -23,7 +23,7 @@ import 'package:trusttunnel/feature/vpn/models/vpn_user_command.dart';
 /// reserves the repository until its reply arrives.
 ///
 /// About state transitions:
-/// - `_submit*` methods call native code without blocking the handler queue.
+/// - `_submit*` methods start native calls inside a handler without awaiting their replies.
 /// - `nativeStateRequest` reads status once on resume, supplementing native events.
 ///
 /// Both update `vpnState`: transitions are smoothed, connection outcomes come from native state.
@@ -391,7 +391,8 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     }
   }
 
-  /// Reserves one repository call; its reply releases the slot, not the native session.
+  /// Called inside a handler: reserves and starts one repository call without awaiting its reply.
+  /// Completion and failure handlers enqueue the result; native state confirms the session status.
   void _submitNativeOperation({
     required VpnNativeOperation nativeOperation,
     required AsyncCallback execute,
@@ -403,84 +404,86 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
       _vpnOperationsProcessingInfo.copyWith(nativeOperation: ValueData(nativeOperation)),
     );
 
-    // The event queue stays free for cancellation and native events.
+    // Future.sync sends synchronous call failures through the same path as asynchronous errors.
     unawaited(
       Future<void>.sync(execute).then(
-        (_) => handle(
-          () {
-            _updateVpnOperationsProcessingInfo(
-              _vpnOperationsProcessingInfo.copyWith(nativeOperation: const ValueData(null)),
-            );
-
-            onCompleted();
-            _handlePendingWork();
-          },
-          errorHandler: _onHandlerError,
-        ),
-        onError: (Object error, StackTrace stackTrace) => handle(
-          () => _onNativeOperationFailed(
-            nativeOperation: nativeOperation,
-            requestId: requestId,
-            configuration: configuration,
-            error: error,
-            stackTrace: stackTrace,
-          ),
-          errorHandler: _onHandlerError,
+        (_) => _onNativeOperationCompleted(onCompleted: onCompleted),
+        onError: (Object error, StackTrace stackTrace) => _onNativeOperationFailed(
+          nativeOperation: nativeOperation,
+          requestId: requestId,
+          configuration: configuration,
+          error: error,
+          stackTrace: stackTrace,
         ),
       ),
     );
   }
 
-  void _onNativeOperationFailed({
+  Future<void> _onNativeOperationCompleted({required VoidCallback onCompleted}) => handle(
+    () {
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(nativeOperation: const ValueData(null)),
+      );
+
+      onCompleted();
+      _handlePendingWork();
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  Future<void> _onNativeOperationFailed({
     required VpnNativeOperation nativeOperation,
     required int requestId,
     VpnConfiguration? configuration,
     required Object error,
     required StackTrace stackTrace,
-  }) {
-    VpnOperationsProcessingInfo vpnOperationsProcessingInfo = _vpnOperationsProcessingInfo.copyWith(
-      nativeOperation: const ValueData(null),
-    );
-
-    if (configuration != null) {
-      // Do not immediately retry the same failure; retain settings changed during it.
-      final hasNewConfiguration =
-          vpnOperationsProcessingInfo.needsSynchronization &&
-          _sources.configurationFor(_configurationTargetId) != configuration;
-      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(
-        needsSynchronization: hasNewConfiguration,
+  }) => handle(
+    () {
+      VpnOperationsProcessingInfo vpnOperationsProcessingInfo = _vpnOperationsProcessingInfo.copyWith(
+        nativeOperation: const ValueData(null),
       );
-    } else if (nativeOperation == VpnNativeOperation.deleteConfiguration) {
-      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(
-        needsSynchronization: vpnOperationsProcessingInfo.needsSynchronization && _sources.servers.isNotEmpty,
-      );
-    }
-    if (requestId == vpnOperationsProcessingInfo.requestId) {
-      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(pendingUserCommand: const ValueData(null));
-    }
-    final exitStopFailed = state.isExitProcessing && vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle;
-    if (exitStopFailed) {
-      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(exitStage: VpnExitStage.idle);
-    }
 
-    // A failing reply may still have reached native code; keep the submitted flags.
-    _updateVpnOperationsProcessingInfo(vpnOperationsProcessingInfo);
-    if (exitStopFailed) {
-      _onExitStopped(false);
-    }
-
-    _reportError(error: error, stackTrace: stackTrace);
-    if (nativeOperation == VpnNativeOperation.stop) {
-      // Retry a failed stop only for a newer explicit request, never for background synchronization.
-      final hasPendingRequest =
-          _vpnOperationsProcessingInfo.stopRequired || _vpnOperationsProcessingInfo.pendingUserCommand != null;
-      if (state.isExitProcessing || !hasPendingRequest) {
-        return;
+      if (configuration != null) {
+        // Do not immediately retry the same failure; retain settings changed during it.
+        final hasNewConfiguration =
+            vpnOperationsProcessingInfo.needsSynchronization &&
+            _sources.configurationFor(_configurationTargetId) != configuration;
+        vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(
+          needsSynchronization: hasNewConfiguration,
+        );
+      } else if (nativeOperation == VpnNativeOperation.deleteConfiguration) {
+        vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(
+          needsSynchronization: vpnOperationsProcessingInfo.needsSynchronization && _sources.servers.isNotEmpty,
+        );
       }
-    }
+      if (requestId == vpnOperationsProcessingInfo.requestId) {
+        vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(pendingUserCommand: const ValueData(null));
+      }
+      final exitStopFailed = state.isExitProcessing && vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle;
+      if (exitStopFailed) {
+        vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(exitStage: VpnExitStage.idle);
+      }
 
-    _handlePendingWork();
-  }
+      // A failing reply may still have reached native code; keep the submitted flags.
+      _updateVpnOperationsProcessingInfo(vpnOperationsProcessingInfo);
+      if (exitStopFailed) {
+        _onExitStopped(false);
+      }
+
+      _reportError(error: error, stackTrace: stackTrace);
+      if (nativeOperation == VpnNativeOperation.stop) {
+        // Retry a failed stop only for a newer explicit request, never for background synchronization.
+        final hasPendingRequest =
+            _vpnOperationsProcessingInfo.stopRequired || _vpnOperationsProcessingInfo.pendingUserCommand != null;
+        if (state.isExitProcessing || !hasPendingRequest) {
+          return;
+        }
+      }
+
+      _handlePendingWork();
+    },
+    errorHandler: _onHandlerError,
+  );
 
   void _submitStart(VpnConfiguration configuration) {
     final requestId = _vpnOperationsProcessingInfo.requestId;
@@ -498,6 +501,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         ),
       ),
     );
+
     _submitNativeOperation(
       nativeOperation: VpnNativeOperation.start,
       execute: () => _repository.start(
