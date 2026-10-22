@@ -8,15 +8,11 @@ import 'package:trusttunnel/data/model/server.dart';
 sealed class ServersState {
   final List<Server> servers;
 
-  /// Increments as soon as a choice is requested, before it enters the save queue.
-  final int selectionRequestRevision;
-
   /// Choices that are queued or still saving the DB selection or launch target.
   final int pendingSelections;
 
   const ServersState._({
     required this.servers,
-    this.selectionRequestRevision = 0,
     this.pendingSelections = 0,
   }) : assert(pendingSelections >= 0);
 
@@ -25,14 +21,12 @@ sealed class ServersState {
   /// Initial / idle state
   const factory ServersState.idle({
     required List<Server> servers,
-    int selectionRequestRevision,
     int pendingSelections,
   }) = _IdleServersState;
 
   /// Loading state
   const factory ServersState.loading({
     required List<Server> servers,
-    int selectionRequestRevision,
     int pendingSelections,
   }) = _LoadingServersState;
 
@@ -40,7 +34,6 @@ sealed class ServersState {
   const factory ServersState.exception({
     required List<Server> servers,
     required PresentationException exception,
-    int selectionRequestRevision,
     int pendingSelections,
   }) = _ErrorServersState;
 
@@ -54,28 +47,24 @@ sealed class ServersState {
   String toString() =>
       'ServersState(type: $runtimeType, '
       'count: ${servers.length}, selectedId: ${selectedServer?.id}, loading: $loading, '
-      'selectionRequestRevision: $selectionRequestRevision, pendingSelections: $pendingSelections)';
+      'pendingSelections: $pendingSelections)';
 
   /// Updates data without changing the current operation status or clearing its error.
   ServersState copyWith({
     List<Server>? servers,
-    int? selectionRequestRevision,
     int? pendingSelections,
   }) => switch (this) {
     _LoadingServersState() => ServersState.loading(
       servers: servers ?? this.servers,
-      selectionRequestRevision: selectionRequestRevision ?? this.selectionRequestRevision,
       pendingSelections: pendingSelections ?? this.pendingSelections,
     ),
     _ErrorServersState(:final exception) => ServersState.exception(
       servers: servers ?? this.servers,
       exception: exception,
-      selectionRequestRevision: selectionRequestRevision ?? this.selectionRequestRevision,
       pendingSelections: pendingSelections ?? this.pendingSelections,
     ),
     _IdleServersState() => ServersState.idle(
       servers: servers ?? this.servers,
-      selectionRequestRevision: selectionRequestRevision ?? this.selectionRequestRevision,
       pendingSelections: pendingSelections ?? this.pendingSelections,
     ),
   };
@@ -84,7 +73,6 @@ sealed class ServersState {
 final class _IdleServersState extends ServersState {
   const _IdleServersState({
     required super.servers,
-    super.selectionRequestRevision,
     super.pendingSelections,
   }) : super._();
 }
@@ -99,7 +87,6 @@ final class _InitialServersState extends _IdleServersState {
 final class _LoadingServersState extends ServersState {
   const _LoadingServersState({
     required super.servers,
-    super.selectionRequestRevision,
     super.pendingSelections,
   }) : super._();
 }
@@ -110,7 +97,6 @@ final class _ErrorServersState extends ServersState {
   const _ErrorServersState({
     required super.servers,
     required this.exception,
-    super.selectionRequestRevision,
     super.pendingSelections,
   }) : super._();
 }

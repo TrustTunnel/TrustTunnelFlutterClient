@@ -46,8 +46,6 @@ final class VpnConfigurationSources implements Listenable {
       _appLoggingScopeController.error != null ||
       _excludedRoutesScopeController.error != null;
 
-  int get selectionRequestRevision => _serversScopeController.selectionRequestRevision;
-
   List<Server> get servers => _serversScopeController.servers;
 
   Server? get selectedServer => _serversScopeController.selectedServer;

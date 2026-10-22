@@ -78,21 +78,22 @@ final class TrayMenuController {
       onQuitPressed: () => _runTrayMenuAction(_quit),
     );
     _sources.addListener(_onSourcesChanged);
-    _enqueueSync();
+    _requestSynchronization();
   }
 
   late final TrayMenuCallbacks _callbacks;
   TrayMenuLabels _labels;
-  Future<void> _syncQueue = Future<void>.value();
+  bool _needsSynchronization = false;
   bool _isDisposed = false;
   bool _syncErrorReported = false;
+  Future<void>? _synchronization;
   Timer? _retryTimer;
   Object? _lastServerError;
   Object? _lastLoggingError;
 
   void updateLabels(TrayMenuLabels labels) {
     _labels = labels;
-    _enqueueSync();
+    _requestSynchronization();
   }
 
   Future<void> dispose() async {
@@ -101,7 +102,7 @@ final class TrayMenuController {
     _sources.removeListener(_onSourcesChanged);
 
     // Wait for native initialization/update before deleting its resources.
-    await _syncQueue;
+    await _synchronization;
     await _trayMenuBuilder.dispose();
   }
 
@@ -180,54 +181,51 @@ final class TrayMenuController {
 
     _lastServerError = serverError;
     _lastLoggingError = loggingError;
-    _enqueueSync();
+    _requestSynchronization();
   }
 
-  /// Sequential asynchronous update queue for the tray menu.
-  ///
-  /// It handles the synchronization of menu and icons, but not all actions involving the tray menu.
-  /// Connecting to a VPN, exporting logs, and other actions are handled via [_runTrayMenuAction].
-  void _enqueueSync() {
+  void _requestSynchronization() {
     if (_isDisposed) {
       return;
     }
     _retryTimer?.cancel();
+    _needsSynchronization = true;
+    _synchronization ??= Future<void>(_synchronizeMenu);
+  }
 
-    _syncQueue = _syncQueue
-        .then((_) async {
+  Future<void> _synchronizeMenu() async {
+    try {
+      // Changes received during an update need only one more pass with the latest data.
+      while (!_isDisposed && _needsSynchronization) {
+        _needsSynchronization = false;
+        try {
+          await _trayMenuBuilder.synchronizeMenu(
+            data: _prepareTrayMenuData(),
+            callbacks: _callbacks,
+          );
+          _syncErrorReported = false;
+        } catch (error, stackTrace) {
           if (_isDisposed) {
             return;
           }
 
-          try {
-            await _trayMenuBuilder.synchronizeMenu(data: _prepareTrayMenuData(), callbacks: _callbacks);
-            _syncErrorReported = false;
-          } catch (error, stackTrace) {
-            if (_isDisposed) {
-              return;
-            }
-
-            _retryTimer?.cancel();
-            _retryTimer = Timer(const Duration(seconds: 5), _enqueueSync);
-
-            if (!_syncErrorReported) {
-              _syncErrorReported = true;
-              logger.logError(
-                'Unable to synchronize tray menu',
-                error: error,
-                stackTrace: stackTrace,
-              );
-            }
+          _retryTimer = Timer(const Duration(seconds: 5), _requestSynchronization);
+          if (!_syncErrorReported) {
+            _syncErrorReported = true;
+            logger.logError(
+              'Unable to synchronize tray menu',
+              error: error,
+              stackTrace: stackTrace,
+            );
           }
-        })
-        .catchError((Object error, StackTrace stackTrace) {
-          // Resolve this Future so later menu synchronizations can still run.
-          logger.logError(
-            'Tray menu synchronization queue failed',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        });
+
+          // Retry later instead of spinning while the native tray is unavailable.
+          return;
+        }
+      }
+    } finally {
+      _synchronization = null;
+    }
   }
 
   Future<void> _connect() async {

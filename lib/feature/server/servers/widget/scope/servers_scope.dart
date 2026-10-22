@@ -52,9 +52,6 @@ class _ServersScopeState extends State<ServersScope> implements ServersScopeCont
   bool get loading => _controller.state.loading;
 
   @override
-  int get selectionRequestRevision => _controller.state.selectionRequestRevision;
-
-  @override
   void Function() get fetchServers => _controller.fetchServers;
 
   @override
@@ -81,8 +78,11 @@ class _ServersScopeState extends State<ServersScope> implements ServersScopeCont
   );
 
   @override
-  void selectServer(String? serverId, {ValueChanged<bool>? onSelected}) =>
-      _controller.selectServer(serverId, onSelected: onSelected);
+  void selectServer(
+    String? serverId, {
+    ValueChanged<bool>? onSelected,
+    ValueGetter<bool>? shouldReportError,
+  }) => _controller.selectServer(serverId, onSelected: onSelected, shouldReportError: shouldReportError);
 
   @override
   void addListener(VoidCallback listener) => _controller.addListener(listener);

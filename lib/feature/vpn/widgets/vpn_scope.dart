@@ -46,8 +46,8 @@ import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_exit_handling_mixin.da
 /// - Pass `listen: false` to read the controller without subscribing.
 ///
 /// ## VPN lifecycle and state
-/// `VpnScope` maintains a current [VpnState] value and updates it by subscribing
-/// to a state stream produced by [VpnRepository.listenToStates].
+/// [VpnController] owns the current VPN state. The scope forwards native updates
+/// from [VpnRepository.listenToStates] and exposes state through the controller.
 ///
 /// Calling [VpnScopeController.connectToServer] attempts a connection using saved settings.
 /// Calling [VpnScopeController.selectAndConnectToServer] saves selection first.
@@ -192,7 +192,7 @@ class VpnScope extends StatefulWidget {
       ) ??
       _notFoundInheritedWidgetOfExactType();
 
-  /// Errors are separate from the synchronous VPN command contract.
+  /// Errors are reported separately from synchronous VPN control methods.
   static Listenable operationErrorsOf(BuildContext context) =>
       _accessScope(context, listen: false)?.operationErrors ?? _notFoundInheritedWidgetOfExactType();
 
@@ -228,7 +228,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
 
   /// VPN operation errors originate above the MaterialApp, so the UI listens here
   /// to show feedback for both background updates and failed exit requests.
-  final _OperationErrorNotifier _operationErrorNotifier = _OperationErrorNotifier();
+  final _VpnOperationErrorNotifier _operationErrorNotifier = _VpnOperationErrorNotifier();
 
   VpnConfigurationSources? _configurationSources;
   StreamSubscription<VpnLog>? _logStreamSub;
@@ -244,10 +244,10 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
   bool get isExitProcessing => _controller.state.isExitProcessing;
 
   @override
-  bool get shouldShowExitDialog => _controller.state.shouldShowExitDialog;
+  bool get shouldShowExitDialog => _controller.shouldShowExitDialog;
 
   @override
-  bool get isVpnDisconnectedForExit => _controller.state.isDisconnectedForExit;
+  bool get isVpnDisconnectedForExit => _controller.isDisconnectedForExit;
 
   @override
   AppWindowController? get appWindowController => switch (defaultTargetPlatform) {
@@ -333,7 +333,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
   void disconnect() => _controller.disconnect();
 
   @override
-  void beginVpnExit() => _controller.prepareExit();
+  void onAppExiting() => _controller.onAppExiting();
 
   @override
   void cancelVpnExit() => _controller.cancelExit();
@@ -414,7 +414,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
   }
 }
 
-final class _OperationErrorNotifier extends ChangeNotifier {
+final class _VpnOperationErrorNotifier extends ChangeNotifier {
   @override
   void notifyListeners() => super.notifyListeners();
 }
@@ -446,20 +446,24 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements LogControl
 
   @override
   bool updateShouldNotifyDependent(covariant _InheritedVpnScope oldWidget, Set<VpnAspect> dependencies) {
-    if (dependencies.contains(VpnAspect.vpn) && _shouldNotifyVpnController(oldWidget)) {
+    final listensToVpn = dependencies.contains(VpnAspect.vpn);
+    if (listensToVpn && _shouldNotifyVpnController(oldWidget)) {
       return true;
     }
-    if (dependencies.contains(VpnAspect.logs) && _shouldNotifyLogController(oldWidget)) {
+    final listensToLogs = dependencies.contains(VpnAspect.logs);
+    if (listensToLogs && _shouldNotifyLogController(oldWidget)) {
       return true;
     }
 
     return false;
   }
 
-  bool _shouldNotifyVpnController(_InheritedVpnScope oldWidget) =>
-      oldWidget.state != state ||
-      oldWidget.currentlyConnectedServerId != currentlyConnectedServerId ||
-      oldWidget.isExitProcessing != isExitProcessing;
+  bool _shouldNotifyVpnController(_InheritedVpnScope oldWidget) {
+    final hasConnectionChanged =
+        oldWidget.state != state || oldWidget.currentlyConnectedServerId != currentlyConnectedServerId;
+
+    return hasConnectionChanged || oldWidget.isExitProcessing != isExitProcessing;
+  }
 
   bool _shouldNotifyLogController(_InheritedVpnScope oldWidget) => !listEquals(oldWidget.logs, logs);
 }

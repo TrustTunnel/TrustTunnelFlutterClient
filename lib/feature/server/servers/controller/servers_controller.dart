@@ -22,51 +22,42 @@ final class ServersController extends BaseStateController<ServersState> with Seq
   });
 
   /// Reloads the persisted server list.
-  void fetchServers() {
-    if (isDisposed) {
-      return;
-    }
+  void fetchServers() => handle(
+    () async {
+      setState(
+        ServersState.loading(
+          servers: state.servers,
+          pendingSelections: state.pendingSelections,
+        ),
+      );
 
-    handle(
-      () async {
-        setState(
-          ServersState.loading(
-            servers: state.servers,
-            selectionRequestRevision: state.selectionRequestRevision,
-            pendingSelections: state.pendingSelections,
-          ),
-        );
+      final servers = await _repository.getAllServers();
+      if (isDisposed) {
+        return;
+      }
 
-        final servers = await _repository.getAllServers();
-        if (isDisposed) {
-          return;
-        }
-
-        setState(
-          ServersState.idle(
-            servers: servers,
-            selectionRequestRevision: state.selectionRequestRevision,
-            pendingSelections: state.pendingSelections,
-          ),
-        );
-      },
-      errorHandler: _onError,
-    );
-  }
+      setState(
+        ServersState.idle(
+          servers: servers,
+          pendingSelections: state.pendingSelections,
+        ),
+      );
+    },
+    errorHandler: _onError,
+  );
 
   /// Saves selection and the launch target without changing the VPN connection.
-  void selectServer(String? serverId, {ValueChanged<bool>? onSelected}) {
+  void selectServer(
+    String? serverId, {
+    ValueChanged<bool>? onSelected,
+    ValueGetter<bool>? shouldReportError,
+  }) {
+    // Register queued selections synchronously; handle's disposal check cannot protect this state write.
     if (isDisposed) {
       return;
     }
 
-    // Notify immediately: repeated and failed choices also cancel older VPN intentions.
-    setState(
-      state.copyWith(
-        selectionRequestRevision: state.selectionRequestRevision + 1,
-        pendingSelections: state.pendingSelections + 1,
-      ),
-    );
+    setState(state.copyWith(pendingSelections: state.pendingSelections + 1));
 
     handle(
       () async {
@@ -75,7 +66,6 @@ final class ServersController extends BaseStateController<ServersState> with Seq
         setState(
           ServersState.loading(
             servers: operatingServers,
-            selectionRequestRevision: state.selectionRequestRevision,
             pendingSelections: state.pendingSelections,
           ),
         );
@@ -105,15 +95,27 @@ final class ServersController extends BaseStateController<ServersState> with Seq
         setState(
           ServersState.idle(
             servers: state.servers,
-            selectionRequestRevision: state.selectionRequestRevision,
             pendingSelections: state.pendingSelections,
           ),
         );
+        _completeSelection(saved: true, onSelected: onSelected);
       },
-      errorHandler: _onError,
-      completionHandler: () {
-        _onSelectionCompleted();
-        onSelected?.call(state.error == null);
+      errorHandler: (error, stackTrace) {
+        try {
+          if (shouldReportError?.call() ?? true) {
+            _onError(error, stackTrace);
+          } else {
+            // The observer logs cancelled preparation errors; do not publish them to the tray or UI.
+            setState(
+              ServersState.idle(
+                servers: state.servers,
+                pendingSelections: state.pendingSelections,
+              ),
+            );
+          }
+        } finally {
+          _completeSelection(saved: false, onSelected: onSelected);
+        }
       },
     );
   }
@@ -124,20 +126,30 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     exception: exception,
   );
 
-  Future<void> _onError(Object? error, StackTrace _) async {
+  void _onError(Object? error, StackTrace _) {
     final presentationException = _parseException(error);
 
     setState(
       ServersState.exception(
         exception: presentationException,
         servers: state.servers,
-        selectionRequestRevision: state.selectionRequestRevision,
         pendingSelections: state.pendingSelections,
       ),
     );
   }
 
-  void _onSelectionCompleted() => setState(
-    state.copyWith(pendingSelections: state.pendingSelections - 1),
-  );
+  void _completeSelection({required bool saved, ValueChanged<bool>? onSelected}) {
+    if (isDisposed) {
+      return;
+    }
+
+    setState(state.copyWith(pendingSelections: state.pendingSelections - 1));
+
+    try {
+      onSelected?.call(saved);
+    } on Object catch (error, stackTrace) {
+      // A consumer callback failure must not complete or report the save a second time.
+      super.onError(error, stackTrace);
+    }
+  }
 }

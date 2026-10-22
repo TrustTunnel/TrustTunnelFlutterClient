@@ -23,7 +23,7 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
   /// Keeping this resource here lets scope disposal finish the Flutter response synchronously.
   Completer<bool>? _exitStopCompleter;
 
-  /// One timeout covers an in-flight start, the stop command and its native state confirmation.
+  /// One timeout covers an in-flight start, the stop native operation and its native state confirmation.
   Timer? _exitStopTimer;
 
   @protected
@@ -36,7 +36,7 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
   AppWindowController? get appWindowController;
 
   @protected
-  void beginVpnExit();
+  void onAppExiting();
 
   /// Clears only the exit flag; cancelled connection requests stay cancelled.
   @protected
@@ -110,7 +110,7 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
       }
     }
 
-    beginVpnExit();
+    onAppExiting();
 
     return AppExitResponse.exit;
   }
@@ -144,7 +144,6 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
       }
     }
 
-    beginVpnExit();
     final stopped = await stopVpnForExit();
     if (!stopped || !mounted) {
       return AppExitResponse.cancel;
@@ -183,8 +182,6 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
     if (!mounted) {
       return AppExitResponse.cancel;
     }
-
-    beginVpnExit();
 
     final disconnected = await stopVpnForExit(timeout: _windowsDisconnectOnExitTimeout);
 
@@ -230,7 +227,7 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
-  /// Receives the controller result without reporting a command error a second time in the mixin.
+  /// Receives the controller result without reporting a native operation error a second time in the mixin.
   @protected
   void completeVpnExitStop(bool stopped) {
     final completer = _exitStopCompleter;

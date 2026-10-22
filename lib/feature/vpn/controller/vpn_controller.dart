@@ -7,629 +7,721 @@ import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/feature/vpn/controller/vpn_controller_state.dart';
-import 'package:trusttunnel/feature/vpn/models/vpn_command.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration_sources.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_native_operation.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_operations_processing_info.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_user_command.dart';
 
-/// Serializes decisions, while repository replies reenter through short handlers.
+/// Coordinates user commands, saved settings and native VPN updates.
 ///
-/// Saving, loading and native operations must not occupy the handler queue while waiting:
-/// disconnect, exit and native events need to remain processable. The state records pending
-/// work and the single repository mutation in flight; completion handlers decide what follows.
+/// About operations:
+/// - `handle` queues short state transitions; `_handle*` methods continue a specific scenario.
+/// - `_on*` methods receive operation results and errors.
+/// - `vpnOperationsProcessingInfo` stores internal coordination data.
+/// - `pendingUserCommand` is a replaceable connection intention; a submitted `nativeOperation`
+/// reserves the repository until its reply arrives.
+///
+/// About state transitions:
+/// - `_submit*` methods call native code without blocking the handler queue.
+/// - `nativeStateRequest` reads status once on resume, supplementing native events.
+///
+/// Both update `vpnState`: transitions are smoothed, connection outcomes come from native state.
 final class VpnController extends BaseStateController<VpnControllerState> with SequentialControllerHandler {
   final VpnRepository _repository;
   final VpnConfigurationSources _sources;
-  final void Function(String serverId, {ValueChanged<bool>? onSelected}) _saveSelection;
+  final void Function(
+    String, {
+    ValueChanged<bool>? onSelected,
+    ValueGetter<bool>? shouldReportError,
+  })
+  _saveSelection;
   final VoidCallback _notifyOperationError;
   final ValueChanged<bool> _onExitStopped;
 
   VpnController({
     required this._repository,
-    required VpnConfigurationSources sources,
+    required this._sources,
     required this._saveSelection,
     required this._notifyOperationError,
     required this._onExitStopped,
     required VpnState initialState,
-  }) : _sources = sources,
-       super(
-         initialState: VpnControllerState(
-           vpnState: initialState,
-           selectionRevision: sources.selectionRequestRevision,
-           requestId: sources.selectionRequestRevision == 0 ? 0 : 1,
-         ),
-       );
+  }) : super(initialState: VpnControllerState(vpnState: initialState));
 
-  String? get _configurationTargetId => state.isRunning
+  VpnOperationsProcessingInfo get _vpnOperationsProcessingInfo => state.vpnOperationsProcessingInfo;
+
+  bool get shouldShowExitDialog => state.shouldShowExitDialog;
+
+  bool get isDisconnectedForExit => state.isDisconnectedForExit;
+
+  bool get _isRunning => state.isRunning;
+
+  String? get _configurationTargetId => _isRunning
       ? state.currentlyConnectedServerId
-      : (_sources.selectedServer?.id ?? state.configuration?.server.id);
+      : (_sources.selectedServer?.id ?? _vpnOperationsProcessingInfo.configuration?.server.id);
 
-  /// Attempts a connection using saved settings, even if the configuration has not changed.
-  /// Automatic launch is accepted only before the first VPN or selection intention.
+  @override
+  bool shouldNotifyListeners(VpnControllerState previousState, VpnControllerState nextState) =>
+      !previousState.hasSamePublicState(nextState);
+
+  /// Explicit connections also retry an unchanged configuration.
   void connectToServer(String serverId, {bool isFromAutomaticLaunch = false}) => handle(
     () {
-      if (state.isExitProcessing || (isFromAutomaticLaunch && (state.requestId != 0 || state.isRunning))) {
+      final hasConnectionActivity = _vpnOperationsProcessingInfo.requestId != 0 || _isRunning;
+      final shouldSkipAutomaticLaunch = isFromAutomaticLaunch && hasConnectionActivity;
+      if (state.isExitProcessing || shouldSkipAutomaticLaunch) {
         return;
       }
-      _acceptConnection(serverId, saveSelection: false);
+
+      _acceptConnectionUserCommand(serverId, saveSelection: false);
     },
-    errorHandler: _onError,
+    errorHandler: _onHandlerError,
   );
 
-  /// Saves selection and the automatic launch target, then continues the same connection request.
   void selectAndConnectToServer(String serverId) => handle(
     () {
-      if (state.isExitProcessing) {
-        return;
+      if (!state.isExitProcessing) {
+        _acceptConnectionUserCommand(serverId, saveSelection: true);
       }
-      _acceptConnection(serverId, saveSelection: true);
     },
-    errorHandler: _onError,
+    errorHandler: _onHandlerError,
   );
 
-  /// Cancels pending connection preparation and preserves an explicit stop before any later start.
   void disconnect() => handle(
     () {
-      _cancelConnection();
-      // An explicit stop must execute before a subsequent connection.
-      setState(state.copyWith(stopRequired: true));
-      _continueOperations();
+      _cancelPendingUserCommand();
+
+      // Preserve an explicit stop even if another connection is requested next.
+      _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(stopRequired: true));
+      _handlePendingWork();
     },
-    errorHandler: _onError,
-  );
-
-  /// Receives source notifications directly, independently of Flutter frame scheduling.
-  void onSourcesChanged() => handle(
-    () {
-      final revision = _sources.selectionRequestRevision;
-      if (revision != state.selectionRevision) {
-        _cancelConnection();
-        setState(state.copyWith(selectionRevision: revision));
-      }
-
-      setState(state.copyWith(needsSynchronization: true));
-
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
-
-  void onNativeStateChanged(VpnState vpnState) => handle(
-    () {
-      _applyNativeState(vpnState);
-
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
-
-  /// Refreshes native status without allowing a delayed response to overwrite newer updates.
-  void onResumed() => handle(
-    () {
-      final revision = state.nativeRevision;
-
-      unawaited(
-        Future<VpnState>.sync(_repository.requestState).then(
-          (vpnState) => _onStateRequested(vpnState, revision),
-          onError: onSourceError,
-        ),
-      );
-    },
-    errorHandler: _onError,
-  );
-
-  void onSourceError(Object error, StackTrace stackTrace) => handle(
-    () => Error.throwWithStackTrace(error, stackTrace),
-    errorHandler: _onError,
-  );
-
-  /// Blocks new starts and cancels preparation of the previous connection.
-  /// Cancelling exit later must not revive that earlier connection intention.
-  void prepareExit() => handle(
-    () {
-      if (state.isExitProcessing) {
-        return;
-      }
-
-      _cancelConnection();
-
-      setState(state.copyWith(isExitProcessing: true));
-    },
-    errorHandler: _onError,
+    errorHandler: _onHandlerError,
   );
 
   void stopForExit() => handle(
     () {
-      if (!state.isExitProcessing || state.exitStopRequested) {
+      if (_vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle) {
         return;
       }
 
-      setState(state.copyWith(exitStopRequested: true, exitNeedsStop: true));
+      _beginExit();
 
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
-
-  /// Cancels exit and any exit stop not yet submitted; previously cancelled connections stay cancelled.
-  void cancelExit() => handle(
-    () {
-      setState(
-        state.copyWith(
-          isExitProcessing: false,
-          exitStopRequested: false,
-          exitNeedsStop: false,
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(
+          exitStage: VpnExitStage.stopRequested,
         ),
       );
-      // Do not restore the connection or synchronization interrupted by exit.
+      _handlePendingWork();
     },
-    errorHandler: _onError,
+    errorHandler: _onHandlerError,
   );
 
-  void _acceptConnection(String serverId, {required bool saveSelection}) {
-    setState(
-      state.copyWith(
-        requestId: state.requestId + 1,
-        pendingServerId: ValueData(serverId),
-        isSelectionPending: saveSelection,
-        connectionNeedsStop: true,
-        needsSynchronization: true,
-        // selectServer increments this revision synchronously before notifying sources.
-        // Record the expected revision so our own save does not cancel its connection request.
-        selectionRevision: _sources.selectionRequestRevision + (saveSelection ? 1 : 0),
-      ),
-    );
-    if (saveSelection) {
-      _saveServerSelection(serverId, state.requestId);
+  void cancelExit() => handle(
+    () {
+      _updateState(
+        state.copyWith(
+          isExitProcessing: false,
+          vpnOperationsProcessingInfo: _vpnOperationsProcessingInfo.copyWith(exitStage: VpnExitStage.idle),
+        ),
+      );
+      // Previously cancelled connections stay cancelled.
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  /// Non-desktop exit cancels preparation without stopping the system VPN.
+  void onAppExiting() => handle(_beginExit, errorHandler: _onHandlerError);
+
+  void onSourcesChanged() => handle(
+    () {
+      _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(needsSynchronization: true));
+      _handlePendingWork();
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  void onNativeStateChanged(VpnState nativeState) => handle(
+    () {
+      _handleNativeStateUpdate(nativeState);
+      _handlePendingWork();
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  void onResumed() => handle(
+    () {
+      final nativeStateRequest = Future<VpnState>.sync(_repository.requestState);
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(nativeStateRequest: ValueData(nativeStateRequest)),
+      );
+
+      unawaited(
+        nativeStateRequest.then(
+          (nativeState) => _onNativeStateRequestCompleted(
+            nativeStateRequest: nativeStateRequest,
+            nativeState: nativeState,
+          ),
+          onError: (Object error, StackTrace stackTrace) => _onNativeStateRequestFailed(
+            nativeStateRequest: nativeStateRequest,
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        ),
+      );
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  void onSourceError(Object error, StackTrace stackTrace) => handle(
+    () => _reportError(error: error, stackTrace: stackTrace),
+    errorHandler: _onHandlerError,
+  );
+
+  void _handlePendingWork() {
+    if (_vpnOperationsProcessingInfo.nativeOperation != null) {
+      return;
     }
-    _continueOperations();
+
+    // Exit and explicit stop take priority over connection and settings changes.
+    if (state.isExitProcessing) {
+      _handleExit();
+    } else if (_vpnOperationsProcessingInfo.stopRequired) {
+      _submitStop();
+    } else if (_vpnOperationsProcessingInfo.pendingUserCommand != null) {
+      _handleConnectionUserCommand();
+    } else {
+      _handleConfigurationSynchronization();
+    }
   }
 
-  /// Saving does not occupy the VPN mutation slot or delay disconnect and exit processing.
+  void _acceptConnectionUserCommand(String serverId, {required bool saveSelection}) {
+    final requestId = _vpnOperationsProcessingInfo.requestId + 1;
+
+    _updateVpnOperationsProcessingInfo(
+      _vpnOperationsProcessingInfo.copyWith(
+        requestId: requestId,
+        pendingUserCommand: ValueData(
+          VpnUserCommand(
+            requestId: requestId,
+            serverId: serverId,
+            stage: saveSelection ? VpnConnectionStage.savingSelection : VpnConnectionStage.preparing,
+          ),
+        ),
+        needsSynchronization: true,
+      ),
+    );
+
+    if (saveSelection) {
+      _saveServerSelection(serverId, requestId);
+    }
+
+    _handlePendingWork();
+  }
+
+  bool _isCurrentUserCommand(int requestId) {
+    final canAcceptResult = !isDisposed && !state.isExitProcessing;
+
+    return canAcceptResult && _vpnOperationsProcessingInfo.pendingUserCommand?.requestId == requestId;
+  }
+
+  /// Cancels preparation; a native operation already submitted must still finish.
+  void _cancelPendingUserCommand() => _updateVpnOperationsProcessingInfo(
+    _vpnOperationsProcessingInfo.copyWith(
+      requestId: _vpnOperationsProcessingInfo.requestId + 1,
+      pendingUserCommand: const ValueData(null),
+    ),
+  );
+
   void _saveServerSelection(String serverId, int requestId) {
     try {
       _saveSelection(
         serverId,
+        shouldReportError: () => _isCurrentUserCommand(requestId),
         onSelected: (saved) => _onSelectionSaved(requestId, saved),
       );
     } catch (error, stackTrace) {
       _onSelectionFailed(
-        requestId,
-        error,
-        stackTrace,
+        requestId: requestId,
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }
 
   void _onSelectionSaved(int requestId, bool saved) => handle(
     () {
-      // An old save must not start a request cancelled by another choice, disconnect or exit.
-      if (requestId != state.requestId || state.isExitProcessing) {
+      if (!_isCurrentUserCommand(requestId)) {
         return;
       }
 
-      setState(
-        state.copyWith(
-          isSelectionPending: false,
-          pendingServerId: saved ? null : const ValueData(null),
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(
+          pendingUserCommand: ValueData(
+            saved ? _vpnOperationsProcessingInfo.pendingUserCommand!.onSelectionSaved() : null,
+          ),
         ),
       );
-      _continueOperations();
+      _handlePendingWork();
     },
-    errorHandler: _onError,
+    errorHandler: _onHandlerError,
   );
 
-  void _onSelectionFailed(
-    int requestId,
-    Object error,
-    StackTrace stackTrace,
-  ) => handle(
+  void _onSelectionFailed({
+    required int requestId,
+    required Object error,
+    required StackTrace stackTrace,
+  }) => handle(
     () {
-      if (requestId == state.requestId) {
-        _cancelConnection();
+      final isCurrent = _isCurrentUserCommand(requestId);
+      if (isCurrent) {
+        _cancelPendingUserCommand();
       }
-      Error.throwWithStackTrace(error, stackTrace);
+
+      // A cancelled preparation is logged without reopening the window.
+      _reportError(error: error, stackTrace: stackTrace, notify: isCurrent);
     },
-    errorHandler: _onError,
+    errorHandler: _onHandlerError,
   );
 
-  void _cancelConnection() => setState(
-    state.copyWith(
-      requestId: state.requestId + 1,
-      pendingServerId: const ValueData(null),
-      isSelectionPending: false,
-      connectionNeedsStop: false,
-    ),
-  );
-
-  void _continueOperations() {
-    if (state.command != null) {
+  void _handleConnectionUserCommand() {
+    final request = _vpnOperationsProcessingInfo.pendingUserCommand!;
+    if (request.isSavingSelection || _sources.loading) {
       return;
     }
-    if (state.isExitProcessing) {
-      _continueExit();
-
-      return;
-    }
-    if (state.stopRequired) {
-      _stop();
-
-      return;
-    }
-    if (state.pendingServerId != null) {
-      _continueConnection();
-
-      return;
-    }
-    _synchronizeConfiguration();
-  }
-
-  /// Settings sources load independently and may become ready in different orders.
-  /// Keep the target pending while loading; the next source notification resumes it without a waiter.
-  /// Re-read configuration here because dependencies may also change during native stop.
-  void _continueConnection() {
-    if (state.isSelectionPending || _sources.loading) {
-      return;
-    }
-    final configuration = _sources.configurationFor(state.pendingServerId);
+    // Read again after stop: settings may have changed while it was in progress.
+    final configuration = _sources.configurationFor(request.serverId);
     if (_sources.hasErrors || configuration == null) {
-      setState(state.copyWith(pendingServerId: const ValueData(null)));
-      _synchronizeConfiguration();
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(pendingUserCommand: const ValueData(null)),
+      );
+      _handleConfigurationSynchronization();
 
       return;
     }
-    if (state.connectionNeedsStop && state.isRunning) {
-      _stop();
+    final needsStopBeforeStart = request.stage == VpnConnectionStage.preparing && _isRunning;
+    if (needsStopBeforeStart) {
+      _submitStop();
 
       return;
     }
-    _start(configuration);
+    _submitStart(configuration);
   }
 
-  void _start(VpnConfiguration configuration) {
-    final requestId = state.requestId;
-    setState(
+  void _handleConfigurationSynchronization() {
+    final shouldSkipSynchronization = !_vpnOperationsProcessingInfo.needsSynchronization || _sources.loading;
+    if (shouldSkipSynchronization || _sources.hasErrors) {
+      return;
+    }
+
+    if (_sources.servers.isEmpty) {
+      _submitConfigurationDeletion();
+
+      return;
+    }
+
+    final isWaitingForStop = _vpnOperationsProcessingInfo.stopSubmitted && !_vpnOperationsProcessingInfo.startSubmitted;
+    if (isWaitingForStop) {
+      // Settings must not restart a session whose stop is still awaiting confirmation.
+      return;
+    }
+
+    final connectedId = state.currentlyConnectedServerId;
+    if (_isRunning && connectedId == null) {
+      // Persisted selection cannot identify a session restored from native code.
+      return;
+    }
+
+    final isConnectedServerRemoved = _isRunning && !_sources.servers.any((server) => server.id == connectedId);
+    if (isConnectedServerRemoved) {
+      _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(needsSynchronization: false));
+      _submitStop();
+
+      return;
+    }
+
+    final configuration = _sources.configurationFor(_configurationTargetId);
+    if (configuration == null || configuration == _vpnOperationsProcessingInfo.configuration) {
+      _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(needsSynchronization: false));
+
+      return;
+    }
+
+    if (_isRunning) {
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(
+          pendingUserCommand: ValueData(
+            VpnUserCommand(
+              requestId: _vpnOperationsProcessingInfo.requestId,
+              serverId: configuration.server.id,
+              stage: VpnConnectionStage.preparing,
+            ),
+          ),
+        ),
+      );
+
+      _handleConnectionUserCommand();
+    } else {
+      _submitConfigurationUpdate(configuration);
+    }
+  }
+
+  void _beginExit() {
+    if (!state.isExitProcessing) {
+      _cancelPendingUserCommand();
+      _updateState(state.copyWith(isExitProcessing: true));
+    }
+  }
+
+  void _handleExit() {
+    if (_vpnOperationsProcessingInfo.exitStage == VpnExitStage.idle) {
+      return;
+    }
+
+    if (isDisconnectedForExit) {
+      // New connections stay blocked until the platform completes or cancels exit.
+      _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(exitStage: VpnExitStage.idle));
+      _onExitStopped(true);
+
+      return;
+    }
+
+    final isWaitingForStop = _vpnOperationsProcessingInfo.stopSubmitted && !_vpnOperationsProcessingInfo.startSubmitted;
+    if (_vpnOperationsProcessingInfo.exitStage == VpnExitStage.stopRequested || !isWaitingForStop) {
+      _submitStop();
+    }
+  }
+
+  /// Reserves one repository call; its reply releases the slot, not the native session.
+  void _submitNativeOperation({
+    required VpnNativeOperation nativeOperation,
+    required AsyncCallback execute,
+    required VoidCallback onCompleted,
+    VpnConfiguration? configuration,
+  }) {
+    final requestId = _vpnOperationsProcessingInfo.requestId;
+    _updateVpnOperationsProcessingInfo(
+      _vpnOperationsProcessingInfo.copyWith(nativeOperation: ValueData(nativeOperation)),
+    );
+
+    // The event queue stays free for cancellation and native events.
+    unawaited(
+      Future<void>.sync(execute).then(
+        (_) => handle(
+          () {
+            _updateVpnOperationsProcessingInfo(
+              _vpnOperationsProcessingInfo.copyWith(nativeOperation: const ValueData(null)),
+            );
+
+            onCompleted();
+            _handlePendingWork();
+          },
+          errorHandler: _onHandlerError,
+        ),
+        onError: (Object error, StackTrace stackTrace) => handle(
+          () => _onNativeOperationFailed(
+            nativeOperation: nativeOperation,
+            requestId: requestId,
+            configuration: configuration,
+            error: error,
+            stackTrace: stackTrace,
+          ),
+          errorHandler: _onHandlerError,
+        ),
+      ),
+    );
+  }
+
+  void _onNativeOperationFailed({
+    required VpnNativeOperation nativeOperation,
+    required int requestId,
+    VpnConfiguration? configuration,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    VpnOperationsProcessingInfo vpnOperationsProcessingInfo = _vpnOperationsProcessingInfo.copyWith(
+      nativeOperation: const ValueData(null),
+    );
+
+    if (configuration != null) {
+      // Do not immediately retry the same failure; retain settings changed during it.
+      final hasNewConfiguration =
+          vpnOperationsProcessingInfo.needsSynchronization &&
+          _sources.configurationFor(_configurationTargetId) != configuration;
+      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(
+        needsSynchronization: hasNewConfiguration,
+      );
+    } else if (nativeOperation == VpnNativeOperation.deleteConfiguration) {
+      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(
+        needsSynchronization: vpnOperationsProcessingInfo.needsSynchronization && _sources.servers.isNotEmpty,
+      );
+    }
+    if (requestId == vpnOperationsProcessingInfo.requestId) {
+      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(pendingUserCommand: const ValueData(null));
+    }
+    final exitStopFailed = state.isExitProcessing && vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle;
+    if (exitStopFailed) {
+      vpnOperationsProcessingInfo = vpnOperationsProcessingInfo.copyWith(exitStage: VpnExitStage.idle);
+    }
+
+    // A failing reply may still have reached native code; keep the submitted flags.
+    _updateVpnOperationsProcessingInfo(vpnOperationsProcessingInfo);
+    if (exitStopFailed) {
+      _onExitStopped(false);
+    }
+
+    _reportError(error: error, stackTrace: stackTrace);
+    if (nativeOperation == VpnNativeOperation.stop) {
+      // Retry a failed stop only for a newer explicit request, never for background synchronization.
+      final hasPendingRequest =
+          _vpnOperationsProcessingInfo.stopRequired || _vpnOperationsProcessingInfo.pendingUserCommand != null;
+      if (state.isExitProcessing || !hasPendingRequest) {
+        return;
+      }
+    }
+
+    _handlePendingWork();
+  }
+
+  void _submitStart(VpnConfiguration configuration) {
+    final requestId = _vpnOperationsProcessingInfo.requestId;
+    _updateState(
       state.copyWith(
-        command: const ValueData(VpnCommand.start),
-        startSubmitted: true,
         vpnState: VpnState.connecting,
         currentlyConnectedServerId: ValueData(configuration.server.id),
-        nativeRevision: state.nativeRevision + 1,
-        connectionNeedsStop: false,
-        needsSynchronization: false,
+        vpnOperationsProcessingInfo: _vpnOperationsProcessingInfo.copyWith(
+          pendingUserCommand: ValueData(
+            _vpnOperationsProcessingInfo.pendingUserCommand?.copyWith(stage: VpnConnectionStage.readyToStart),
+          ),
+          startSubmitted: true,
+          nativeStateRequest: const ValueData(null),
+          needsSynchronization: false,
+        ),
       ),
     );
-    unawaited(
-      Future<void>.sync(
-        () => _repository.start(
-          server: configuration.server,
-          routingProfile: configuration.routingProfile,
-          excludedRoutes: configuration.excludedRoutes,
-          logLevel: configuration.logLevel,
-        ),
-      ).then(
-        (_) => _onStarted(configuration, requestId),
-        onError: (Object error, StackTrace stackTrace) => _onConfigurationFailed(
-          configuration,
-          requestId,
-          error,
-          stackTrace,
-        ),
+    _submitNativeOperation(
+      nativeOperation: VpnNativeOperation.start,
+      execute: () => _repository.start(
+        server: configuration.server,
+        routingProfile: configuration.routingProfile,
+        excludedRoutes: configuration.excludedRoutes,
+        logLevel: configuration.logLevel,
       ),
+      configuration: configuration,
+      onCompleted: () => _onNativeStartOperationCompleted(configuration, requestId),
     );
   }
 
-  void _onStarted(VpnConfiguration configuration, int requestId) => handle(
-    () {
-      // A submitted native operation finishes even if a newer intention arrived.
-      // Remember its configuration, but clear only the request that actually submitted it.
-      setState(
-        state.copyWith(
-          command: const ValueData(null),
-          configuration: ValueData(configuration),
-          configurationDeleted: false,
-          pendingServerId: requestId == state.requestId ? const ValueData(null) : null,
-          needsSynchronization: true,
+  void _onNativeStartOperationCompleted(VpnConfiguration configuration, int requestId) {
+    // Remember submitted work even if its connection request has since been replaced.
+    _onNativeConfigurationOperationCompleted(configuration);
+
+    if (_vpnOperationsProcessingInfo.pendingUserCommand?.requestId == requestId) {
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(pendingUserCommand: const ValueData(null)),
+      );
+    }
+  }
+
+  void _submitStop() {
+    _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(stopRequired: false));
+
+    final isAlreadyStopped = !_isRunning && !_vpnOperationsProcessingInfo.stopSubmitted;
+    if (isAlreadyStopped) {
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(
+          pendingUserCommand: ValueData(_vpnOperationsProcessingInfo.pendingUserCommand?.onStopCompleted()),
         ),
       );
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
-
-  /// Submits a native stop, leaving VPN status unchanged until native confirmation arrives.
-  void _stop() {
-    setState(state.copyWith(stopRequired: false));
-    if (!state.isRunning && !state.stopSubmitted) {
-      setState(state.copyWith(connectionNeedsStop: false));
-      _continueOperations();
+      _handlePendingWork();
 
       return;
     }
-    final requestId = state.requestId;
-    setState(
-      state.copyWith(
-        command: const ValueData(VpnCommand.stop),
+
+    _updateVpnOperationsProcessingInfo(
+      _vpnOperationsProcessingInfo.copyWith(
         stopSubmitted: true,
-        exitNeedsStop: false,
+        exitStage: _vpnOperationsProcessingInfo.exitStage == VpnExitStage.stopRequested
+            ? VpnExitStage.waitingForDisconnection
+            : _vpnOperationsProcessingInfo.exitStage,
       ),
     );
-    unawaited(
-      Future<void>.sync(_repository.stop).then(
-        (_) => _onStopped(),
-        onError: (Object error, StackTrace stackTrace) => _onStopFailed(requestId, error, stackTrace),
-      ),
+
+    _submitNativeOperation(
+      nativeOperation: VpnNativeOperation.stop,
+      execute: () => _repository.stop(),
+      onCompleted: _onNativeStopOperationCompleted,
     );
   }
 
-  void _onStopped() => handle(
-    () {
-      // The reply permits the next command, but only native state confirms disconnection.
-      setState(
-        state.copyWith(
-          command: const ValueData(null),
-          startSubmitted: false,
-          connectionNeedsStop: false,
-        ),
-      );
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
-
-  /// Applies the latest saved settings through the same lifecycle as connection requests.
-  /// Settings changes alone do not start a disconnected VPN; only a known active session is restarted.
-  void _synchronizeConfiguration() {
-    if (!state.needsSynchronization || _sources.loading || _sources.hasErrors) {
-      return;
-    }
-    if (_sources.servers.isEmpty) {
-      _deleteConfiguration();
-
-      return;
-    }
-    // A stop reply is not disconnection. Settings must not restart the session
-    // while its native disconnection is still pending.
-    if (state.stopSubmitted && !state.startSubmitted) {
-      return;
-    }
-    final connectedId = state.currentlyConnectedServerId;
-    if (state.isRunning && connectedId == null) {
-      // A restored native session cannot be identified by the persisted selection.
-      return;
-    }
-    if (state.isRunning && !_sources.servers.any((server) => server.id == connectedId)) {
-      setState(state.copyWith(needsSynchronization: false));
-      if (!state.stopSubmitted || state.startSubmitted) {
-        _stop();
-      }
-
-      return;
-    }
-    final targetId = _configurationTargetId;
-    final configuration = _sources.configurationFor(targetId);
-    if (configuration == null || configuration == state.configuration) {
-      setState(state.copyWith(needsSynchronization: false));
-
-      return;
-    }
-    if (state.isRunning) {
-      setState(
-        state.copyWith(pendingServerId: ValueData(targetId), connectionNeedsStop: true),
-      );
-      _continueConnection();
-    } else {
-      _updateConfiguration(configuration);
-    }
-  }
-
-  void _updateConfiguration(VpnConfiguration configuration) {
-    final requestId = state.requestId;
-    setState(
-      state.copyWith(command: const ValueData(VpnCommand.updateConfiguration), needsSynchronization: false),
-    );
-    unawaited(
-      Future<void>.sync(
-        () => _repository.updateConfiguration(
-          server: configuration.server,
-          routingProfile: configuration.routingProfile,
-          excludedRoutes: configuration.excludedRoutes,
-          logLevel: configuration.logLevel,
-        ),
-      ).then(
-        (_) => _onConfigurationUpdated(configuration),
-        onError: (Object error, StackTrace stackTrace) => _onConfigurationFailed(
-          configuration,
-          requestId,
-          error,
-          stackTrace,
-        ),
+  void _onNativeStopOperationCompleted() {
+    // Release the next start; only a native event confirms disconnection.
+    _updateVpnOperationsProcessingInfo(
+      _vpnOperationsProcessingInfo.copyWith(
+        startSubmitted: false,
+        pendingUserCommand: ValueData(_vpnOperationsProcessingInfo.pendingUserCommand?.onStopCompleted()),
       ),
     );
   }
 
-  void _onConfigurationUpdated(VpnConfiguration configuration) => handle(
-    () {
-      // Changes observed while the operation was in progress must still be compared and applied.
-      setState(
-        state.copyWith(
-          command: const ValueData(null),
-          configuration: ValueData(configuration),
-          configurationDeleted: false,
-          needsSynchronization: true,
-        ),
-      );
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
-
-  void _deleteConfiguration() {
-    if (state.isRunning && (!state.stopSubmitted || state.startSubmitted)) {
-      _stop();
-
-      return;
-    }
-    if (state.configurationDeleted) {
-      setState(state.copyWith(needsSynchronization: false));
-
-      return;
-    }
-    final requestId = state.requestId;
-    setState(
-      state.copyWith(command: const ValueData(VpnCommand.deleteConfiguration), needsSynchronization: false),
-    );
-    unawaited(
-      Future<void>.sync(_repository.deleteConfiguration).then(
-        (_) => _onConfigurationDeleted(),
-        onError: (Object error, StackTrace stackTrace) => _onDeletionFailed(
-          requestId,
-          error,
-          stackTrace,
-        ),
+  void _submitConfigurationUpdate(VpnConfiguration configuration) {
+    _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(needsSynchronization: false));
+    _submitNativeOperation(
+      nativeOperation: VpnNativeOperation.updateConfiguration,
+      execute: () => _repository.updateConfiguration(
+        server: configuration.server,
+        routingProfile: configuration.routingProfile,
+        excludedRoutes: configuration.excludedRoutes,
+        logLevel: configuration.logLevel,
       ),
+      configuration: configuration,
+      onCompleted: () => _onNativeConfigurationOperationCompleted(configuration),
     );
   }
 
-  void _onConfigurationDeleted() => handle(
-    () {
-      setState(
-        state.copyWith(
-          command: const ValueData(null),
-          configuration: const ValueData(null),
-          configurationDeleted: true,
-          needsSynchronization: true,
-        ),
-      );
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
-
-  void _applyNativeState(VpnState vpnState) {
-    var startSubmitted = state.startSubmitted;
-    var stopSubmitted = state.stopSubmitted;
-    if (vpnState == VpnState.disconnected) {
-      // A previous stop may report after the next start has already been submitted.
-      if (!stopSubmitted || state.command == VpnCommand.stop) {
-        startSubmitted = false;
-      }
-      stopSubmitted = false;
-    } else if (!stopSubmitted || state.command == VpnCommand.stop) {
-      // Keep the new start identifiable until the previous stop's event arrives.
-      startSubmitted = false;
-    }
-    setState(
-      state.copyWith(
-        vpnState: vpnState == VpnState.disconnected && startSubmitted ? state.vpnState : vpnState,
-        startSubmitted: startSubmitted,
-        stopSubmitted: stopSubmitted,
-        currentlyConnectedServerId: vpnState == VpnState.disconnected && !startSubmitted ? const ValueData(null) : null,
-        nativeRevision: state.nativeRevision + 1,
+  void _onNativeConfigurationOperationCompleted(VpnConfiguration configuration) {
+    // Compare again to include settings changed during the native operation.
+    _updateVpnOperationsProcessingInfo(
+      _vpnOperationsProcessingInfo.copyWith(
+        configuration: ValueData(configuration),
+        configurationDeleted: false,
         needsSynchronization: true,
       ),
     );
   }
 
-  void _onStateRequested(VpnState vpnState, int revision) => handle(
-    () {
-      // Ignore an outdated snapshot or disconnected returned while native start is still being processed.
-      if (revision != state.nativeRevision || (vpnState == VpnState.disconnected && state.startSubmitted)) {
-        return;
-      }
-      _applyNativeState(vpnState);
-      _continueOperations();
-    },
-    errorHandler: _onError,
-  );
+  void _submitConfigurationDeletion() {
+    final isWaitingForStop = _vpnOperationsProcessingInfo.stopSubmitted && !_vpnOperationsProcessingInfo.startSubmitted;
+    if (_isRunning && !isWaitingForStop) {
+      _submitStop();
 
-  /// Waits for the current mutation, sends the required stop and reports sufficient disconnection.
-  /// The scope owns the technical wait and can cancel exit before a delayed stop is submitted.
-  void _continueExit() {
-    if (!state.exitStopRequested) {
       return;
     }
-    if (state.isDisconnectedForExit) {
-      setState(state.copyWith(exitStopRequested: false, exitNeedsStop: false));
-      _onExitStopped(true);
-    } else if (state.exitNeedsStop || !state.stopSubmitted || state.startSubmitted) {
-      _stop();
-    }
-  }
 
-  void _onConfigurationFailed(
-    VpnConfiguration configuration,
-    int requestId,
-    Object error,
-    StackTrace stackTrace,
-  ) => handle(
-    () {
-      final targetId = _configurationTargetId;
-      // Do not repeat the failed configuration automatically, but retain settings changed during the operation.
-      setState(
-        state.copyWith(
-          needsSynchronization: state.needsSynchronization && _sources.configurationFor(targetId) != configuration,
+    if (_vpnOperationsProcessingInfo.configurationDeleted) {
+      _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(needsSynchronization: false));
+
+      return;
+    }
+
+    _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(needsSynchronization: false));
+    _submitNativeOperation(
+      nativeOperation: VpnNativeOperation.deleteConfiguration,
+      execute: () => _repository.deleteConfiguration(),
+      onCompleted: () => _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(
+          configuration: const ValueData(null),
+          configurationDeleted: true,
+          needsSynchronization: true,
         ),
-      );
-      _failCommand(requestId, error, stackTrace);
-    },
-    errorHandler: _onCommandError,
-  );
-
-  void _onDeletionFailed(
-    int requestId,
-    Object error,
-    StackTrace stackTrace,
-  ) => handle(
-    () {
-      setState(state.copyWith(needsSynchronization: state.needsSynchronization && _sources.servers.isNotEmpty));
-      _failCommand(requestId, error, stackTrace);
-    },
-    errorHandler: _onCommandError,
-  );
-
-  void _onStopFailed(
-    int requestId,
-    Object error,
-    StackTrace stackTrace,
-  ) => handle(
-    () => _failCommand(requestId, error, stackTrace),
-    errorHandler: _onStopError,
-  );
-
-  void _onStopError(Object error, StackTrace stackTrace) {
-    _onError(error, stackTrace);
-    if (!state.isExitProcessing && (state.stopRequired || state.pendingServerId != null)) {
-      _continueOperations();
-    }
+      ),
+    );
   }
 
-  Never _failCommand(
-    int requestId,
-    Object error,
-    StackTrace stackTrace,
-  ) {
-    // Release the mutation slot so failure cannot block later commands.
-    setState(state.copyWith(command: const ValueData(null)));
-    if (requestId == state.requestId) {
-      setState(
-        state.copyWith(
-          pendingServerId: const ValueData(null),
-          isSelectionPending: false,
+  /// Settles submitted start/stop tracking and updates the shared, smoothed VPN status.
+  void _handleNativeStateUpdate(VpnState nativeState) {
+    bool startSubmitted = _vpnOperationsProcessingInfo.startSubmitted;
+    bool stopSubmitted = _vpnOperationsProcessingInfo.stopSubmitted;
+
+    final isStopOperationPending = _vpnOperationsProcessingInfo.nativeOperation == VpnNativeOperation.stop;
+    if (nativeState == VpnState.disconnected) {
+      final completesPreviousStop = stopSubmitted && !isStopOperationPending;
+      if (!completesPreviousStop) {
+        startSubmitted = false;
+      }
+      stopSubmitted = false;
+    } else if (!stopSubmitted || isStopOperationPending) {
+      startSubmitted = false;
+    }
+
+    // A delayed previous stop must not overwrite the newer start's status.
+    final shouldPreserveStartState = nativeState == VpnState.disconnected && startSubmitted;
+    final vpnState = shouldPreserveStartState ? state.vpnState : nativeState;
+    _updateState(
+      state.copyWith(
+        vpnState: vpnState,
+        currentlyConnectedServerId: vpnState == VpnState.disconnected ? const ValueData(null) : null,
+        vpnOperationsProcessingInfo: _vpnOperationsProcessingInfo.copyWith(
+          startSubmitted: startSubmitted,
+          stopSubmitted: stopSubmitted,
+          nativeStateRequest: const ValueData(null),
+          needsSynchronization: true,
         ),
+      ),
+    );
+  }
+
+  /// Applies a one-shot status reply on resume only if no newer update has superseded it.
+  void _onNativeStateRequestCompleted({
+    required Future<VpnState> nativeStateRequest,
+    required VpnState nativeState,
+  }) => handle(
+    () {
+      if (!identical(_vpnOperationsProcessingInfo.nativeStateRequest, nativeStateRequest)) {
+        // A newer native event, start or status request has superseded this snapshot.
+        return;
+      }
+
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(nativeStateRequest: const ValueData(null)),
       );
+
+      final shouldIgnoreSnapshot =
+          (nativeState == VpnState.disconnected) && _vpnOperationsProcessingInfo.startSubmitted;
+      if (shouldIgnoreSnapshot) {
+        // A queued start may not yet be reflected in the native snapshot.
+        return;
+      }
+
+      _handleNativeStateUpdate(nativeState);
+      _handlePendingWork();
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  void _onNativeStateRequestFailed({
+    required Future<VpnState> nativeStateRequest,
+    required Object error,
+    required StackTrace stackTrace,
+  }) => handle(
+    () {
+      final isCurrent = identical(_vpnOperationsProcessingInfo.nativeStateRequest, nativeStateRequest);
+      if (isCurrent) {
+        _updateVpnOperationsProcessingInfo(
+          _vpnOperationsProcessingInfo.copyWith(nativeStateRequest: const ValueData(null)),
+        );
+      }
+
+      // Obsolete reads cannot affect the current session or its UI feedback.
+      _reportError(
+        error: error,
+        stackTrace: stackTrace,
+        notify: isCurrent,
+      );
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  void _updateState(VpnControllerState nextState) {
+    if (nextState != state) {
+      setState(nextState);
     }
-    if (state.isExitProcessing && state.exitStopRequested) {
-      setState(state.copyWith(exitStopRequested: false, exitNeedsStop: false));
-      _onExitStopped(false);
-    }
-    // A failed reply may still have reached native code. Keep status and submitted flags.
-    Error.throwWithStackTrace(error, stackTrace);
   }
 
-  void _onCommandError(Object error, StackTrace stackTrace) {
-    _onError(error, stackTrace);
-    _continueOperations();
+  void _updateVpnOperationsProcessingInfo(VpnOperationsProcessingInfo vpnOperationsProcessingInfo) =>
+      _updateState(state.copyWith(vpnOperationsProcessingInfo: vpnOperationsProcessingInfo));
+
+  void _reportError({
+    required Object error,
+    required StackTrace stackTrace,
+    bool notify = true,
+  }) {
+    super.onError(error, stackTrace);
+
+    if (notify) {
+      _notifyOperationError();
+    }
   }
 
-  void _onError(Object error, StackTrace stackTrace) => _notifyOperationError();
+  // Unexpected handler errors are already logged by SequentialControllerHandler.
+  void _onHandlerError(Object error, StackTrace stackTrace) => _notifyOperationError();
 }
