@@ -51,6 +51,26 @@ private:
     std::queue<flutter::EncodableValue> m_event_queue;
 };
 
+/**
+ * Implementation of the Pigeon IDeepLink host API.
+ */
+class DeepLinkImpl : public IDeepLink {
+public:
+    /**
+     * Decode a `tt://` deep-link URI into an `[endpoint]` TOML section.
+     * @param uri The `tt://...` deep-link URI to decode.
+     * @return The TOML section, or an error if the URI is invalid.
+     */
+    ErrorOr<std::string> Decode(const std::string& uri) override;
+
+    /**
+     * Encode an `[endpoint]` TOML section into a `tt://` deep-link URI.
+     * @param endpoint_toml A TOML section in the layout Decode produces.
+     * @return The `tt://...` deep-link URI, or an error if the TOML is invalid.
+     */
+    ErrorOr<std::string> Encode(const std::string& endpoint_toml) override;
+};
+
 class VpnPlugin : public flutter::Plugin, public IVpnManager {
 public:
     /**
@@ -177,6 +197,7 @@ private:
     flutter::PluginRegistrarWindows* m_registrar;
     UIThreadDispatcher m_dispatcher;
     BackgroundWorker m_worker;
+    DeepLinkImpl m_deep_link_impl;
 
     std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>>
             m_state_channel;

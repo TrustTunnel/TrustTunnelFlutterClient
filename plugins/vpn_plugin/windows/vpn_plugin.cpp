@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "trusttunnel/trusttunnel.h"
+#include "trusttunnel/trusttunnel_deeplink.h"
 #include "trusttunnel/trusttunnel_service.h"
 
 namespace vpn_plugin {
@@ -161,6 +162,34 @@ VpnEventStreamHandler::OnCancelInternal(
 }
 
 // ---------------------------------------------------------------------------
+// DeepLinkImpl
+// ---------------------------------------------------------------------------
+
+ErrorOr<std::string> DeepLinkImpl::Decode(const std::string& uri) {
+    char* result = trusttunnel_decode_deeplink(uri.c_str());
+    if (result == nullptr) {
+        return ErrorOr<std::string>(FlutterError(
+                "deep-link-decode-failed",
+                "Failed to decode the deep-link URI."));
+    }
+    std::string value{result};
+    trusttunnel_free_deeplink_string(result);
+    return ErrorOr<std::string>(std::move(value));
+}
+
+ErrorOr<std::string> DeepLinkImpl::Encode(const std::string& endpoint_toml) {
+    char* result = trusttunnel_encode_deeplink(endpoint_toml.c_str());
+    if (result == nullptr) {
+        return ErrorOr<std::string>(FlutterError(
+                "deep-link-encode-failed",
+                "Failed to encode the endpoint configuration into a deep-link URI."));
+    }
+    std::string value{result};
+    trusttunnel_free_deeplink_string(result);
+    return ErrorOr<std::string>(std::move(value));
+}
+
+// ---------------------------------------------------------------------------
 // VpnPlugin
 // ---------------------------------------------------------------------------
 
@@ -170,6 +199,10 @@ void VpnPlugin::RegisterWithRegistrar(
 
     // Register IVpnManager with Pigeon generated handler
     IVpnManager::SetUp(registrar->messenger(), plugin.get());
+
+    // Register IDeepLink with Pigeon generated handler. The implementation is
+    // owned by the plugin so that it outlives the messenger registration.
+    IDeepLink::SetUp(registrar->messenger(), &plugin->m_deep_link_impl);
 
     registrar->AddPlugin(std::move(plugin));
 }

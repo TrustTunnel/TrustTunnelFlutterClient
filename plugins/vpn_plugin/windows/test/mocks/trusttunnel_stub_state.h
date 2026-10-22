@@ -50,6 +50,18 @@ struct TrusttunnelStubState {
     // trusttunnel_log_clear
     int log_clear_call_count = 0;
 
+    // trusttunnel_decode_deeplink
+    // An empty decode_result makes the call fail (NULL), like the native API.
+    int decode_call_count = 0;
+    std::string last_decode_uri;
+    std::string decode_result;
+
+    // trusttunnel_encode_deeplink
+    // An empty encode_result makes the call fail (NULL), like the native API.
+    int encode_call_count = 0;
+    std::string last_encode_toml;
+    std::string encode_result;
+
     // Reset all state to defaults.
     void Reset();
 
