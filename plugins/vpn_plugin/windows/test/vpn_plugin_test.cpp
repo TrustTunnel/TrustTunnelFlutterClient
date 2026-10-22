@@ -126,5 +126,59 @@ TEST(VpnEventStreamHandlerTest, ReListenDeliversQueuedEvents) {
     handler.OnListen(nullptr, std::move(sink2));
 }
 
+// ---------------------------------------------------------------------------
+// DeepLinkImpl tests — decode/encode against the trusttunnel stubs
+// ---------------------------------------------------------------------------
+
+class DeepLinkImplTest : public testing::Test {
+protected:
+    void SetUp() override {
+        TrusttunnelStubState::Instance().Reset();
+    }
+
+    DeepLinkImpl deep_link_impl_;
+};
+
+TEST_F(DeepLinkImplTest, DecodeReturnsNativeResult) {
+    auto& stub = TrusttunnelStubState::Instance();
+    stub.decode_result = "[endpoint]\nname = \"Example VPN\"";
+
+    auto result = deep_link_impl_.Decode("tt://add?example");
+
+    ASSERT_FALSE(result.has_error());
+    EXPECT_EQ(result.value(), stub.decode_result);
+    EXPECT_EQ(stub.decode_call_count, 1);
+    EXPECT_EQ(stub.last_decode_uri, "tt://add?example");
+}
+
+TEST_F(DeepLinkImplTest, DecodeFailureReturnsError) {
+    auto result = deep_link_impl_.Decode("not-a-tt-link");
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(result.error().code(), "deep-link-decode-failed");
+    EXPECT_EQ(TrusttunnelStubState::Instance().decode_call_count, 1);
+}
+
+TEST_F(DeepLinkImplTest, EncodeReturnsNativeResult) {
+    auto& stub = TrusttunnelStubState::Instance();
+    stub.encode_result = "tt://add?example";
+    const std::string endpoint_toml = "[endpoint]\nname = \"Example VPN\"";
+
+    auto result = deep_link_impl_.Encode(endpoint_toml);
+
+    ASSERT_FALSE(result.has_error());
+    EXPECT_EQ(result.value(), stub.encode_result);
+    EXPECT_EQ(stub.encode_call_count, 1);
+    EXPECT_EQ(stub.last_encode_toml, endpoint_toml);
+}
+
+TEST_F(DeepLinkImplTest, EncodeFailureReturnsError) {
+    auto result = deep_link_impl_.Encode("not a valid toml");
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(result.error().code(), "deep-link-encode-failed");
+    EXPECT_EQ(TrusttunnelStubState::Instance().encode_call_count, 1);
+}
+
 }  // namespace test
 }  // namespace vpn_plugin

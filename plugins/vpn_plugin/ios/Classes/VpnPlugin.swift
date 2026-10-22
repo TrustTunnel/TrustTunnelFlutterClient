@@ -139,4 +139,8 @@ final class IDeepLinkImpl : NSObject, IDeepLink {
     func decode(uri: String) throws -> String {
         return try TrustTunnelDeepLink.decodeDeeplink(_: uri)
     }
+
+    func encode(endpointToml: String) throws -> String {
+        return try TrustTunnelDeepLink.encodeDeeplink(_: endpointToml)
+    }
 }
