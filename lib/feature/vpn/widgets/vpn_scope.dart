@@ -224,7 +224,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
 
   /// Combined notifier for VPN lifecycle changes and collected logs.
   /// The inherited model still filters descendant rebuilds by aspect.
-  late final Listenable _listenable;
+  late final Listenable _vpnChangesListenable;
 
   /// VPN operation errors originate above the MaterialApp, so the UI listens here
   /// to show feedback for both background updates and failed exit requests.
@@ -286,7 +286,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
       onExitStopped: completeVpnExitStop,
       initialState: widget.initialState,
     );
-    _listenable = Listenable.merge([_controller, _logsController]);
+    _vpnChangesListenable = Listenable.merge([_controller, _logsController]);
 
     // VPN also runs while minimized, when only the tray is visible. Listen to settings directly
     // so synchronization does not depend on Flutter scheduling a frame or rebuilding this scope.
@@ -303,7 +303,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: _listenable,
+    listenable: _vpnChangesListenable,
     builder: (_, child) => _InheritedVpnScope(
       controller: this,
       logs: _logsController.logs,
@@ -372,6 +372,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
       if (!mounted) {
         return;
       }
+
       _vpnStreamSub = stream.listen(_controller.onNativeStateChanged, onError: _controller.onSourceError);
     } catch (error, stackTrace) {
       _controller.onSourceError(error, stackTrace);
@@ -384,6 +385,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
       if (!mounted) {
         return;
       }
+
       _logStreamSub = stream.listen(_logsController.onLogCollected, onError: _controller.onSourceError);
     } catch (error, stackTrace) {
       _controller.onSourceError(error, stackTrace);
@@ -450,6 +452,7 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements LogControl
     if (listensToVpn && _shouldNotifyVpnController(oldWidget)) {
       return true;
     }
+
     final listensToLogs = dependencies.contains(VpnAspect.logs);
     if (listensToLogs && _shouldNotifyLogController(oldWidget)) {
       return true;
