@@ -63,7 +63,7 @@ class LightTheme {
   static const _windowsSystemTitleBarTitle = Color(0xFF3D3D3D);
   static const _windowsSystemTitleBarCloseButtonBackgroundHover = Color(0xFFE81123);
   static const _windowsSystemTitleBarCloseButtonBackgroundPressed = Color(0xFFC50F1F);
-  static const _windowsSystemTitleBarCloseButtonForeground = Colors.white;
+  static const _windowsSystemTitleBarCloseButtonForeground = Color(0xFFFFFFFF);
   static const _windowsSystemTitleBarTitleInactive = Color(0x993D3D3D);
   static const _windowsSystemTitleBarButtonBackgroundHover = Color(0x14000000);
   static const _windowsSystemTitleBarButtonBackgroundPressed = Color(0x29000000);
