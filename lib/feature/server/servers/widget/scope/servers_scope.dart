@@ -91,7 +91,6 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
   @override
   final void Function({
     required String serverId,
-    required String Function(String name) copyName,
     required String Function(String name, int number) numberedName,
     ValueChanged<Server>? onDuplicated,
     VoidCallback? onError,

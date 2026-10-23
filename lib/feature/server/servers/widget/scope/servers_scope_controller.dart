@@ -10,7 +10,6 @@ abstract class ServersScopeController {
 
   abstract final void Function({
     required String serverId,
-    required String Function(String name) copyName,
     required String Function(String name, int number) numberedName,
     ValueChanged<Server>? onDuplicated,
     VoidCallback? onError,

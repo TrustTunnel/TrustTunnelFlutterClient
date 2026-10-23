@@ -222,13 +222,7 @@
   "serverLinkCopied": "Server link copied",
   "serverDuplicated": "Server duplicated",
   "edit": "Edit",
-  "serverCopyName": "{name} (copy)",
-  "@serverCopyName": {
-    "placeholders": {
-      "name": {"type": "String"}
-    }
-  },
-  "serverCopyNumberedName": "{name} (copy {number})",
+  "serverCopyNumberedName": "{name} {number, plural, =0{(copy)} other{(copy {number})}}",
   "@serverCopyNumberedName": {
     "placeholders": {
       "name": {"type": "String"},

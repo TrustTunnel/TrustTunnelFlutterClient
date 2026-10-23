@@ -77,7 +77,6 @@ final class ServersController extends BaseStateController<ServersState> with Seq
 
   void duplicateServer({
     required String serverId,
-    required String Function(String name) copyName,
     required String Function(String name, int number) numberedName,
     ValueChanged<Server>? onDuplicated,
     VoidCallback? onError,
@@ -94,7 +93,7 @@ final class ServersController extends BaseStateController<ServersState> with Seq
       final duplicateName = ServerNameUtils.findAvailable(
         baseName: originalServer.serverData.name,
         otherNames: currentServers.map((server) => server.serverData.name),
-        preferredName: copyName(originalServer.serverData.name.trim()),
+        preferredName: numberedName(originalServer.serverData.name.trim(), 0),
         numberedName: numberedName,
       );
 
