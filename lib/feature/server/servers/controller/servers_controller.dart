@@ -32,93 +32,51 @@ final class ServersController extends BaseStateController<ServersState> with Seq
       );
 
       final servers = await _repository.getAllServers();
-      if (isDisposed) {
-        return;
-      }
-
-      setState(
-        ServersState.idle(
-          servers: servers,
-          pendingSelections: state.pendingSelections,
-        ),
-      );
+      setState(state.copyWith(servers: servers));
     },
     errorHandler: _onError,
+    completionHandler: _onCompleted,
   );
 
   /// Saves selection and the launch target without changing the VPN connection.
   void selectServer(
     String? serverId, {
-    ValueChanged<bool>? onSelected,
-    ValueGetter<bool>? shouldReportError,
-  }) {
-    // Register queued selections synchronously; handle's disposal check cannot protect this state write.
-    if (isDisposed) {
-      return;
-    }
+    VoidCallback? onSelected,
+    VoidCallback? onError,
+  }) => handle(
+    () async {
+      setState(state.copyWith(pendingSelections: state.pendingSelections + 1));
 
-    setState(state.copyWith(pendingSelections: state.pendingSelections + 1));
+      final operatingServers = state.servers;
 
-    handle(
-      () async {
-        final operatingServers = state.servers;
+      setState(
+        ServersState.loading(
+          servers: operatingServers,
+          pendingSelections: state.pendingSelections,
+        ),
+      );
 
-        setState(
-          ServersState.loading(
-            servers: operatingServers,
-            pendingSelections: state.pendingSelections,
-          ),
-        );
+      await _repository.setSelectedServerId(id: serverId);
 
-        await _repository.setSelectedServerId(id: serverId);
-        if (isDisposed) {
-          return;
-        }
+      final servers = operatingServers
+          .map(
+            (server) => server.copyWith(serverData: server.serverData.copyWith(selected: server.id == serverId)),
+          )
+          .toList();
 
-        final servers = operatingServers
-            .map(
-              (server) => server.copyWith(serverData: server.serverData.copyWith(selected: server.id == serverId)),
-            )
-            .toList();
+      // Keep the confirmed DB choice visible if saving the launch target fails.
+      setState(state.copyWith(servers: servers));
 
-        // Keep the confirmed DB choice visible if saving the launch target fails.
-        setState(state.copyWith(servers: servers));
-        if (isDisposed) {
-          return;
-        }
+      await _autoConnectOnLaunchSettingsRepository.setLastServerId(serverId);
+    },
+    errorHandler: _onError,
+    completionHandler: () {
+      _onCompleted(completedSelections: 1);
 
-        await _autoConnectOnLaunchSettingsRepository.setLastServerId(serverId);
-        if (isDisposed) {
-          return;
-        }
-
-        setState(
-          ServersState.idle(
-            servers: state.servers,
-            pendingSelections: state.pendingSelections,
-          ),
-        );
-        _completeSelection(saved: true, onSelected: onSelected);
-      },
-      errorHandler: (error, stackTrace) {
-        try {
-          if (shouldReportError?.call() ?? true) {
-            _onError(error, stackTrace);
-          } else {
-            // The observer logs cancelled preparation errors; do not publish them to the tray or UI.
-            setState(
-              ServersState.idle(
-                servers: state.servers,
-                pendingSelections: state.pendingSelections,
-              ),
-            );
-          }
-        } finally {
-          _completeSelection(saved: false, onSelected: onSelected);
-        }
-      },
-    );
-  }
+      final callback = state.error == null ? onSelected : onError;
+      callback?.call();
+    },
+  );
 
   PresentationException _parseException(
     Object? exception,
@@ -138,18 +96,13 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     );
   }
 
-  void _completeSelection({required bool saved, ValueChanged<bool>? onSelected}) {
-    if (isDisposed) {
-      return;
-    }
+  void _onCompleted({int completedSelections = 0}) {
+    final pendingSelections = state.pendingSelections - completedSelections;
 
-    setState(state.copyWith(pendingSelections: state.pendingSelections - 1));
-
-    try {
-      onSelected?.call(saved);
-    } on Object catch (error, stackTrace) {
-      // A consumer callback failure must not complete or report the save a second time.
-      super.onError(error, stackTrace);
-    }
+    setState(
+      state.error == null
+          ? ServersState.idle(servers: state.servers, pendingSelections: pendingSelections)
+          : state.copyWith(pendingSelections: pendingSelections),
+    );
   }
 }

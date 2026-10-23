@@ -11,10 +11,11 @@ abstract class ServersScopeController implements Listenable {
   abstract final void Function() fetchServers;
 
   /// Saves selection only; callers cancel obsolete VPN preparation before changing it.
-  /// [shouldReportError] suppresses UI feedback for a cancelled connection's save.
+  /// [onSelected] runs after both the selection and launch target have been saved.
+  /// [onError] completes the caller's pending work; the error is also published by this scope.
   void selectServer(
     String? serverId, {
-    ValueChanged<bool>? onSelected,
-    ValueGetter<bool>? shouldReportError,
+    VoidCallback? onSelected,
+    VoidCallback? onError,
   });
 }
