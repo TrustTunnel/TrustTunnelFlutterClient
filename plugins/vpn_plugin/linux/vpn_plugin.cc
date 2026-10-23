@@ -3,6 +3,7 @@
 #include "linux_vpn_engine.h"
 #include "platform_api.g.h"
 #include "trusttunnel_dbus_transport.h"
+#include "trusttunnel_deeplink.h"
 #include "trusttunnel_transport.h"
 
 #include <deque>
@@ -138,17 +139,14 @@ static VpnPluginIVpnManagerClearLogsResponse* clear_logs(gpointer user_data) {
 // -------- IDeepLink implementation (Pigeon-generated vtable) --------
 
 static VpnPluginIDeepLinkDecodeResponse* decode(const gchar* uri, gpointer /*user_data*/) {
-  gchar* unescaped = g_uri_unescape_string(uri != NULL ? uri : "", NULL);
-  std::string payload;
-  gboolean decoded = vpn_plugin::LinuxVpnEngine::DecodeDeepLink(
-      unescaped != NULL ? unescaped : uri, &payload);
-  g_free(unescaped);
-  if (!decoded) {
+  std::string configuration;
+  std::string error;
+  if (!vpn_plugin::DecodeTrustTunnelDeepLink(uri != NULL ? uri : "", &configuration, &error)) {
     return vpn_plugin_i_deep_link_decode_response_new_error(
-        "decode_error", "Failed to decode deep link URI.", NULL);
+        "decode_error", error.c_str(), NULL);
   }
 
-  return vpn_plugin_i_deep_link_decode_response_new(payload.c_str());
+  return vpn_plugin_i_deep_link_decode_response_new(configuration.c_str());
 }
 
 // -------- EventChannel stream handlers --------

@@ -16,8 +16,13 @@ list(APPEND PLUGIN_SOURCES
   "vpn_plugin.cc"
   "linux_vpn_engine.cc"
   "trusttunnel_dbus_transport.cc"
+  "trusttunnel_deeplink.cc"
   "platform_api.g.cc"
 )
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/TrustTunnelDeepLink.cmake")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TrustTunnelDeepLink.cmake")
 
 # The Pigeon-generated channel plumbing trips -Wunused-parameter and
 # -Wunused-function; vpn_plugin.cc stays under the full -Wall -Werror.
@@ -34,13 +39,19 @@ find_package(GTest REQUIRED)
 
 add_executable(${TEST_RUNNER}
   test/linux_vpn_engine_test.cc
+  test/deep_link_test.cc
   linux_vpn_engine.cc
+  trusttunnel_deeplink.cc
 )
 target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 if(COMMAND apply_standard_settings)
   apply_standard_settings(${TEST_RUNNER})
 endif()
-target_link_libraries(${TEST_RUNNER} PRIVATE GTest::gtest_main pthread)
+target_link_libraries(${TEST_RUNNER} PRIVATE
+  GTest::gtest_main
+  pthread
+  ${TRUSTTUNNEL_DEEPLINK_LIBRARIES}
+)
 
 include(GoogleTest)
 gtest_discover_tests(${TEST_RUNNER})
@@ -81,6 +92,13 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter)
 target_link_libraries(${PLUGIN_NAME} PRIVATE PkgConfig::GTK)
+target_link_libraries(${PLUGIN_NAME} PRIVATE ${TRUSTTUNNEL_DEEPLINK_LIBRARIES})
+
+# The Rust FFI is linked statically, so its symbols would otherwise become part
+# of the plugin's dynamic symbol table. Keep only the explicitly exported plugin
+# symbols visible (see FLUTTER_PLUGIN_EXPORT above).
+set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
+  " -Wl,--exclude-libs,ALL")
 
 # List of absolute paths to libraries that should be bundled with the plugin.
 # This list could contain prebuilt libraries, or libraries created by an

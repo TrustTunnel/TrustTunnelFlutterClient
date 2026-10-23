@@ -183,19 +183,3 @@ TEST(LinuxVpnEngineTest, ConnectionInfoForwardedToSink) {
   ASSERT_EQ(received.size(), 1u);
   EXPECT_EQ(received[0], R"({"proto":"TCP"})");
 }
-
-TEST(LinuxVpnEngineTest, DecodeValidPayloads) {
-  std::string out;
-  EXPECT_TRUE(LinuxVpnEngine::DecodeDeepLink("SGVsbG8=", &out) && out == "Hello");
-  EXPECT_TRUE(LinuxVpnEngine::DecodeDeepLink("SGVsbG8", &out) && out == "Hello");
-  EXPECT_TRUE(LinuxVpnEngine::DecodeDeepLink("S GV\nsb\rG8=", &out) && out == "Hello");
-  EXPECT_TRUE(LinuxVpnEngine::DecodeDeepLink("-_A=", &out) && out.size() == 2);
-}
-
-TEST(LinuxVpnEngineTest, DecodeRejectsMalformedInput) {
-  std::string out;
-  EXPECT_FALSE(LinuxVpnEngine::DecodeDeepLink("", &out));
-  EXPECT_FALSE(LinuxVpnEngine::DecodeDeepLink(nullptr, &out));
-  EXPECT_FALSE(LinuxVpnEngine::DecodeDeepLink("====", &out));
-  EXPECT_FALSE(LinuxVpnEngine::DecodeDeepLink("AB=C", &out));
-}

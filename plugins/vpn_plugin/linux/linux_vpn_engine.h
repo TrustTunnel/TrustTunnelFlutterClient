@@ -4,7 +4,6 @@
 #include <atomic>
 #include <functional>
 #include <string>
-#include <thread>
 
 #include "trusttunnel_transport.h"
 
@@ -51,9 +50,6 @@ class LinuxVpnEngine {
   // Registers the sink receiving JSON connection telemetry records.
   // The sink runs on the GLib main context.
   void SetConnectionInfoSink(ConnectionInfoSink sink);
-
-  // Decodes standard and URL-safe base64; returns false on malformed input.
-  static bool DecodeDeepLink(const char* uri, std::string* payload);
 
  private:
   // Daemon event handlers (called on the GLib main context).
