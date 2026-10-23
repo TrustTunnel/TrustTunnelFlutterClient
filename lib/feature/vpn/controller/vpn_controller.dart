@@ -14,19 +14,7 @@ import 'package:trusttunnel/feature/vpn/models/vpn_operations_processing_info.da
 import 'package:trusttunnel/feature/vpn/models/vpn_user_command.dart';
 
 /// Coordinates user commands, saved settings and native VPN updates.
-///
-/// About operations:
-/// - `handle` queues short state transitions; `_handle*` methods continue a specific scenario.
-/// - `_on*` methods receive operation results and errors.
-/// - `vpnOperationsProcessingInfo` stores internal coordination data.
-/// - `pendingUserCommand` is a replaceable connection intention; a submitted `nativeOperation`
-/// reserves the repository until its reply arrives.
-///
-/// About state transitions:
-/// - `_submit*` methods start native calls inside a handler without awaiting their replies.
-/// - `nativeStateRequest` reads status once on resume, supplementing native events.
-///
-/// Both update `vpnState`: transitions are smoothed, connection outcomes come from native state.
+/// State transitions are smoothed, connection outcomes come from native state.
 final class VpnController extends BaseStateController<VpnControllerState> with SequentialControllerHandler {
   final VpnRepository _repository;
   final VpnConfigurationSources _sources;
