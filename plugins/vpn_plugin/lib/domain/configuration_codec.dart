@@ -154,6 +154,14 @@ final class ConfigurationCodec extends Codec<Configuration, String> {
   });
 }
 
+/// Converts a configuration section identified by [sectionName].
+@immutable
+abstract class ConfigurationSectionConverter<Input, Output> extends Converter<Input, Output> {
+  const ConfigurationSectionConverter();
+
+  String get sectionName;
+}
+
 /// {@category VPN}
 /// {@subCategory Configuration}
 ///
@@ -161,8 +169,14 @@ final class ConfigurationCodec extends Codec<Configuration, String> {
 ///
 @immutable
 final class ConfigurationEncoder extends Converter<Configuration, String> {
+  final ConfigurationSectionConverter<Endpoint, String> endpointEncoder;
+  final ConfigurationSectionConverter<Tun, String> tunEncoder;
+
   /// Creates an encoder.
-  const ConfigurationEncoder();
+  const ConfigurationEncoder({
+    this.endpointEncoder = const EndpointEncoder(),
+    this.tunEncoder = const TunEncoder(),
+  });
 
   @override
   String convert(Configuration config) {
@@ -175,40 +189,29 @@ final class ConfigurationEncoder extends Converter<Configuration, String> {
     top.setBool(ConfigurationCodecKeys.postQuantumGroupEnabled, config.postQuantumGroupEnabled);
     top.setStringList(ConfigurationCodecKeys.exclusions, config.endpoint.exclusions);
 
-    const EndpointEncoder()._writeSection(
-      document.section(ConfigurationCodecKeys.endpointSection),
-      config.endpoint,
-    );
+    final listener = IniDocument()..section(ConfigurationCodecKeys.listenerSection);
 
-    document.section(ConfigurationCodecKeys.listenerSection);
-
-    final IniSection tun = document.section(ConfigurationCodecKeys.tunSection);
-    tun.setStringList(ConfigurationCodecKeys.includedRoutes, config.tun.includedRoutes);
-    tun.setStringList(ConfigurationCodecKeys.excludedRoutes, config.tun.excludedRoutes);
-    tun.setInt(ConfigurationCodecKeys.mtuSize, config.tun.mtuSize);
-
-    // final IniSection socks = document.section(ConfigurationCodecKeys.socksSection);
-    // socks.setString(ConfigurationCodecKeys.socksAddress, config.socks.address);
-    // socks.setString(ConfigurationCodecKeys.socksUsername, config.socks.username);
-    // socks.setString(ConfigurationCodecKeys.socksPassword, config.socks.password);
-
-    return document.toString();
+    return (StringBuffer()
+          ..write(document)
+          ..write(endpointEncoder.convert(config.endpoint))
+          ..write(listener)
+          ..write(tunEncoder.convert(config.tun)))
+        .toString();
   }
 }
 
 @immutable
-final class EndpointEncoder extends Converter<Endpoint, String> {
+final class EndpointEncoder extends ConfigurationSectionConverter<Endpoint, String> {
   const EndpointEncoder();
+
+  @override
+  String get sectionName => ConfigurationCodecKeys.endpointSection;
 
   @override
   String convert(Endpoint input) {
     final document = IniDocument();
-    _writeSection(document.section(ConfigurationCodecKeys.endpointSection), input);
+    final endpoint = document.section(sectionName);
 
-    return document.toString();
-  }
-
-  void _writeSection(IniSection endpoint, Endpoint input) {
     endpoint.setString(ConfigurationCodecKeys.hostname, input.hostName);
     endpoint.setStringList(ConfigurationCodecKeys.addresses, _normalizeAddresses(input.addresses));
     endpoint.setBool(ConfigurationCodecKeys.hasIpv6, input.hasIpv6);
@@ -228,6 +231,8 @@ final class EndpointEncoder extends Converter<Endpoint, String> {
     endpoint.setBool(ConfigurationCodecKeys.antiDpi, input.antiDpi);
     endpoint.setStringList(ConfigurationCodecKeys.dnsUpStreams, input.dnsUpStreams);
     endpoint.setString(ConfigurationCodecKeys.name, input.name);
+
+    return document.toString();
   }
 
   /// Normalizes endpoint addresses:
@@ -252,29 +257,101 @@ final class EndpointEncoder extends Converter<Endpoint, String> {
   bool _looksLikeIpv6Literal(String address) => RegExp(':').allMatches(address).length > 1;
 }
 
+@immutable
+final class TunEncoder extends ConfigurationSectionConverter<Tun, String> {
+  const TunEncoder();
+
+  @override
+  String get sectionName => ConfigurationCodecKeys.tunSection;
+
+  @override
+  String convert(Tun input) {
+    final document = IniDocument();
+    final tun = document.section(sectionName);
+    tun.setStringList(ConfigurationCodecKeys.includedRoutes, input.includedRoutes);
+    tun.setStringList(ConfigurationCodecKeys.excludedRoutes, input.excludedRoutes);
+    tun.setInt(ConfigurationCodecKeys.mtuSize, input.mtuSize);
+
+    return document.toString();
+  }
+}
+
+@immutable
+final class SocksEncoder extends ConfigurationSectionConverter<Socks, String> {
+  const SocksEncoder();
+
+  @override
+  String get sectionName => ConfigurationCodecKeys.socksSection;
+
+  @override
+  String convert(Socks input) {
+    final document = IniDocument();
+    final socks = document.section(sectionName);
+    socks.setString(ConfigurationCodecKeys.socksAddress, input.address);
+    socks.setString(ConfigurationCodecKeys.socksUsername, input.username);
+    socks.setString(ConfigurationCodecKeys.socksPassword, input.password);
+
+    return document.toString();
+  }
+}
+
 /// {@category VPN}
 /// {@subCategory Configuration}
 ///
 /// Decodes backend INI-like configuration text into a [Configuration].
 @immutable
 final class ConfigurationDecoder extends Converter<String, Configuration> {
+  final ConfigurationSectionConverter<IniDocument, Endpoint> endpointDecoder;
+  final ConfigurationSectionConverter<IniDocument, Tun> tunDecoder;
+  final ConfigurationSectionConverter<IniDocument, Socks> socksDecoder;
+
   /// Creates a decoder.
-  const ConfigurationDecoder();
+  const ConfigurationDecoder({
+    this.endpointDecoder = const EndpointDecoder(),
+    this.tunDecoder = const TunDecoder(),
+    this.socksDecoder = const SocksDecoder(),
+  });
 
   @override
   Configuration convert(String input) {
     final IniDocument document = IniDocument.parse(input);
 
     final IniSection top = document.section(null);
-    final IniSection endpoint = document.section(ConfigurationCodecKeys.endpointSection);
-    final IniSection tun = document.section(ConfigurationCodecKeys.tunSection);
-    final IniSection socks = document.section(ConfigurationCodecKeys.socksSection);
 
     final String logLevelStr = top.getString(ConfigurationCodecKeys.logLevel) ?? ConfigurationLogLevel.debug.value;
     final String vpnModeStr = top.getString(ConfigurationCodecKeys.vpnMode) ?? VpnMode.general.value;
 
     final bool killSwitchEnabled = top.getBool(ConfigurationCodecKeys.killSwitchEnabled) ?? true;
     final bool postQuantumGroupEnabled = top.getBool(ConfigurationCodecKeys.postQuantumGroupEnabled) ?? false;
+
+    return Configuration(
+      logLevel: _enumByValue(
+        ConfigurationLogLevel.values,
+        logLevelStr,
+        (e) => e.value,
+        fallback: ConfigurationLogLevel.debug,
+      ),
+      killSwitchEnabled: killSwitchEnabled,
+      postQuantumGroupEnabled: postQuantumGroupEnabled,
+      vpnMode: _enumByValue(VpnMode.values, vpnModeStr, (e) => e.value, fallback: VpnMode.general),
+      endpoint: endpointDecoder.convert(document),
+      tun: tunDecoder.convert(document),
+      socks: socksDecoder.convert(document),
+    );
+  }
+}
+
+@immutable
+final class EndpointDecoder extends ConfigurationSectionConverter<IniDocument, Endpoint> {
+  const EndpointDecoder();
+
+  @override
+  String get sectionName => ConfigurationCodecKeys.endpointSection;
+
+  @override
+  Endpoint convert(IniDocument input) {
+    final IniSection top = input.section(null);
+    final IniSection endpoint = input.section(sectionName);
 
     final List<String> exclusions = top.getStringList(ConfigurationCodecKeys.exclusions) ?? const <String>[];
 
@@ -301,72 +378,42 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
         endpoint.getString(ConfigurationCodecKeys.upstreamFallbackProtocol) ?? '';
     final bool antiDpi = endpoint.getBool(ConfigurationCodecKeys.antiDpi) ?? false;
 
-    final List<String> includedRoutes =
-        tun.getStringList(ConfigurationCodecKeys.includedRoutes) ?? IniConst.defaultTunRoutes;
-    final List<String> excludedRoutes = tun.getStringList(ConfigurationCodecKeys.excludedRoutes) ?? const <String>[];
-    final int mtuSize = tun.getInt(ConfigurationCodecKeys.mtuSize) ?? IniConst.defaultTunMtu;
-
-    final String socksAddress = socks.getString(ConfigurationCodecKeys.socksAddress) ?? IniConst.defaultSocksAddress;
-    final String socksUsername = socks.getString(ConfigurationCodecKeys.socksUsername) ?? '';
-    final String socksPassword = socks.getString(ConfigurationCodecKeys.socksPassword) ?? '';
-
-    return Configuration(
-      logLevel: _enumByValue(
-        ConfigurationLogLevel.values,
-        logLevelStr,
+    return Endpoint(
+      name: name,
+      hostName: hostName,
+      hasIpv6: hasIpv6,
+      username: username,
+      password: password,
+      customSni: customSni,
+      upStreamProtocol: _enumByValue(
+        UpStreamProtocol.values,
+        upstreamProtocolStr,
         (e) => e.value,
-        fallback: ConfigurationLogLevel.debug,
+        fallback: UpStreamProtocol.http2,
       ),
-      killSwitchEnabled: killSwitchEnabled,
-      postQuantumGroupEnabled: postQuantumGroupEnabled,
-      vpnMode: _enumByValue(VpnMode.values, vpnModeStr, (e) => e.value, fallback: VpnMode.general),
-      endpoint: Endpoint(
-        name: name,
-        hostName: hostName,
-        hasIpv6: hasIpv6,
-        username: username,
-        password: password,
-        customSni: customSni,
-        upStreamProtocol: _enumByValue(
-          UpStreamProtocol.values,
-          upstreamProtocolStr,
-          (e) => e.value,
-          fallback: UpStreamProtocol.http2,
-        ),
-        upStreamFallbackProtocol:
-            upstreamFallbackProtocolStr.isEmpty
-                ? null
-                : _enumByValue(
-                  UpStreamProtocol.values,
-                  upstreamFallbackProtocolStr,
-                  (e) => e?.value ?? '',
-                  fallback: UpStreamProtocol.http2,
-                ),
-        addresses: addresses,
-        dnsUpStreams: dnsUpStreams,
-        exclusions: exclusions,
-        clientRandom: clientRandom,
-        clientRandomAuthKey: clientRandomAuthKey,
-        tlsProfile: _enumByValue(
-          TlsProfile.values,
-          tlsProfileStr,
-          (e) => e.value,
-          fallback: TlsProfile.chrome,
-        ),
-        skipVerification: skipVerification,
-        certificate: certificate,
-        antiDpi: antiDpi,
+      upStreamFallbackProtocol:
+          upstreamFallbackProtocolStr.isEmpty
+              ? null
+              : _enumByValue(
+                UpStreamProtocol.values,
+                upstreamFallbackProtocolStr,
+                (e) => e?.value ?? '',
+                fallback: UpStreamProtocol.http2,
+              ),
+      addresses: addresses,
+      dnsUpStreams: dnsUpStreams,
+      exclusions: exclusions,
+      clientRandom: clientRandom,
+      clientRandomAuthKey: clientRandomAuthKey,
+      tlsProfile: _enumByValue(
+        TlsProfile.values,
+        tlsProfileStr,
+        (e) => e.value,
+        fallback: TlsProfile.chrome,
       ),
-      tun: Tun(
-        includedRoutes: includedRoutes,
-        excludedRoutes: excludedRoutes,
-        mtuSize: mtuSize,
-      ),
-      socks: Socks(
-        address: socksAddress,
-        username: socksUsername,
-        password: socksPassword,
-      ),
+      skipVerification: skipVerification,
+      certificate: certificate,
+      antiDpi: antiDpi,
     );
   }
 
@@ -377,17 +424,68 @@ final class ConfigurationDecoder extends Converter<String, Configuration> {
     if (value.isEmpty) return '';
     return value.replaceAll(Platform.lineTerminator, '\n');
   }
+}
 
-  static T _enumByValue<T>(
-    List<T> values,
-    String raw,
-    String Function(T) valueOf, {
-    T? fallback,
-  }) {
-    for (final T v in values) {
-      if (valueOf(v) == raw) return v;
-    }
-    if (fallback != null) return fallback;
-    throw FormatException('Unknown enum value "$raw" for $T');
+@immutable
+final class TunDecoder extends ConfigurationSectionConverter<IniDocument, Tun> {
+  const TunDecoder();
+
+  @override
+  String get sectionName => ConfigurationCodecKeys.tunSection;
+
+  @override
+  Tun convert(IniDocument input) {
+    final tun = input.section(sectionName);
+
+    final List<String> includedRoutes =
+        tun.getStringList(ConfigurationCodecKeys.includedRoutes) ?? IniConst.defaultTunRoutes;
+    final List<String> excludedRoutes = tun.getStringList(ConfigurationCodecKeys.excludedRoutes) ?? const <String>[];
+    final int mtuSize = tun.getInt(ConfigurationCodecKeys.mtuSize) ?? IniConst.defaultTunMtu;
+
+    return Tun(
+      includedRoutes: includedRoutes,
+      excludedRoutes: excludedRoutes,
+      mtuSize: mtuSize,
+    );
   }
+}
+
+@immutable
+final class SocksDecoder extends ConfigurationSectionConverter<IniDocument, Socks> {
+  const SocksDecoder();
+
+  @override
+  String get sectionName => ConfigurationCodecKeys.socksSection;
+
+  @override
+  Socks convert(IniDocument input) {
+    final socks = input.section(sectionName);
+
+    final String socksAddress = socks.getString(ConfigurationCodecKeys.socksAddress) ?? IniConst.defaultSocksAddress;
+    final String socksUsername = socks.getString(ConfigurationCodecKeys.socksUsername) ?? '';
+    final String socksPassword = socks.getString(ConfigurationCodecKeys.socksPassword) ?? '';
+
+    return Socks(
+      address: socksAddress,
+      username: socksUsername,
+      password: socksPassword,
+    );
+  }
+}
+
+T _enumByValue<T>(
+  List<T> values,
+  String raw,
+  String Function(T) valueOf, {
+  T? fallback,
+}) {
+  for (final T v in values) {
+    if (valueOf(v) == raw) {
+      return v;
+    }
+  }
+  if (fallback != null) {
+    return fallback;
+  }
+  throw FormatException('Unknown enum value "$raw" for $T');
 }

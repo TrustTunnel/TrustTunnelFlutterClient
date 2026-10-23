@@ -12,14 +12,19 @@ abstract class DeepLinkManager {
 }
 
 class DeepLinkManagerImpl implements DeepLinkManager {
-  DeepLinkManagerImpl() : _deepLinkParser = IDeepLink(), _codec = const ConfigurationCodec();
+  DeepLinkManagerImpl({
+    ConfigurationSectionConverter<Endpoint, String> endpointEncoder = const EndpointEncoder(),
+  }) : _deepLinkParser = IDeepLink(),
+       _codec = const ConfigurationCodec(),
+       _endpointEncoder = endpointEncoder;
 
   final ConfigurationCodec _codec;
   final IDeepLink _deepLinkParser;
+  final ConfigurationSectionConverter<Endpoint, String> _endpointEncoder;
 
   @override
   Future<String> createLink({required Endpoint endpoint}) => _deepLinkParser.encode(
-    endpointToml: const EndpointEncoder().convert(endpoint),
+    endpointToml: _endpointEncoder.convert(endpoint),
   );
 
   @override
