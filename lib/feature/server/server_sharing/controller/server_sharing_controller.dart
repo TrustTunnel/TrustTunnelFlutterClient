@@ -29,9 +29,7 @@ final class ServerSharingController extends BaseStateController<ServerSharingSta
 
       await Clipboard.setData(ClipboardData(text: link));
 
-      if (!isDisposed) {
-        onCopied?.call();
-      }
+      onCopied?.call();
     },
     errorHandler: (error, stackTrace) => _onError(error, onError),
     completionHandler: _onCompleted,
