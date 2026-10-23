@@ -32,8 +32,8 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
   final VpnConfigurationSources _sources;
   final void Function(
     String, {
-    ValueChanged<bool>? onSelected,
-    ValueGetter<bool>? shouldReportError,
+    VoidCallback? onSelected,
+    VoidCallback? onError,
   })
   _saveSelection;
   final VoidCallback _notifyOperationError;
@@ -230,7 +230,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
   );
 
   /// Runs after the selection handler yields, before the queue can replace its command.
-  /// Saving synchronously notifies sources; those notifications must enqueue behind this handler.
+  /// Selection registration can notify sources; those notifications must enqueue behind this handler.
   void _savePendingServerSelection() {
     final command = _vpnOperationsProcessingInfo.pendingUserCommand;
     if (state.isExitProcessing || command == null || !command.isSavingSelection) {
@@ -241,8 +241,8 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     try {
       _saveSelection(
         command.serverId,
-        shouldReportError: () => _isCurrentUserCommand(requestId),
-        onSelected: (saved) => _onSelectionSaved(requestId, saved),
+        onSelected: () => _onSelectionSaved(requestId),
+        onError: () => _onSelectionSaveRejected(requestId),
       );
     } catch (error, stackTrace) {
       _onSelectionFailed(
@@ -253,7 +253,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     }
   }
 
-  void _onSelectionSaved(int requestId, bool saved) => handle(
+  void _onSelectionSaved(int requestId) => handle(
     () {
       if (!_isCurrentUserCommand(requestId)) {
         return;
@@ -261,10 +261,23 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
 
       _updateVpnOperationsProcessingInfo(
         _vpnOperationsProcessingInfo.copyWith(
-          pendingUserCommand: ValueData(
-            saved ? _vpnOperationsProcessingInfo.pendingUserCommand!.onSelectionSaved() : null,
-          ),
+          pendingUserCommand: ValueData(_vpnOperationsProcessingInfo.pendingUserCommand!.onSelectionSaved()),
         ),
+      );
+      _handlePendingWork();
+    },
+    errorHandler: _onHandlerError,
+  );
+
+  void _onSelectionSaveRejected(int requestId) => handle(
+    () {
+      if (!_isCurrentUserCommand(requestId)) {
+        return;
+      }
+
+      // ServersController already published the storage error.
+      _updateVpnOperationsProcessingInfo(
+        _vpnOperationsProcessingInfo.copyWith(pendingUserCommand: const ValueData(null)),
       );
       _handlePendingWork();
     },
