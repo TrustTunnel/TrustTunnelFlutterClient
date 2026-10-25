@@ -103,7 +103,15 @@ set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
 # List of absolute paths to libraries that should be bundled with the plugin.
 # This list could contain prebuilt libraries, or libraries created by an
 # external build triggered from this build file.
+#
+# When the TrustTunnel Client release archive was resolved, its `trusttunneld`
+# daemon is bundled too: the plugin talks to it over D-Bus, so the application
+# is self-contained.
+set(vpn_plugin_bundled_libraries "")
+if (TRUSTTUNNEL_CLIENT_DAEMON)
+  list(APPEND vpn_plugin_bundled_libraries "${TRUSTTUNNEL_CLIENT_DAEMON}")
+endif()
 set(vpn_plugin_bundled_libraries
-  ""
+  ${vpn_plugin_bundled_libraries}
   PARENT_SCOPE
 )

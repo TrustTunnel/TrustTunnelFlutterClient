@@ -32,6 +32,10 @@ struct _VpnPlugin {
   FlEventChannel* query_log_event_channel;
   gboolean query_log_listening;
   // Connection telemetry records received before a listener attached.
+  // Threading: both the producer (send_connection_info, called from GDBus
+  // callbacks) and the consumers (replay_ring_idle, dispose) run on the main
+  // GLib loop, so no locking is needed. If the D-Bus signals ever move to a
+  // worker thread, guard this field with a mutex.
   std::deque<std::string>* connection_info_ring;
 
   FlBinaryMessenger* messenger;
@@ -120,7 +124,12 @@ static VpnPluginIVpnManagerGetCurrentStateResponse* get_current_state(gpointer u
 }
 
 static VpnPluginIVpnManagerExportLogsResponse* export_logs(gpointer /*user_data*/) {
-  // TODO: implement log export on Linux (the daemon does not persist logs yet).
+  // TODO: implement log export on Linux: the daemon does not persist logs yet.
+  // Once it writes log files (e.g. /var/log/trusttunnel/ or the app support
+  // directory), return their paths here so the GUI "Export logs" button can
+  // hand the files to the user. The daemon is bundled with the application
+  // (TRUSTTUNNEL_CLIENT_DAEMON), so the log directory should live next to the
+  // user data, not in the read-only bundle.
   FlValue* paths = fl_value_new_list();
   VpnPluginIVpnManagerExportLogsResponse* response =
       vpn_plugin_i_vpn_manager_export_logs_response_new(paths);
@@ -190,6 +199,8 @@ static FlMethodErrorResponse* query_log_cancel_cb(FlEventChannel* /*channel*/,
 static void vpn_plugin_dispose(GObject* object) {
   VpnPlugin* self = VPN_PLUGIN(object);
 
+  // GObject may invoke dispose more than once; null the pointers out so the
+  // second pass is a no-op.
   delete self->engine;
   self->engine = nullptr;
   delete self->transport;

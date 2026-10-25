@@ -123,6 +123,19 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     COMPONENT Runtime)
 endforeach(bundled_library)
 
+# install(FILES) above resets permissions to 644, but the bundled trusttunneld
+# daemon must stay executable (the plugin launches it over D-Bus).
+if(TRUSTTUNNEL_CLIENT_DAEMON)
+  install(CODE "
+    file(CHMOD
+      \"${INSTALL_BUNDLE_LIB_DIR}/trusttunneld\"
+      FILE_PERMISSIONS
+        OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE
+        WORLD_READ WORLD_EXECUTE)
+    " COMPONENT Runtime)
+endif()
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"

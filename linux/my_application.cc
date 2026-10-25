@@ -14,6 +14,13 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+// Shows the window only after Flutter has rendered its first frame.
+// This prevents pointer events from hitting an unlaid-out render tree while Dart
+// is still initializing asynchronously before runApp().
+static void view_first_frame_cb(FlView* /*view*/, gpointer user_data) {
+  gtk_widget_show(GTK_WIDGET(user_data));
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
@@ -48,7 +55,8 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 720);
-  gtk_widget_show(GTK_WIDGET(window));
+  // Keep the window realized but hidden until the first frame is rendered.
+  gtk_widget_realize(GTK_WIDGET(window));
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
@@ -56,6 +64,17 @@ static void my_application_activate(GApplication* application) {
   FlView* view = fl_view_new(project);
   gtk_widget_show(GTK_WIDGET(view));
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
+
+  // Show the window automatically as soon as Flutter renders the first frame.
+  // The signal is undocumented in the public headers and might be missing in
+  // older engines: fall back to showing the window immediately, otherwise it
+  // would never be shown at all.
+  if (g_signal_lookup("first-frame", fl_view_get_type()) != 0) {
+    g_signal_connect(view, "first-frame", G_CALLBACK(view_first_frame_cb), window);
+  } else {
+    g_warning("FlView has no \"first-frame\" signal: showing the window immediately");
+    gtk_widget_show(GTK_WIDGET(window));
+  }
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
