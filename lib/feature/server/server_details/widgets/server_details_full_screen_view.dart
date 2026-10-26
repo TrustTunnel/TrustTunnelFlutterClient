@@ -63,47 +63,38 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: CustomAppBar(
-            actions: [
-              if (_editing)
-                CustomIconButton.square(
-                  icon: AssetIcons.delete,
-                  color: context.colors.error,
-                  size: 24,
-                  onPressed: () => _onDelete(context),
-                ),
-            ],
-            leadingIconType: AppBarLeadingIconType.back,
-            centerTitle: true,
-            onBackPressed: () => Navigator.of(context).maybePop(),
-            title: _editing ? context.ln.editServer : context.ln.addServer,
+    appBar: CustomAppBar(
+      actions: [
+        if (_editing)
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: CustomIconButton.square(
+              icon: AssetIcons.delete,
+              color: context.colors.error,
+              size: 24,
+              onPressed: () => _onDelete(context),
+            ),
           ),
-        ),
-        SliverToBoxAdapter(
+      ],
+      leadingIconType: AppBarLeadingIconType.back,
+      centerTitle: true,
+      onBackPressed: () => Navigator.of(context).maybePop(),
+      title: _editing ? context.ln.editServer : context.ln.addServer,
+    ),
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
           child: loading ? const SizedBox.shrink() : widget.body,
         ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          fillOverscroll: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed: _hasChanges ? () => _submit(context) : null,
-                  child: Text(
-                    _editing ? context.ln.save : context.ln.add,
-                  ),
-                ),
-              ),
-            ],
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: FilledButton(
+            onPressed: _hasChanges ? () => _submit(context) : null,
+            child: Text(
+              _editing ? context.ln.save : context.ln.add,
+            ),
           ),
         ),
       ],

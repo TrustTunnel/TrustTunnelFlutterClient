@@ -26,6 +26,12 @@ class TrustTunnelSensitiveDataSanitizer {
     'configuration_link',
     'addServerLink',
     'add_server_link',
+    'clientRandom',
+    'client_random',
+    'tlsPrefix',
+    'tls_prefix',
+    'certificate',
+    'pem',
   };
 
   /// Rules that are additionally masked in stripped logging mode.
@@ -57,12 +63,6 @@ class TrustTunnelSensitiveDataSanitizer {
 
   /// Rules whose values are reduced to an empty/filled placeholder in stripped logging mode.
   static const Set<String> _strippedPresenceKeys = {
-    'clientRandom',
-    'client_random',
-    'tlsPrefix',
-    'tls_prefix',
-    'certificate',
-    'pem',
     'excludedRoutes',
     'excluded_routes',
     'initialExcludedRoutes',
