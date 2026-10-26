@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:window_manager/window_manager.dart';
 
 class AppWindowsCaptionIcon extends StatelessWidget {
@@ -14,59 +15,18 @@ class AppWindowsCaptionIcon extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => CustomPaint(
-    size: const Size(10, 10),
-    painter: _CaptionIconPainter(
-      button: button,
-      maximized: maximized,
+  Widget build(BuildContext context) {
+    final icon = switch (button) {
+      WindowsCaptionButton.minimize => AssetIcons.windowsMinimize,
+      WindowsCaptionButton.maximize => maximized ? AssetIcons.windowsRestore : AssetIcons.windowsMaximize,
+      WindowsCaptionButton.close => AssetIcons.windowsExit,
+    };
+
+    return Icon(
+      icon,
       color: color,
-    ),
-  );
-}
-
-class _CaptionIconPainter extends CustomPainter {
-  final WindowsCaptionButton button;
-  final bool maximized;
-  final Color color;
-
-  const _CaptionIconPainter({
-    required this.button,
-    required this.maximized,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    switch (button) {
-      case WindowsCaptionButton.minimize:
-        canvas.drawLine(const Offset(0, 5.5), const Offset(10, 5.5), paint);
-      case WindowsCaptionButton.maximize:
-        if (maximized) {
-          canvas.drawPath(
-            Path()
-              ..moveTo(2.5, 2.5)
-              ..lineTo(2.5, 0.5)
-              ..lineTo(9.5, 0.5)
-              ..lineTo(9.5, 7.5)
-              ..lineTo(7.5, 7.5),
-            paint,
-          );
-          canvas.drawRect(const Rect.fromLTRB(0.5, 2.5, 7.5, 9.5), paint);
-        } else {
-          canvas.drawRect(const Rect.fromLTRB(0.5, 0.5, 9.5, 9.5), paint);
-        }
-      case WindowsCaptionButton.close:
-        canvas.drawLine(const Offset(0.5, 0.5), const Offset(9.5, 9.5), paint);
-        canvas.drawLine(const Offset(9.5, 0.5), const Offset(0.5, 9.5), paint);
-    }
+      size: 10,
+      applyTextScaling: false,
+    );
   }
-
-  @override
-  bool shouldRepaint(_CaptionIconPainter oldDelegate) =>
-      button != oldDelegate.button || maximized != oldDelegate.maximized || color != oldDelegate.color;
 }
