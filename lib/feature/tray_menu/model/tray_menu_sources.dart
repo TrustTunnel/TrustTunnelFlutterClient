@@ -6,34 +6,31 @@ import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_controller.dart';
 
 /// Reads live scope data without owning the scopes or caching their state.
 final class TrayMenuSources implements ValueListenable<TrayMenuState> {
-  final VpnScopeController _vpn;
-  final ServersScopeController _servers;
-  final AppLoggingScopeController _logging;
+  final VpnScopeController _vpnScopeController;
+  final ServersScopeController _serversScopeController;
+  final AppLoggingScopeController _appLoggingScopeController;
   final Listenable _sources;
 
   TrayMenuSources({
-    required VpnScopeController vpn,
-    required ServersScopeController servers,
-    required AppLoggingScopeController logging,
-  }) : _vpn = vpn,
-       _servers = servers,
-       _logging = logging,
-       _sources = Listenable.merge([
-         vpn,
-         servers,
-         logging,
+    required this._vpnScopeController,
+    required this._serversScopeController,
+    required this._appLoggingScopeController,
+  }) : _sources = Listenable.merge([
+         _vpnScopeController,
+         _serversScopeController,
+         _appLoggingScopeController,
        ]);
 
   @override
   TrayMenuState get value => TrayMenuState(
-    vpnState: _vpn.state,
-    currentlyConnectedServerId: _vpn.currentlyConnectedServerId,
-    servers: _servers.servers,
-    selectedServer: _servers.selectedServer,
-    loggingLevel: _logging.loggingLevel,
-    loggingSecurityType: _logging.securityType,
-    serverError: _servers.error,
-    loggingError: _logging.error,
+    vpnState: _vpnScopeController.state,
+    currentlyConnectedServerId: _vpnScopeController.currentlyConnectedServerId,
+    servers: _serversScopeController.servers,
+    selectedServer: _serversScopeController.selectedServer,
+    loggingLevel: _appLoggingScopeController.loggingLevel,
+    loggingSecurityType: _appLoggingScopeController.securityType,
+    serverError: _serversScopeController.error,
+    loggingError: _appLoggingScopeController.error,
   );
 
   @override
