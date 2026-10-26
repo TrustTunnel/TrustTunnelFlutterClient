@@ -33,6 +33,8 @@ import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/macos_app_window_controller.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
+import 'package:vpn_plugin/domain/configuration_codec.dart';
+import 'package:vpn_plugin/platform_api.g.dart' show IDeepLink;
 import 'package:vpn_plugin/vpn_plugin.dart';
 
 abstract class DependencyFactory {
@@ -134,7 +136,11 @@ class DependencyFactoryImpl implements DependencyFactory {
   VpnPlugin get vpnPlugin => _vpnPlugin ??= VpnPluginImpl();
 
   @override
-  DeepLinkManager get deepLinkManager => _deepLinkManager ??= DeepLinkManagerImpl();
+  DeepLinkManager get deepLinkManager => _deepLinkManager ??= DeepLinkManagerImpl(
+    deepLinkParser: IDeepLink(),
+    codec: const ConfigurationCodec(),
+    endpointEncoder: const EndpointEncoder(),
+  );
 
   @override
   SettingsDataSource get settingsDataSource => _settingsDataSource ??= SettingsDataSourceImpl(database: database);

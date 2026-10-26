@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:vpn_plugin/domain/configuration_codec.dart';
 import 'package:vpn_plugin/models/configuration.dart';
 import 'package:vpn_plugin/models/endpoint.dart';
@@ -12,15 +14,17 @@ abstract class DeepLinkManager {
 }
 
 class DeepLinkManagerImpl implements DeepLinkManager {
-  DeepLinkManagerImpl({
-    ConfigurationSectionConverter<Endpoint, String> endpointEncoder = const EndpointEncoder(),
-  }) : _deepLinkParser = IDeepLink(),
-       _codec = const ConfigurationCodec(),
-       _endpointEncoder = endpointEncoder;
-
-  final ConfigurationCodec _codec;
   final IDeepLink _deepLinkParser;
+  final Codec<Configuration, String> _codec;
   final ConfigurationSectionConverter<Endpoint, String> _endpointEncoder;
+
+  const DeepLinkManagerImpl({
+    required IDeepLink deepLinkParser,
+    required Codec<Configuration, String> codec,
+    required ConfigurationSectionConverter<Endpoint, String> endpointEncoder,
+  }) : _deepLinkParser = deepLinkParser,
+       _codec = codec,
+       _endpointEncoder = endpointEncoder;
 
   @override
   Future<String> createLink({required Endpoint endpoint}) => _deepLinkParser.encode(
