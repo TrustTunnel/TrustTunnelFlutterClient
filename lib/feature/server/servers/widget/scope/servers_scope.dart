@@ -55,6 +55,15 @@ class _ServersScopeState extends State<ServersScope> implements ServersScopeCont
   void Function() get fetchServers => _controller.fetchServers;
 
   @override
+  void Function({
+    required String serverId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<Server>? onDuplicated,
+    VoidCallback? onError,
+  })
+  get duplicateServer => _controller.duplicateServer;
+
+  @override
   void initState() {
     super.initState();
 

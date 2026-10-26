@@ -8,6 +8,14 @@ abstract class ServersScopeController implements Listenable {
   abstract final PresentationException? error;
   abstract final bool loading;
 
+  abstract final void Function({
+    required String serverId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<Server>? onDuplicated,
+    VoidCallback? onError,
+  })
+  duplicateServer;
+
   abstract final void Function() fetchServers;
 
   /// Saves selection only; callers cancel obsolete VPN preparation before changing it.

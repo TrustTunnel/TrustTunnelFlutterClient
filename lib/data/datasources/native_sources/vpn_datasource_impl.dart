@@ -3,15 +3,13 @@ import 'dart:async';
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:trusttunnel/common/extensions/model_extensions.dart';
 import 'package:trusttunnel/common/logging/extensions/vpn_logger_extension.dart';
-import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
-import 'package:trusttunnel/common/utils/upstream_protocol_encoder.dart';
+import 'package:trusttunnel/common/utils/server_endpoint_encoder.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
-import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_logging_payload.dart';
@@ -202,28 +200,8 @@ class VpnDataSourceImpl implements VpnDataSource {
       ) ??
       _platformApi.updateConfiguration(configuration: null);
 
-  Endpoint _createEndpoint(ServerData server, RoutingProfileData routingProfile) => Endpoint(
-    name: server.name,
-    hostName: server.domain,
-    hasIpv6: server.ipv6,
-    tlsProfile: const TlsProfileEncoder().convert(server.tlsFingerprint),
-    certificate: server.certificate?.data ?? '',
-    clientRandom: server.tlsAuthenticationType == TlsAuthenticationType.clientRandom ? (server.tlsPrefix ?? '') : '',
-    clientRandomAuthKey: server.tlsAuthenticationType == TlsAuthenticationType.clientRandomAuthKey
-        ? (server.clientRandomAuthKey ?? '')
-        : '',
-    customSni: server.customSni ?? '',
-    username: server.username,
-    password: server.password,
-    addresses: [
-      server.ipAddress,
-    ],
-    exclusions: _getExclusionsByMode(routingProfile),
-    dnsUpStreams: server.dnsServers,
-    upStreamProtocol: UpStreamProtocolEncoder().convert(
-      server.vpnProtocol,
-    ),
-  );
+  Endpoint _createEndpoint(ServerData server, RoutingProfileData routingProfile) =>
+      ServerEndpointEncoder(exclusions: _getExclusionsByMode(routingProfile)).convert(server);
 
   /// Computes the effective exclusion list based on routing mode.
   ///

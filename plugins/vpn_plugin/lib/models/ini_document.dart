@@ -29,6 +29,10 @@ abstract final class IniConst {
   /// Multiline string delimiter: `"""`.
   static const multiLine = '"""';
 
+  /// TOML literal strings preserve backslashes without escaping.
+  static const literalQuote = "'";
+  static const multiLineLiteral = "'''";
+
   /// List opening bracket: `[`.
   static const listOpen = '[';
 
@@ -163,12 +167,20 @@ final class IniDocument {
   }) {
     final String trimmed = firstLineValue.trimLeft();
     final bool startsWithMultiLine = trimmed.startsWith(IniConst.multiLine);
-    if (!startsWithMultiLine) return null;
+    final bool startsWithMultiLineLiteral = trimmed.startsWith(IniConst.multiLineLiteral);
+    final String delimiter;
+    if (startsWithMultiLine) {
+      delimiter = IniConst.multiLine;
+    } else if (startsWithMultiLineLiteral) {
+      delimiter = IniConst.multiLineLiteral;
+    } else {
+      return null;
+    }
 
     final int openLen = IniConst.multiLineQuoteLength;
 
     // Closing delimiter on the same line.
-    final int closeInFirstLine = firstLineValue.indexOf(IniConst.multiLine, openLen);
+    final int closeInFirstLine = firstLineValue.indexOf(delimiter, openLen);
     if (closeInFirstLine != -1) {
       final int tokenEnd = closeInFirstLine + openLen;
       final String token = firstLineValue.substring(0, tokenEnd);
@@ -183,7 +195,7 @@ final class IniDocument {
       tokenBuffer.write(lines[i].trimRight());
 
       final String tokenSoFar = tokenBuffer.toString();
-      final int closeIndex = tokenSoFar.indexOf(IniConst.multiLine, openLen);
+      final int closeIndex = tokenSoFar.indexOf(delimiter, openLen);
 
       if (closeIndex != -1) {
         final int tokenEnd = closeIndex + openLen;
@@ -383,25 +395,49 @@ sealed class IniValue {
   }
 
   static bool _isMultiLinedString(String token) {
-    final bool starts = token.startsWith(IniConst.multiLine);
-    final bool ends = token.endsWith(IniConst.multiLine);
+    final bool startsWithBasicQuote = token.startsWith(IniConst.multiLine);
+    final bool endsWithBasicQuote = token.endsWith(IniConst.multiLine);
+    final bool startsWithLiteralQuote = token.startsWith(IniConst.multiLineLiteral);
+    final bool endsWithLiteralQuote = token.endsWith(IniConst.multiLineLiteral);
+
+    final bool hasBasicQuotes = startsWithBasicQuote && endsWithBasicQuote;
+    final bool hasLiteralQuotes = startsWithLiteralQuote && endsWithLiteralQuote;
+
     final bool longEnough = token.length >= IniConst.multiLineQuoteLength * 2;
-    return starts && ends && longEnough;
+    return longEnough && (hasBasicQuotes || hasLiteralQuotes);
   }
 
   static String _unquoteMultiLined(String token) {
     final int q = IniConst.multiLineQuoteLength;
-    return token.substring(q, token.length - q);
+    String contents = token.substring(q, token.length - q);
+    if (contents.startsWith('\n')) {
+      contents = contents.substring(1);
+    }
+
+    return token.startsWith(IniConst.multiLineLiteral) ? contents : _decodeString(contents);
   }
 
   static bool _isQuotedString(String token) {
-    final bool starts = token.startsWith(IniConst.quote);
-    final bool ends = token.endsWith(IniConst.quote);
+    final bool startsWithBasicQuote = token.startsWith(IniConst.quote);
+    final bool endsWithBasicQuote = token.endsWith(IniConst.quote);
+    final bool startsWithLiteralQuote = token.startsWith(IniConst.literalQuote);
+    final bool endsWithLiteralQuote = token.endsWith(IniConst.literalQuote);
+
+    final bool hasBasicQuotes = startsWithBasicQuote && endsWithBasicQuote;
+    final bool hasLiteralQuotes = startsWithLiteralQuote && endsWithLiteralQuote;
+
     final bool longEnough = token.length >= 2;
-    return starts && ends && longEnough;
+    return longEnough && (hasBasicQuotes || hasLiteralQuotes);
   }
 
-  static String _unquote(String token) => token.substring(1, token.length - 1);
+  static String _unquote(String token) {
+    final contents = token.substring(1, token.length - 1);
+
+    return token.startsWith(IniConst.literalQuote) ? contents : _decodeString(contents);
+  }
+
+  static String _decodeString(String value) =>
+      jsonDecode('"${value.replaceAll('\n', r'\n').replaceAll('\r', r'\r')}"') as String;
 
   static bool _isList(String token) {
     final bool starts = token.startsWith(IniConst.listOpen);
@@ -417,8 +453,7 @@ sealed class IniValue {
     final List<IniValue> values = <IniValue>[];
     final StringBuffer buffer = StringBuffer();
 
-    bool isInQuotes = false;
-    bool isInMultiLines = false;
+    String? delimiter;
 
     void flush() {
       final String item = buffer.toString().trim();
@@ -429,27 +464,40 @@ sealed class IniValue {
 
     for (int i = 0; i < inner.length; i++) {
       final String ch = inner[i];
-
-      final bool startsTriple = i + 2 < inner.length && inner.substring(i, i + 3) == IniConst.multiLine;
-      if (startsTriple) {
-        isInMultiLines = !isInMultiLines;
-        buffer.write(IniConst.multiLine);
-        i += 2;
+      final quote = delimiter;
+      if (quote != null) {
+        final bool isBasicString = quote == IniConst.quote || quote == IniConst.multiLine;
+        final bool isEscape = ch == r'\';
+        final bool hasNextCharacter = i + 1 < inner.length;
+        if (isBasicString && isEscape && hasNextCharacter) {
+          buffer
+            ..write(ch)
+            ..write(inner[++i]);
+        } else if (inner.startsWith(quote, i)) {
+          buffer.write(quote);
+          i += quote.length - 1;
+          delimiter = null;
+        } else {
+          buffer.write(ch);
+        }
         continue;
       }
 
-      if (!isInMultiLines && ch == IniConst.quote) {
-        isInQuotes = !isInQuotes;
+      final bool startsWithMultiLine = inner.startsWith(IniConst.multiLine, i);
+      final bool startsWithMultiLineLiteral = inner.startsWith(IniConst.multiLineLiteral, i);
+      final bool isQuote = ch == IniConst.quote || ch == IniConst.literalQuote;
+      if (startsWithMultiLine || startsWithMultiLineLiteral) {
+        delimiter = inner.substring(i, i + IniConst.multiLineQuoteLength);
+        buffer.write(delimiter);
+        i += IniConst.multiLineQuoteLength - 1;
+      } else if (isQuote) {
+        delimiter = ch;
         buffer.write(ch);
-        continue;
-      }
-
-      if (ch == IniConst.comma && !isInQuotes && !isInMultiLines) {
+      } else if (ch == IniConst.comma) {
         flush();
-        continue;
+      } else {
+        buffer.write(ch);
       }
-
-      buffer.write(ch);
     }
 
     flush();
@@ -474,9 +522,19 @@ final class IniString extends IniValue {
 
   @override
   String encode() {
-    if (value.isEmpty) return '${IniConst.quote}${IniConst.quote}';
-    if (value.contains('\n')) return '${IniConst.multiLine}$value${IniConst.multiLine}';
-    return '${IniConst.quote}$value${IniConst.quote}';
+    final quoted = jsonEncode(value);
+    if (!value.contains('\n')) return quoted;
+
+    final contents = value
+        .split('\n')
+        .map((line) {
+          final quotedLine = jsonEncode(line);
+
+          return quotedLine.substring(1, quotedLine.length - 1);
+        })
+        .join('\n');
+
+    return '${IniConst.multiLine}\n$contents${IniConst.multiLine}';
   }
 }
 

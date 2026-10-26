@@ -2,18 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
-import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card_connection_button.dart';
+import 'package:trusttunnel/feature/server/servers/widget/servers_card_menu_button.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_controller.dart';
 import 'package:trusttunnel/widgets/common/custom_list_tile_separated.dart';
 
 class ServersCard extends StatefulWidget {
   final Server server;
+  final VoidCallback? onShare;
+  final VoidCallback onCopyLink;
+  final VoidCallback onDuplicate;
+  final VoidCallback onEdit;
 
   const ServersCard({
     super.key,
     required this.server,
+    required this.onCopyLink,
+    required this.onDuplicate,
+    required this.onEdit,
+    this.onShare,
   });
 
   @override
@@ -41,9 +49,11 @@ class _ServersCardState extends State<ServersCard> {
       title: widget.server.serverData.name,
       titleStyle: context.textTheme.titleSmall,
       subtitle: widget.server.serverData.ipAddress,
-      onTileTap: () => _pushServerDetailsScreen(
-        context,
-        server: widget.server,
+      onTileTap: widget.onEdit,
+      actionBeforeDivider: ServersCardMenuButton(
+        onShare: widget.onShare,
+        onCopyLink: widget.onCopyLink,
+        onDuplicate: widget.onDuplicate,
       ),
       trailing: ServersCardConnectionButton(
         vpnManagerState: vpnManagerState,
@@ -58,13 +68,4 @@ class _ServersCardState extends State<ServersCard> {
       ),
     );
   }
-
-  void _pushServerDetailsScreen(
-    BuildContext context, {
-    required Server server,
-  }) => context.push(
-    ServerDetailsPopUp(
-      serverId: server.id,
-    ),
-  );
 }
