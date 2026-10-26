@@ -21,10 +21,7 @@ final class LinuxAppWindowController implements AppWindowController {
   Future<void> hideMainWindow() => windowManager.hide();
 
   @override
-  Future<void> setPreventClose(bool preventClose) async {
-    // Closing the window still terminates the application on Linux;
-    // tray/minimized mode will be implemented separately.
-  }
+  Future<void> setPreventClose(bool preventClose) => windowManager.setPreventClose(preventClose);
 
   @override
   Future<void> configureMainWindow({
@@ -32,6 +29,10 @@ final class LinuxAppWindowController implements AppWindowController {
     required Size defaultWindowSize,
     required bool isDebugMode,
   }) async {
-    // The window geometry is set natively in linux/my_application.cc.
+    // The window geometry is set natively in linux/my_application.cc; here we
+    // only make the window_manager plugin intercept the close request so the
+    // exit confirmation flow can run before the window is destroyed.
+    await windowManager.ensureInitialized();
+    await setPreventClose(true);
   }
 }

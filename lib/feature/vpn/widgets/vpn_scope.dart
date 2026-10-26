@@ -11,6 +11,7 @@ import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
+import 'package:trusttunnel/feature/menu_bar/tray_manager/linux/linux_exit_dialog.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/macos_exit_dialog.dart';
 import 'package:trusttunnel/feature/menu_bar/tray_manager/windows/windows_exit_dialog.dart';
 import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
@@ -214,6 +215,7 @@ class _VpnScopeState extends State<VpnScope> {
 
   /// The pending exit request for Windows (the same reason as with the timeout)
   Future<AppExitResponse>? _windowsExitRequest;
+  Future<AppExitResponse>? _linuxExitRequest;
 
   // Tracks state updates so a delayed request cannot overwrite a newer VPN state.
   int _vpnStateRevision = 0;
@@ -398,10 +400,60 @@ class _VpnScopeState extends State<VpnScope> {
       }
     }
 
+    if (defaultTargetPlatform == TargetPlatform.linux) {
+      final pendingExitRequest = _linuxExitRequest;
+      if (pendingExitRequest != null) {
+        return pendingExitRequest;
+      }
+
+      try {
+        final exitRequest = _handleLinuxExitRequested();
+        _linuxExitRequest = exitRequest;
+
+        return await exitRequest;
+      } finally {
+        _linuxExitRequest = null;
+      }
+    }
+
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       return await _handleMacosExitRequested();
     }
 
+    return AppExitResponse.exit;
+  }
+
+  Future<AppExitResponse> _handleLinuxExitRequested() async {
+    if (_shouldShowExitDialog) {
+      final localization = Localization.ln;
+      final result = await LinuxExitDialog.show(
+        title: localization.exitDialogTitle,
+        message: localization.exitDialogDescription,
+        quitButtonText: localization.quit,
+        dontQuitButtonText: localization.dontQuit,
+      ).onError((_, _) {
+        if (mounted) {
+          _disconnectOnExitErrorNotifier.notifyListeners();
+        }
+
+        return LinuxExitDialogResult.cancel;
+      });
+
+      if (!mounted || result != LinuxExitDialogResult.quit) {
+        return AppExitResponse.cancel;
+      }
+    }
+
+    if (!mounted) {
+      return AppExitResponse.cancel;
+    }
+
+    try {
+      // Bounded wait: a hung or crashed daemon must not keep the window open.
+      await _stopAndWaitUntilDisconnected(timeout: const Duration(seconds: 3));
+    } catch (_) {
+      // Fall through: the user asked to exit, so exit regardless.
+    }
     return AppExitResponse.exit;
   }
 

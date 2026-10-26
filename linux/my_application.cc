@@ -12,6 +12,64 @@ struct _MyApplication {
   char** dart_entrypoint_arguments;
 };
 
+// Registered in my_application_activate; kept alive for the whole app lifetime.
+static FlMethodChannel* g_exit_dialog_channel = nullptr;
+
+// Shows the native exit confirmation dialog (GtkMessageDialog) and responds
+// with true when the user chose Quit, false otherwise.
+static void exit_dialog_method_call_cb(FlMethodChannel* /*channel*/,
+                                       FlMethodCall* method_call,
+                                       gpointer user_data) {
+  const gchar* method = fl_method_call_get_name(method_call);
+  if (g_strcmp0(method, "show") != 0) {
+    fl_method_call_respond_not_implemented(method_call, nullptr);
+    return;
+  }
+
+  GtkWindow* window = GTK_WINDOW(user_data);
+  FlValue* args = fl_method_call_get_args(method_call);
+  if (fl_value_get_type(args) != FL_VALUE_TYPE_MAP) {
+    fl_method_call_respond_error(method_call, "bad-args", "Expected a map of arguments", nullptr, nullptr);
+    return;
+  }
+
+  static const gchar* const kKeys[] = {
+      "title",
+      "message",
+      "quitButtonText",
+      "dontQuitButtonText",
+  };
+  const gchar* values[G_N_ELEMENTS(kKeys)] = {"", "", "", ""};
+  for (size_t i = 0; i < G_N_ELEMENTS(kKeys); ++i) {
+    FlValue* value = fl_value_lookup_string(args, kKeys[i]);
+    if (value != nullptr && fl_value_get_type(value) == FL_VALUE_TYPE_STRING) {
+      values[i] = fl_value_get_string(value);
+    }
+  }
+  const gchar* title = values[0];
+  const gchar* message = values[1];
+  const gchar* quit_text = values[2];
+  const gchar* cancel_text = values[3];
+
+  GtkWidget* dialog = gtk_message_dialog_new(window,
+                                             GTK_DIALOG_MODAL,
+                                             GTK_MESSAGE_QUESTION,
+                                             GTK_BUTTONS_NONE,
+                                             "%s", title);
+  gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog), "%s", message);
+
+  gtk_dialog_add_button(GTK_DIALOG(dialog), cancel_text, GTK_RESPONSE_CANCEL);
+  gtk_dialog_add_button(GTK_DIALOG(dialog), quit_text, GTK_RESPONSE_ACCEPT);
+
+  // Runs a nested main loop: the rest of the UI stays alive while the dialog
+  // is open, mirroring the Windows runner behavior.
+  const gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+  gtk_widget_destroy(dialog);
+
+  g_autoptr(FlValue) result = fl_value_new_bool(response == GTK_RESPONSE_ACCEPT);
+  fl_method_call_respond_success(method_call, result, nullptr);
+}
+
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
 // Shows the window only after Flutter has rendered its first frame.
@@ -87,6 +145,19 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
+  // Exit confirmation dialog channel (lib/feature/menu_bar/tray_manager/linux).
+  g_clear_object(&g_exit_dialog_channel);
+  g_autoptr(FlPluginRegistrar) registrar = fl_plugin_registry_get_registrar_for_plugin(
+      FL_PLUGIN_REGISTRY(view), "VpnPlugin");
+  FlBinaryMessenger* messenger = fl_plugin_registrar_get_messenger(registrar);
+  g_exit_dialog_channel = fl_method_channel_new(messenger,
+                                                "trusttunnel/linux_exit_dialog",
+                                                FL_METHOD_CODEC(fl_standard_method_codec_new()));
+  fl_method_channel_set_method_call_handler(g_exit_dialog_channel,
+                                            exit_dialog_method_call_cb,
+                                            g_object_ref(window),
+                                            g_object_unref);
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 
@@ -146,6 +217,7 @@ static void my_application_shutdown(GApplication* application) {
 static void my_application_dispose(GObject* object) {
   MyApplication* self = MY_APPLICATION(object);
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+  g_clear_object(&g_exit_dialog_channel);
   G_OBJECT_CLASS(my_application_parent_class)->dispose(object);
 }
 
