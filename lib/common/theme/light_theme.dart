@@ -104,6 +104,19 @@ class LightTheme {
     systemStatusBarContrastEnforced: false,
   );
 
+  late final _scrollbarTheme = ScrollbarThemeData(
+    thumbVisibility: WidgetStateProperty.all<bool>(true),
+    thumbColor: WidgetStateProperty.all<Color>(
+      _neutralLight.withValues(
+        alpha: 0.5,
+      ),
+    ),
+    mainAxisMargin: 12,
+    crossAxisMargin: 4,
+    thickness: const WidgetStatePropertyAll(4),
+    radius: const Radius.circular(100),
+  );
+
   late final _customColors = const CustomColors(
     accent: _accent,
     accentHover: _accentHover,
@@ -225,7 +238,13 @@ class LightTheme {
   late final _iconButtonThemeData = IconButtonThemeData(
     style: ButtonStyle(
       shape: const WidgetStatePropertyAll(
-        CircleBorder(),
+        RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.all(
+            Radius.circular(
+              4.0,
+            ),
+          ),
+        ),
       ),
       foregroundColor: const WidgetStatePropertyAll(
         _specialStaticWhite,
@@ -1091,5 +1110,7 @@ class LightTheme {
     listTileTheme: _listTileThemeData,
     buttonTheme: _buttonTheme,
     tabBarTheme: _tabBarTheme,
+
+    scrollbarTheme: _scrollbarTheme,
   );
 }
