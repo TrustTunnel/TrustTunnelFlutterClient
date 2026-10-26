@@ -13,6 +13,9 @@ const char kInterfaceName[] = "com.adguard.TrustTunnel.Vpn1";
 constexpr guint32 kDaemonResultAlreadyRunning = 1;
 constexpr guint32 kDaemonResultInvalidConfig = 2;
 
+// Bounded timeout for the synchronous GetState call made from the main thread.
+constexpr gint kGetStateTimeoutMs = 2000;
+
 }  // namespace
 
 TrustTunnelDBusTransport::~TrustTunnelDBusTransport() {
@@ -172,11 +175,15 @@ int TrustTunnelDBusTransport::GetState() {
   if (proxy_ == nullptr) {
     return -1;
   }
+  // Bounded timeout: this call runs on the main GLib thread (it backs the
+  // Pigeon getCurrentState handler), so an unresponsive daemon must not
+  // freeze the GUI for the default GDBus timeout (~25 s). -1 is returned on
+  // timeout and the caller keeps its cached state.
   GVariant* reply = g_dbus_proxy_call_sync(proxy_,
                                            "GetState",
                                            NULL,
                                            G_DBUS_CALL_FLAGS_NONE,
-                                           -1,
+                                           kGetStateTimeoutMs,
                                            NULL,
                                            nullptr);
   if (reply == nullptr) {

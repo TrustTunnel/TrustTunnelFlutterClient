@@ -108,4 +108,18 @@ void LinuxVpnEngine::Stop() {
   }
 }
 
+int LinuxVpnEngine::GetCurrentState() {
+  if (transport_ != nullptr) {
+    // Initial sync / refresh: adopt the daemon-reported state (e.g. a session
+    // started by another client or a previous app run). OnDaemonState
+    // deduplicates and notifies the listener only on real transitions.
+    const int daemon_state = transport_->GetState();
+    if (daemon_state >= 0) {
+      OnDaemonState(daemon_state);
+    }
+    // daemon_state < 0 means the daemon is unreachable: keep the cached value.
+  }
+  return state_.load();
+}
+
 }  // namespace vpn_plugin

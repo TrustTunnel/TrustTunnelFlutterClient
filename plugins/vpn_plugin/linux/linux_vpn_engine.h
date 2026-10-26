@@ -45,7 +45,11 @@ class LinuxVpnEngine {
   // Requests the daemon to stop the session; the final DISCONNECTED state
   // is reported by the daemon afterwards.
   void Stop();
-  int GetCurrentState() const { return state_; }
+  // Returns the current VPN state, synchronizing it with the daemon first
+  // (a synchronous D-Bus call with a bounded timeout) so the initial
+  // requestState() and later refreshes see an adopted session even when
+  // Start() was never called from this client.
+  int GetCurrentState();
 
   // Registers the sink receiving JSON connection telemetry records.
   // The sink runs on the GLib main context.

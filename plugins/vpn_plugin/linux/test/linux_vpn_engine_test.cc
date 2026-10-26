@@ -35,11 +35,18 @@ class MockTransport : public TrustTunnelTransport {
   TransportCallResult Start(const std::string& config) override {
     last_config = config;
     ++start_calls;
-    return start_result;
+    const TransportCallResult result = start_result;
+    // An accepted start request moves the daemon into the connecting state.
+    if (result == TransportCallResult::kSuccess) {
+      get_state_result = static_cast<int>(kEngineStateConnecting);
+    }
+    return result;
   }
 
   TransportCallResult Stop() override {
     ++stop_calls;
+    // The daemon reports the disconnected state after a stop request.
+    get_state_result = static_cast<int>(kEngineStateDisconnected);
     return TransportCallResult::kSuccess;
   }
 
@@ -51,7 +58,11 @@ class MockTransport : public TrustTunnelTransport {
     on_connection_info_handler = std::move(handlers.on_connection_info);
   }
 
+  // Emulates a daemon-side state transition: subsequent GetState() calls
+  // report the new state and the registered on-state handler fires, exactly
+  // like the real transport.
   void EmulateDaemonState(int state) {
+    get_state_result = state;
     if (on_state_handler != nullptr) {
       on_state_handler(state);
     }
@@ -65,9 +76,9 @@ class MockTransport : public TrustTunnelTransport {
 
   bool init_result = true;
   TransportCallResult start_result = TransportCallResult::kSuccess;
-  // Daemon-reported state for GetState(); after a successful Start request the
-  // daemon normally reports Connecting (2 for an adopted live session).
-  int get_state_result = static_cast<int>(kEngineStateConnecting);
+  // Daemon-reported state for GetState(); Start()/Stop()/EmulateDaemonState()
+  // keep it in sync with the emulated daemon lifecycle.
+  int get_state_result = static_cast<int>(kEngineStateDisconnected);
 
   int init_calls = 0;
   int start_calls = 0;
@@ -139,7 +150,8 @@ TEST(LinuxVpnEngineTest, AlreadyRunningAdoptsExistingSession) {
   std::string unused_error;
   EXPECT_TRUE(engine.Start("config", &unused_error));
   EXPECT_EQ(engine.GetCurrentState(), kEngineStateConnected);
-  EXPECT_EQ(transport.get_state_calls, 1);
+  // One query from Start() plus one from the live GetCurrentState() above.
+  EXPECT_EQ(transport.get_state_calls, 2);
 
   // A subsequent daemon signal keeps the engine in sync.
   transport.EmulateDaemonState(kEngineStateDisconnected);
@@ -182,4 +194,28 @@ TEST(LinuxVpnEngineTest, ConnectionInfoForwardedToSink) {
   transport.EmulateDaemonConnectionInfo(R"({"proto":"TCP"})");
   ASSERT_EQ(received.size(), 1u);
   EXPECT_EQ(received[0], R"({"proto":"TCP"})");
+}
+
+TEST(LinuxVpnEngineTest, CurrentStateAdoptsDaemonSessionWithoutStart) {
+  // The daemon is already connected when the GUI starts (session adopted from
+  // a previous app run or another client).
+  MockTransport transport;
+  transport.EmulateDaemonState(kEngineStateConnected);
+  StateRecorder rec;
+  LinuxVpnEngine engine(&transport, StateRecorder::OnState, &rec);
+
+  EXPECT_EQ(engine.GetCurrentState(), kEngineStateConnected);
+}
+
+TEST(LinuxVpnEngineTest, CurrentStateFallsBackToCachedWhenDaemonUnreachable) {
+  MockTransport transport;
+  transport.EmulateDaemonState(kEngineStateConnected);
+  StateRecorder rec;
+  LinuxVpnEngine engine(&transport, StateRecorder::OnState, &rec);
+  EXPECT_EQ(engine.GetCurrentState(), kEngineStateConnected);
+
+  // The daemon becomes unreachable: GetState() reports -1 and the engine
+  // keeps the last known state instead of resetting to Disconnected.
+  transport.get_state_result = -1;
+  EXPECT_EQ(engine.GetCurrentState(), kEngineStateConnected);
 }
