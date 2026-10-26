@@ -52,7 +52,11 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     final servers = ServersScope.controllerOf(context, listen: false);
     final logging = AppLoggingScope.controllerOf(context, listen: false);
     final logs = LogsManagerScope.controllerOf(context, listen: false);
-    final sources = TrayMenuSources(vpn: vpn, servers: servers, logging: logging);
+    final sources = TrayMenuSources(
+      vpnScopeController: vpn,
+      serversScopeController: servers,
+      appLoggingScopeController: logging,
+    );
 
     _controller = TrayMenuController(
       sources: sources,
