@@ -68,7 +68,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 
 Before working with the application, ensure that your environment is ready:
 
-- **Flutter SDK 3.47.7 or newer**
+- **Flutter SDK 3.47.8 or newer**
 - Android, iOS, and/or macOS development tooling configured on your system
 - Basic build utilities, including `make`
 
@@ -326,4 +326,3 @@ Connection state changes and errors displayed in the UI directly reflect real ne
 
 ## License
 Apache 2.0
-
