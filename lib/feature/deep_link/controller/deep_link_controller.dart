@@ -22,21 +22,13 @@ final class DeepLinkController extends BaseStateController<DeepLinkState> with S
 
   void onDeepLinkReceived(Uri? deepLink) => handle(
     () async {
-      setState(
-        DeepLinkState.loading(
-          state.parsedData,
-        ),
-      );
+      setState(const DeepLinkState.loading(null));
 
       ServerData? parsedDeepLink;
 
-      if (deepLink?.hasQuery ?? false) {
+      if (deepLink != null && deepLink.scheme == _deepLinkScheme && deepLink.hasQuery) {
         parsedDeepLink = await _repository.parseDataFromLink(
-          deepLink: Uri(
-            scheme: _deepLinkScheme,
-            host: '',
-            query: deepLink!.query,
-          ).toString(),
+          deepLink: deepLink.toString(),
         );
       }
 

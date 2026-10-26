@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
+import 'package:trusttunnel/common/utils/server_name_utils.dart';
+import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
 import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 
@@ -71,13 +75,52 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     );
   }
 
+  void duplicateServer({
+    required String serverId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<Server>? onDuplicated,
+    VoidCallback? onError,
+  }) => handle(
+    () async {
+      setState(ServersState.loading(servers: state.servers));
+
+      final currentServers = await _repository.getAllServers();
+      final originalServer = currentServers.firstWhere(
+        (server) => server.id == serverId,
+        orElse: () => throw const PresentationNotFoundException(),
+      );
+
+      final duplicateName = ServerNameUtils.findAvailable(
+        baseName: originalServer.serverData.name,
+        otherNames: currentServers.map((server) => server.serverData.name),
+        preferredName: numberedName(originalServer.serverData.name.trim(), 0),
+        numberedName: numberedName,
+      );
+
+      final duplicate = await _repository.addNewServer(
+        request: originalServer.serverData.copyWith(
+          name: duplicateName,
+          selected: false,
+        ),
+      );
+      final servers = await _repository.getAllServers();
+      setState(ServersState.idle(servers: servers));
+      if (!isDisposed) onDuplicated?.call(duplicate);
+    },
+    errorHandler: (error, stackTrace) {
+      _onError(error, stackTrace);
+      onError?.call();
+    },
+    completionHandler: _onCompleted,
+  );
+
   PresentationException _parseException(
     Object? exception,
   ) => ExceptionUtils.toPresentationException(
     exception: exception,
   );
 
-  Future<void> _onError(Object? error, StackTrace _) async {
+  void _onError(Object? error, StackTrace _) {
     final presentationException = _parseException(error);
 
     setState(

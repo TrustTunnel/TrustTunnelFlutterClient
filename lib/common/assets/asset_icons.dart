@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
+/// Icons for the app.
+///
+/// All icons sorted by the alphabetical order.
+///
+/// New icons are added by editing the font.
+/// Example: we get a new icon in SVG format, import it into the font using a specialized service or something similar,
+/// apply the same style to it as all the other icons, and then use the new, edited font and add the icon to the list.
 abstract class AssetIcons {
   static const IconData add = IconData(0xe800, fontFamily: _kFontFam);
-
   static const IconData anon = IconData(0xe801, fontFamily: _kFontFam);
   static const IconData arrowBack = IconData(0xe802, fontFamily: _kFontFam);
   static const IconData arrowDropDown = IconData(0xe803, fontFamily: _kFontFam);
@@ -20,6 +26,7 @@ abstract class AssetIcons {
   static const IconData copy = IconData(0xe80e, fontFamily: _kFontFam);
   static const IconData delete = IconData(0xe80f, fontFamily: _kFontFam);
   static const IconData dns = IconData(0xe810, fontFamily: _kFontFam);
+  static const IconData duplicate = IconData(0xe82b, fontFamily: _kFontFam);
   static const IconData error = IconData(0xe811, fontFamily: _kFontFam);
   static const IconData eye = IconData(0xe829, fontFamily: _kFontFam);
   static const IconData eyeClosed = IconData(0xe82a, fontFamily: _kFontFam);
@@ -44,5 +51,6 @@ abstract class AssetIcons {
   static const IconData unlink = IconData(0xe824, fontFamily: _kFontFam);
   static const IconData up = IconData(0xe825, fontFamily: _kFontFam);
   static const IconData update = IconData(0xe826, fontFamily: _kFontFam);
+
   static const _kFontFam = 'IconFont';
 }

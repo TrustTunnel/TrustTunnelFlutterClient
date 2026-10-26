@@ -29,8 +29,10 @@ abstract class ServerDataSource {
     required String routingProfileId,
   });
 
+  Future<String> createLink({required ServerData server});
+
   /// {@template server_data_source_get_all_servers}
-  /// Loads all servers stored in persistence.
+  /// Loads all servers in ascending identifier order.
   ///
   /// Returns an empty list if no servers exist.
   /// {@endtemplate}

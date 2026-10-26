@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
+import 'package:trusttunnel/common/utils/server_endpoint_encoder.dart';
 import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
@@ -18,10 +19,7 @@ import 'package:vpn_plugin/models/upstream_protocol.dart';
 /// Server records are stored in the `servers` table, while DNS server entries
 /// are stored in `dnsServers` and linked by `serverId`.
 ///
-/// ### Consistency notes
-/// Some operations update multiple tables (server row + DNS rows). If strict
-/// atomicity is required, wrap these calls in a Drift transaction at a higher
-/// layer.
+/// Persist each new server, its DNS entries and certificate in one transaction.
 /// {@endtemplate}
 class ServerDataSourceImpl implements ServerDataSource {
   /// Drift database used for persistence.
@@ -37,10 +35,11 @@ class ServerDataSourceImpl implements ServerDataSource {
 
   /// {@macro server_data_source_add_new_server}
   @override
-  Future<Server> addNewServer({required ServerData request}) async {
-    final id = await database.servers.insertOnConflictUpdate(
+  Future<Server> addNewServer({required ServerData request}) => database.transaction(() async {
+    final serverId = await database.servers.insertOnConflictUpdate(
       db.ServersCompanion.insert(
         ipAddress: request.ipAddress,
+        selected: const Value(false),
         name: request.name,
         domain: request.domain,
         login: request.username,
@@ -61,7 +60,7 @@ class ServerDataSourceImpl implements ServerDataSource {
     await database.dnsServers.insertAll(
       request.dnsServers.map(
         (s) => db.DnsServersCompanion.insert(
-          serverId: id,
+          serverId: serverId,
           data: s,
         ),
       ),
@@ -69,12 +68,12 @@ class ServerDataSourceImpl implements ServerDataSource {
 
     if (request.certificate != null) {
       await database.certificateTable.insertOnConflictUpdate(
-        CertificateEncoder(serverId: id).convert(request.certificate!),
+        CertificateEncoder(serverId: serverId).convert(request.certificate!),
       );
     }
 
     return Server(
-      id: id.toString(),
+      id: serverId.toString(),
       serverData: ServerData(
         name: request.name,
         ipAddress: request.ipAddress,
@@ -93,7 +92,7 @@ class ServerDataSourceImpl implements ServerDataSource {
         customSni: request.customSni,
       ),
     );
-  }
+  });
 
   /// {@macro server_data_source_get_all_servers}
   ///
@@ -101,7 +100,9 @@ class ServerDataSourceImpl implements ServerDataSource {
   /// and finally assembles [RawServer] instances.
   @override
   Future<List<Server>> getAllServers() async {
-    final serversRows = await database.select(database.servers).get();
+    final serversRows = await (database.select(
+      database.servers,
+    )..orderBy([(row) => OrderingTerm.asc(row.id)])).get();
     if (serversRows.isEmpty) return [];
 
     final certs = await database.select(database.certificateTable).get();
@@ -266,6 +267,11 @@ class ServerDataSourceImpl implements ServerDataSource {
       ),
     );
   }
+
+  @override
+  Future<String> createLink({required ServerData server}) => deepLinkManager.createLink(
+    endpoint: const ServerEndpointEncoder().convert(server),
+  );
 
   @override
   Future<ServerData> getServerByBase64({

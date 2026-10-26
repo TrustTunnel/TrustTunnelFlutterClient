@@ -5,6 +5,7 @@ import 'package:trusttunnel/common/error/model/presentation_code_exception.dart'
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
+import 'package:trusttunnel/common/utils/server_name_utils.dart';
 import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
@@ -32,7 +33,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
   });
 
   /// Make a purchase for the given product ID
-  void fetch() {
+  void fetch({required String Function(String name, int number) numberedName}) {
     handle(
       () async {
         setState(
@@ -50,9 +51,10 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
 
           if (serverName.isNotEmpty) {
             final servers = await _repository.getAllServers();
-            serverName = _detailsService.fallbackDuplicateNames(
-              serverName,
-              servers.map((server) => server.serverData.name).toSet(),
+            serverName = ServerNameUtils.findAvailable(
+              baseName: serverName,
+              otherNames: servers.map((server) => server.serverData.name),
+              numberedName: numberedName,
             );
           }
 

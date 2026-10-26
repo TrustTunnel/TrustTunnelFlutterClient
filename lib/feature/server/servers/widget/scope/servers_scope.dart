@@ -61,6 +61,7 @@ class _ServersScopeState extends State<ServersScope> {
       state: state,
       pickServer: _selectServer,
       fetchServers: _controller.fetchServers,
+      duplicateServer: _controller.duplicateServer,
       child: widget.child,
     ),
   );
@@ -87,10 +88,20 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
   @override
   final void Function() fetchServers;
 
+  @override
+  final void Function({
+    required String serverId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<Server>? onDuplicated,
+    VoidCallback? onError,
+  })
+  duplicateServer;
+
   const _InheritedServersScope({
     required this._state,
     required this.pickServer,
     required this.fetchServers,
+    required this.duplicateServer,
     required super.child,
   });
 
