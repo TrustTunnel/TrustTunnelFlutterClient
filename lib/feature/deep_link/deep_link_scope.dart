@@ -78,7 +78,8 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   void _onDeepLinkReceived() {
     final link = _deepLinkSource.link;
     if (link != null) {
-      if (defaultTargetPlatform == TargetPlatform.macOS) {
+      if (defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.linux) {
         unawaited(context.dependencyFactory.appWindowController.showMainWindow());
       }
       _controller.onDeepLinkReceived(link);

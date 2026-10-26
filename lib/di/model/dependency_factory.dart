@@ -31,6 +31,7 @@ import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
+import 'package:trusttunnel/feature/app/controller/linux_app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/macos_app_window_controller.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
 import 'package:vpn_plugin/vpn_plugin.dart';
@@ -209,6 +210,7 @@ class DependencyFactoryImpl implements DependencyFactory {
   @override
   AppWindowController get appWindowController => _appWindowController ??= switch (defaultTargetPlatform) {
     TargetPlatform.macOS => MacOSAppWindowController(),
+    TargetPlatform.linux => LinuxAppWindowController(),
     _ => throw UnsupportedError('AppWindowController is not supported on ${defaultTargetPlatform.name}'),
   };
 

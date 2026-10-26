@@ -24,6 +24,15 @@ static void view_first_frame_cb(FlView* /*view*/, gpointer user_data) {
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
+
+  // Single instance: if the window already exists (secondary launch or
+  // re-activation), raise it instead of creating a new Flutter view.
+  GList* windows = gtk_application_get_windows(GTK_APPLICATION(application));
+  if (windows) {
+    gtk_window_present(GTK_WINDOW(windows->data));
+    return;
+  }
+
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
@@ -84,8 +93,6 @@ static void my_application_activate(GApplication* application) {
 // Implements GApplication::local_command_line.
 static gboolean my_application_local_command_line(GApplication* application, gchar*** arguments, int* exit_status) {
   MyApplication* self = MY_APPLICATION(application);
-  // Strip out the first argument as it is the binary name.
-  self->dart_entrypoint_arguments = g_strdupv(*arguments + 1);
 
   g_autoptr(GError) error = nullptr;
   if (!g_application_register(application, nullptr, &error)) {
@@ -94,10 +101,27 @@ static gboolean my_application_local_command_line(GApplication* application, gch
      return TRUE;
   }
 
+  // Secondary instance: returning FALSE makes GApplication forward the
+  // arguments to the primary instance over D-Bus (GApplication::command-line /
+  // ::open — picked up by the gtk plugin and forwarded to app_links) and
+  // terminate this process. g_application_activate() on a remote instance is
+  // forwarded as well, so the primary window is raised.
+  if (g_application_get_is_remote(application)) {
+    g_application_activate(application);
+    *exit_status = 0;
+    return FALSE;
+  }
+
+  // Primary instance: keep the arguments for the Dart entrypoint and run.
+  self->dart_entrypoint_arguments = g_strdupv(*arguments + 1);
+
   g_application_activate(application);
   *exit_status = 0;
 
-  return TRUE;
+  // FALSE: let GApplication emit GApplication::command-line / ::open for the
+  // initial arguments too, so a cold-start tt:// link reaches Dart (app_links)
+  // alongside the regular startup.
+  return FALSE;
 }
 
 // Implements GApplication::startup.
@@ -138,6 +162,9 @@ static void my_application_init(MyApplication* self) {}
 MyApplication* my_application_new() {
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID,
-                                     "flags", G_APPLICATION_NON_UNIQUE,
+                                     // Single instance: secondary launches forward their
+                                     // command line and open requests to the primary
+                                     // over D-Bus instead of starting a new process.
+                                     "flags", G_APPLICATION_HANDLES_COMMAND_LINE | G_APPLICATION_HANDLES_OPEN,
                                      nullptr));
 }
