@@ -8,10 +8,6 @@ class MigrationsV5 implements Migrations {
   @override
   Future<void> migrate(GeneratedDatabase database, Migrator m) async {
     final appDatabase = database as db.AppDatabase;
-
-    await m.addColumn(appDatabase.servers, appDatabase.servers.sortOrder);
-    await database.customStatement('UPDATE servers SET sort_order = id');
-
     await m.addColumn(appDatabase.servers, appDatabase.servers.tlsFingerprint);
     await m.addColumn(appDatabase.servers, appDatabase.servers.tlsAuthenticationType);
     await m.addColumn(appDatabase.servers, appDatabase.servers.clientRandomAuthKey);

@@ -31,14 +31,8 @@ abstract class ServerDataSource {
 
   Future<String> createLink({required ServerData server});
 
-  /// Creates an unselected copy immediately after the original, atomically.
-  Future<Server> duplicateServer({
-    required String serverId,
-    required String name,
-  });
-
   /// {@template server_data_source_get_all_servers}
-  /// Loads all servers in their persisted order.
+  /// Loads all servers in ascending identifier order.
   ///
   /// Returns an empty list if no servers exist.
   /// {@endtemplate}

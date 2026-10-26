@@ -97,9 +97,11 @@ final class ServersController extends BaseStateController<ServersState> with Seq
         numberedName: numberedName,
       );
 
-      final duplicate = await _repository.duplicateServer(
-        serverId: serverId,
-        name: duplicateName,
+      final duplicate = await _repository.addNewServer(
+        request: originalServer.serverData.copyWith(
+          name: duplicateName,
+          selected: false,
+        ),
       );
       final servers = await _repository.getAllServers();
       setState(ServersState.idle(servers: servers));

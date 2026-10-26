@@ -19,8 +19,7 @@ import 'package:vpn_plugin/models/upstream_protocol.dart';
 /// Server records are stored in the `servers` table, while DNS server entries
 /// are stored in `dnsServers` and linked by `serverId`.
 ///
-/// Creation and duplication persist the server, DNS and certificate in one
-/// transaction. Duplication also updates the stored list order atomically.
+/// Persist each new server, its DNS entries and certificate in one transaction.
 /// {@endtemplate}
 class ServerDataSourceImpl implements ServerDataSource {
   /// Drift database used for persistence.
@@ -37,35 +36,61 @@ class ServerDataSourceImpl implements ServerDataSource {
   /// {@macro server_data_source_add_new_server}
   @override
   Future<Server> addNewServer({required ServerData request}) => database.transaction(() async {
-    final lastServer =
-        await (database.select(database.servers)
-              ..orderBy([(row) => OrderingTerm.desc(row.sortOrder)])
-              ..limit(1))
-            .getSingleOrNull();
-
-    return _insertServer(request: request, sortOrder: (lastServer?.sortOrder ?? -1) + 1);
-  });
-
-  @override
-  Future<Server> duplicateServer({
-    required String serverId,
-    required String name,
-  }) => database.transaction(() async {
-    final originalServer = await getServerById(id: serverId);
-    final row = await (database.select(
-      database.servers,
-    )..where((row) => row.id.equals(int.parse(serverId)))).getSingle();
-
-    await database.customUpdate(
-      'UPDATE servers SET sort_order = sort_order + 1 '
-      'WHERE sort_order > ?',
-      variables: [Variable(row.sortOrder)],
-      updates: {database.servers},
+    final serverId = await database.servers.insertOnConflictUpdate(
+      db.ServersCompanion.insert(
+        ipAddress: request.ipAddress,
+        selected: const Value(false),
+        name: request.name,
+        domain: request.domain,
+        login: request.username,
+        password: request.password,
+        vpnProtocolId: request.vpnProtocol.value,
+        tlsFingerprint: Value(request.tlsFingerprint.value),
+        ipv6Enabled: Value(request.ipv6),
+        tlsPrefix: Value(request.tlsPrefix),
+        tlsAuthenticationType: Value(request.tlsAuthenticationType.value),
+        clientRandomAuthKey: Value(request.clientRandomAuthKey),
+        routingProfileId: int.parse(
+          request.routingProfileId,
+        ),
+        customSni: Value(request.customSni),
+      ),
     );
 
-    return _insertServer(
-      request: originalServer.serverData.copyWith(name: name),
-      sortOrder: row.sortOrder + 1,
+    await database.dnsServers.insertAll(
+      request.dnsServers.map(
+        (s) => db.DnsServersCompanion.insert(
+          serverId: serverId,
+          data: s,
+        ),
+      ),
+    );
+
+    if (request.certificate != null) {
+      await database.certificateTable.insertOnConflictUpdate(
+        CertificateEncoder(serverId: serverId).convert(request.certificate!),
+      );
+    }
+
+    return Server(
+      id: serverId.toString(),
+      serverData: ServerData(
+        name: request.name,
+        ipAddress: request.ipAddress,
+        domain: request.domain,
+        username: request.username,
+        password: request.password,
+        vpnProtocol: request.vpnProtocol,
+        tlsFingerprint: request.tlsFingerprint,
+        routingProfileId: request.routingProfileId,
+        dnsServers: request.dnsServers,
+        ipv6: request.ipv6,
+        certificate: request.certificate,
+        tlsPrefix: request.tlsPrefix,
+        tlsAuthenticationType: request.tlsAuthenticationType,
+        clientRandomAuthKey: request.clientRandomAuthKey,
+        customSni: request.customSni,
+      ),
     );
   });
 
@@ -75,12 +100,9 @@ class ServerDataSourceImpl implements ServerDataSource {
   /// and finally assembles [RawServer] instances.
   @override
   Future<List<Server>> getAllServers() async {
-    final serversRows =
-        await (database.select(database.servers)..orderBy([
-              (row) => OrderingTerm.asc(row.sortOrder),
-              (row) => OrderingTerm.asc(row.id),
-            ]))
-            .get();
+    final serversRows = await (database.select(
+      database.servers,
+    )..orderBy([(row) => OrderingTerm.asc(row.id)])).get();
     if (serversRows.isEmpty) return [];
 
     final certs = await database.select(database.certificateTable).get();
@@ -287,71 +309,6 @@ class ServerDataSourceImpl implements ServerDataSource {
               data: configuration.endpoint.certificate,
             ),
       customSni: configuration.endpoint.customSni,
-    );
-  }
-
-  /// Creates a new unselected server, intentionally ignoring [ServerData.selected]
-  /// from [request]. Selection is managed separately by [setSelectedServerId].
-  Future<Server> _insertServer({required ServerData request, required int sortOrder}) async {
-    final serverId = await database.servers.insertOnConflictUpdate(
-      db.ServersCompanion.insert(
-        ipAddress: request.ipAddress,
-        sortOrder: Value(sortOrder),
-        selected: const Value(false),
-        name: request.name,
-        domain: request.domain,
-        login: request.username,
-        password: request.password,
-        vpnProtocolId: request.vpnProtocol.value,
-        tlsFingerprint: Value(request.tlsFingerprint.value),
-        ipv6Enabled: Value(request.ipv6),
-        tlsPrefix: Value(request.tlsPrefix),
-        tlsAuthenticationType: Value(request.tlsAuthenticationType.value),
-        clientRandomAuthKey: Value(request.clientRandomAuthKey),
-        routingProfileId: int.parse(
-          request.routingProfileId,
-        ),
-        customSni: Value(request.customSni),
-      ),
-    );
-
-    await database.dnsServers.insertAll(
-      request.dnsServers.map(
-        (s) => db.DnsServersCompanion.insert(
-          serverId: serverId,
-          data: s,
-        ),
-      ),
-    );
-
-    if (request.certificate != null) {
-      await database.certificateTable.insertOnConflictUpdate(
-        CertificateEncoder(serverId: serverId).convert(request.certificate!),
-      );
-    }
-
-    return Server(
-      id: serverId.toString(),
-      serverData: ServerData(
-        name: request.name,
-        ipAddress: request.ipAddress,
-        domain: request.domain,
-        username: request.username,
-        password: request.password,
-        vpnProtocol: request.vpnProtocol,
-        tlsFingerprint: request.tlsFingerprint,
-        routingProfileId: request.routingProfileId,
-        dnsServers: request.dnsServers,
-        ipv6: request.ipv6,
-        certificate: request.certificate,
-        tlsPrefix: request.tlsPrefix,
-        tlsAuthenticationType: request.tlsAuthenticationType,
-        clientRandomAuthKey: request.clientRandomAuthKey,
-        customSni: request.customSni,
-        // Keep the creation contract explicit even though this is the default.
-        // ignore: avoid_redundant_argument_values
-        selected: false,
-      ),
     );
   }
 

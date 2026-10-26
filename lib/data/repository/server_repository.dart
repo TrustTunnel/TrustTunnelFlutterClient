@@ -9,11 +9,6 @@ import 'package:trusttunnel/data/model/server_data.dart';
 abstract class ServerRepository {
   Future<Server> addNewServer({required ServerData request});
 
-  Future<Server> duplicateServer({
-    required String serverId,
-    required String name,
-  });
-
   Future<List<Server>> getAllServers();
 
   Future<Server?> getServerById({required String id});
@@ -44,15 +39,6 @@ class ServerRepositoryImpl implements ServerRepository {
 
     return server;
   }
-
-  @override
-  Future<Server> duplicateServer({
-    required String serverId,
-    required String name,
-  }) => _serverDataSource.duplicateServer(
-    serverId: serverId,
-    name: name,
-  );
 
   @override
   Future<List<Server>> getAllServers() async {
