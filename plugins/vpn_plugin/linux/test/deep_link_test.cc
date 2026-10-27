@@ -44,4 +44,29 @@ TEST(TrustTunnelDeepLinkTest, RejectsMalformedUri) {
   EXPECT_FALSE(error.empty());
 }
 
+// The same `[endpoint]` layout the Rust encoder consumes and Decode produces.
+constexpr const char kEndpointToml[] =
+    "[endpoint]\n"
+    "hostname = \"vpn.example.com\"\n"
+    "addresses = [\"1.2.3.4:443\"]\n"
+    "has_ipv6 = true\n"
+    "username = \"user\"\n"
+    "password = \"pass\"\n"
+    "skip_verification = false\n"
+    "upstream_protocol = \"http2\"\n"
+    "name = \"Test Server\"\n";
+
+TEST(TrustTunnelDeepLinkTest, EncodesEndpointConfiguration) {
+  std::string uri;
+  std::string error;
+  ASSERT_TRUE(vpn_plugin::EncodeTrustTunnelDeepLink(kEndpointToml, &uri, &error)) << error;
+  EXPECT_TRUE(uri.starts_with("tt://?"));
+
+  // The produced URI must be decodable back into the endpoint configuration.
+  std::string configuration;
+  ASSERT_TRUE(vpn_plugin::DecodeTrustTunnelDeepLink(uri, &configuration, &error)) << error;
+  EXPECT_NE(configuration.find("hostname = \"vpn.example.com\""), std::string::npos);
+  EXPECT_NE(configuration.find("name = \"Test Server\""), std::string::npos);
+}
+
 }  // namespace

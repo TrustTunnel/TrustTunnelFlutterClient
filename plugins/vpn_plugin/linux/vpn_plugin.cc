@@ -95,8 +95,11 @@ static gboolean replay_ring_idle(gpointer user_data) {
 // -------- IVpnManager implementation (Pigeon-generated vtable) --------
 
 static VpnPluginIVpnManagerStartResponse* start(const gchar* config,
+                                                gboolean /*fall_into_recovery*/,
                                                 gpointer user_data) {
   VpnPlugin* self = VPN_PLUGIN(user_data);
+  // The Linux daemon's Start(s toml_config) has no fall-into-recovery
+  // parameter yet; the flag is accepted but ignored.
   std::string error;
   if (!self->engine->Start(config != NULL ? config : "", &error)) {
     return vpn_plugin_i_vpn_manager_start_response_new_error(
@@ -156,6 +159,19 @@ static VpnPluginIDeepLinkDecodeResponse* decode(const gchar* uri, gpointer /*use
   }
 
   return vpn_plugin_i_deep_link_decode_response_new(configuration.c_str());
+}
+
+static VpnPluginIDeepLinkEncodeResponse* encode(const gchar* endpoint_toml,
+                                                gpointer /*user_data*/) {
+  std::string uri;
+  std::string error;
+  if (!vpn_plugin::EncodeTrustTunnelDeepLink(endpoint_toml != NULL ? endpoint_toml : "",
+                                             &uri, &error)) {
+    return vpn_plugin_i_deep_link_encode_response_new_error(
+        "encode_error", error.c_str(), NULL);
+  }
+
+  return vpn_plugin_i_deep_link_encode_response_new(uri.c_str());
 }
 
 // -------- EventChannel stream handlers --------
@@ -271,6 +287,7 @@ void vpn_plugin_register_with_registrar(FlPluginRegistrar* registrar) {
 
   static const VpnPluginIDeepLinkVTable kDeepLinkVTable = {
       decode,
+      encode,
   };
   vpn_plugin_i_deep_link_set_method_handlers(plugin->messenger, NULL, &kDeepLinkVTable,
                                              g_object_ref(plugin), g_object_unref);
