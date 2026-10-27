@@ -1,12 +1,12 @@
 #include "include/vpn_plugin/vpn_plugin.h"
 
+#include "connection_info_buffer.h"
 #include "linux_vpn_engine.h"
 #include "platform_api.g.h"
 #include "trusttunnel_dbus_transport.h"
 #include "trusttunnel_deeplink.h"
 #include "trusttunnel_transport.h"
 
-#include <deque>
 #include <string>
 
 #define VPN_PLUGIN(obj) \
@@ -17,7 +17,7 @@ static const char kQueryLogEventChannelName[] = "vpn_plugin_event_channel_query_
 
 // Maximum number of connection telemetry records kept for replay when
 // a listener subscribes to the query-log EventChannel after they arrive.
-static const size_t kConnectionInfoRingSize = 256;
+static const size_t kConnectionInfoBufferSize = 256;
 
 struct _VpnPlugin {
   GObject parent_instance;
@@ -33,10 +33,10 @@ struct _VpnPlugin {
   gboolean query_log_listening;
   // Connection telemetry records received before a listener attached.
   // Threading: both the producer (send_connection_info, called from GDBus
-  // callbacks) and the consumers (replay_ring_idle, dispose) run on the main
+  // callbacks) and the consumer (query_log_listen_cb, dispose) run on the main
   // GLib loop, so no locking is needed. If the D-Bus signals ever move to a
   // worker thread, guard this field with a mutex.
-  std::deque<std::string>* connection_info_ring;
+  vpn_plugin::ConnectionInfoBuffer* connection_info_buffer;
 
   FlBinaryMessenger* messenger;
 };
@@ -68,11 +68,8 @@ static void on_engine_state(void* user_data, int /*state*/) {
 
 static void send_connection_info(VpnPlugin* self, const std::string& json) {
   if (self->query_log_event_channel == NULL || !self->query_log_listening) {
-    if (self->connection_info_ring != nullptr) {
-      if (self->connection_info_ring->size() >= kConnectionInfoRingSize) {
-        self->connection_info_ring->pop_front();
-      }
-      self->connection_info_ring->push_back(json);
+    if (self->connection_info_buffer != nullptr) {
+      self->connection_info_buffer->Add(json);
     }
     return;
   }
@@ -80,16 +77,18 @@ static void send_connection_info(VpnPlugin* self, const std::string& json) {
   fl_event_channel_send(self->query_log_event_channel, event, NULL, NULL);
 }
 
-static gboolean replay_ring_idle(gpointer user_data) {
-  VpnPlugin* self = VPN_PLUGIN(user_data);
-  if (self->connection_info_ring != nullptr && self->query_log_listening &&
-      self->query_log_event_channel != NULL) {
-    for (const std::string& json : *self->connection_info_ring) {
-      g_autoptr(FlValue) event = fl_value_new_string(json.c_str());
-      fl_event_channel_send(self->query_log_event_channel, event, NULL, NULL);
-    }
+// Deliver the records buffered before the listener attached. Synchronous on
+// purpose: the main GLib loop cannot interleave new records between setting
+// the listening flag and draining, so ordering and single delivery are
+// guaranteed without extra bookkeeping.
+static void deliver_buffered_connection_info(VpnPlugin* self) {
+  if (self->connection_info_buffer == nullptr || self->query_log_event_channel == NULL) {
+    return;
   }
-  return G_SOURCE_REMOVE;
+  for (const std::string& json : self->connection_info_buffer->Drain()) {
+    g_autoptr(FlValue) event = fl_value_new_string(json.c_str());
+    fl_event_channel_send(self->query_log_event_channel, event, NULL, NULL);
+  }
 }
 
 // -------- IVpnManager implementation (Pigeon-generated vtable) --------
@@ -109,7 +108,12 @@ static VpnPluginIVpnManagerStartResponse* start(const gchar* config,
 }
 
 static VpnPluginIVpnManagerStopResponse* stop(gpointer user_data) {
-  VPN_PLUGIN(user_data)->engine->Stop();
+  VpnPlugin* self = VPN_PLUGIN(user_data);
+  std::string error;
+  if (!self->engine->Stop(&error)) {
+    return vpn_plugin_i_vpn_manager_stop_response_new_error(
+        "vpn_stop_failed", error.c_str(), NULL);
+  }
   return vpn_plugin_i_vpn_manager_stop_response_new();
 }
 
@@ -197,9 +201,7 @@ static FlMethodErrorResponse* query_log_listen_cb(FlEventChannel* /*channel*/,
                                                   gpointer user_data) {
   VpnPlugin* self = VPN_PLUGIN(user_data);
   self->query_log_listening = TRUE;
-  // Replay the records buffered before the listener attached.
-  g_idle_add_full(G_PRIORITY_DEFAULT, replay_ring_idle, g_object_ref(self),
-                  g_object_unref);
+  deliver_buffered_connection_info(self);
   return NULL;
 }
 
@@ -221,8 +223,8 @@ static void vpn_plugin_dispose(GObject* object) {
   self->engine = nullptr;
   delete self->transport;
   self->transport = nullptr;
-  delete self->connection_info_ring;
-  self->connection_info_ring = nullptr;
+  delete self->connection_info_buffer;
+  self->connection_info_buffer = nullptr;
 
   if (self->messenger != NULL) {
     vpn_plugin_i_vpn_manager_clear_method_handlers(self->messenger, NULL);
@@ -242,7 +244,7 @@ static void vpn_plugin_class_init(VpnPluginClass* klass) {
 static void vpn_plugin_init(VpnPlugin* self) {
   self->transport = new vpn_plugin::TrustTunnelDBusTransport();
   self->engine = new vpn_plugin::LinuxVpnEngine(self->transport, on_engine_state, self);
-  self->connection_info_ring = new std::deque<std::string>();
+  self->connection_info_buffer = new vpn_plugin::ConnectionInfoBuffer(kConnectionInfoBufferSize);
   self->state_listening = FALSE;
   self->query_log_listening = FALSE;
 

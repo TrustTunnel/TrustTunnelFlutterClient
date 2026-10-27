@@ -17,6 +17,7 @@ list(APPEND PLUGIN_SOURCES
   "linux_vpn_engine.cc"
   "trusttunnel_dbus_transport.cc"
   "trusttunnel_deeplink.cc"
+  "connection_info_buffer.cc"
   "platform_api.g.cc"
 )
 
@@ -40,8 +41,10 @@ find_package(GTest REQUIRED)
 add_executable(${TEST_RUNNER}
   test/linux_vpn_engine_test.cc
   test/deep_link_test.cc
+  test/connection_info_buffer_test.cc
   linux_vpn_engine.cc
   trusttunnel_deeplink.cc
+  connection_info_buffer.cc
 )
 target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 if(COMMAND apply_standard_settings)

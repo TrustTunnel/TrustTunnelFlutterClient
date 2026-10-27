@@ -7,6 +7,10 @@
 
 namespace vpn_plugin {
 
+// "Disconnected" value shared by the daemon protocol, VpnEngineState and the
+// Pigeon VpnManagerState enum (all use 0 for disconnected).
+static constexpr int kVpnStateDisconnected = 0;
+
 // Result of an engine-issued Start/Stop request to the VPN daemon.
 enum class TransportCallResult {
   kSuccess,
@@ -27,6 +31,11 @@ struct TransportHandlers {
 // Transport interface between the VPN engine and the TrustTunnel daemon.
 // Implemented over D-Bus in production (trusttunnel_dbus_transport.cc) and
 // mocked in unit tests, so the engine logic stays hermetic.
+//
+// Threading: the Pigeon GObject generator has no @TaskQueue support, so the
+// engine methods are called on the Flutter platform thread; every D-Bus call
+// must therefore use a bounded timeout. Daemon events arrive on the main GLib
+// context.
 class TrustTunnelTransport {
  public:
   virtual ~TrustTunnelTransport() = default;
