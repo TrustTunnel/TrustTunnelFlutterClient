@@ -110,6 +110,8 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
 
         return AppExitResponse.cancel;
       }
+    }
+
     if (defaultTargetPlatform == TargetPlatform.linux) {
       final pendingExitRequest = _linuxExitRequest;
       if (pendingExitRequest != null) {
