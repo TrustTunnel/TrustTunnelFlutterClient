@@ -70,7 +70,7 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 target_link_libraries(${PLUGIN_NAME} PRIVATE Shell32 Ole32)
 
 # === Download and use prebuilt TrustTunnelClientWindows ===
-set(TRUSTTUNNEL_CLIENT_VERSION "1.3.0-beta.1")
+set(TRUSTTUNNEL_CLIENT_VERSION "1.3.0-rc.2")
 
 # Determine the archive architecture from the Visual Studio target platform.
 # CMAKE_SYSTEM_PROCESSOR may identify the host instead of the target.

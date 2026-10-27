@@ -21,6 +21,7 @@ abstract class LogsManagerScopeController {
 
   abstract final void Function({
     VoidCallback? onDeleted,
+    VoidCallback? onError,
   })
   deleteLogs;
 }

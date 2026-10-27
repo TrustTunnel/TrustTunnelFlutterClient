@@ -1,48 +1,31 @@
 import 'dart:async';
 import 'dart:ui' show AppExitResponse;
 
+import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:trusttunnel/common/localization/localization.dart';
-import 'package:trusttunnel/data/model/routing_profile.dart';
-import 'package:trusttunnel/data/model/server.dart';
-import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/linux/linux_exit_dialog.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/macos/macos_exit_dialog.dart';
-import 'package:trusttunnel/feature/menu_bar/tray_manager/windows/windows_exit_dialog.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
+import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
+import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/vpn/controller/vpn_controller.dart';
+import 'package:trusttunnel/feature/vpn/controller/vpn_logs_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_aspect.dart';
-import 'package:trusttunnel/feature/vpn/models/vpn_controller.dart';
-
-/// {@template vpn_scope_on_start_callback}
-/// Signature of the "start VPN" operation used by [VpnScope].
-///
-/// The callback starts a VPN session for the given [server] and [routingProfile]
-/// and applies [excludedRoutes] (typically CIDR ranges) and [logLevel] as part of the configuration.
-///
-/// The concrete behavior depends on the platform/backend implementation behind
-/// the repository, but the callback is expected to complete only after the
-/// start request has been handed off to the backend (not necessarily after a
-/// successful connection).
-/// {@endtemplate}
-typedef UpdateVpnCallback =
-    Future<void> Function({
-      required Server server,
-      required RoutingProfile routingProfile,
-      required List<String> excludedRoutes,
-      required VpnConfigurationLogLevel logLevel,
-    });
+import 'package:trusttunnel/feature/vpn/models/vpn_configuration_sources.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_controller.dart';
+import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_exit_handling_mixin.dart';
 
 /// {@template vpn_scope}
 /// Provides access to VPN state, logs, and control operations to a widget subtree.
 ///
 /// `VpnScope` is an app-level scope built on top of [InheritedModel] that exposes
 /// two "controllers" to descendants:
-/// - a [VpnController] (VPN lifecycle + current [VpnState])
+/// - a [VpnScopeController] (VPN lifecycle + current [VpnState])
 /// - a [LogController] (collected [VpnLog] entries)
 ///
 /// Descendants obtain these controllers using:
@@ -52,8 +35,8 @@ typedef UpdateVpnCallback =
 /// ## How updates and rebuilds work
 /// Internally, this scope uses [InheritedModel] with [VpnAspect] to support
 /// aspect-based subscriptions:
-/// - Consumers that subscribe to [VpnAspect.vpn] rebuild only when [VpnState]
-///   changes.
+/// - Consumers that subscribe to [VpnAspect.vpn] rebuild when VPN state,
+///   connection identity or exit status changes.
 /// - Consumers that subscribe to [VpnAspect.logs] rebuild only when the log list
 ///   changes.
 /// - If a consumer requests both aspects, it may rebuild on either change.
@@ -63,20 +46,21 @@ typedef UpdateVpnCallback =
 /// - Pass `listen: false` to read the controller without subscribing.
 ///
 /// ## VPN lifecycle and state
-/// `VpnScope` maintains a current [VpnState] value and updates it by subscribing
-/// to a state stream produced by [VpnRepository.listenToStates].
+/// [VpnController] owns the current VPN state. The scope forwards native updates
+/// from [VpnRepository.listenToStates] and exposes state through the controller.
 ///
-/// Calling [VpnController.start] will:
-/// 1) stop any existing session (by calling [VpnController.stop]),
-/// 2) start a new VPN session.
+/// Calling [VpnScopeController.connectToServer] attempts a connection using saved settings.
+/// Calling [VpnScopeController.selectAndConnectToServer] saves selection first.
+/// Both operations check cancellation before handing the start to native code.
+/// All VPN lifecycle operations, including confirmed exit, use the controller's handlers.
 ///
 /// State observation starts with the scope itself and remains active for the
 /// scope's entire lifetime, including when VPN changes are initiated outside
 /// the app.
 ///
-/// Calling [VpnController.stop] will:
-/// - call [VpnRepository.stop] when the VPN is not already disconnected,
-/// - reset [VpnController.state] to [VpnState.disconnected].
+/// Calling [VpnScopeController.disconnect] will:
+/// - call [VpnRepository.stop] for an active session or a submitted start,
+/// - wait for native confirmation before exposing [VpnState.disconnected].
 ///
 /// ## Logs collection
 /// Logs are collected by subscribing to [VpnRepository.listenToLogs].
@@ -105,7 +89,9 @@ typedef UpdateVpnCallback =
 /// `*MaybeOf` variants if you want a nullable result instead.
 /// {@endtemplate}
 class VpnScope extends StatefulWidget {
-  final AppWindowController? appWindowController;
+  /// Resolves the native window controller for error feedback and app exit.
+  /// Invoked only on macOS and Windows.
+  final ValueGetter<AppWindowController> appWindowControllerProvider;
 
   /// Repository used to start/stop the VPN and to listen for state/log updates.
   final VpnRepository vpnRepository;
@@ -120,7 +106,7 @@ class VpnScope extends StatefulWidget {
 
   /// {@macro vpn_scope}
   const VpnScope({
-    required this.appWindowController,
+    required this.appWindowControllerProvider,
     required this.child,
     required this.vpnRepository,
     this.initialState = VpnState.disconnected,
@@ -131,7 +117,7 @@ class VpnScope extends StatefulWidget {
   State<VpnScope> createState() => _VpnScopeState();
 
   /// {@template vpn_scope_vpn_controller_maybe_of}
-  /// Returns the nearest [VpnController] from the widget tree, or `null`.
+  /// Returns the nearest [VpnScopeController] from the widget tree, or `null`.
   ///
   /// If [listen] is `true` (default), the caller subscribes to [VpnAspect.vpn]
   /// and will rebuild when the VPN state changes.
@@ -139,11 +125,17 @@ class VpnScope extends StatefulWidget {
   /// If [listen] is `false`, the controller is read without establishing an
   /// inherited dependency, so the caller will not rebuild automatically.
   /// {@endtemplate}
-  static VpnController? vpnControllerMaybeOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.vpn);
+  static VpnScopeController? vpnControllerMaybeOf(
+    BuildContext context, {
+    bool listen = true,
+  }) => _accessScope(
+    context,
+    listen: listen,
+    aspect: VpnAspect.vpn,
+  )?.controller;
 
   /// {@template vpn_scope_vpn_controller_of}
-  /// Returns the nearest [VpnController] from the widget tree.
+  /// Returns the nearest [VpnScopeController] from the widget tree.
   ///
   /// If [listen] is `true` (default), the caller subscribes to [VpnAspect.vpn]
   /// and will rebuild when the VPN state changes.
@@ -151,8 +143,16 @@ class VpnScope extends StatefulWidget {
   /// Throws an [ArgumentError] if called outside of a [VpnScope] subtree.
   /// Use [vpnControllerMaybeOf] when a nullable result is acceptable.
   /// {@endtemplate}
-  static VpnController vpnControllerOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.vpn) ?? _notFoundInheritedWidgetOfExactType();
+  static VpnScopeController vpnControllerOf(
+    BuildContext context, {
+    bool listen = true,
+  }) =>
+      _accessScope(
+        context,
+        listen: listen,
+        aspect: VpnAspect.vpn,
+      )?.controller ??
+      _notFoundInheritedWidgetOfExactType();
 
   /// {@template vpn_scope_logs_controller_maybe_of}
   /// Returns the nearest [LogController] from the widget tree, or `null`.
@@ -163,8 +163,14 @@ class VpnScope extends StatefulWidget {
   /// If [listen] is `false`, the controller is read without establishing an
   /// inherited dependency.
   /// {@endtemplate}
-  static LogController? logsControllerMaybeOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.logs);
+  static LogController? logsControllerMaybeOf(
+    BuildContext context, {
+    bool listen = true,
+  }) => _accessScope(
+    context,
+    listen: listen,
+    aspect: VpnAspect.logs,
+  );
 
   /// {@template vpn_scope_logs_controller_of}
   /// Returns the nearest [LogController] from the widget tree.
@@ -175,10 +181,26 @@ class VpnScope extends StatefulWidget {
   /// Throws an [ArgumentError] if called outside of a [VpnScope] subtree.
   /// Use [logsControllerMaybeOf] when a nullable result is acceptable.
   /// {@endtemplate}
-  static LogController logsControllerOf(BuildContext context, {bool listen = true}) =>
-      _accessScope(context, listen: listen, aspect: VpnAspect.logs) ?? _notFoundInheritedWidgetOfExactType();
+  static LogController logsControllerOf(
+    BuildContext context, {
+    bool listen = true,
+  }) =>
+      _accessScope(
+        context,
+        listen: listen,
+        aspect: VpnAspect.logs,
+      ) ??
+      _notFoundInheritedWidgetOfExactType();
 
-  static _InheritedVpnScope? _accessScope(BuildContext context, {bool listen = true, VpnAspect? aspect}) => (listen
+  /// Errors are reported separately from synchronous VPN control methods.
+  static Listenable operationErrorsOf(BuildContext context) =>
+      _accessScope(context, listen: false)?.operationErrors ?? _notFoundInheritedWidgetOfExactType();
+
+  static _InheritedVpnScope? _accessScope(
+    BuildContext context, {
+    bool listen = true,
+    VpnAspect? aspect,
+  }) => (listen
       ? InheritedModel.inheritFrom<_InheritedVpnScope>(
           context,
           aspect: aspect,
@@ -192,419 +214,233 @@ class VpnScope extends StatefulWidget {
   );
 }
 
-class _VpnScopeState extends State<VpnScope> {
-  static const _logLimit = 500;
-
-  /// On Windows, `stop()` only queues service work, so `disconnected` may never arrive if it fails.
-  /// Limit the wait to avoid leaving the app exit request pending forever.
-  static const _windowsDisconnectOnExitTimeout = Duration(seconds: 5);
-
-  late final ValueNotifier<VpnState> _stateNotifier;
-  late final ValueNotifier<List<VpnLog>> _logsNotifier;
-
-  /// We need this notifier because exit handling and interaction with the related dialog are above the [MaterialApp],
-  /// and we need to listen to it across the app.
-  late final _DisconnectOnExitErrorNotifier _disconnectOnExitErrorNotifier;
+class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnScope> implements VpnScopeController {
+  late final VpnController _controller;
+  late final VpnLogsController _logsController;
 
   /// Listens to app lifecycle events (resume and exit requested).
   /// Handles desktop exit requests, including confirmation while VPN is active.
   late final AppLifecycleListener _appLifecycleListener;
 
+  /// Combined notifier for VPN lifecycle changes and collected logs.
+  /// The inherited model still filters descendant rebuilds by aspect.
+  late final Listenable _vpnChangesListenable;
+
+  /// VPN operation errors originate above the MaterialApp, so the UI listens here
+  /// to show feedback for both background updates and failed exit requests.
+  final _VpnOperationErrorNotifier _operationErrorNotifier = _VpnOperationErrorNotifier();
+
+  VpnConfigurationSources? _configurationSources;
   StreamSubscription<VpnLog>? _logStreamSub;
   StreamSubscription<VpnState>? _vpnStreamSub;
 
-  /// The pending exit request for Windows (the same reason as with the timeout)
-  Future<AppExitResponse>? _windowsExitRequest;
-  Future<AppExitResponse>? _linuxExitRequest;
+  @override
+  VpnState get state => _controller.state.vpnState;
 
-  // Tracks state updates so a delayed request cannot overwrite a newer VPN state.
-  int _vpnStateRevision = 0;
+  @override
+  String? get currentlyConnectedServerId => _controller.state.currentlyConnectedServerId;
 
-  bool get _shouldShowExitDialog => switch (_stateNotifier.value) {
-    VpnState.connected || VpnState.connecting => true,
-    VpnState.disconnected || VpnState.waitingForRecovery || VpnState.recovering || VpnState.waitingForNetwork => false,
+  @override
+  bool get isExitProcessing => _controller.state.isExitProcessing;
+
+  @override
+  bool get shouldShowExitDialog => _controller.shouldShowExitDialog;
+
+  @override
+  bool get isVpnDisconnectedForExit => _controller.isDisconnectedForExit;
+
+  @override
+  AppWindowController? get appWindowController => switch (defaultTargetPlatform) {
+    TargetPlatform.macOS || TargetPlatform.windows => widget.appWindowControllerProvider(),
+    _ => null,
   };
 
   @override
   void initState() {
     super.initState();
-    _stateNotifier = ValueNotifier(widget.initialState);
-    _logsNotifier = ValueNotifier(<VpnLog>[]);
-    _disconnectOnExitErrorNotifier = _DisconnectOnExitErrorNotifier();
+    _logsController = VpnLogsController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Dependencies are app-level scopes with the same lifetime as this scope.
+    if (_configurationSources != null) {
+      return;
+    }
+
+    final servers = ServersScope.controllerOf(context, listen: false);
+    final sources = VpnConfigurationSources(
+      serversScopeController: servers,
+      routingScopeController: RoutingScope.controllerOf(context, listen: false),
+      appLoggingScopeController: AppLoggingScope.controllerOf(context, listen: false),
+      excludedRoutesScopeController: ExcludedRoutesScope.controllerOf(context, listen: false),
+    );
+
+    _configurationSources = sources;
+    _controller = VpnController(
+      repository: widget.vpnRepository,
+      sources: sources,
+      saveSelection: servers.selectServer,
+      notifyOperationError: _onOperationError,
+      onExitStopped: completeVpnExitStop,
+      initialState: widget.initialState,
+    );
+    _vpnChangesListenable = Listenable.merge([_controller, _logsController]);
+
+    // VPN also runs while minimized, when only the tray is visible. Listen to settings directly
+    // so synchronization does not depend on Flutter scheduling a frame or rebuilding this scope.
+    sources.addListener(_controller.onSourcesChanged);
     _appLifecycleListener = AppLifecycleListener(
-      onResume: _onAppResumed,
+      onResume: _controller.onResumed,
       onExitRequested: _onExitRequested,
     );
+
+    _controller.onSourcesChanged();
     unawaited(_listenToVpnStates());
     unawaited(_listenToLogs());
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge(
-      [
-        _stateNotifier,
-        _logsNotifier,
-      ],
-    ),
+    listenable: _vpnChangesListenable,
     builder: (_, child) => _InheritedVpnScope(
-      logs: _logsNotifier.value,
-      state: _stateNotifier.value,
-      onStart: _start,
-      onStop: _stop,
-      onUpdate: _updateConfiguration,
-      onDeleteConfiguration: _deleteConfiguration,
-      disconnectOnExitErrorListenable: _disconnectOnExitErrorNotifier,
+      controller: this,
+      logs: _logsController.logs,
+      state: state,
+      currentlyConnectedServerId: currentlyConnectedServerId,
+      isExitProcessing: isExitProcessing,
+      operationErrors: _operationErrorNotifier,
       child: child!,
     ),
     child: widget.child,
   );
 
-  Future<void> _deleteConfiguration() async {
-    await _stop();
+  @override
+  void addListener(VoidCallback listener) => _controller.addListener(listener);
 
-    return widget.vpnRepository.deleteConfiguration();
-  }
+  @override
+  void removeListener(VoidCallback listener) => _controller.removeListener(listener);
 
-  Future<void> _start({
-    required Server server,
-    required RoutingProfile routingProfile,
-    required List<String> excludedRoutes,
-    required VpnConfigurationLogLevel logLevel,
-  }) async {
-    await _stop();
+  @override
+  void connectToServer(String serverId, {bool isFromAutomaticLaunch = false}) =>
+      _controller.connectToServer(serverId, isFromAutomaticLaunch: isFromAutomaticLaunch);
 
-    await widget.vpnRepository.start(
-      server: server,
-      routingProfile: routingProfile,
-      excludedRoutes: excludedRoutes,
-      logLevel: logLevel,
-    );
-  }
+  @override
+  void selectAndConnectToServer(String serverId) => _controller.selectAndConnectToServer(serverId);
 
-  Future<void> _updateConfiguration({
-    required Server server,
-    required RoutingProfile routingProfile,
-    required List<String> excludedRoutes,
-    required VpnConfigurationLogLevel logLevel,
-  }) => widget.vpnRepository.updateConfiguration(
-    server: server,
-    routingProfile: routingProfile,
-    excludedRoutes: excludedRoutes,
-    logLevel: logLevel,
-  );
+  @override
+  void disconnect() => _controller.disconnect();
 
-  /// Stops the VPN and immediately changes the state to disconnected.
-  Future<void> _stop() async {
-    if (_stateNotifier.value == VpnState.disconnected) {
+  @override
+  void onAppExiting() => _controller.onAppExiting();
+
+  @override
+  void cancelVpnExit() => _controller.cancelExit();
+
+  @override
+  void requestVpnStopForExit() => _controller.stopForExit();
+
+  /// Reveals the main window and notifies the UI about a VPN operation error.
+  @override
+  Future<void> notifyVpnOperationError() async {
+    if (!mounted) {
       return;
     }
 
-    await widget.vpnRepository.stop();
-    _setVpnState(VpnState.disconnected);
-  }
-
-  /// Stops the VPN and waits for the native side to report disconnection.
-  Future<void> _stopAndWaitUntilDisconnected({Duration? timeout}) async {
-    if (_stateNotifier.value == VpnState.disconnected) {
-      return;
-    }
-
-    final disconnectedCompleter = Completer<void>();
-    void disconnectedStateListener() {
-      if (_stateNotifier.value == VpnState.disconnected && !disconnectedCompleter.isCompleted) {
-        disconnectedCompleter.complete();
-      }
-    }
-
-    _stateNotifier.addListener(disconnectedStateListener);
     try {
-      // Future.wait combines stop() and the disconnected event; one timeout covers both.
-      final stopAndDisconnect = Future.wait<void>(
-        [widget.vpnRepository.stop(), disconnectedCompleter.future],
-        eagerError: true,
+      await appWindowController?.showMainWindow();
+    } catch (error, stackTrace) {
+      // Continue notifying the UI even if revealing the window itself fails.
+      logger.logError(
+        'Unable to show window after VPN operation error',
+        error: error,
+        stackTrace: stackTrace,
       );
-
-      if (timeout == null) {
-        await stopAndDisconnect;
-      } else {
-        await stopAndDisconnect.timeout(timeout);
-      }
-    } finally {
-      _stateNotifier.removeListener(disconnectedStateListener);
-      if (!disconnectedCompleter.isCompleted) {
-        disconnectedCompleter.complete();
-      }
-    }
-  }
-
-  void _setVpnState(VpnState state) {
-    _vpnStateRevision++;
-    _stateNotifier.value = state;
-  }
-
-  Future<void> _listenToVpnStates() async {
-    final stream = await widget.vpnRepository.listenToStates();
-    if (!mounted) {
-      return;
-    }
-
-    _vpnStreamSub = stream.listen(_setVpnState);
-  }
-
-  void _onLogCollected(VpnLog log) {
-    final limit = _logLimit;
-    var trimmedList = _logsNotifier.value;
-    if (_logsNotifier.value.length >= limit) {
-      trimmedList = trimmedList.sublist(_logsNotifier.value.length - limit);
-    }
-
-    _logsNotifier.value = [...trimmedList, log];
-  }
-
-  Future<void> _listenToLogs() async {
-    final stream = await widget.vpnRepository.listenToLogs();
-    if (!mounted) {
-      return;
-    }
-
-    _logStreamSub = stream.listen(_onLogCollected);
-  }
-
-  Future<void> _refreshState() async {
-    final revisionBeforeRequest = _vpnStateRevision;
-    final state = await widget.vpnRepository.requestState();
-    if (!mounted || revisionBeforeRequest != _vpnStateRevision) {
-      return;
-    }
-
-    _setVpnState(state);
-  }
-
-  void _onAppResumed() => unawaited(_refreshState());
-
-  Future<AppExitResponse> _onExitRequested() async {
-    if (defaultTargetPlatform == TargetPlatform.windows) {
-      final pendingExitRequest = _windowsExitRequest;
-      if (pendingExitRequest != null) {
-        return pendingExitRequest;
-      }
-
-      try {
-        final exitRequest = _handleWindowsExitRequested();
-        _windowsExitRequest = exitRequest;
-
-        return await exitRequest;
-      } finally {
-        _windowsExitRequest = null;
-      }
-    }
-
-    if (defaultTargetPlatform == TargetPlatform.linux) {
-      final pendingExitRequest = _linuxExitRequest;
-      if (pendingExitRequest != null) {
-        return pendingExitRequest;
-      }
-
-      try {
-        final exitRequest = _handleLinuxExitRequested();
-        _linuxExitRequest = exitRequest;
-
-        return await exitRequest;
-      } finally {
-        _linuxExitRequest = null;
-      }
-    }
-
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
-      return await _handleMacosExitRequested();
-    }
-
-    return AppExitResponse.exit;
-  }
-
-  Future<AppExitResponse> _handleLinuxExitRequested() async {
-    if (_shouldShowExitDialog) {
-      final localization = Localization.ln;
-      final result = await LinuxExitDialog.show(
-        title: localization.exitDialogTitle,
-        message: localization.exitDialogDescription,
-        quitButtonText: localization.quit,
-        dontQuitButtonText: localization.dontQuit,
-      ).onError((_, _) {
-        if (mounted) {
-          _disconnectOnExitErrorNotifier.notifyListeners();
-        }
-
-        return LinuxExitDialogResult.cancel;
-      });
-
-      if (!mounted || result != LinuxExitDialogResult.quit) {
-        return AppExitResponse.cancel;
-      }
-    }
-
-    if (!mounted) {
-      return AppExitResponse.cancel;
-    }
-
-    try {
-      // Bounded wait: a hung or crashed daemon must not keep the window open.
-      await _stopAndWaitUntilDisconnected(timeout: const Duration(seconds: 3));
-    } catch (_) {
-      // Fall through: the user asked to exit, so exit regardless.
-    }
-    return AppExitResponse.exit;
-  }
-
-  Future<AppExitResponse> _handleMacosExitRequested() async {
-    final appWindowController = widget.appWindowController;
-    if (appWindowController == null) {
-      throw StateError('AppWindowController must be provided on macOS');
-    }
-
-    if (_shouldShowExitDialog) {
-      final localization = Localization.ln;
-      final result =
-          await MacosExitDialog.show(
-            title: localization.exitDialogTitle,
-            message: localization.exitDialogDescription,
-            quitButtonText: localization.quit,
-            dontQuitButtonText: localization.dontQuit,
-          ).onError((_, _) {
-            if (mounted) {
-              _disconnectOnExitErrorNotifier.notifyListeners();
-            }
-
-            return MacosExitDialogResult.cancel;
-          });
-      if (!mounted || result != MacosExitDialogResult.quit) {
-        return AppExitResponse.cancel;
-      }
-    }
-
-    await _stopAndWaitUntilDisconnected();
-    await appWindowController.setPreventClose(false);
-
-    return AppExitResponse.exit;
-  }
-
-  Future<AppExitResponse> _handleWindowsExitRequested() async {
-    if (_shouldShowExitDialog) {
-      final localization = Localization.ln;
-      WindowsExitDialogResult result;
-
-      result =
-          await WindowsExitDialog.show(
-            title: localization.exitDialogTitle,
-            message: localization.exitDialogDescription,
-            quitButtonText: localization.quit,
-            dontQuitButtonText: localization.dontQuit,
-          ).onError((_, _) {
-            if (mounted) {
-              _disconnectOnExitErrorNotifier.notifyListeners();
-            }
-
-            return WindowsExitDialogResult.cancel;
-          });
-
-      if (!mounted || result != WindowsExitDialogResult.quit) {
-        return AppExitResponse.cancel;
-      }
-    }
-    if (!mounted) {
-      return AppExitResponse.cancel;
-    }
-
-    final disconnected = await _stopWindowsVpnWithWaitForDisconnection();
-    if (disconnected || (mounted && _stateNotifier.value == VpnState.disconnected)) {
-      return AppExitResponse.exit;
     }
 
     if (mounted) {
-      _disconnectOnExitErrorNotifier.notifyListeners();
+      _operationErrorNotifier.notifyListeners();
     }
-
-    return AppExitResponse.cancel;
   }
 
-  Future<bool> _stopWindowsVpnWithWaitForDisconnection() =>
-      _stopAndWaitUntilDisconnected(timeout: _windowsDisconnectOnExitTimeout).then(
-        (_) => true,
-        onError: (_) => false,
-      );
+  void _onOperationError() => unawaited(notifyVpnOperationError());
+
+  Future<void> _listenToVpnStates() async {
+    try {
+      final stream = await widget.vpnRepository.listenToStates();
+      if (!mounted) {
+        return;
+      }
+
+      _vpnStreamSub = stream.listen(_controller.onNativeStateChanged, onError: _controller.onSourceError);
+    } catch (error, stackTrace) {
+      _controller.onSourceError(error, stackTrace);
+    }
+  }
+
+  Future<void> _listenToLogs() async {
+    try {
+      final stream = await widget.vpnRepository.listenToLogs();
+      if (!mounted) {
+        return;
+      }
+
+      _logStreamSub = stream.listen(_logsController.onLogCollected, onError: _controller.onSourceError);
+    } catch (error, stackTrace) {
+      _controller.onSourceError(error, stackTrace);
+    }
+  }
+
+  Future<AppExitResponse> _onExitRequested() => handleAppExitRequested();
+
+  void _onSubscriptionError(Object error, StackTrace stackTrace) => logger.logError(
+    'Unable to cancel VPN subscription',
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   @override
   void dispose() {
+    disposeVpnExitHandling();
+    _configurationSources?.removeListener(_controller.onSourcesChanged);
     _appLifecycleListener.dispose();
-    _logStreamSub?.cancel().ignore();
-    _vpnStreamSub?.cancel().ignore();
-    _stateNotifier.dispose();
-    _logsNotifier.dispose();
-    _disconnectOnExitErrorNotifier.dispose();
+
+    unawaited(_logStreamSub?.cancel().catchError(_onSubscriptionError));
+    unawaited(_vpnStreamSub?.cancel().catchError(_onSubscriptionError));
+
+    _controller.dispose();
+    _logsController.dispose();
+    _operationErrorNotifier.dispose();
     super.dispose();
   }
 }
 
-class _DisconnectOnExitErrorNotifier extends ChangeNotifier {
+final class _VpnOperationErrorNotifier extends ChangeNotifier {
   @override
   void notifyListeners() => super.notifyListeners();
 }
 
-class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnController, LogController {
-  final AsyncCallback _onStop;
-  final AsyncCallback _onDeleteConfiguration;
-  final UpdateVpnCallback _onStart;
-  final UpdateVpnCallback _updateConfiguration;
+class _InheritedVpnScope extends InheritedModel<VpnAspect> implements LogController {
+  final VpnScopeController controller;
 
   @override
   final List<VpnLog> logs;
 
-  @override
   final VpnState state;
-
-  @override
-  final Listenable disconnectOnExitErrorListenable;
+  final String? currentlyConnectedServerId;
+  final bool isExitProcessing;
+  final Listenable operationErrors;
 
   const _InheritedVpnScope({
-    required this._onStart,
-    required UpdateVpnCallback onUpdate,
-    required this._onStop,
-    required this._onDeleteConfiguration,
-    required this.disconnectOnExitErrorListenable,
+    required this.controller,
     required this.state,
+    required this.currentlyConnectedServerId,
+    required this.isExitProcessing,
     required this.logs,
+    required this.operationErrors,
     required super.child,
-  }) : _updateConfiguration = onUpdate;
-
-  @override
-  Future<void> start({
-    required Server server,
-    required RoutingProfile routingProfile,
-    required List<String> excludedRoutes,
-    required VpnConfigurationLogLevel logLevel,
-  }) => _onStart(
-    server: server,
-    routingProfile: routingProfile,
-    excludedRoutes: excludedRoutes,
-    logLevel: logLevel,
-  );
-
-  @override
-  Future<void> updateConfiguration({
-    required Server server,
-    required RoutingProfile routingProfile,
-    required List<String> excludedRoutes,
-    required VpnConfigurationLogLevel logLevel,
-  }) => _updateConfiguration(
-    server: server,
-    routingProfile: routingProfile,
-    excludedRoutes: excludedRoutes,
-    logLevel: logLevel,
-  );
-
-  @override
-  Future<void> stop() => _onStop();
+  });
 
   @override
   bool updateShouldNotify(covariant _InheritedVpnScope oldWidget) =>
@@ -612,20 +448,25 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements VpnControl
 
   @override
   bool updateShouldNotifyDependent(covariant _InheritedVpnScope oldWidget, Set<VpnAspect> dependencies) {
-    if (dependencies.contains(VpnAspect.vpn) && _shouldNotifyVpnController(oldWidget)) {
+    final listensToVpn = dependencies.contains(VpnAspect.vpn);
+    if (listensToVpn && _shouldNotifyVpnController(oldWidget)) {
       return true;
     }
-    if (dependencies.contains(VpnAspect.logs) && _shouldNotifyLogController(oldWidget)) {
+
+    final listensToLogs = dependencies.contains(VpnAspect.logs);
+    if (listensToLogs && _shouldNotifyLogController(oldWidget)) {
       return true;
     }
 
     return false;
   }
 
-  @override
-  Future<void> deleteConfiguration() => _onDeleteConfiguration();
+  bool _shouldNotifyVpnController(_InheritedVpnScope oldWidget) {
+    final hasConnectionChanged =
+        oldWidget.state != state || oldWidget.currentlyConnectedServerId != currentlyConnectedServerId;
 
-  bool _shouldNotifyVpnController(_InheritedVpnScope oldWidget) => oldWidget.state != state;
+    return hasConnectionChanged || oldWidget.isExitProcessing != isExitProcessing;
+  }
 
   bool _shouldNotifyLogController(_InheritedVpnScope oldWidget) => !listEquals(oldWidget.logs, logs);
 }

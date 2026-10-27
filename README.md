@@ -1,8 +1,10 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_dark.svg" width="300px" alt="TrustTunnel" />
-    <img src="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg" width="300px" alt="TrustTunnel" />
-  </picture>
+  <a href="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg#gh-light-mode-only">
+    <img src="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg#gh-light-mode-only" width="300" alt="TrustTunnel" />
+  </a>
+  <a href="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_dark.svg#gh-dark-mode-only">
+    <img src="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_dark.svg#gh-dark-mode-only" width="300" alt="TrustTunnel" />
+  </a>
 </p>
 
 # <p align="center">TrustTunnel Flutter Client</p>
@@ -66,7 +68,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 
 Before working with the application, ensure that your environment is ready:
 
-- **Flutter SDK 3.44.8 or newer**
+- **Flutter SDK 3.47.8 or newer**
 - Android, iOS, and/or macOS development tooling configured on your system
 - Basic build utilities, including `make`
 
@@ -324,4 +326,3 @@ Connection state changes and errors displayed in the UI directly reflect real ne
 
 ## License
 Apache 2.0
-

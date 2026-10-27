@@ -3,6 +3,8 @@ import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 
 abstract class DeepLinkRepository {
+  Future<String> createLink({required ServerData server});
+
   Future<ServerData> parseDataFromLink({
     required String deepLink,
   });
@@ -14,6 +16,9 @@ class DeepLinkRepositoryImpl implements DeepLinkRepository {
   const DeepLinkRepositoryImpl({
     required this._serverDataSource,
   });
+
+  @override
+  Future<String> createLink({required ServerData server}) => _serverDataSource.createLink(server: server);
 
   @override
   Future<ServerData> parseDataFromLink({

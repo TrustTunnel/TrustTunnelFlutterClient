@@ -98,12 +98,22 @@ HICON TrayManagerPlugin::CreateIconFromPng(
     return nullptr;
   }
 
-  // Get dimensions
-  UINT width = 0, height = 0;
-  converter->GetSize(&width, &height);
-  if (width == 0 || height == 0) {
+  UINT source_width = 0, source_height = 0;
+  if (FAILED(converter->GetSize(&source_width, &source_height)) ||
+      source_width == 0 || source_height == 0)
     return nullptr;
-  }
+  const UINT dpi = MainWindow() ? GetDpiForWindow(MainWindow()) : 96;
+  const UINT width =
+      static_cast<UINT>(GetSystemMetricsForDpi(SM_CXSMICON, dpi ? dpi : 96));
+  const UINT height =
+      static_cast<UINT>(GetSystemMetricsForDpi(SM_CYSMICON, dpi ? dpi : 96));
+  if (!width || !height)
+    return nullptr;
+  ComPtr<IWICBitmapScaler> scaler;
+  if (FAILED(factory->CreateBitmapScaler(scaler.GetAddressOf())) ||
+      FAILED(scaler->Initialize(converter.Get(), width, height,
+                                WICBitmapInterpolationModeHighQualityCubic)))
+    return nullptr;
 
   // Create DIB section for color bitmap with alpha
   BITMAPV5HEADER bi = {};
@@ -125,14 +135,16 @@ HICON TrayManagerPlugin::CreateIconFromPng(
   ReleaseDC(nullptr, hdc);
 
   if (!hBitmap || !bits) {
+    if (hBitmap)
+      DeleteObject(hBitmap);
     return nullptr;
   }
 
   // Copy pixels
   UINT stride = width * 4;
   UINT bufferSize = stride * height;
-  hr = converter->CopyPixels(nullptr, stride, bufferSize,
-                             static_cast<BYTE *>(bits));
+  hr = scaler->CopyPixels(nullptr, stride, bufferSize,
+                          static_cast<BYTE *>(bits));
 
   if (FAILED(hr)) {
     DeleteObject(hBitmap);
@@ -140,7 +152,8 @@ HICON TrayManagerPlugin::CreateIconFromPng(
   }
 
   // Create monochrome mask bitmap
-  HBITMAP hMask = CreateBitmap(width, height, 1, 1, nullptr);
+  const std::vector<uint8_t> mask(((width + 15) / 16) * 2 * height, 0);
+  HBITMAP hMask = CreateBitmap(width, height, 1, 1, mask.data());
   if (!hMask) {
     DeleteObject(hBitmap);
     return nullptr;
@@ -261,6 +274,8 @@ TrayManagerPlugin::CreateBitmapFromPng(const std::vector<uint8_t> &png_data) {
   ReleaseDC(nullptr, hdc);
 
   if (!hBitmap || !bits) {
+    if (hBitmap)
+      DeleteObject(hBitmap);
     return nullptr;
   }
 

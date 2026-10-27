@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
+/// Icons for the app.
+///
+/// All icons sorted by the alphabetical order.
+///
+/// New icons are added by editing the font.
+/// Example: we get a new icon in SVG format, import it into the font using a specialized service or something similar,
+/// apply the same style to it as all the other icons, and then use the new, edited font and add the icon to the list.
 abstract class AssetIcons {
   static const IconData add = IconData(0xe800, fontFamily: _kFontFam);
-
   static const IconData anon = IconData(0xe801, fontFamily: _kFontFam);
   static const IconData arrowBack = IconData(0xe802, fontFamily: _kFontFam);
   static const IconData arrowDropDown = IconData(0xe803, fontFamily: _kFontFam);
@@ -11,15 +17,17 @@ abstract class AssetIcons {
   static const IconData arrowLeft = IconData(0xe806, fontFamily: _kFontFam);
   static const IconData arrowRight = IconData(0xe807, fontFamily: _kFontFam);
   static const IconData attach = IconData(0xe828, fontFamily: _kFontFam);
+  static const IconData attention = IconData(0xe82c, fontFamily: _kFontFam);
   static const IconData cancel = IconData(0xe808, fontFamily: _kFontFam);
-  static const IconData checkBoxFilled = IconData(0xe809, fontFamily: _kFontFam);
-  static const IconData checkBox = IconData(0xe80a, fontFamily: _kFontFam);
-  static const IconData checkSmall = IconData(0xe80b, fontFamily: _kFontFam);
   static const IconData check = IconData(0xe80c, fontFamily: _kFontFam);
+  static const IconData checkBox = IconData(0xe80a, fontFamily: _kFontFam);
+  static const IconData checkBoxFilled = IconData(0xe809, fontFamily: _kFontFam);
+  static const IconData checkSmall = IconData(0xe80b, fontFamily: _kFontFam);
   static const IconData close = IconData(0xe80d, fontFamily: _kFontFam);
   static const IconData copy = IconData(0xe80e, fontFamily: _kFontFam);
   static const IconData delete = IconData(0xe80f, fontFamily: _kFontFam);
   static const IconData dns = IconData(0xe810, fontFamily: _kFontFam);
+  static const IconData duplicate = IconData(0xe82b, fontFamily: _kFontFam);
   static const IconData error = IconData(0xe811, fontFamily: _kFontFam);
   static const IconData eye = IconData(0xe829, fontFamily: _kFontFam);
   static const IconData eyeClosed = IconData(0xe82a, fontFamily: _kFontFam);
@@ -37,12 +45,17 @@ abstract class AssetIcons {
   static const IconData radioButtonChecked = IconData(0xe81d, fontFamily: _kFontFam);
   static const IconData radioButtonUnchecked = IconData(0xe81e, fontFamily: _kFontFam);
   static const IconData route = IconData(0xe81f, fontFamily: _kFontFam);
-  static const IconData settingsFilled = IconData(0xe820, fontFamily: _kFontFam);
   static const IconData settings = IconData(0xe821, fontFamily: _kFontFam);
+  static const IconData settingsFilled = IconData(0xe820, fontFamily: _kFontFam);
   static const IconData share = IconData(0xe822, fontFamily: _kFontFam);
   static const IconData sort = IconData(0xe823, fontFamily: _kFontFam);
   static const IconData unlink = IconData(0xe824, fontFamily: _kFontFam);
   static const IconData up = IconData(0xe825, fontFamily: _kFontFam);
   static const IconData update = IconData(0xe826, fontFamily: _kFontFam);
+  static const IconData windowsExit = IconData(0xe82f, fontFamily: _kFontFam);
+  static const IconData windowsMaximize = IconData(0xe82d, fontFamily: _kFontFam);
+  static const IconData windowsMinimize = IconData(0xe830, fontFamily: _kFontFam);
+  static const IconData windowsRestore = IconData(0xe831, fontFamily: _kFontFam);
+
   static const _kFontFam = 'IconFont';
 }

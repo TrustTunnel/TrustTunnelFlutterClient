@@ -31,6 +31,7 @@ class TrayItemConverter extends Converter<TrayItem, Map<String, Object?>> {
     },
     TrayButton(
       :final title,
+      :final id,
       :final isEnabled,
       :final isChecked,
       :final icon,
@@ -39,6 +40,7 @@ class TrayItemConverter extends Converter<TrayItem, Map<String, Object?>> {
     ) =>
       _convertButton(
         title,
+        id,
         isEnabled,
         isChecked,
         icon,
@@ -59,13 +61,14 @@ class TrayItemConverter extends Converter<TrayItem, Map<String, Object?>> {
 
   Map<String, Object?> _convertButton(
     String title,
+    String? stableId,
     bool isEnabled,
     bool isChecked,
     TrayIcon? icon,
     VoidCallback? onTap,
     List<TrayItem> children,
   ) {
-    final id = _nextId();
+    final id = stableId ?? _nextId();
     if (onTap != null) {
       _callbacks[id] = onTap;
     }

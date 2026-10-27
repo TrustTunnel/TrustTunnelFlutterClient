@@ -5,6 +5,9 @@ import 'package:trusttunnel/common/error/model/presentation_code_exception.dart'
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
+import 'package:trusttunnel/common/utils/server_name_utils.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
+import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
@@ -30,7 +33,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
   });
 
   /// Make a purchase for the given product ID
-  void fetch() {
+  void fetch({required String Function(String name, int number) numberedName}) {
     handle(
       () async {
         setState(
@@ -48,9 +51,10 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
 
           if (serverName.isNotEmpty) {
             final servers = await _repository.getAllServers();
-            serverName = _detailsService.fallbackDuplicateNames(
-              serverName,
-              servers.map((server) => server.serverData.name).toSet(),
+            serverName = ServerNameUtils.findAvailable(
+              baseName: serverName,
+              otherNames: servers.map((server) => server.serverData.name),
+              numberedName: numberedName,
             );
           }
 
@@ -145,9 +149,12 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     bool? enableIpv6,
     String? pathToPemFile,
     VpnProtocol? protocol,
+    TlsFingerprint? tlsFingerprint,
     String? routingProfileId,
     List<String>? dnsServers,
     ValueData<String>? clientRandom,
+    TlsAuthenticationType? tlsAuthenticationType,
+    ValueData<String>? clientRandomAuthKey,
     ValueData<String>? customSni,
   }) => handle(
     () {
@@ -163,10 +170,13 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             username: (username ?? state.data.username).trim(),
             password: (password ?? state.data.password).trim(),
             vpnProtocol: protocol ?? state.data.vpnProtocol,
+            tlsFingerprint: tlsFingerprint ?? state.data.tlsFingerprint,
             routingProfileId: routingProfileId ?? state.data.routingProfileId,
             dnsServers: (dnsServers ?? state.data.dnsServers).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
             ipv6: enableIpv6 ?? state.data.ipv6,
             tlsPrefix: clientRandom == null ? null : ValueData(clientRandom.value?.trim()),
+            tlsAuthenticationType: tlsAuthenticationType,
+            clientRandomAuthKey: clientRandomAuthKey == null ? null : ValueData(clientRandomAuthKey.value?.trim()),
             customSni: customSni == null ? null : ValueData(customSni.value?.trim()),
           ),
         ),
@@ -189,6 +199,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             dnsServers: state.data.dnsServers.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
             ipv6: state.data.ipv6,
             tlsPrefix: ValueData(state.data.tlsPrefix?.trim()),
+            clientRandomAuthKey: ValueData(state.data.clientRandomAuthKey?.trim()),
             customSni: ValueData(state.data.customSni?.trim()),
           ),
           initialData: state.initialData,

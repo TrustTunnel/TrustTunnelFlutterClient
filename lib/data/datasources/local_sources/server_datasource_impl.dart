@@ -1,10 +1,14 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
+import 'package:trusttunnel/common/utils/server_endpoint_encoder.dart';
+import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
+import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
 import 'package:vpn_plugin/models/upstream_protocol.dart';
@@ -15,10 +19,7 @@ import 'package:vpn_plugin/models/upstream_protocol.dart';
 /// Server records are stored in the `servers` table, while DNS server entries
 /// are stored in `dnsServers` and linked by `serverId`.
 ///
-/// ### Consistency notes
-/// Some operations update multiple tables (server row + DNS rows). If strict
-/// atomicity is required, wrap these calls in a Drift transaction at a higher
-/// layer.
+/// Persist each new server, its DNS entries and certificate in one transaction.
 /// {@endtemplate}
 class ServerDataSourceImpl implements ServerDataSource {
   /// Drift database used for persistence.
@@ -34,17 +35,21 @@ class ServerDataSourceImpl implements ServerDataSource {
 
   /// {@macro server_data_source_add_new_server}
   @override
-  Future<Server> addNewServer({required ServerData request}) async {
-    final id = await database.servers.insertOnConflictUpdate(
+  Future<Server> addNewServer({required ServerData request}) => database.transaction(() async {
+    final serverId = await database.servers.insertOnConflictUpdate(
       db.ServersCompanion.insert(
         ipAddress: request.ipAddress,
+        selected: const Value(false),
         name: request.name,
         domain: request.domain,
         login: request.username,
         password: request.password,
         vpnProtocolId: request.vpnProtocol.value,
+        tlsFingerprint: Value(request.tlsFingerprint.value),
         ipv6Enabled: Value(request.ipv6),
         tlsPrefix: Value(request.tlsPrefix),
+        tlsAuthenticationType: Value(request.tlsAuthenticationType.value),
+        clientRandomAuthKey: Value(request.clientRandomAuthKey),
         routingProfileId: int.parse(
           request.routingProfileId,
         ),
@@ -55,7 +60,7 @@ class ServerDataSourceImpl implements ServerDataSource {
     await database.dnsServers.insertAll(
       request.dnsServers.map(
         (s) => db.DnsServersCompanion.insert(
-          serverId: id,
+          serverId: serverId,
           data: s,
         ),
       ),
@@ -63,12 +68,12 @@ class ServerDataSourceImpl implements ServerDataSource {
 
     if (request.certificate != null) {
       await database.certificateTable.insertOnConflictUpdate(
-        CertificateEncoder(serverId: id).convert(request.certificate!),
+        CertificateEncoder(serverId: serverId).convert(request.certificate!),
       );
     }
 
     return Server(
-      id: id.toString(),
+      id: serverId.toString(),
       serverData: ServerData(
         name: request.name,
         ipAddress: request.ipAddress,
@@ -76,15 +81,18 @@ class ServerDataSourceImpl implements ServerDataSource {
         username: request.username,
         password: request.password,
         vpnProtocol: request.vpnProtocol,
+        tlsFingerprint: request.tlsFingerprint,
         routingProfileId: request.routingProfileId,
         dnsServers: request.dnsServers,
         ipv6: request.ipv6,
         certificate: request.certificate,
         tlsPrefix: request.tlsPrefix,
+        tlsAuthenticationType: request.tlsAuthenticationType,
+        clientRandomAuthKey: request.clientRandomAuthKey,
         customSni: request.customSni,
       ),
     );
-  }
+  });
 
   /// {@macro server_data_source_get_all_servers}
   ///
@@ -92,7 +100,9 @@ class ServerDataSourceImpl implements ServerDataSource {
   /// and finally assembles [RawServer] instances.
   @override
   Future<List<Server>> getAllServers() async {
-    final serversRows = await database.select(database.servers).get();
+    final serversRows = await (database.select(
+      database.servers,
+    )..orderBy([(row) => OrderingTerm.asc(row.id)])).get();
     if (serversRows.isEmpty) return [];
 
     final certs = await database.select(database.certificateTable).get();
@@ -126,10 +136,13 @@ class ServerDataSourceImpl implements ServerDataSource {
             username: e.login,
             password: e.password,
             vpnProtocol: VpnProtocol.values.firstWhere((p) => p.value == e.vpnProtocolId),
+            tlsFingerprint: TlsFingerprint.values.firstWhere((f) => f.value == e.tlsFingerprint),
             dnsServers: dnsByServer[e.id] ?? const <String>[],
             routingProfileId: e.routingProfileId.toString(),
             certificate: cert,
             tlsPrefix: e.tlsPrefix,
+            tlsAuthenticationType: TlsAuthenticationType.values.firstWhere((t) => t.value == e.tlsAuthenticationType),
+            clientRandomAuthKey: e.clientRandomAuthKey,
             ipv6: e.ipv6Enabled,
             selected: e.selected,
             customSni: e.customSni,
@@ -141,16 +154,23 @@ class ServerDataSourceImpl implements ServerDataSource {
 
   /// {@macro server_data_source_set_selected_server_id}
   @override
-  Future<void> setSelectedServerId({required String? id}) async {
-    final updatePrevious = database.servers.update()..where((e) => e.selected.equals(true));
+  Future<void> setSelectedServerId({required String? id}) => database.transaction(() async {
+    final parsedId = id == null ? null : int.parse(id);
+    if (parsedId != null) {
+      final server = await (database.select(database.servers)..where((e) => e.id.equals(parsedId))).getSingleOrNull();
+      if (server == null) {
+        throw StateError('Server not found');
+      }
+    }
 
+    final updatePrevious = database.servers.update()..where((e) => e.selected.equals(true));
     await updatePrevious.write(const db.ServersCompanion(selected: Value(false)));
 
-    if (id != null) {
-      final updateCurrent = database.servers.update()..where((e) => e.id.equals(int.parse(id)));
+    if (parsedId != null) {
+      final updateCurrent = database.servers.update()..where((e) => e.id.equals(parsedId));
       await updateCurrent.write(const db.ServersCompanion(selected: Value(true)));
     }
-  }
+  });
 
   /// {@macro server_data_source_remove_server}
   @override
@@ -188,11 +208,14 @@ class ServerDataSourceImpl implements ServerDataSource {
         login: Value(request.username),
         password: Value(request.password),
         vpnProtocolId: Value(request.vpnProtocol.value),
+        tlsFingerprint: Value(request.tlsFingerprint.value),
         routingProfileId: Value(
           int.parse(request.routingProfileId),
         ),
         ipv6Enabled: Value(request.ipv6),
         tlsPrefix: Value(request.tlsPrefix),
+        tlsAuthenticationType: Value(request.tlsAuthenticationType.value),
+        clientRandomAuthKey: Value(request.clientRandomAuthKey),
         customSni: Value(request.customSni),
       ),
     );
@@ -238,16 +261,24 @@ class ServerDataSourceImpl implements ServerDataSource {
         username: server.login,
         password: server.password,
         vpnProtocol: VpnProtocol.values.firstWhere((p) => p.value == server.vpnProtocolId),
+        tlsFingerprint: TlsFingerprint.values.firstWhere((f) => f.value == server.tlsFingerprint),
         dnsServers: dnsServers.map((e) => e.data).toList(),
         routingProfileId: server.routingProfileId.toString(),
         selected: server.selected,
         ipv6: server.ipv6Enabled,
         tlsPrefix: server.tlsPrefix,
+        tlsAuthenticationType: TlsAuthenticationType.values.firstWhere((t) => t.value == server.tlsAuthenticationType),
+        clientRandomAuthKey: server.clientRandomAuthKey,
         certificate: cert == null ? null : _parseCert(cert),
         customSni: server.customSni,
       ),
     );
   }
+
+  @override
+  Future<String> createLink({required ServerData server}) => deepLinkManager.createLink(
+    endpoint: const ServerEndpointEncoder().convert(server),
+  );
 
   @override
   Future<ServerData> getServerByBase64({
@@ -258,6 +289,9 @@ class ServerDataSourceImpl implements ServerDataSource {
 
     return ServerData.empty(
       name: configuration.endpoint.name,
+      tlsFingerprint: const TlsProfileDecoder().convert(
+        configuration.endpoint.tlsProfile,
+      ),
       ipAddress: configuration.endpoint.addresses.first,
       domain: configuration.endpoint.hostName,
       username: configuration.endpoint.username,
@@ -271,6 +305,10 @@ class ServerDataSourceImpl implements ServerDataSource {
       routingProfileId: routingProfileId,
       ipv6: configuration.endpoint.hasIpv6,
       tlsPrefix: configuration.endpoint.clientRandom,
+      tlsAuthenticationType: configuration.endpoint.clientRandomAuthKey.isNotEmpty
+          ? TlsAuthenticationType.clientRandomAuthKey
+          : TlsAuthenticationType.clientRandom,
+      clientRandomAuthKey: configuration.endpoint.clientRandomAuthKey,
       certificate: configuration.endpoint.certificate.isEmpty
           ? null
           : Certificate(

@@ -12,6 +12,9 @@ final class TrayButton extends TrayItem {
   /// Display text for the menu item.
   final String title;
 
+  /// Stable identity across menu updates (for example a server ID).
+  final String? id;
+
   /// Whether the item is clickable. Disabled items appear grayed out.
   final bool isEnabled;
 
@@ -29,6 +32,7 @@ final class TrayButton extends TrayItem {
 
   const TrayButton({
     required this.title,
+    this.id,
     this.isEnabled = true,
     this.isChecked = false,
     this.icon,

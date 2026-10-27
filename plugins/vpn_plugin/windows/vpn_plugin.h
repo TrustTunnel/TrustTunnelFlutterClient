@@ -51,6 +51,26 @@ private:
     std::queue<flutter::EncodableValue> m_event_queue;
 };
 
+/**
+ * Implementation of the Pigeon IDeepLink host API.
+ */
+class DeepLinkImpl : public IDeepLink {
+public:
+    /**
+     * Decode a `tt://` deep-link URI into an `[endpoint]` TOML section.
+     * @param uri The `tt://...` deep-link URI to decode.
+     * @return The TOML section, or an error if the URI is invalid.
+     */
+    ErrorOr<std::string> Decode(const std::string& uri) override;
+
+    /**
+     * Encode an `[endpoint]` TOML section into a `tt://` deep-link URI.
+     * @param endpoint_toml A TOML section in the layout Decode produces.
+     * @return The `tt://...` deep-link URI, or an error if the TOML is invalid.
+     */
+    ErrorOr<std::string> Encode(const std::string& endpoint_toml) override;
+};
+
 class VpnPlugin : public flutter::Plugin, public IVpnManager {
 public:
     /**
@@ -73,9 +93,14 @@ public:
      * VPN_SELF_INSTALL (dev builds), it will be installed first; otherwise the
      * failure is logged and the app stays disconnected.
      * @param config The VPN configuration string.
+     * @param fall_into_recovery If true, failures during the initial connection
+     *        establishment enter the recovery algorithm instead of retrying a
+     *        fixed number of times.
      * @return Error if the operation cannot be initiated, nullopt otherwise.
      */
-    std::optional<FlutterError> Start(const std::string& config) override;
+    std::optional<FlutterError> Start(
+            const std::string& config,
+            bool fall_into_recovery) override;
 
     /**
      * Stop the VPN service.
@@ -160,13 +185,19 @@ private:
     /**
      * Start the VPN background service with the given configuration.
      * @param config The VPN configuration string.
+     * @param fall_into_recovery If true, failures during the initial connection
+     *        establishment enter the recovery algorithm instead of retrying a
+     *        fixed number of times.
      * @return 0 on success, error code otherwise.
      */
-    int32_t StartService(const std::string& config);
+    int32_t StartService(
+            const std::string& config,
+            bool fall_into_recovery);
 
     flutter::PluginRegistrarWindows* m_registrar;
     UIThreadDispatcher m_dispatcher;
     BackgroundWorker m_worker;
+    DeepLinkImpl m_deep_link_impl;
 
     std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>>
             m_state_channel;

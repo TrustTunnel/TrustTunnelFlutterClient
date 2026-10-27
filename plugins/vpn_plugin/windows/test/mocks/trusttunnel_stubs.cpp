@@ -13,9 +13,11 @@
  */
 
 #include "trusttunnel/trusttunnel.h"
+#include "trusttunnel/trusttunnel_deeplink.h"
 #include "trusttunnel/trusttunnel_service.h"
 #include "trusttunnel_stub_state.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -36,6 +38,7 @@ void TrusttunnelStubState::Reset() {
     start_return_value = 0;
     start_call_count = 0;
     last_start_config.clear();
+    last_start_fall_into_recovery = false;
 
     stop_return_value = 0;
     stop_call_count = 0;
@@ -52,6 +55,14 @@ void TrusttunnelStubState::Reset() {
     last_log_export_dir.clear();
 
     log_clear_call_count = 0;
+
+    decode_call_count = 0;
+    last_decode_uri.clear();
+    decode_result.clear();
+
+    encode_call_count = 0;
+    last_encode_toml.clear();
+    encode_result.clear();
 }
 
 TrusttunnelStubState& TrusttunnelStubState::Instance() {
@@ -61,6 +72,20 @@ TrusttunnelStubState& TrusttunnelStubState::Instance() {
 
 // Global accessor for tests — delegates to the singleton.
 static TrusttunnelStubState& g_stub = TrusttunnelStubState::Instance();
+
+// Copy a stub result the way the native deep-link API returns its output:
+// heap memory that the caller releases with trusttunnel_free_deeplink_string
+// (std::free). An empty result simulates a failed call (NULL).
+static char* DupStubResult(const std::string& result) {
+    if (result.empty()) {
+        return nullptr;
+    }
+    char* copy = static_cast<char*>(std::malloc(result.size() + 1));
+    if (copy != nullptr) {
+        std::memcpy(copy, result.c_str(), result.size() + 1);
+    }
+    return copy;
+}
 
 // ---------------------------------------------------------------------------
 // Stub implementations
@@ -87,10 +112,11 @@ int32_t trusttunnel_service_attach(
 }
 
 int32_t trusttunnel_service_start(
-        const char* toml_config) {
+        const char* toml_config, bool fall_into_recovery) {
     auto& s = g_stub;
     s.start_call_count++;
     s.last_start_config = toml_config ? toml_config : "";
+    s.last_start_fall_into_recovery = fall_into_recovery;
     return s.start_return_value;
 }
 
@@ -139,14 +165,33 @@ void trusttunnel_log_clear(void) {
 
 // Stubs for the non-service trusttunnel API (not used by VpnPlugin but
 // required to resolve all symbols from the header).
-void trusttunnel_start(const char*, on_state_changed_t, void*) {}
+void trusttunnel_start(const char*, bool, on_state_changed_t, void*) {}
 void trusttunnel_stop() {}
-trusttunnel_t* trusttunnel_start_ex(const char*, on_state_changed_t, void*,
+trusttunnel_t* trusttunnel_start_ex(const char*, bool, on_state_changed_t, void*,
         on_connection_info_t, void*) { return nullptr; }
 void trusttunnel_stop_ex(trusttunnel_t*) {}
 int32_t trusttunnel_service_install(const wchar_t*, const wchar_t*,
         const wchar_t*, const wchar_t*, const wchar_t*, const wchar_t*,
         const wchar_t*) { return 0; }
 int32_t trusttunnel_service_uninstall(const wchar_t*) { return 0; }
+
+// Stubs for the deep-link API used by DeepLinkImpl. Tests control the results
+// through TrusttunnelStubState::decode_result / encode_result; an empty result
+// makes the call fail, matching the native API's NULL-on-error contract.
+char* trusttunnel_decode_deeplink(const char* uri) {
+    auto& s = g_stub;
+    s.decode_call_count++;
+    s.last_decode_uri = uri ? uri : "";
+    return DupStubResult(s.decode_result);
+}
+
+char* trusttunnel_encode_deeplink(const char* endpoint_toml) {
+    auto& s = g_stub;
+    s.encode_call_count++;
+    s.last_encode_toml = endpoint_toml ? endpoint_toml : "";
+    return DupStubResult(s.encode_result);
+}
+
+void trusttunnel_free_deeplink_string(char* str) { std::free(str); }
 
 } // extern "C"

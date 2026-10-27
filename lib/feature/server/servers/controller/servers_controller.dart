@@ -1,75 +1,129 @@
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
+import 'package:trusttunnel/common/utils/server_name_utils.dart';
+import 'package:trusttunnel/data/model/server.dart';
+import 'package:trusttunnel/data/repository/auto_connect_on_launch_settings_repository.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
 import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 
-/// {@template products_controller}
-/// Controller for managing products and purchase operations.
+/// {@template servers_controller}
+/// Loads servers and persists the selected server and automatic launch target.
 /// {@endtemplate}
 final class ServersController extends BaseStateController<ServersState> with SequentialControllerHandler {
   final ServerRepository _repository;
+  final AutoConnectOnLaunchSettingsRepository _autoConnectOnLaunchSettingsRepository;
 
-  /// {@macro products_controller}
+  /// {@macro servers_controller}
   ServersController({
     required this._repository,
+    required this._autoConnectOnLaunchSettingsRepository,
     super.initialState = const ServersState.initial(),
   });
 
-  /// Make a purchase for the given product ID
-  void fetchServers() {
-    handle(
-      () async {
-        setState(
-          ServersState.loading(
-            servers: state.servers,
-          ),
-        );
+  /// Reloads the persisted server list.
+  void fetchServers() => handle(
+    () async {
+      setState(
+        ServersState.loading(
+          servers: state.servers,
+          pendingSelections: state.pendingSelections,
+        ),
+      );
 
-        final servers = await _repository.getAllServers();
+      final servers = await _repository.getAllServers();
+      setState(state.copyWith(servers: servers));
+    },
+    errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
 
-        setState(
-          ServersState.idle(
-            servers: servers,
-          ),
-        );
-      },
-      errorHandler: _onError,
-      completionHandler: _onCompleted,
-    );
-  }
+  /// Saves selection and the launch target without changing the VPN connection.
+  void selectServer(
+    String? serverId, {
+    VoidCallback? onSelected,
+    VoidCallback? onError,
+  }) => handle(
+    () async {
+      setState(state.copyWith(pendingSelections: state.pendingSelections + 1));
 
-  /// Load available products
-  void selectServer(String? serverId) {
-    handle(
-      () async {
-        final operatingServers = state.servers;
+      final operatingServers = state.servers;
 
-        setState(
-          ServersState.loading(
-            servers: operatingServers,
-          ),
-        );
+      setState(
+        ServersState.loading(
+          servers: operatingServers,
+          pendingSelections: state.pendingSelections,
+        ),
+      );
 
-        await _repository.setSelectedServerId(id: serverId);
+      await _repository.setSelectedServerId(id: serverId);
 
-        final servers = operatingServers
-            .map(
-              (e) => e.copyWith(serverData: e.serverData.copyWith(selected: e.id == serverId)),
-            )
-            .toList();
+      final servers = operatingServers
+          .map(
+            (server) => server.copyWith(serverData: server.serverData.copyWith(selected: server.id == serverId)),
+          )
+          .toList();
 
-        setState(
-          ServersState.idle(
-            servers: servers,
-          ),
-        );
-      },
-      errorHandler: _onError,
-      completionHandler: _onCompleted,
-    );
-  }
+      // Keep the confirmed DB choice visible if saving the launch target fails.
+      setState(state.copyWith(servers: servers));
+
+      await _autoConnectOnLaunchSettingsRepository.setLastServerId(serverId);
+    },
+    errorHandler: _onError,
+    completionHandler: () {
+      _onCompleted(completedSelections: 1);
+
+      final callback = state.error == null ? onSelected : onError;
+      callback?.call();
+    },
+  );
+
+  void duplicateServer({
+    required String serverId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<Server>? onDuplicated,
+    VoidCallback? onError,
+  }) => handle(
+    () async {
+      setState(
+        ServersState.loading(
+          servers: state.servers,
+          pendingSelections: state.pendingSelections,
+        ),
+      );
+
+      final currentServers = await _repository.getAllServers();
+      final originalServer = currentServers.firstWhere(
+        (server) => server.id == serverId,
+        orElse: () => throw const PresentationNotFoundException(),
+      );
+
+      final duplicateName = ServerNameUtils.findAvailable(
+        baseName: originalServer.serverData.name,
+        otherNames: currentServers.map((server) => server.serverData.name),
+        preferredName: numberedName(originalServer.serverData.name.trim(), 0),
+        numberedName: numberedName,
+      );
+
+      final duplicate = await _repository.addNewServer(
+        request: originalServer.serverData.copyWith(
+          name: duplicateName,
+          selected: false,
+        ),
+      );
+      final servers = await _repository.getAllServers();
+      setState(ServersState.idle(servers: servers, pendingSelections: state.pendingSelections));
+      if (!isDisposed) onDuplicated?.call(duplicate);
+    },
+    errorHandler: (error, stackTrace) {
+      _onError(error, stackTrace);
+      onError?.call();
+    },
+    completionHandler: _onCompleted,
+  );
 
   PresentationException _parseException(
     Object? exception,
@@ -77,20 +131,25 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     exception: exception,
   );
 
-  Future<void> _onError(Object? error, StackTrace _) async {
+  void _onError(Object? error, StackTrace _) {
     final presentationException = _parseException(error);
 
     setState(
       ServersState.exception(
         exception: presentationException,
         servers: state.servers,
+        pendingSelections: state.pendingSelections,
       ),
     );
   }
 
-  Future<void> _onCompleted() async => setState(
-    ServersState.idle(
-      servers: state.servers,
-    ),
-  );
+  void _onCompleted({int completedSelections = 0}) {
+    final pendingSelections = state.pendingSelections - completedSelections;
+
+    setState(
+      state.error == null
+          ? ServersState.idle(servers: state.servers, pendingSelections: pendingSelections)
+          : state.copyWith(pendingSelections: pendingSelections),
+    );
+  }
 }

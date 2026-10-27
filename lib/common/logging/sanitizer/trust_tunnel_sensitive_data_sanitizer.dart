@@ -14,6 +14,8 @@ class TrustTunnelSensitiveDataSanitizer {
   /// Rules that are masked in all logging modes.
   static const Set<String> _alwaysMaskedKeys = {
     'password',
+    'clientRandomAuthKey',
+    'client_random_auth_key',
     'pass',
     'subscription',
     'subscriptionUrl',
@@ -24,6 +26,12 @@ class TrustTunnelSensitiveDataSanitizer {
     'configuration_link',
     'addServerLink',
     'add_server_link',
+    'clientRandom',
+    'client_random',
+    'tlsPrefix',
+    'tls_prefix',
+    'certificate',
+    'pem',
   };
 
   /// Rules that are additionally masked in stripped logging mode.
@@ -55,12 +63,6 @@ class TrustTunnelSensitiveDataSanitizer {
 
   /// Rules whose values are reduced to an empty/filled placeholder in stripped logging mode.
   static const Set<String> _strippedPresenceKeys = {
-    'clientRandom',
-    'client_random',
-    'tlsPrefix',
-    'tls_prefix',
-    'certificate',
-    'pem',
     'excludedRoutes',
     'excluded_routes',
     'initialExcludedRoutes',
@@ -131,19 +133,17 @@ class TrustTunnelSensitiveDataSanitizer {
     LoggingSecurityType securityType,
     List<_SensitiveKeyMatcher> keyMatchers,
     Set<Object> visited,
-  ) =>
-      (switch (value) {
-            null || num() || bool() || DateTime() => value,
-            String() => _sanitizeText(value, securityType),
-            Uri() => _sanitizeText(value.toString(), securityType),
-            Object() => _sanitizeTrackedPayload(
-              value,
-              securityType,
-              keyMatchers,
-              visited,
-            ),
-          })
-          as T?;
+  ) => (switch (value) {
+    null || num() || bool() || DateTime() => value,
+    String() => _sanitizeText(value, securityType),
+    Uri() => _sanitizeText(value.toString(), securityType),
+    Object() => _sanitizeTrackedPayload(
+      value,
+      securityType,
+      keyMatchers,
+      visited,
+    ),
+  }) as T?;
 
   Object? _sanitizeTrackedPayload(
     Object value,

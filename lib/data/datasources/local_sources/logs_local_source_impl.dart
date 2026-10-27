@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
@@ -73,14 +74,41 @@ final class LogsLocalSourceImpl implements LogsLocalSource {
     ExportFileType type = ExportFileType.any,
     List<String>? allowedExtensions,
     Uint8List? data,
-  }) => _filePicker.saveFile(
-    dialogTitle: dialogTitle,
-    fileName: fileName,
-    initialDirectory: initialDirectory,
-    type: _mapExportFileType(type),
-    allowedExtensions: allowedExtensions,
-    bytes: data,
-  );
+  }) async {
+    // Log export is available from the tray, and the main window may be hidden
+    // while the archive is being created. The native dialog restores the window
+    // immediately before opening and explicitly uses its HWND as the owner.
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      final extensions = type == ExportFileType.custom ? allowedExtensions : null;
+      final path = await const MethodChannel('trusttunnel/windows_main_window').invokeMethod<String>(
+        'pickSaveFilePath',
+        {
+          'dialogTitle': dialogTitle,
+          'fileName': fileName,
+          'initialDirectory': initialDirectory,
+          'allowedExtensions': extensions,
+          'defaultExtension': extensions == null || extensions.isEmpty ? null : extensions.first,
+        },
+      );
+      if (path != null && data != null)
+        await saveRawFile(
+          data: data,
+          path: path,
+          temporary: false,
+        );
+
+      return path;
+    }
+
+    return _filePicker.saveFile(
+      dialogTitle: dialogTitle,
+      fileName: fileName,
+      initialDirectory: initialDirectory,
+      type: _mapExportFileType(type),
+      allowedExtensions: allowedExtensions,
+      bytes: data,
+    );
+  }
 
   @override
   Future<String> saveRawFile({

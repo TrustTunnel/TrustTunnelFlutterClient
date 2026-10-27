@@ -199,6 +199,8 @@ final class ServerSnapshot {
   final bool selected;
   final bool ipv6;
   final String? tlsPrefix;
+  final String tlsAuthenticationType;
+  final String? clientRandomAuthKey;
   final CertificateSnapshot? certificate;
 
   const ServerSnapshot({
@@ -214,6 +216,8 @@ final class ServerSnapshot {
     required this.selected,
     required this.ipv6,
     required this.tlsPrefix,
+    required this.tlsAuthenticationType,
+    required this.clientRandomAuthKey,
     required this.certificate,
   });
 
@@ -230,6 +234,8 @@ final class ServerSnapshot {
     selected: server.serverData.selected,
     ipv6: server.serverData.ipv6,
     tlsPrefix: server.serverData.tlsPrefix,
+    tlsAuthenticationType: server.serverData.tlsAuthenticationType.name,
+    clientRandomAuthKey: server.serverData.clientRandomAuthKey,
     certificate: server.serverData.certificate == null
         ? null
         : CertificateSnapshot.fromCertificate(server.serverData.certificate!),
@@ -248,6 +254,8 @@ final class ServerSnapshot {
     'selected': selected,
     'ipv6': ipv6,
     'tlsPrefix': tlsPrefix,
+    'tlsAuthenticationType': tlsAuthenticationType,
+    'clientRandomAuthKey': clientRandomAuthKey,
     'certificate': certificate?.toJson(),
   };
 }

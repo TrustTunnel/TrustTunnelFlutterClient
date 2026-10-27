@@ -68,7 +68,7 @@ class WindowManager {
 
   virtual ~WindowManager();
 
-  HWND native_window;
+  HWND native_window = nullptr;
 
   int last_state = STATE_NORMAL;
 

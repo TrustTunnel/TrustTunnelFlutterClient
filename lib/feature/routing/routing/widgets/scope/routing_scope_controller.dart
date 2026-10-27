@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 
-abstract class RoutingScopeController {
+abstract class RoutingScopeController implements Listenable {
   abstract final List<RoutingProfile> routingList;
   abstract final List<PresentationField> fieldErrors;
   abstract final PresentationException? error;

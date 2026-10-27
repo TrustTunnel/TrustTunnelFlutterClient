@@ -1,14 +1,14 @@
 name: tray_manager
-version: 0.1.0
+version: 0.1.1-rc.1
 publish_to: 'none'
 
 resolution: workspace
 
-description: "TrustTunnel macOS status bar tray API and menu models."
+description: "TrustTunnel macOS and Windows system tray API and menu models."
 
 environment:
-  sdk: ^3.12.2
-  flutter: ">=3.44.8"
+  sdk: ^3.13.5
+  flutter: ">=3.47.8"
 
 dependencies:
   flutter:
@@ -22,3 +22,5 @@ flutter:
     platforms:
       macos:
         pluginClass: TrayManagerMacosPlugin
+      windows:
+        pluginClass: TrayManagerPluginCApi

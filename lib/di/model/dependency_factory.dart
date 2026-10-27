@@ -14,13 +14,11 @@ import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_dat
 import 'package:trusttunnel/data/datasources/local_sources/auto_connect_on_launch_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
-import 'package:trusttunnel/data/datasources/local_sources/logs_export_destination_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_local_source_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
-import 'package:trusttunnel/data/datasources/logs_export_destination_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/native_sources/launch_at_login_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/native_sources/open_main_window_on_login_datasource_impl.dart';
@@ -33,7 +31,10 @@ import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/linux_app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/macos_app_window_controller.dart';
+import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
 import 'package:vpn_plugin/deep_link_manager.dart';
+import 'package:vpn_plugin/domain/configuration_codec.dart';
+import 'package:vpn_plugin/platform_api.g.dart' show IDeepLink;
 import 'package:vpn_plugin/vpn_plugin.dart';
 
 abstract class DependencyFactory {
@@ -65,14 +66,14 @@ abstract class DependencyFactory {
 
   LogsLocalSource get exportLogsLocalSource;
 
-  LogsExportDestinationDataSource get logsExportDestinationDataSource;
-
   LaunchAtLoginDataSource get launchAtLoginDataSource;
 
   OpenMainWindowOnLoginDataSource get openMainWindowOnLoginDataSource;
 
   AutoConnectOnLaunchSettingsDataSource get autoConnectOnLaunchSettingsDataSource;
 
+  /// Returns the cached native window controller on macOS and Windows.
+  /// Throws on platforms without native window control.
   AppWindowController get appWindowController;
 
   db.AppDatabase get database;
@@ -116,8 +117,6 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   LogsLocalSource? _exportLogsLocalSource;
 
-  LogsExportDestinationDataSource? _logsExportDestinationDataSource;
-
   LaunchAtLoginDataSource? _launchAtLoginDataSource;
 
   OpenMainWindowOnLoginDataSource? _openMainWindowOnLoginDataSource;
@@ -135,7 +134,11 @@ class DependencyFactoryImpl implements DependencyFactory {
   VpnPlugin get vpnPlugin => _vpnPlugin ??= VpnPluginImpl();
 
   @override
-  DeepLinkManager get deepLinkManager => _deepLinkManager ??= DeepLinkManagerImpl();
+  DeepLinkManager get deepLinkManager => _deepLinkManager ??= DeepLinkManagerImpl(
+    deepLinkParser: IDeepLink(),
+    codec: const ConfigurationCodec(),
+    endpointEncoder: const EndpointEncoder(),
+  );
 
   @override
   SettingsDataSource get settingsDataSource => _settingsDataSource ??= SettingsDataSourceImpl(database: database);
@@ -189,12 +192,6 @@ class DependencyFactoryImpl implements DependencyFactory {
   );
 
   @override
-  LogsExportDestinationDataSource get logsExportDestinationDataSource =>
-      _logsExportDestinationDataSource ??= LogsExportDestinationDataSourceImpl(
-        filePicker: FilePicker.platform,
-      );
-
-  @override
   LaunchAtLoginDataSource get launchAtLoginDataSource => _launchAtLoginDataSource ??= LaunchAtLoginDataSourceImpl();
 
   @override
@@ -208,9 +205,10 @@ class DependencyFactoryImpl implements DependencyFactory {
       );
 
   @override
-  AppWindowController get appWindowController => _appWindowController ??= switch (defaultTargetPlatform) {
-    TargetPlatform.macOS => MacOSAppWindowController(),
-    TargetPlatform.linux => LinuxAppWindowController(),
+  AppWindowController get appWindowController => switch (defaultTargetPlatform) {
+    TargetPlatform.macOS => _appWindowController ??= MacOSAppWindowController(),
+    TargetPlatform.windows => _appWindowController ??= WindowsAppWindowController(),
+    TargetPlatform.linux => _appWindowController ??= LinuxAppWindowController(),
     _ => throw UnsupportedError('AppWindowController is not supported on ${defaultTargetPlatform.name}'),
   };
 

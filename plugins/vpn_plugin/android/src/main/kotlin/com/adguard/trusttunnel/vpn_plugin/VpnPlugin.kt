@@ -35,6 +35,7 @@ class VpnPlugin :
     private lateinit var deepLinkImpl: DeepLinkImpl
 
     private var pendingConfig: String? = null
+    private var pendingFallIntoRecovery: Boolean = false
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         appContext = binding.applicationContext
@@ -85,30 +86,33 @@ class VpnPlugin :
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == REQ_VPN_PREPARE) {
             val cfg = pendingConfig
+            val fallIntoRecovery = pendingFallIntoRecovery
             pendingConfig = null
+            pendingFallIntoRecovery = false
             if (cfg != null && resultCode == Activity.RESULT_OK) {
                 val ctx = activity ?: appContext
-                vpnImpl.startPrepared(ctx, cfg)
+                vpnImpl.startPrepared(ctx, cfg, fallIntoRecovery)
             }
             return true
         }
         return false
     }
 
-    override fun start(config: String) {
+    override fun start(config: String, fallIntoRecovery: Boolean) {
         val act = activity
         if (act != null) {
             val prepare = AndroidVpnService.prepare(act)
             if (prepare == null) {
-                vpnImpl.startPrepared(act, config)
+                vpnImpl.startPrepared(act, config, fallIntoRecovery)
             } else {
                 pendingConfig = config
+                pendingFallIntoRecovery = fallIntoRecovery
                 act.startActivityForResult(prepare, REQ_VPN_PREPARE)
             }
         } else {
             val prepare = AndroidVpnService.prepare(appContext)
             if (prepare == null) {
-                vpnImpl.startPrepared(appContext, config)
+                vpnImpl.startPrepared(appContext, config, fallIntoRecovery)
             }
         }
     }

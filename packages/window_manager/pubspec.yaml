@@ -1,22 +1,15 @@
 name: window_manager
-description: This plugin allows Flutter desktop apps to resizing and repositioning the window.
-version: 0.4.2
-homepage: https://github.com/leanflutter/window_manager
+description: Internal window management plugin for TrustTunnel desktop clients.
+version: 0.5.0-rc.1
+publish_to: none
 
 platforms:
   linux:
   macos:
   windows:
 
-topics:
-  - window
-  - window-resize
-  - window-manager
-  - desktop
-  - desktop-window
-
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.8.0
   flutter: ">=3.3.0"
 
 resolution: workspace
@@ -28,7 +21,7 @@ dependencies:
   screen_retriever: ^0.2.0
 
 dev_dependencies:
-  dependency_validator: ^3.0.0
+  dependency_validator: ^5.1.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0

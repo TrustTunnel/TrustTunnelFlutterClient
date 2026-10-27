@@ -51,12 +51,22 @@ class LightTheme {
   static const _specialStaticWhiteHover = Color(0xFFF6F7F9);
   static const _specialStaticWhitePressed = Color(0xFFE6EAEF);
   static const _specialStaticWhiteDisabled = Color(0x80FFFFFF);
-  static const _staticTransparent = Colors.transparent;
-
-  static const _appSystemTitleBarBackground = Color(0xFFFFFFFF);
-  static const _appSystemTitleBarTitle = Color(0xFF3D3D3D);
-
   static const _dumInputDecorationIdleColor = Color(0xFF73859D);
+
+  // System colors
+  static const _transparent = Colors.transparent;
+
+  static const _macOSSystemTitleBarBackground = Color(0xFFFFFFFF);
+  static const _macOSSystemTitleBarTitle = Color(0xFF3D3D3D);
+
+  static const _windowsSystemTitleBarBackground = Color(0xFFE6EAEF);
+  static const _windowsSystemTitleBarTitle = Color(0xFF3D3D3D);
+  static const _windowsSystemTitleBarCloseButtonBackgroundHover = Color(0xFFE81123);
+  static const _windowsSystemTitleBarCloseButtonBackgroundPressed = Color(0xFFC50F1F);
+  static const _windowsSystemTitleBarCloseButtonForeground = Color(0xFFFFFFFF);
+  static const _windowsSystemTitleBarTitleInactive = Color(0x993D3D3D);
+  static const _windowsSystemTitleBarButtonBackgroundHover = Color(0x14000000);
+  static const _windowsSystemTitleBarButtonBackgroundPressed = Color(0x29000000);
 
   // Legacy colors
   static const _primary1 = Color(0xFF67B279);
@@ -104,6 +114,19 @@ class LightTheme {
     systemStatusBarContrastEnforced: false,
   );
 
+  late final _scrollbarTheme = ScrollbarThemeData(
+    thumbVisibility: WidgetStateProperty.all<bool>(true),
+    thumbColor: WidgetStateProperty.all<Color>(
+      _neutralLight.withValues(
+        alpha: 0.5,
+      ),
+    ),
+    mainAxisMargin: 12,
+    crossAxisMargin: 4,
+    thickness: const WidgetStatePropertyAll(4),
+    radius: const Radius.circular(100),
+  );
+
   late final _customColors = const CustomColors(
     accent: _accent,
     accentHover: _accentHover,
@@ -142,9 +165,17 @@ class LightTheme {
     specialStaticWhiteHover: _specialStaticWhiteHover,
     specialStaticWhitePressed: _specialStaticWhitePressed,
     specialStaticWhiteDisabled: _specialStaticWhiteDisabled,
-    staticTransparent: _staticTransparent,
-    appSystemTitleBarBackground: _appSystemTitleBarBackground,
-    appSystemTitleBarTitle: _appSystemTitleBarTitle,
+    transparent: _transparent,
+    macOSSystemTitleBarBackground: _macOSSystemTitleBarBackground,
+    macOSSystemTitleBarTitle: _macOSSystemTitleBarTitle,
+    windowsSystemTitleBarBackground: _windowsSystemTitleBarBackground,
+    windowsSystemTitleBarTitle: _windowsSystemTitleBarTitle,
+    windowsSystemTitleBarTitleInactive: _windowsSystemTitleBarTitleInactive,
+    windowsSystemTitleBarButtonBackgroundHover: _windowsSystemTitleBarButtonBackgroundHover,
+    windowsSystemTitleBarButtonBackgroundPressed: _windowsSystemTitleBarButtonBackgroundPressed,
+    windowsSystemTitleBarCloseButtonBackgroundHover: _windowsSystemTitleBarCloseButtonBackgroundHover,
+    windowsSystemTitleBarCloseButtonBackgroundPressed: _windowsSystemTitleBarCloseButtonBackgroundPressed,
+    windowsSystemTitleBarCloseButtonForeground: _windowsSystemTitleBarCloseButtonForeground,
     primary1: _primary1,
     primary2: _primary2,
     primary3: _primary3,
@@ -214,7 +245,7 @@ class LightTheme {
 
         if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _backgroundSystem;
 
-        return _staticTransparent;
+        return _transparent;
       },
     ),
     shape: RoundedRectangleBorder(
@@ -225,7 +256,13 @@ class LightTheme {
   late final _iconButtonThemeData = IconButtonThemeData(
     style: ButtonStyle(
       shape: const WidgetStatePropertyAll(
-        CircleBorder(),
+        RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.all(
+            Radius.circular(
+              4.0,
+            ),
+          ),
+        ),
       ),
       foregroundColor: const WidgetStatePropertyAll(
         _specialStaticWhite,
@@ -266,7 +303,7 @@ class LightTheme {
             states.contains(WidgetState.pressed))
           return _backgroundSystem;
 
-        return _staticTransparent;
+        return _transparent;
       },
     ),
   );
@@ -309,7 +346,7 @@ class LightTheme {
         return _contrast1;
       },
     ),
-    overlayColor: const WidgetStatePropertyAll(_staticTransparent),
+    overlayColor: const WidgetStatePropertyAll(_transparent),
     trackOutlineWidth: WidgetStateProperty.resolveWith(
       (states) {
         if (!states.contains(WidgetState.selected)) return 2;
@@ -347,6 +384,50 @@ class LightTheme {
     smallSize: 6,
     largeSize: 16,
     padding: const EdgeInsets.symmetric(horizontal: 4),
+  );
+
+  late final _windowsCaptionButtonStyle = ButtonStyle(
+    backgroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.pressed)) {
+        return _windowsSystemTitleBarButtonBackgroundPressed;
+      }
+      if (states.contains(WidgetState.hovered)) {
+        return _windowsSystemTitleBarButtonBackgroundHover;
+      }
+
+      return _transparent;
+    }),
+    foregroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) {
+        return _windowsSystemTitleBarTitleInactive;
+      }
+
+      return _windowsSystemTitleBarTitle;
+    }),
+  );
+
+  late final _customWindowsCaptionButtonTheme = CustomWindowsCaptionButtonTheme(
+    regular: _windowsCaptionButtonStyle,
+    close: _windowsCaptionButtonStyle.copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          return _windowsSystemTitleBarCloseButtonBackgroundPressed;
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return _windowsSystemTitleBarCloseButtonBackgroundHover;
+        }
+
+        return _transparent;
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
+          return _windowsSystemTitleBarCloseButtonForeground;
+        }
+
+        return _windowsCaptionButtonStyle.foregroundColor?.resolve(states);
+      }),
+    ),
+    focusBorderColor: _windowsSystemTitleBarTitle,
   );
 
   late final _customFilledButtonTheme = CustomFilledButtonTheme(
@@ -495,7 +576,7 @@ class LightTheme {
 
   late final _outlinedButtonThemeData = OutlinedButtonThemeData(
     style: _filledButtonTheme.style?.copyWith(
-      backgroundColor: const WidgetStatePropertyAll(_staticTransparent),
+      backgroundColor: const WidgetStatePropertyAll(_transparent),
       foregroundColor: WidgetStateProperty.resolveWith(
         (states) {
           if (states.contains(WidgetState.disabled)) return _neutralLight;
@@ -533,7 +614,7 @@ class LightTheme {
 
   late final _textButtonThemeData = TextButtonThemeData(
     style: _filledButtonTheme.style?.copyWith(
-      backgroundColor: const WidgetStatePropertyAll(_staticTransparent),
+      backgroundColor: const WidgetStatePropertyAll(_transparent),
       foregroundColor: WidgetStateProperty.resolveWith(
         (states) {
           if (states.contains(WidgetState.disabled)) return _neutralLight;
@@ -546,7 +627,7 @@ class LightTheme {
           if (states.contains(WidgetState.pressed)) return _backgroundPressed;
           if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) return _backgroundHover;
 
-          return _staticTransparent;
+          return _transparent;
         },
       ),
       padding: const WidgetStatePropertyAll(
@@ -559,9 +640,9 @@ class LightTheme {
   );
 
   late final _appBarTheme = AppBarTheme(
-    backgroundColor: _staticTransparent,
-    surfaceTintColor: _staticTransparent,
-    shadowColor: _staticTransparent,
+    backgroundColor: _transparent,
+    surfaceTintColor: _transparent,
+    shadowColor: _transparent,
     systemOverlayStyle: appSystemUiOverlayStyle,
     elevation: 0,
     scrolledUnderElevation: 0,
@@ -597,7 +678,7 @@ class LightTheme {
       textStyle: WidgetStatePropertyAll(_textTheme.bodyLarge),
       overlayColor: WidgetStateProperty.resolveWith(
         (states) {
-          if (states.contains(WidgetState.disabled)) return _staticTransparent;
+          if (states.contains(WidgetState.disabled)) return _transparent;
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused) ||
               states.contains(WidgetState.selected))
@@ -613,7 +694,7 @@ class LightTheme {
   late final _menuBarThemeData = const MenuBarThemeData(
     style: MenuStyle(
       backgroundColor: WidgetStatePropertyAll(_background),
-      surfaceTintColor: WidgetStatePropertyAll(_staticTransparent),
+      surfaceTintColor: WidgetStatePropertyAll(_transparent),
     ),
   );
 
@@ -622,7 +703,7 @@ class LightTheme {
     inputDecorationTheme: _inputDecorationTheme,
     menuStyle: const MenuStyle(
       backgroundColor: WidgetStatePropertyAll(_background),
-      surfaceTintColor: WidgetStatePropertyAll(_staticTransparent),
+      surfaceTintColor: WidgetStatePropertyAll(_transparent),
       visualDensity: VisualDensity.standard,
       padding: WidgetStatePropertyAll(
         EdgeInsets.symmetric(vertical: 8),
@@ -633,7 +714,7 @@ class LightTheme {
   late final _menuThemeData = const MenuThemeData(
     style: MenuStyle(
       backgroundColor: WidgetStatePropertyAll(_background),
-      surfaceTintColor: WidgetStatePropertyAll(_staticTransparent),
+      surfaceTintColor: WidgetStatePropertyAll(_transparent),
     ),
   );
 
@@ -706,7 +787,7 @@ class LightTheme {
     ),
     alignLabelWithHint: true,
     hoverColor: _backgroundSystem,
-    fillColor: _staticTransparent,
+    fillColor: _transparent,
     iconColor: _neutralBlack,
     prefixIconColor: WidgetStateColor.resolveWith(
       (states) {
@@ -759,7 +840,7 @@ class LightTheme {
     counterStyle: WidgetStateTextStyle.resolveWith((states) => _textTheme.bodySmall!),
     contentPadding: const EdgeInsets.only(top: 16, bottom: 16, left: 16),
     floatingLabelBehavior: FloatingLabelBehavior.always,
-    focusColor: _staticTransparent,
+    focusColor: _transparent,
   );
 
   late final _textSelectionTheme = TextSelectionThemeData(
@@ -831,8 +912,10 @@ class LightTheme {
   );
 
   late final _dialogTheme = DialogThemeData(
+    // TODO: investigate why this color is used and if it's correct
+    barrierColor: Colors.black54,
     backgroundColor: _background,
-    surfaceTintColor: _staticTransparent,
+    surfaceTintColor: _transparent,
     titleTextStyle: _textTheme.headlineSmall,
     contentTextStyle: _textTheme.bodyMedium,
     iconColor: _accent,
@@ -1040,6 +1123,7 @@ class LightTheme {
     useMaterial3: true,
     extensions: [
       _customColors,
+      _customWindowsCaptionButtonTheme,
       _customFilledButtonTheme,
       _customElevatedButtonTheme,
       _customOutlinedButtonTheme,
@@ -1054,8 +1138,8 @@ class LightTheme {
     brightness: Brightness.light,
     primaryColor: _accent,
     colorScheme: _colorScheme,
-    hoverColor: _staticTransparent,
-    focusColor: _staticTransparent,
+    hoverColor: _transparent,
+    focusColor: _transparent,
 
     // TYPOGRAPHY & ICONOGRAPHY
     textTheme: _textTheme,
@@ -1091,5 +1175,7 @@ class LightTheme {
     listTileTheme: _listTileThemeData,
     buttonTheme: _buttonTheme,
     tabBarTheme: _tabBarTheme,
+
+    scrollbarTheme: _scrollbarTheme,
   );
 }

@@ -63,47 +63,38 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: CustomAppBar(
-            actions: [
-              if (_editing)
-                CustomIconButton.square(
-                  icon: AssetIcons.delete,
-                  color: context.colors.error,
-                  size: 24,
-                  onPressed: () => _onDelete(context),
-                ),
-            ],
-            leadingIconType: AppBarLeadingIconType.back,
-            centerTitle: true,
-            onBackPressed: () => Navigator.of(context).maybePop(),
-            title: _editing ? context.ln.editServer : context.ln.addServer,
+    appBar: CustomAppBar(
+      actions: [
+        if (_editing)
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: CustomIconButton.square(
+              icon: AssetIcons.delete,
+              color: context.colors.error,
+              size: 24,
+              onPressed: () => _onDelete(context),
+            ),
           ),
-        ),
-        SliverToBoxAdapter(
+      ],
+      leadingIconType: AppBarLeadingIconType.back,
+      centerTitle: true,
+      onBackPressed: () => Navigator.of(context).maybePop(),
+      title: _editing ? context.ln.editServer : context.ln.addServer,
+    ),
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
           child: loading ? const SizedBox.shrink() : widget.body,
         ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          fillOverscroll: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed: _hasChanges ? () => _submit(context) : null,
-                  child: Text(
-                    _editing ? context.ln.save : context.ln.add,
-                  ),
-                ),
-              ),
-            ],
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: FilledButton(
+            onPressed: _hasChanges ? () => _submit(context) : null,
+            child: Text(
+              _editing ? context.ln.save : context.ln.add,
+            ),
           ),
         ),
       ],
@@ -131,24 +122,24 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
     if (!mounted) {
       return;
     }
-    final vpnController = VpnScope.vpnControllerOf(context, listen: false);
-    vpnController.stop();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final serverScope = ServersScope.controllerOf(context, listen: false);
-      final server = ServerDetailsScope.controllerOf(context, listen: false);
-      serverScope.fetchServers();
+    final serversScopeController = ServersScope.controllerOf(context, listen: false);
+    final serverDetailsController = ServerDetailsScope.controllerOf(context, listen: false);
 
-      if (server.data.selected) {
-        final updatedData = serverScope.servers.firstWhereOrNull((s) => s.id != server.id);
-        serverScope.pickServer(updatedData?.id);
-      }
+    VpnScope.vpnControllerOf(context, listen: false).disconnect();
+    serversScopeController.fetchServers();
 
-      if (Navigator.of(context).canPop()) {
-        context.pop();
-      }
-      context.showInfoSnackBar(message: context.ln.serverDeletedSnackbar(name));
-    });
+    if (serversScopeController.selectedServer?.id == serverDetailsController.id) {
+      final replacement = serversScopeController.servers.firstWhereOrNull(
+        (server) => server.id != serverDetailsController.id,
+      );
+      serversScopeController.selectServer(replacement?.id);
+    }
+
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+    }
+    context.showInfoSnackBar(message: context.ln.serverDeletedSnackbar(name));
   }
 
   void _onSubmitted(String name) {

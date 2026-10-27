@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
@@ -70,7 +71,7 @@ class _ServerDetailsScopeState extends State<ServerDetailsScope> {
       state: state,
       changeData: _controller.dataChanged,
       delete: _controller.delete,
-      fetchServer: _controller.fetch,
+      fetchServer: () => _controller.fetch(numberedName: context.ln.serverNumberedName),
       submit: _controller.submit,
       editing: widget.serverId != null,
       id: widget.serverId,

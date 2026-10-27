@@ -1,7 +1,7 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
-#include <VersionHelpers.h>
+#include <winternl.h>
 
 #include <cwchar>
 #include <iterator>
@@ -10,8 +10,26 @@
 
 #include "flutter_window.h"
 #include "utils.h"
+#include "windows_installer.h"
+#include "windows_update_lifecycle.h"
 
 namespace {
+
+bool IsSupportedWindowsVersion() {
+  // Match the installer minimum using the actual version, independent of the
+  // compatibility version reported by VersionHelpers.
+  using RtlGetVersionProc = LONG(WINAPI*)(PRTL_OSVERSIONINFOW);
+  const auto get_version = reinterpret_cast<RtlGetVersionProc>(
+      GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion"));
+  RTL_OSVERSIONINFOW version{};
+  version.dwOSVersionInfoSize = sizeof(version);
+  if (!get_version || get_version(&version) != 0) {
+    return false;
+  }
+  return version.dwMajorVersion > 10 ||
+         (version.dwMajorVersion == 10 &&
+          (version.dwMinorVersion > 0 || version.dwBuildNumber >= 19045));
+}
 
 constexpr wchar_t kAppMutexName[] = L"TrustTunnelFlutterClient";
 constexpr wchar_t kFlutterWindowClassName[] =
@@ -171,24 +189,35 @@ void ForwardAppLink(HWND window) {
 }
 
 void ActivateWindow(HWND window) {
-  if (::IsIconic(window)) {
-    ::ShowWindow(window, SW_RESTORE);
-  } else {
-    ::ShowWindow(window, SW_SHOW);
-  }
-
-  ::SetWindowPos(window, HWND_TOP, 0, 0, 0, 0,
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-  ::SetForegroundWindow(window);
+  DWORD process_id = 0;
+  ::GetWindowThreadProcessId(window, &process_id);
+  if (process_id != 0) ::AllowSetForegroundWindow(process_id);
+  ::PostMessageW(window, kActivateMainWindow, 0, 0);
 }
 
 }  // namespace
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
-  if (!IsWindows10OrGreater()) {
-    ::MessageBoxW(nullptr, L"TrustTunnel requires Windows 10 or later.",
-                  L"TrustTunnel", MB_OK | MB_ICONERROR);
+  if (const auto installer_result = RunWindowsInstallerCommand()) {
+    return *installer_result;
+  }
+  if (IsTrustTunnelInstallationActive()) return EXIT_SUCCESS;
+  std::vector<std::string> command_line_arguments = GetCommandLineArguments();
+  LaunchMode launch_mode = LaunchMode::kManual;
+  for (auto argument = command_line_arguments.begin();
+       argument != command_line_arguments.end();) {
+    if (*argument == "--autostart=window" || *argument == "--autostart=tray") {
+      launch_mode = *argument == "--autostart=tray"
+                        ? LaunchMode::kAutostartTray
+                        : LaunchMode::kAutostartWindow;
+      argument = command_line_arguments.erase(argument);
+    } else {
+      ++argument;
+    }
+  }
+
+  if (!IsSupportedWindowsVersion()) {
     return EXIT_FAILURE;
   }
 
@@ -199,11 +228,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
 
   bool owns_mutex = mutex_error != ERROR_ALREADY_EXISTS;
+  if (!owns_mutex && launch_mode != LaunchMode::kManual) {
+    const DWORD wait_result = ::WaitForSingleObject(app_mutex, 0);
+    owns_mutex = wait_result == WAIT_OBJECT_0 || wait_result == WAIT_ABANDONED;
+    if (!owns_mutex) {
+      // Automatic launches never send activation or links to the first process.
+      ::CloseHandle(app_mutex);
+      return wait_result == WAIT_TIMEOUT ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+  }
   if (!owns_mutex) {
     HWND existing_window = WaitForExistingAppWindowOrMutex(app_mutex, owns_mutex);
     if (existing_window != nullptr) {
-      ForwardAppLink(existing_window);
+      if (IsTrustTunnelInstallationActive()) {
+        ::CloseHandle(app_mutex);
+        return EXIT_SUCCESS;
+      }
       ActivateWindow(existing_window);
+      ForwardAppLink(existing_window);
       ::CloseHandle(app_mutex);
       return EXIT_SUCCESS;
     }
@@ -222,30 +264,43 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   // Initialize COM, so that it is available for use in the library and/or
   // plugins.
-  ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  const HRESULT com_result =
+      ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  if (FAILED(com_result)) {
+    ::ReleaseMutex(app_mutex);
+    ::CloseHandle(app_mutex);
+    return EXIT_FAILURE;
+  }
+
+  if (IsTrustTunnelInstallationActive()) {
+    ::CoUninitialize();
+    ::ReleaseMutex(app_mutex);
+    ::CloseHandle(app_mutex);
+    return EXIT_SUCCESS;
+  }
 
   flutter::DartProject project(L"data");
-
-  std::vector<std::string> command_line_arguments =
-      GetCommandLineArguments();
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   int exit_code = EXIT_SUCCESS;
   {
-    FlutterWindow window(project);
+    FlutterWindow window(project, launch_mode);
     Win32Window::Point origin(10, 10);
-    Win32Window::Size size(1280, 720);
+    Win32Window::Size size(1024, 768);
     if (!window.Create(kWindowTitle, origin, size)) {
       exit_code = EXIT_FAILURE;
     } else {
       window.SetQuitOnClose(true);
 
-      ::MSG msg;
-      while (::GetMessage(&msg, nullptr, 0, 0)) {
+      ::MSG msg{};
+      BOOL message_result;
+      while ((message_result = ::GetMessage(&msg, nullptr, 0, 0)) > 0) {
         ::TranslateMessage(&msg);
         ::DispatchMessage(&msg);
       }
+      exit_code =
+          message_result == -1 ? EXIT_FAILURE : static_cast<int>(msg.wParam);
     }
   }
 

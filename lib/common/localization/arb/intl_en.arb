@@ -1,5 +1,9 @@
 {
   "@@locale": "en",
+  "windowMinimize": "Minimize",
+  "windowMaximize": "Maximize",
+  "windowRestore": "Restore",
+  "windowClose": "Close",
   "appTitle": "Vpn",
   "servers": "Servers",
   "routing": "Routing",
@@ -13,6 +17,15 @@
   "password": "Password",
   "enterPassword": "Enter password",
   "protocol": "Protocol",
+  "advanced": "Advanced",
+  "tlsFingerprint": "TLS fingerprint",
+  "tlsFingerprintChrome": "Chrome",
+  "tlsFingerprintChromeCanary": "Chrome Canary",
+  "tlsFingerprintSafari": "Safari",
+  "tlsFingerprintFirefox": "Firefox",
+  "tlsFingerprintOkHttp": "OkHttp",
+  "tlsFingerprintOpenSsl": "OpenSSL",
+  "tlsFingerprintOwn": "Own fingerprint",
   "routingProfile": "Routing profile",
   "enterDnsServerLabel": "DNS server addresses, one per line",
   "enterDnsServerHint": "IP address, tls://, https://, quic://, h3://, or sdns://",
@@ -121,6 +134,13 @@
   "customSniLabel": "Custom SNI",
   "customSniHint": "example.com",
   "customSniWrongFieldError": "Use the format example.com",
+  "tlsAuthenticationType": "TLS authentication type",
+  "tlsAuthenticationClientRandom": "Client Random",
+  "tlsAuthenticationClientRandomAuthKey": "Client Random auth key",
+  "clientRandomAuthKeyLabel": "Client random auth key, hex sequence",
+  "clientRandomAuthKeyHint": "abcdef",
+  "clientRandomAuthKeyHelper": "Max length 64 characters",
+  "clientRandomAuthKeySlashError": "Auth key doesn’t support values with “/”",
   "clientRandomLabel": "Client Random, hex sequence",
   "clientRandomHint": "abcdef, 0a0b0c/0f0f0f",
   "clientRandomHelper": "Max length — 64 characters",
@@ -200,5 +220,24 @@
   "openHomeScreenAutomatically": "Open Home screen automatically",
   "connection": "Connection",
   "autoConnectOnAppLaunch": "Auto-connect on app launch",
-  "autoConnectNoServersAdded": "No servers added. To apply the setting, add a server"
+  "autoConnectNoServersAdded": "No servers added. To apply the setting, add a server",
+  "copyLink": "Copy link",
+  "duplicate": "Duplicate",
+  "serverLinkCopied": "Server link copied",
+  "serverDuplicated": "Server duplicated",
+  "edit": "Edit",
+  "serverCopyNumberedName": "{name} {number, plural, =0{(copy)} other{(copy {number})}}",
+  "@serverCopyNumberedName": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "number": {"type": "int"}
+    }
+  },
+  "serverNumberedName": "{name} {number}",
+  "@serverNumberedName": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "number": {"type": "int"}
+    }
+  }
 }

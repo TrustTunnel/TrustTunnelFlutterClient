@@ -10,10 +10,9 @@
 #   -MixedArm64BundlePath   Path to the mixed ARM64 bundle.
 #   -ForceDownload          Download the VC++ redistributable again.
 # Usage:
-# From the repository root on x64 Windows (Flutter and GPR_KEY required):
-#   .\windows\inno\Build-Installer.ps1 -Arm64NativeArchive <path-to-aarch64-zip>
-# To package existing bundles:
-#   .\windows\inno\Build-Installer.ps1 -SkipFlutterBuild -X64BundlePath <path> -MixedArm64BundlePath <path>
+# For base flutter x64 client + x64/arm native service, from the repo root on x64 Windows (GPR_KEY required):
+#   .\windows\inno\Build-Installer.ps1 -AppVersion 0.0.0 -BuildNumber 0
+#   Copy-Item .\build\windows\installer\TrustTunnelSetup.exe ([Environment]::GetFolderPath('Desktop')) -Force
 
 [CmdletBinding()]
 param(
@@ -21,7 +20,7 @@ param(
     [string]$Configuration = "Release",
 
     [ValidatePattern("^\d+\.\d+\.\d+([\-+][0-9A-Za-z.-]+)?$")]
-    [string]$AppVersion = "1.2.0",
+    [string]$AppVersion = "0.0.0",
 
     [ValidateRange(0, 65535)]
     [int]$BuildNumber = 0,

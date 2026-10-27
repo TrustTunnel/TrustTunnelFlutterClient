@@ -9,8 +9,8 @@ workspace:
   - packages/window_manager
 
 environment:
-  flutter: ">=3.44.8"
-  sdk: ^3.12.2
+  flutter: ">=3.47.8"
+  sdk: ^3.13.5
 
 dependencies:
   adg_share:
@@ -20,8 +20,9 @@ dependencies:
       url: https://github.com/AdguardTeam/adguard-dart-logger
       ref: v1.0.3
   app_links: 7.0.0
+  async: 2.13.1
   collection: 1.19.1
-  drift: 2.30.0
+  drift: 2.35.2
   file_picker: 10.3.10
   flutter:
     sdk: flutter
@@ -29,15 +30,14 @@ dependencies:
     sdk: flutter
   flutter_native_splash: 2.4.7
   html: 0.15.6
-  intl: 0.20.2
-  intl_utils: 2.8.13
+  intl: 0.20.3
+  intl_utils: 2.8.17
   package_info_plus: 9.0.0
   path_provider: 2.1.6
   punycoder: 0.2.2
   rxdart: 0.28.0
   screen_retriever: 0.2.0
   shared_preferences: 2.5.5
-  sqlite3_flutter_libs: 0.5.41
   url_launcher: 6.3.2
   vpn_plugin:
     path: plugins/vpn_plugin
@@ -47,12 +47,12 @@ dependencies:
     path: packages/window_manager
 
 dev_dependencies:
-  build_runner: 2.10.4
-  drift_dev: 2.30.0
+  build_runner: 2.16.2
+  drift_dev: 2.35.1
   flutter_lints: 6.0.0
   flutter_test:
     sdk: flutter
-  msix: 3.16.13
+  msix: 3.18.0
 
 flutter:
   config:
@@ -61,7 +61,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/images/tray/
+    - assets/images/tray/macos/
+    - assets/images/tray/windows/
   fonts:
     - family: IconFont
       fonts:
@@ -113,14 +114,15 @@ msix_config:
   publisher_display_name: AdGuard
   publisher: CN=TrustTunnelDev
   identity_name: com.adguard.trusttunnel
-  msix_version: 1.2.0.0
+  msix_version: 0.0.0.0
   protocol_activation: tt
   # The msix tool defaults to 10.0.17763.0 (Windows 10, version 1809), but the
   # package contains a windows.service extension (trusttunnel_service.exe),
   # and service installation via MSIX only works on Windows 10 version 2004
   # (10.0.19041.0) and later — see the "Services packaged in MSIX" section of
   # https://learn.microsoft.com/en-us/windows/msix/desktop/managing-your-msix-deployment-targetdevices
-  os_min_version: 10.0.19041.0
+  # TrustTunnel's supported minimum is Windows 10 22H2, beyond the MSIX API requirement.
+  os_min_version: 10.0.19045.0
   logo_path: assets\images\logo_white.png
   # runFullTrust is auto-added by the msix tool.
   # packagedServices + localSystemServices enable the windows.service

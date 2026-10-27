@@ -3,14 +3,13 @@ import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
+import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 
 abstract class ServerDetailsService {
   List<PresentationField> validateData({
     required ServerData data,
     Set<String> otherServersNames = const {},
   });
-
-  String fallbackDuplicateNames(String baseName, Set<String> otherNames);
 }
 
 class ServerDetailsServiceImpl implements ServerDetailsService {
@@ -71,30 +70,15 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
       ),
     );
 
-    if (data.tlsPrefix != null) {
-      _addIfNotNull(
-        fields,
-        _validateClientRandom(
-          data.tlsPrefix!,
-        ),
-      );
-    }
+    _addIfNotNull(
+      fields,
+      switch (data.tlsAuthenticationType) {
+        TlsAuthenticationType.clientRandom => _validateClientRandom(data.tlsPrefix ?? ''),
+        TlsAuthenticationType.clientRandomAuthKey => _validateClientRandomAuthKey(data.clientRandomAuthKey ?? ''),
+      },
+    );
 
     return fields;
-  }
-
-  @override
-  String fallbackDuplicateNames(String baseName, Set<String> otherNames) {
-    final duplicateCandidates = otherNames.where((e) => e.startsWith(baseName));
-
-    for (int i = 1; i < duplicateCandidates.length + 1; i++) {
-      final candidate = '$baseName ${i + 1}';
-      if (!duplicateCandidates.contains(candidate)) {
-        return candidate;
-      }
-    }
-
-    return baseName;
   }
 
   PresentationField? _validateClientRandom(String value) {
@@ -135,6 +119,30 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
     if (clientRandom.length != mask.length) {
       return _getFieldOutOfBounds(PresentationFieldName.clientRandom);
+    }
+
+    return null;
+  }
+
+  PresentationField? _validateClientRandomAuthKey(String value) {
+    if (value.isEmpty) {
+      return null;
+    }
+
+    if (value.contains('/')) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKeySlash);
+    }
+
+    if (RegExp(r'[^0-9a-fA-F]').hasMatch(value)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKey);
+    }
+
+    if (!_isEvenLengthHex(value)) {
+      return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKeyValue);
+    }
+
+    if (value.length > 64) {
+      return _getFieldOutOfBounds(PresentationFieldName.clientRandomAuthKey);
     }
 
     return null;
