@@ -5,6 +5,7 @@ import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/common/platform/linux_exit_dialog.dart';
 import 'package:trusttunnel/common/platform/macos_exit_dialog.dart';
 import 'package:trusttunnel/common/platform/windows_exit_dialog.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
@@ -18,6 +19,7 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
 
   /// The pending exit request for Windows (the same reason as with the timeout)
   Future<AppExitResponse>? _windowsExitRequest;
+  Future<AppExitResponse>? _linuxExitRequest;
 
   /// Waits for the controller to confirm disconnection or report that the exit stop failed.
   /// Keeping this resource here lets scope disposal finish the Flutter response synchronously.
@@ -110,9 +112,84 @@ mixin VpnScopeExitHandlingMixin<T extends StatefulWidget> on State<T> {
       }
     }
 
+    if (defaultTargetPlatform == TargetPlatform.linux) {
+      final pendingExitRequest = _linuxExitRequest;
+      if (pendingExitRequest != null) {
+        return pendingExitRequest;
+      }
+
+      try {
+        final exitRequest = _handleLinuxExitRequested().catchError((
+          Object error,
+          StackTrace stackTrace,
+        ) async {
+          logger.logError(
+            'VPN exit failed',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          await notifyVpnOperationError();
+
+          return AppExitResponse.cancel;
+        });
+        _linuxExitRequest = exitRequest;
+
+        final response = await exitRequest;
+        if (response == AppExitResponse.cancel && mounted) {
+          cancelVpnExit();
+        }
+
+        return response;
+      } finally {
+        _linuxExitRequest = null;
+      }
+    }
+
     onAppExiting();
 
     return AppExitResponse.exit;
+  }
+
+  Future<AppExitResponse> _handleLinuxExitRequested() async {
+    if (shouldShowExitDialog) {
+      if (!mounted) {
+        return AppExitResponse.cancel;
+      }
+      final localization = Localization.ln;
+      final LinuxExitDialogResult result =
+          await LinuxExitDialog.show(
+            title: localization.exitDialogTitle,
+            message: localization.exitDialogDescription,
+            quitButtonText: localization.quit,
+            dontQuitButtonText: localization.dontQuit,
+          ).onError((Object error, StackTrace stackTrace) async {
+            logger.logError(
+              'VPN exit dialog failed',
+              error: error,
+              stackTrace: stackTrace,
+            );
+            await notifyVpnOperationError();
+
+            return LinuxExitDialogResult.cancel;
+          });
+      if (!mounted || result != LinuxExitDialogResult.quit) {
+        return AppExitResponse.cancel;
+      }
+    }
+    if (!mounted) {
+      return AppExitResponse.cancel;
+    }
+
+    final stopped = await stopVpnForExit(timeout: const Duration(seconds: 3));
+    if (!mounted) {
+      return AppExitResponse.cancel;
+    }
+
+    if (stopped || isVpnDisconnectedForExit) {
+      return AppExitResponse.exit;
+    }
+
+    return AppExitResponse.cancel;
   }
 
   Future<AppExitResponse> _handleMacosExitRequested() async {
