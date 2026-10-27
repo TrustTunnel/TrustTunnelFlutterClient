@@ -1,6 +1,7 @@
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
+import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/logging/app_logger.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
@@ -28,14 +29,32 @@ class AppLoggingScope extends StatefulWidget {
     BuildContext context, {
     bool listen = true,
     AppLoggingScopeAspect? aspect,
-  }) => _InheritedAppLoggingScope.controllerOf(context, listen: listen, aspect: aspect);
+  }) => _InheritedAppLoggingScope.controllerOf(context, listen: listen, aspect: aspect).controller;
 
   @override
   State<AppLoggingScope> createState() => _AppLoggingScopeState();
 }
 
-class _AppLoggingScopeState extends State<AppLoggingScope> {
+class _AppLoggingScopeState extends State<AppLoggingScope> implements AppLoggingScopeController {
   late final AppLoggingController _controller;
+
+  @override
+  PresentationException? get error => _controller.state.error;
+
+  @override
+  bool get loading => _controller.state.loading;
+
+  @override
+  LoggingLevel get loggingLevel => _controller.state.level;
+
+  @override
+  LoggingSecurityType get securityType => _controller.state.securityType;
+
+  @override
+  void Function({required LoggingLevel level}) get updateLoggingLevel => _updateLoggingLevel;
+
+  @override
+  void Function({required LoggingSecurityType securityType}) get updateSecurityType => _updateSecurityLevel;
 
   @override
   void initState() {
@@ -50,6 +69,7 @@ class _AppLoggingScopeState extends State<AppLoggingScope> {
   Widget build(BuildContext context) => StateConsumer<AppLoggingController, AppLoggingState>(
     controller: _controller,
     builder: (context, state, _) => _InheritedAppLoggingScope(
+      controller: this,
       loading: state.loading,
       loggingLevel: state.level,
       securityType: state.securityType,
@@ -58,6 +78,12 @@ class _AppLoggingScopeState extends State<AppLoggingScope> {
       child: widget.child,
     ),
   );
+
+  @override
+  void addListener(VoidCallback listener) => _controller.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) => _controller.removeListener(listener);
 
   void _updateLoggingLevel({required LoggingLevel level}) => _controller.setLoggingLevel(
     level,
@@ -90,8 +116,11 @@ class _AppLoggingScopeState extends State<AppLoggingScope> {
   }
 }
 
-class _InheritedAppLoggingScope extends InheritedModel<AppLoggingScopeAspect> implements AppLoggingScopeController {
+class _InheritedAppLoggingScope extends InheritedModel<AppLoggingScopeAspect> {
+  final AppLoggingScopeController controller;
+
   const _InheritedAppLoggingScope({
+    required this.controller,
     required super.child,
     required this.loading,
     required this.loggingLevel,
@@ -100,19 +129,14 @@ class _InheritedAppLoggingScope extends InheritedModel<AppLoggingScopeAspect> im
     required this.updateSecurityType,
   });
 
-  @override
   final bool loading;
 
-  @override
   final LoggingLevel loggingLevel;
 
-  @override
   final LoggingSecurityType securityType;
 
-  @override
   final void Function({required LoggingLevel level}) updateLoggingLevel;
 
-  @override
   final void Function({required LoggingSecurityType securityType}) updateSecurityType;
 
   @override

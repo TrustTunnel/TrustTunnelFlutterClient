@@ -10,7 +10,6 @@ import 'package:trusttunnel/common/router/app_routes.dart';
 import 'package:trusttunnel/common/utils/navigation_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/deep_link_scope.dart';
-import 'package:trusttunnel/feature/menu_bar/widgets/tray_menu_scope.dart';
 import 'package:trusttunnel/feature/navigation/widgets/custom_navigation_rail.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/routing_screen.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
@@ -18,6 +17,7 @@ import 'package:trusttunnel/feature/server/servers/widget/servers_screen.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/settings_screen.dart';
+import 'package:trusttunnel/feature/tray_menu/widgets/tray_menu_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 
@@ -35,9 +35,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   ServerData? _deepLinkData;
 
-  /// Because exit handling and interaction with the related dialog in [VpnScope] (above the [MaterialApp])
-  /// and we can't react to an error right where we catch it, we need to listen to it here
-  Listenable? _disconnectOnExitErrorListenable;
+  /// Shows feedback for VPN operation errors handled in [VpnScope] above the [MaterialApp].
+  Listenable? _vpnOperationErrorListenable;
 
   @override
   void initState() {
@@ -51,14 +50,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final disconnectOnExitErrorListenable = VpnScope.vpnControllerOf(
-      context,
-      listen: false,
-    ).disconnectOnExitErrorListenable;
-    if (!identical(_disconnectOnExitErrorListenable, disconnectOnExitErrorListenable)) {
-      _disconnectOnExitErrorListenable?.removeListener(_onDisconnectOnExitError);
-      _disconnectOnExitErrorListenable = disconnectOnExitErrorListenable;
-      _disconnectOnExitErrorListenable?.addListener(_onDisconnectOnExitError);
+    final vpnOperationErrorListenable = VpnScope.operationErrorsOf(context);
+    if (!identical(_vpnOperationErrorListenable, vpnOperationErrorListenable)) {
+      _vpnOperationErrorListenable?.removeListener(_onVpnOperationError);
+      _vpnOperationErrorListenable = vpnOperationErrorListenable;
+      _vpnOperationErrorListenable?.addListener(_onVpnOperationError);
     }
 
     final fetchedDeepLink = DeepLinkScope.of(context).deepLinkData;
@@ -143,7 +139,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     _ => throw Exception('Invalid index: $selectedIndex'),
   };
 
-  void _onDisconnectOnExitError() {
+  void _onVpnOperationError() {
     if (!mounted) {
       return;
     }
@@ -234,22 +230,24 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
 
     _selectedTabNotifier.value = selectedIndex;
-    navigatorState.pushAndRemoveUntil(
-      PageRouteBuilder(
-        settings: AppRoutes.byNavigationIndex(selectedIndex).settings,
-        pageBuilder:
-            (
-              context,
-              animation,
-              secondaryAnimation,
-            ) => getScreenByIndex(
-              selectedIndex,
-              deepLinkData: deepLinkData,
-            ),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
+    unawaited(
+      navigatorState.pushAndRemoveUntil(
+        PageRouteBuilder(
+          settings: AppRoutes.byNavigationIndex(selectedIndex).settings,
+          pageBuilder:
+              (
+                context,
+                animation,
+                secondaryAnimation,
+              ) => getScreenByIndex(
+                selectedIndex,
+                deepLinkData: deepLinkData,
+              ),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+        (_) => false,
       ),
-      (_) => false,
     );
 
     await SchedulerBinding.instance.endOfFrame;
@@ -281,7 +279,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   void dispose() {
-    _disconnectOnExitErrorListenable?.removeListener(_onDisconnectOnExitError);
+    _vpnOperationErrorListenable?.removeListener(_onVpnOperationError);
     _selectedTabNotifier.dispose();
     super.dispose();
   }

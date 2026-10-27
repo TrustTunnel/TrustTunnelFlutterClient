@@ -1,3 +1,20 @@
+function InitializeUninstall: Boolean;
+var
+  ErrorMessage: String;
+begin
+  { Return False before uninstallation starts; do not rely on exceptions from
+    progress notifications to protect files belonging to a running GUI. }
+  Result := AcquireInstallationLock(ErrorMessage) and
+    PrepareApplicationExit(False, False, ErrorMessage);
+  if not Result then
+  begin
+    SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
+    ReleaseApplicationHandles;
+    ReleaseInstallationLock;
+    ReleaseResultPublicationLock;
+  end;
+end;
+
 procedure SelectUninstallOptions;
 var
   OptionsForm: TSetupForm;
@@ -6,7 +23,7 @@ var
   ContinueButton: TNewButton;
   CancelButton: TNewButton;
 begin
-  OptionsForm := CreateCustomForm(ScaleX(440), ScaleY(145), False, False);
+  OptionsForm := CreateCustomForm(ScaleX(500), ScaleY(165), False, False);
   try
     OptionsForm.Caption := 'Uninstall TrustTunnel';
     OptionsForm.Position := poScreenCenter;
@@ -16,7 +33,8 @@ begin
     DeleteUserDataCheckBox.Left := ScaleX(20);
     DeleteUserDataCheckBox.Top := ScaleY(20);
     DeleteUserDataCheckBox.Width := OptionsForm.ClientWidth - ScaleX(40);
-    DeleteUserDataCheckBox.Caption := 'Delete user data';
+    DeleteUserDataCheckBox.Caption :=
+      'Also delete settings and server configurations';
     DeleteUserDataCheckBox.Checked := False;
 
     ExplanationLabel := TNewStaticText.Create(OptionsForm);
@@ -24,12 +42,12 @@ begin
     ExplanationLabel.Left := ScaleX(40);
     ExplanationLabel.Top := ScaleY(50);
     ExplanationLabel.Width := OptionsForm.ClientWidth - ScaleX(60);
-    ExplanationLabel.Height := ScaleY(42);
+    ExplanationLabel.Height := ScaleY(56);
     ExplanationLabel.AutoSize := False;
     ExplanationLabel.WordWrap := True;
     ExplanationLabel.Caption :=
-      'Deletes settings, connection profiles, and logs for the current ' +
-      'Windows user.';
+      'Logs and temporary files are always removed. ' +
+      'Leave this unchecked if you plan to reinstall the app.';
 
     ContinueButton := TNewButton.Create(OptionsForm);
     ContinueButton.Parent := OptionsForm;
@@ -86,7 +104,8 @@ begin
   );
 end;
 
-procedure DeleteSelectedUserData(const UserSid: String);
+procedure CleanupUninstallData(const UserSid: String;
+  DeleteSettingsAndServers: Boolean);
 var
   CleanupPath: String;
   Parameters: String;
@@ -101,9 +120,12 @@ begin
     exit;
   end;
 
-  Parameters := '';
+  if DeleteSettingsAndServers then
+    Parameters := '/DELETEUSERDATA=1'
+  else
+    Parameters := '/DELETEUSERDATA=0';
   if UserSid <> '' then
-    Parameters := '/USERSID="' + UserSid + '"';
+    Parameters := Parameters + ' /USERSID="' + UserSid + '"';
 
   ResultCode := -1;
   try
@@ -135,7 +157,14 @@ begin
 
   case ResultCode of
     0:
-      Log('[user-data cleanup] All selected user data was removed.');
+      begin
+        if DeleteSettingsAndServers then
+          Log('[user-data cleanup] Logs, temporary files, settings, and ' +
+            'server configurations were removed.')
+        else
+          Log('[user-data cleanup] Logs and temporary files were removed; ' +
+            'settings and server configurations were preserved.');
+      end;
     1:
       ShowCleanupWarning(
         'Some TrustTunnel user-data paths could not be removed.'
@@ -146,14 +175,43 @@ begin
       );
     3:
       ShowCleanupWarning(
-        'Cleanup was stopped because a computed path was outside the ' +
-        'allowed cleanup directories.'
+        'An unsafe cleanup path was skipped.'
       );
   else
     ShowCleanupWarning(
       'The user-data cleanup utility failed with exit code ' +
       IntToStr(ResultCode) + '.'
     );
+  end;
+end;
+
+procedure RemoveInstalledAutostart(const UserSid: String);
+var
+  CleanupPath, Parameters: String;
+  ResultCode: Integer;
+  Output: TExecOutput;
+  Succeeded: Boolean;
+begin
+  CleanupPath := ExpandConstant('{app}\cleanup_user_data_helper.exe');
+  Parameters := '/REMOVEAUTOSTART="' + ExpandConstant('{app}\{#AppExeName}') + '"';
+  if UserSid <> '' then Parameters := Parameters + ' /USERSID="' + UserSid + '"';
+  ResultCode := -1;
+  Succeeded := False;
+  try
+    Succeeded := ExecAndCaptureOutput(CleanupPath, Parameters,
+      ExtractFileDir(CleanupPath), SW_HIDE, ewWaitUntilTerminated,
+      ResultCode, Output);
+    if Succeeded then LogCleanupOutput(Output);
+  except
+    Log('[autostart cleanup] ' + GetExceptionMessage);
+  end;
+  if not Succeeded or (ResultCode <> 0) then
+  begin
+    Log('[autostart cleanup] Failed: ' + IntToStr(ResultCode));
+    SuppressibleMsgBox(
+      'Unable to remove all TrustTunnel login startup registrations. Error code: ' +
+      IntToStr(ResultCode) + '. The uninstall will continue; see the uninstall log for details.',
+      mbError, MB_OK, IDOK);
   end;
 end;
 
@@ -168,7 +226,7 @@ begin
   UninstallPrepared := True;
 
   DeleteUserData := False;
-  UserSid := '';
+  UserSid := ExpandConstant('{param:USERSID|}');
   if UninstallSilent then
   begin
     if CompareText(
@@ -176,7 +234,6 @@ begin
       '1'
     ) = 0 then
     begin
-      UserSid := ExpandConstant('{param:USERSID|}');
       if UserSid = '' then
         Log(
           '[user-data cleanup] /DELETEUSERDATA=1 was ignored because ' +
@@ -190,12 +247,25 @@ begin
     SelectUninstallOptions;
 
   ReadPreviousInstallDirectory;
+  if not AcquireInstallationLock(ErrorMessage) or
+     not PrepareApplicationExit(False, False, ErrorMessage) then
+  begin
+    SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
+    Abort;
+  end;
   if not RemoveService(ErrorMessage) then
   begin
     SuppressibleMsgBox(ErrorMessage, mbCriticalError, MB_OK, IDOK);
     Abort;
   end;
 
-  if DeleteUserData then
-    DeleteSelectedUserData(UserSid);
+  RemoveInstalledAutostart(UserSid);
+  CleanupUninstallData(UserSid, DeleteUserData);
+end;
+
+procedure DeinitializeUninstall;
+begin
+  ReleaseApplicationHandles;
+  ReleaseInstallationLock;
+  ReleaseResultPublicationLock;
 end;

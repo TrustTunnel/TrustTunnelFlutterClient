@@ -30,7 +30,7 @@ abstract base class BaseStateController<State extends Object> extends BaseContro
   @nonVirtual
   State get state => _state;
 
-  /// Updates the current state and notifies listeners.
+  /// Updates the current state and notifies listeners when [shouldNotifyListeners] allows it.
   ///
   /// Subclasses should call this method whenever [state] changes.
   /// The previous and next states are also forwarded to the global
@@ -38,14 +38,19 @@ abstract base class BaseStateController<State extends Object> extends BaseContro
   @protected
   @mustCallSuper
   void setState(State nextState) {
+    final previousState = _state;
     runZonedGuarded<void>(
-      () => BaseController.observer?.onStateChanged(this, _state, nextState),
+      () => BaseController.observer?.onStateChanged(this, previousState, nextState),
       (Object _, StackTrace _) {
         // Intentionally ignore observer failures.
       },
     );
     _state = nextState;
-    if (isDisposed) return;
+    if (isDisposed || !shouldNotifyListeners(previousState, nextState)) return;
     notifyListeners();
   }
+
+  /// Filters listener notifications; state and observer updates are always preserved.
+  @protected
+  bool shouldNotifyListeners(State previousState, State nextState) => true;
 }

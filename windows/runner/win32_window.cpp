@@ -95,8 +95,10 @@ const wchar_t* WindowClassRegistrar::GetWindowClass() {
     window_class.cbClsExtra = 0;
     window_class.cbWndExtra = 0;
     window_class.hInstance = GetModuleHandle(nullptr);
-    window_class.hIcon =
-        LoadIcon(window_class.hInstance, MAKEINTRESOURCE(IDI_APP_ICON));
+    // Shared class icon is a fallback if a per-window load fails.
+    window_class.hIcon = static_cast<HICON>(LoadImageW(
+        window_class.hInstance, MAKEINTRESOURCEW(IDI_APP_ICON), IMAGE_ICON,
+        0, 0, LR_DEFAULTSIZE | LR_SHARED));
     window_class.hbrBackground = 0;
     window_class.lpszMenuName = nullptr;
     window_class.lpfnWndProc = Win32Window::WndProc;
@@ -144,6 +146,7 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
+  window_icons_.Update(window, WindowIcons::GetDpi(window, dpi));
   UpdateTheme(window);
 
   return OnCreate();
@@ -167,7 +170,16 @@ LRESULT CALLBACK Win32Window::WndProc(HWND const window,
     EnableFullDpiSupportIfAvailable(window);
     that->window_handle_ = window;
   } else if (Win32Window* that = GetThisFromHandle(window)) {
-    return that->MessageHandler(window, message, wparam, lparam);
+    // Update icons even if Flutter or a plugin consumes the DPI message.
+    if (message == WM_DPICHANGED) {
+      that->window_icons_.Update(window, HIWORD(wparam));
+    }
+    const LRESULT result = that->MessageHandler(window, message, wparam, lparam);
+    if (message == WM_NCDESTROY) {
+      that->window_icons_.Reset();
+      SetWindowLongPtr(window, GWLP_USERDATA, 0);
+    }
+    return result;
   }
 
   return DefWindowProc(window, message, wparam, lparam);

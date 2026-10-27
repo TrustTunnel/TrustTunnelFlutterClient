@@ -1,5 +1,4 @@
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 
 typedef ExcludedRoutesDataChangedCallback = void Function({
@@ -7,7 +6,7 @@ typedef ExcludedRoutesDataChangedCallback = void Function({
   bool? hasInvalidRoutes,
 });
 
-abstract class ExcludedRoutesScopeController {
+abstract class ExcludedRoutesScopeController implements Listenable {
   abstract final List<String> excludedRoutes;
   abstract final List<String> initialExcludedRoutes;
   abstract final bool hasInvalidRoutes;

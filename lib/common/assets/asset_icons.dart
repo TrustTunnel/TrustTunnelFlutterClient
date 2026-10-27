@@ -17,11 +17,12 @@ abstract class AssetIcons {
   static const IconData arrowLeft = IconData(0xe806, fontFamily: _kFontFam);
   static const IconData arrowRight = IconData(0xe807, fontFamily: _kFontFam);
   static const IconData attach = IconData(0xe828, fontFamily: _kFontFam);
+  static const IconData attention = IconData(0xe82c, fontFamily: _kFontFam);
   static const IconData cancel = IconData(0xe808, fontFamily: _kFontFam);
-  static const IconData checkBoxFilled = IconData(0xe809, fontFamily: _kFontFam);
-  static const IconData checkBox = IconData(0xe80a, fontFamily: _kFontFam);
-  static const IconData checkSmall = IconData(0xe80b, fontFamily: _kFontFam);
   static const IconData check = IconData(0xe80c, fontFamily: _kFontFam);
+  static const IconData checkBox = IconData(0xe80a, fontFamily: _kFontFam);
+  static const IconData checkBoxFilled = IconData(0xe809, fontFamily: _kFontFam);
+  static const IconData checkSmall = IconData(0xe80b, fontFamily: _kFontFam);
   static const IconData close = IconData(0xe80d, fontFamily: _kFontFam);
   static const IconData copy = IconData(0xe80e, fontFamily: _kFontFam);
   static const IconData delete = IconData(0xe80f, fontFamily: _kFontFam);
@@ -44,13 +45,17 @@ abstract class AssetIcons {
   static const IconData radioButtonChecked = IconData(0xe81d, fontFamily: _kFontFam);
   static const IconData radioButtonUnchecked = IconData(0xe81e, fontFamily: _kFontFam);
   static const IconData route = IconData(0xe81f, fontFamily: _kFontFam);
-  static const IconData settingsFilled = IconData(0xe820, fontFamily: _kFontFam);
   static const IconData settings = IconData(0xe821, fontFamily: _kFontFam);
+  static const IconData settingsFilled = IconData(0xe820, fontFamily: _kFontFam);
   static const IconData share = IconData(0xe822, fontFamily: _kFontFam);
   static const IconData sort = IconData(0xe823, fontFamily: _kFontFam);
   static const IconData unlink = IconData(0xe824, fontFamily: _kFontFam);
   static const IconData up = IconData(0xe825, fontFamily: _kFontFam);
   static const IconData update = IconData(0xe826, fontFamily: _kFontFam);
+  static const IconData windowsExit = IconData(0xe82f, fontFamily: _kFontFam);
+  static const IconData windowsMaximize = IconData(0xe82d, fontFamily: _kFontFam);
+  static const IconData windowsMinimize = IconData(0xe830, fontFamily: _kFontFam);
+  static const IconData windowsRestore = IconData(0xe831, fontFamily: _kFontFam);
 
   static const _kFontFam = 'IconFont';
 }

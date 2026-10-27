@@ -38,7 +38,7 @@ class SettingsScreen extends StatelessWidget {
             const Divider(),
             const DownloadAppLogsTile(),
             const Divider(),
-            if (defaultTargetPlatform == TargetPlatform.macOS) ...[
+            if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) ...[
               CustomArrowListTile(
                 title: context.ln.launchAndConnection,
                 onTap: () => _pushLaunchAndConnectionScreen(context),

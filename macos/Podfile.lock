@@ -67,11 +67,11 @@ SPEC CHECKSUMS:
   screen_retriever_macos: c5508cc3c66ff0d4db650480cf0ab691e220d933
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   tray_manager: ba21ca14c7c3af1da04e6efcf0c1ee0b042e7ed0
-  TrustTunnelClient: 2a4cd737fd1c7757f5dbbc73c993909b2e52f078
+  TrustTunnelClient: 2b27fc5f2882c64d5bcecb21e6eac3d7348d651f
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   vpn_plugin: 39c007f1c0d89394e9446539110f46a63caf53c6
-  window_manager: a1ee8cede128807dbdebb65e256c0577b0eed8dd
+  window_manager: 749451531a8cfb273dca203d66a9e53b0ca4adaa
 
 PODFILE CHECKSUM: f9a74aa5bb75efcd6b97f11abd1096902b27acab
 
-COCOAPODS: 1.17.0
+COCOAPODS: 1.16.2

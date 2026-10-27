@@ -11,10 +11,7 @@ final _kIsLinux = !kIsWeb && Platform.isLinux;
 final _kIsWindows = !kIsWeb && Platform.isWindows;
 
 class VirtualWindowFrame extends StatefulWidget {
-  const VirtualWindowFrame({
-    super.key,
-    required this.child,
-  });
+  const VirtualWindowFrame({super.key, required this.child});
 
   /// The [child] contained by the VirtualWindowFrame.
   final Widget child;
@@ -81,11 +78,7 @@ class _VirtualWindowFrameState extends State<VirtualWindowFrame>
       return DragToResizeArea(
         enableResizeEdges: (_isMaximized || _isFullScreen)
             ? []
-            : [
-                ResizeEdge.topLeft,
-                ResizeEdge.top,
-                ResizeEdge.topRight,
-              ],
+            : [ResizeEdge.topLeft, ResizeEdge.top, ResizeEdge.topRight],
         child: widget.child,
       );
     }
@@ -139,8 +132,6 @@ class _VirtualWindowFrameState extends State<VirtualWindowFrame>
 // ignore: non_constant_identifier_names
 TransitionBuilder VirtualWindowFrameInit() {
   return (_, Widget? child) {
-    return VirtualWindowFrame(
-      child: child!,
-    );
+    return VirtualWindowFrame(child: child!);
   };
 }

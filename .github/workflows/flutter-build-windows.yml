@@ -154,6 +154,7 @@ jobs:
         flutter_windows.dll
         screen_retriever_windows_plugin.dll
         sqlite3.dll
+        tray_manager_plugin.dll
         url_launcher_windows_plugin.dll
         vpn_plugin_plugin.dll
         window_manager_plugin.dll

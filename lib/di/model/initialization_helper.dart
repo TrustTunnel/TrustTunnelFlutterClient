@@ -18,6 +18,7 @@ import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/initialization_result.dart';
 import 'package:trusttunnel/di/model/repository_factory.dart';
+import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
 
 abstract class InitializationHelper {
   const InitializationHelper();
@@ -65,7 +66,7 @@ class InitializationHelperIo extends InitializationHelper {
       logStorage: logStorage,
     );
 
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
+    if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) {
       await dependenciesFactory.appWindowController.configureMainWindow(
         minimumWindowSize: const Size(905, 680),
         defaultWindowSize: const Size(1024, 768),
@@ -87,9 +88,24 @@ class InitializationHelperIo extends InitializationHelper {
       additionalTags: ['app', 'initialization'],
     );
 
-    await dependenciesFactory.exportLogsLocalSource.clearTempFiles();
+    try {
+      await dependenciesFactory.exportLogsLocalSource.clearTempFiles();
+    } catch (error, stackTrace) {
+      logger.logError(
+        'Unable to clear temporary log exports',
+        error: error,
+        stackTrace: stackTrace,
+        additionalTags: ['app', 'initialization'],
+      );
+    }
 
     final initialVpnState = await repositoryFactory.vpnRepository.requestState();
+
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      final appWindowController = dependenciesFactory.appWindowController as WindowsAppWindowController;
+      // Setup can request exit even when launched outside the app.
+      await appWindowController.initializeInstallerExitHandler();
+    }
 
     FlutterNativeSplash.remove();
 

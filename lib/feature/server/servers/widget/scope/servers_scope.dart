@@ -8,15 +8,14 @@ import 'package:trusttunnel/feature/server/servers/controller/servers_controller
 import 'package:trusttunnel/feature/server/servers/controller/servers_states.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
-import 'package:trusttunnel/feature/settings/launch_and_connection/controller/auto_connect_on_launch_controller.dart';
 
-/// {@template products_scope_template}
-/// Provides Products controller to the widget tree
+/// {@template servers_scope_template}
+/// Provides the persisted server list and selection to the widget tree.
 /// {@endtemplate}
 class ServersScope extends StatefulWidget {
   final Widget child;
 
-  /// {@macro products_scope_template}
+  /// {@macro servers_scope_template}
   const ServersScope({
     required this.child,
     super.key,
@@ -31,24 +30,47 @@ class ServersScope extends StatefulWidget {
     context,
     listen: listen,
     aspect: aspect,
-  );
+  ).controller;
 
   @override
   State<ServersScope> createState() => _ServersScopeState();
 }
 
-class _ServersScopeState extends State<ServersScope> {
+class _ServersScopeState extends State<ServersScope> implements ServersScopeController {
   late final ServersController _controller;
-  late final AutoConnectOnLaunchSettingsController _autoConnectOnLaunchSettingsController;
+
+  @override
+  List<Server> get servers => [..._controller.state.servers];
+
+  @override
+  Server? get selectedServer => _controller.state.selectedServer;
+
+  @override
+  PresentationException? get error => _controller.state.error;
+
+  @override
+  bool get loading => _controller.state.loading;
+
+  @override
+  void Function() get fetchServers => _controller.fetchServers;
+
+  @override
+  void Function({
+    required String serverId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<Server>? onDuplicated,
+    VoidCallback? onError,
+  })
+  get duplicateServer => _controller.duplicateServer;
 
   @override
   void initState() {
     super.initState();
 
     final repositoryFactory = context.repositoryFactory;
-    _controller = ServersController(repository: repositoryFactory.serverRepository);
-    _autoConnectOnLaunchSettingsController = AutoConnectOnLaunchSettingsController(
-      repository: repositoryFactory.autoConnectOnLaunchSettingsRepository,
+    _controller = ServersController(
+      repository: repositoryFactory.serverRepository,
+      autoConnectOnLaunchSettingsRepository: repositoryFactory.autoConnectOnLaunchSettingsRepository,
     );
 
     _controller.fetchServers();
@@ -58,63 +80,49 @@ class _ServersScopeState extends State<ServersScope> {
   Widget build(BuildContext context) => StateConsumer<ServersController, ServersState>(
     controller: _controller,
     builder: (context, state, _) => _InheritedServersScope(
+      controller: this,
       state: state,
-      pickServer: _selectServer,
-      fetchServers: _controller.fetchServers,
-      duplicateServer: _controller.duplicateServer,
       child: widget.child,
     ),
   );
 
-  void _selectServer(String? serverId) {
-    _autoConnectOnLaunchSettingsController.setLastServerId(serverId);
-    _controller.selectServer(serverId);
-  }
+  @override
+  void selectServer(
+    String? serverId, {
+    VoidCallback? onSelected,
+    VoidCallback? onError,
+  }) => _controller.selectServer(serverId, onSelected: onSelected, onError: onError);
+
+  @override
+  void addListener(VoidCallback listener) => _controller.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) => _controller.removeListener(listener);
 
   @override
   void dispose() {
-    _autoConnectOnLaunchSettingsController.dispose();
     _controller.dispose();
     super.dispose();
   }
 }
 
-class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implements ServersScopeController {
+class _InheritedServersScope extends InheritedModel<ServersScopeAspect> {
+  final ServersScopeController controller;
+
   final ServersState _state;
 
-  @override
-  final void Function(String? serverId) pickServer;
-
-  @override
-  final void Function() fetchServers;
-
-  @override
-  final void Function({
-    required String serverId,
-    required String Function(String name, int number) numberedName,
-    ValueChanged<Server>? onDuplicated,
-    VoidCallback? onError,
-  })
-  duplicateServer;
-
   const _InheritedServersScope({
+    required this.controller,
     required this._state,
-    required this.pickServer,
-    required this.fetchServers,
-    required this.duplicateServer,
     required super.child,
   });
 
-  @override
   List<Server> get servers => [..._state.servers];
 
-  @override
   Server? get selectedServer => _state.selectedServer;
 
-  @override
   PresentationException? get error => _state.error;
 
-  @override
   bool get loading => _state.loading;
 
   @override
@@ -124,7 +132,13 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
     BuildContext context, {
     bool listen = true,
     ServersScopeAspect? aspect,
-  }) => _productsScope(context, listen: listen, aspect: aspect) ?? _notFoundInheritedWidgetOfExactType();
+  }) =>
+      _scope(
+        context,
+        listen: listen,
+        aspect: aspect,
+      ) ??
+      _notFoundInheritedWidgetOfExactType();
 
   @override
   bool updateShouldNotifyDependent(
@@ -150,7 +164,7 @@ class _InheritedServersScope extends InheritedModel<ServersScopeAspect> implemen
     return false;
   }
 
-  static _InheritedServersScope? _productsScope(
+  static _InheritedServersScope? _scope(
     BuildContext context, {
     bool listen = true,
     ServersScopeAspect? aspect,
