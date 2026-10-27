@@ -145,7 +145,7 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
-  // Exit confirmation dialog channel (lib/feature/menu_bar/tray_manager/linux).
+  // Exit confirmation dialog channel (lib/common/platform/linux_exit_dialog.dart).
   g_clear_object(&g_exit_dialog_channel);
   g_autoptr(FlPluginRegistrar) registrar = fl_plugin_registry_get_registrar_for_plugin(
       FL_PLUGIN_REGISTRY(view), "VpnPlugin");

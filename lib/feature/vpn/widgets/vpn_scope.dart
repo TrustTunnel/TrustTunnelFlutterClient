@@ -251,7 +251,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
 
   @override
   AppWindowController? get appWindowController => switch (defaultTargetPlatform) {
-    TargetPlatform.macOS || TargetPlatform.windows => widget.appWindowControllerProvider(),
+    TargetPlatform.macOS || TargetPlatform.windows || TargetPlatform.linux => widget.appWindowControllerProvider(),
     _ => null,
   };
 
