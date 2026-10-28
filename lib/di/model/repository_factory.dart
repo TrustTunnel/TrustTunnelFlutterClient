@@ -1,3 +1,4 @@
+import 'package:trusttunnel/data/repository/app_updating_repository.dart';
 import 'package:trusttunnel/data/repository/auto_connect_on_launch_settings_repository.dart';
 import 'package:trusttunnel/data/repository/deep_link_repository.dart';
 import 'package:trusttunnel/data/repository/export_logs_repository.dart';
@@ -11,6 +12,8 @@ import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 
 abstract class RepositoryFactory {
+  AppUpdatingRepository get appUpdatingRepository;
+
   ServerRepository get serverRepository;
 
   SettingsRepository get settingsRepository;
@@ -39,6 +42,8 @@ class RepositoryFactoryImpl implements RepositoryFactory {
     required this._dependencyFactory,
   });
 
+  AppUpdatingRepository? _appUpdatingRepository;
+
   ServerRepository? _serverRepository;
 
   SettingsRepository? _settingsRepository;
@@ -58,6 +63,13 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   OpenMainWindowOnLoginRepository? _openMainWindowOnLoginRepository;
 
   AutoConnectOnLaunchSettingsRepository? _autoConnectOnLaunchSettingsRepository;
+
+  @override
+  AppUpdatingRepository get appUpdatingRepository => _appUpdatingRepository ??= AppUpdatingRepositoryImpl(
+    releasesDataSource: _dependencyFactory.releasesDataSource,
+    localDataSource: _dependencyFactory.appUpdatesLocalDataSource,
+    installationDataSourceProvider: () => _dependencyFactory.appUpdateInstallationDataSource,
+  );
 
   @override
   ServerRepository get serverRepository => _serverRepository ??= ServerRepositoryImpl(

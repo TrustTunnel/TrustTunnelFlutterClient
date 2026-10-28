@@ -1,16 +1,22 @@
+import 'dart:io';
+
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trusttunnel/common/constants/app_update_constants.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
+import 'package:trusttunnel/data/datasources/app_update_installation_datasource.dart';
+import 'package:trusttunnel/data/datasources/app_updates_local_datasource.dart';
 import 'package:trusttunnel/data/datasources/auto_connect_on_launch_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
 import 'package:trusttunnel/data/datasources/launch_at_login_datasource.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/app_updates_local_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/auto_connect_on_launch_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
@@ -23,7 +29,10 @@ import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/native_sources/launch_at_login_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/native_sources/open_main_window_on_login_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/native_sources/windows_app_update_installation_datasource.dart';
 import 'package:trusttunnel/data/datasources/open_main_window_on_login_datasource.dart';
+import 'package:trusttunnel/data/datasources/releases_datasource.dart';
+import 'package:trusttunnel/data/datasources/remote_sources/releases_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
@@ -42,6 +51,12 @@ abstract class DependencyFactory {
   abstract final FileLogAppender fileLogAppender;
 
   abstract final FileLogStorage logStorage;
+
+  AppUpdatesLocalDataSource get appUpdatesLocalDataSource;
+
+  AppUpdateInstallationDataSource get appUpdateInstallationDataSource;
+
+  ReleasesDataSource get releasesDataSource;
 
   ThemeData get lightThemeData;
 
@@ -76,6 +91,8 @@ abstract class DependencyFactory {
   AppWindowController get appWindowController;
 
   db.AppDatabase get database;
+
+  HttpClient createHttpClient(Duration timeout);
 }
 
 class DependencyFactoryImpl implements DependencyFactory {
@@ -93,6 +110,14 @@ class DependencyFactoryImpl implements DependencyFactory {
     required this.fileLogAppender,
     required this.logStorage,
   });
+
+  final AppUpdatesLocalDataSource _appUpdatesLocalDataSource = AppUpdatesLocalDataSourceImpl(
+    repositoryName: AppUpdateConstants.repositoryName,
+  );
+
+  AppUpdateInstallationDataSource? _appUpdateInstallationDataSource;
+
+  ReleasesDataSource? _releasesDataSource;
 
   ThemeData? _lightThemeData;
 
@@ -125,6 +150,21 @@ class DependencyFactoryImpl implements DependencyFactory {
   AppWindowController? _appWindowController;
 
   db.AppDatabase? _database;
+
+  @override
+  AppUpdatesLocalDataSource get appUpdatesLocalDataSource => _appUpdatesLocalDataSource;
+
+  @override
+  AppUpdateInstallationDataSource get appUpdateInstallationDataSource =>
+      _appUpdateInstallationDataSource ??= WindowsAppUpdateInstallationDataSource();
+
+  @override
+  ReleasesDataSource get releasesDataSource => _releasesDataSource ??= ReleasesDataSourceImpl(
+    httpClientFactory: createHttpClient,
+    timeout: AppUpdateConstants.requestTimeout,
+    baseUrl: AppUpdateConstants.releasesUrl,
+    repositoryName: AppUpdateConstants.repositoryName,
+  );
 
   @override
   ThemeData get lightThemeData => _lightThemeData ??= LightTheme().data;
@@ -212,4 +252,7 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   @override
   db.AppDatabase get database => _database ??= db.AppDatabase();
+
+  @override
+  HttpClient createHttpClient(Duration timeout) => HttpClient()..connectionTimeout = timeout;
 }

@@ -11,9 +11,14 @@ import 'package:trusttunnel/common/utils/navigation_utils.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/deep_link/deep_link_scope.dart';
 import 'package:trusttunnel/feature/navigation/widgets/custom_navigation_rail.dart';
+import 'package:trusttunnel/feature/navigation/widgets/navigation_route_observer.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/routing_screen.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_screen.dart';
+import 'package:trusttunnel/feature/settings/app_version_and_updating/widgets/app_update_notification_listener.dart';
+import 'package:trusttunnel/feature/settings/app_version_and_updating/widgets/app_version_screen.dart';
+import 'package:trusttunnel/feature/settings/app_version_and_updating/widgets/scope/app_version_and_updating_scope.dart';
+import 'package:trusttunnel/feature/settings/app_version_and_updating/widgets/scope/app_version_and_updating_scope_controller.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/settings/query_log/widgets/query_log_screen.dart';
 import 'package:trusttunnel/feature/settings/settings/settings_screen.dart';
@@ -29,11 +34,15 @@ class NavigationScreen extends StatefulWidget {
 }
 
 class _NavigationScreenState extends State<NavigationScreen> {
+  bool _openingAppVersion = false;
   final ValueNotifier<int> _selectedTabNotifier = ValueNotifier(0);
   final _navigatorKey = GlobalKey<NavigatorState>();
-  late final LoggingNavigatorObserver _navigatorObserver;
+  late final LoggingNavigatorObserver _loggingNavigatorObserver;
+  late final NavigationRouteObserver _routeObserver;
 
   ServerData? _deepLinkData;
+  PageRoute<dynamic>? _activeAppVersionRoute;
+  AppVersionAndUpdatingScopeController? _updatesController;
 
   /// Shows feedback for VPN operation errors handled in [VpnScope] above the [MaterialApp].
   Listenable? _vpnOperationErrorListenable;
@@ -41,9 +50,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _navigatorObserver = LoggingNavigatorObserver(
+    _loggingNavigatorObserver = LoggingNavigatorObserver(
       navigatorName: 'navigation',
     );
+    _routeObserver = NavigationRouteObserver(onTopRouteChanged: _onTopRouteChanged);
   }
 
   @override
@@ -56,6 +66,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
       _vpnOperationErrorListenable = vpnOperationErrorListenable;
       _vpnOperationErrorListenable?.addListener(_onVpnOperationError);
     }
+
+    _updatesController = AppVersionAndUpdatingScope.controllerOf(
+      context: context,
+      listen: false,
+    );
 
     final fetchedDeepLink = DeepLinkScope.of(context).deepLinkData;
     if (_deepLinkData != fetchedDeepLink) {
@@ -97,6 +112,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           valueListenable: _selectedTabNotifier,
                           builder: (context, index, _) => CustomNavigationRail(
                             selectedIndex: index,
+                            onUpdatePressed: () => _openRouteFromTray(AppRoutes.appVersion),
                             onDestinationSelected: _onDestinationSelected,
                             destinations: NavigationUtils.getNavigationRailDestinations(context),
                           ),
@@ -147,27 +163,55 @@ class _NavigationScreenState extends State<NavigationScreen> {
     context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 
-  Widget _getContent() => NavigatorPopHandler(
-    onPopWithResult: (_) => _navigatorKey.currentState!.maybePop(),
-    child: Navigator(
-      key: _navigatorKey,
-      observers: [_navigatorObserver],
-      onGenerateInitialRoutes: (_, _) => [
-        PageRouteBuilder(
-          settings: AppRoutes.servers.settings,
-          pageBuilder: (context, animation, secondaryAnimation) => const ServersScreen(),
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
+  Widget _getContent() => ScaffoldMessenger(
+    child: AppUpdateNotificationListener(
+      child: Scaffold(
+        backgroundColor: context.colors.backgroundSystem,
+        body: NavigatorPopHandler(
+          onPopWithResult: (_) => _navigatorKey.currentState!.maybePop(),
+          child: Navigator(
+            key: _navigatorKey,
+            observers: [
+              _loggingNavigatorObserver,
+              _routeObserver,
+            ],
+            onGenerateInitialRoutes: (_, _) => [
+              PageRouteBuilder(
+                settings: AppRoutes.servers.settings,
+                pageBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                ) => const ServersScreen(),
+                transitionDuration: Duration.zero,
+                reverseTransitionDuration: Duration.zero,
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     ),
   );
+
+  void _onTopRouteChanged(Route<dynamic> route) {
+    if (!mounted || route is! PageRoute<dynamic> || identical(route, _activeAppVersionRoute)) {
+      return;
+    }
+
+    final PageRoute<dynamic>? previousRoute = _activeAppVersionRoute;
+    if (previousRoute != null) {
+      _updatesController?.resetManualUpdateCheckResult();
+    }
+
+    _activeAppVersionRoute = route.settings.name == AppRoutes.appVersion.settings.name ? route : null;
+  }
 
   void _onDestinationSelected(int selectedIndex, {ServerData? deepLinkData}) {
     unawaited(
       _setTabRoute(
         selectedIndex,
         deepLinkData: deepLinkData,
+        force: _routeObserver.currentName == AppRoutes.appVersion.settings.name,
       ),
     );
   }
@@ -197,16 +241,36 @@ class _NavigationScreenState extends State<NavigationScreen> {
           force: true,
         );
         await _pushOnInnerNavigator(
-          const ServerDetailsPopUp(),
+          widget: const ServerDetailsPopUp(),
           route: AppRoutes.serverDetails,
         );
+      case AppRoutes.appVersion:
+        final bool alreadyOpeningAppVersion =
+            _openingAppVersion || _routeObserver.currentName == AppRoutes.appVersion.settings.name;
+        if (alreadyOpeningAppVersion) {
+          return;
+        }
+        _openingAppVersion = true;
+
+        try {
+          _selectedTabNotifier.value = 2;
+          unawaited(
+            _pushOnInnerNavigator(
+              widget: const AppVersionScreen(),
+              route: AppRoutes.appVersion,
+              clearStack: true,
+            ),
+          );
+        } finally {
+          _openingAppVersion = false;
+        }
       case AppRoutes.queryLog:
         await _setTabRoute(
           2,
           force: true,
         );
         await _pushOnInnerNavigator(
-          const QueryLogScreen(),
+          widget: const QueryLogScreen(),
           route: AppRoutes.queryLog,
         );
       default:
@@ -253,9 +317,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
     await SchedulerBinding.instance.endOfFrame;
   }
 
-  Future<T?> _pushOnInnerNavigator<T extends Object?>(
-    Widget widget, {
+  Future<T?> _pushOnInnerNavigator<T extends Object?>({
+    required Widget widget,
     AppRoute? route,
+    bool clearStack = false,
   }) async {
     final navigatorState = _navigatorKey.currentState;
     if (navigatorState == null) {
@@ -266,19 +331,25 @@ class _NavigationScreenState extends State<NavigationScreen> {
       navigatorState.context,
     );
 
-    return navigatorState.push<T>(
-      MaterialPageRoute<T>(
-        settings: route?.settings ?? RouteSettings(name: widget.runtimeType.toString()),
-        builder: (innerContext) => ScaffoldMessengerProvider(
-          value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
-          child: widget,
-        ),
+    final MaterialPageRoute<T> pageRoute = MaterialPageRoute<T>(
+      settings: route?.settings ?? RouteSettings(name: widget.runtimeType.toString()),
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: widget,
       ),
     );
+
+    return clearStack
+        ? navigatorState.pushAndRemoveUntil<T>(pageRoute, (_) => false)
+        : navigatorState.push<T>(pageRoute);
   }
 
   @override
   void dispose() {
+    if (_activeAppVersionRoute != null) {
+      _updatesController?.resetManualUpdateCheckResult();
+    }
+
     _vpnOperationErrorListenable?.removeListener(_onVpnOperationError);
     _selectedTabNotifier.dispose();
     super.dispose();
