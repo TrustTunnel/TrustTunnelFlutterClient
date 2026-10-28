@@ -430,7 +430,8 @@ final class AppVersionAndUpdatingController extends BaseStateController<AppVersi
               )
             : updatedState,
       );
-      final bool shouldReturnToIdle = !showCheckResult && state.error == null && !state.isUpToDate;
+      final bool shouldReturnToIdle =
+          !showCheckResult && state.error == null && (!state.isUpToDate || availableUpdate != null);
 
       if (shouldReturnToIdle) {
         _returnToIdle();
@@ -551,6 +552,8 @@ final class AppVersionAndUpdatingController extends BaseStateController<AppVersi
         cachedBundle != null && cachedBundle.update.hasSameInstallerBundle(availableUpdate);
 
     if (!matchesSelectedUpdate) {
+      await _repository.removeInstallerBundle();
+
       return null;
     }
 
