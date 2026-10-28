@@ -9,6 +9,7 @@ import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/feature/vpn/controller/vpn_controller_state.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration_sources.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_exit_mode.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_native_operation.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_operations_processing_info.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_user_command.dart';
@@ -80,6 +81,9 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
 
   void disconnect() => handle(
     () {
+      if (_vpnOperationsProcessingInfo.exitMode == VpnExitMode.installation) {
+        return;
+      }
       _cancelPendingUserCommand();
 
       // Preserve an explicit stop even if another connection is requested next.
@@ -89,9 +93,27 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     errorHandler: _onHandlerError,
   );
 
-  void stopForExit() => handle(
+  /// Installation mode locks commands and leaves VPN shutdown to the installer.
+  void stopForExit({
+    VpnExitMode mode = VpnExitMode.application,
+    ValueChanged<String?>? onPrepared,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) => handle(
     () {
-      if (_vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle) {
+      if (mode == VpnExitMode.installation) {
+        _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(exitMode: mode));
+        _beginExit();
+
+        final String? serverId = state.vpnState == VpnState.connected ? state.currentlyConnectedServerId : null;
+        onPrepared?.call(serverId);
+
+        return;
+      }
+
+      final bool exitAlreadyStarted =
+          _vpnOperationsProcessingInfo.exitMode == VpnExitMode.installation ||
+          _vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle;
+      if (exitAlreadyStarted) {
         return;
       }
 
@@ -104,20 +126,32 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
       );
       _handlePendingWork();
     },
-    errorHandler: _onHandlerError,
+    errorHandler: onError ?? _onHandlerError,
   );
 
-  void cancelExit() => handle(
+  void cancelExit({VpnExitMode mode = VpnExitMode.application}) => handle(
     () {
+      final bool installerOwnsExit = _vpnOperationsProcessingInfo.exitMode == VpnExitMode.installation;
+      if (installerOwnsExit && mode != VpnExitMode.installation) {
+        return;
+      }
+
       _updateState(
         state.copyWith(
           isExitProcessing: false,
-          vpnOperationsProcessingInfo: _vpnOperationsProcessingInfo.copyWith(exitStage: VpnExitStage.idle),
+          vpnOperationsProcessingInfo: _vpnOperationsProcessingInfo.copyWith(
+            exitMode: VpnExitMode.application,
+            exitStage: mode == VpnExitMode.installation ? _vpnOperationsProcessingInfo.exitStage : VpnExitStage.idle,
+          ),
         ),
       );
+
+      if (mode == VpnExitMode.installation) {
+        _handlePendingWork();
+      }
       // Previously cancelled connections stay cancelled.
     },
-    errorHandler: _onHandlerError,
+    errorHandler: mode == VpnExitMode.application ? _onHandlerError : null,
   );
 
   /// Non-desktop exit cancels preparation without stopping the system VPN.

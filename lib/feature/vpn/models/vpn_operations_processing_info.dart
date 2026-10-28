@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_exit_mode.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_native_operation.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_user_command.dart';
 
@@ -41,6 +42,7 @@ final class VpnOperationsProcessingInfo {
   final bool configurationDeleted;
 
   final VpnExitStage exitStage;
+  final VpnExitMode exitMode;
 
   /// The single repository mutation awaiting its reply; native events do not release this slot.
   final VpnNativeOperation? nativeOperation;
@@ -60,6 +62,7 @@ final class VpnOperationsProcessingInfo {
     this.needsSynchronization = true,
     this.configurationDeleted = false,
     this.exitStage = VpnExitStage.idle,
+    this.exitMode = VpnExitMode.application,
     this.nativeOperation,
     this.configuration,
     this.nativeStateRequest,
@@ -75,6 +78,7 @@ final class VpnOperationsProcessingInfo {
     needsSynchronization,
     configurationDeleted,
     exitStage,
+    exitMode,
     nativeOperation,
     configuration,
     nativeStateRequest,
@@ -92,6 +96,7 @@ final class VpnOperationsProcessingInfo {
           needsSynchronization == other.needsSynchronization &&
           configurationDeleted == other.configurationDeleted &&
           exitStage == other.exitStage &&
+          exitMode == other.exitMode &&
           nativeOperation == other.nativeOperation &&
           configuration == other.configuration &&
           identical(nativeStateRequest, other.nativeStateRequest);
@@ -100,7 +105,7 @@ final class VpnOperationsProcessingInfo {
   String toString() =>
       'VpnOperationsProcessingInfo(request: $requestId, pending: $pendingUserCommand, nativeOperation: $nativeOperation, '
       'stopRequired: $stopRequired, start: $startSubmitted, stop: $stopSubmitted, '
-      'sync: $needsSynchronization, exit: $exitStage, configured: ${configuration != null}, '
+      'sync: $needsSynchronization, exit: $exitStage, exitMode: $exitMode, configured: ${configuration != null}, '
       'deleted: $configurationDeleted, refreshing: ${nativeStateRequest != null})';
 
   VpnOperationsProcessingInfo copyWith({
@@ -112,6 +117,7 @@ final class VpnOperationsProcessingInfo {
     bool? needsSynchronization,
     bool? configurationDeleted,
     VpnExitStage? exitStage,
+    VpnExitMode? exitMode,
     ValueData<VpnNativeOperation>? nativeOperation,
     ValueData<VpnConfiguration>? configuration,
     ValueData<Future<VpnState>>? nativeStateRequest,
@@ -124,6 +130,7 @@ final class VpnOperationsProcessingInfo {
     needsSynchronization: needsSynchronization ?? this.needsSynchronization,
     configurationDeleted: configurationDeleted ?? this.configurationDeleted,
     exitStage: exitStage ?? this.exitStage,
+    exitMode: exitMode ?? this.exitMode,
     nativeOperation: nativeOperation != null ? nativeOperation.value : this.nativeOperation,
     configuration: configuration != null ? configuration.value : this.configuration,
     nativeStateRequest: nativeStateRequest != null ? nativeStateRequest.value : this.nativeStateRequest,
