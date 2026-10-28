@@ -104,6 +104,8 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(exitMode: mode));
         _beginExit();
 
+        // We specifically ignore intermediate connection states
+        // for restoration, we are only interested in the fully connected state.
         final String? serverId = state.vpnState == VpnState.connected ? state.currentlyConnectedServerId : null;
         onPrepared?.call(serverId);
 
