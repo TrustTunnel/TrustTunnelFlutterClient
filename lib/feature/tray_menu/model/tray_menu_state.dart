@@ -6,6 +6,7 @@ import 'package:trusttunnel/data/model/vpn_state.dart';
 
 /// State used to build the tray and report scope errors.
 final class TrayMenuState {
+  final bool updateAvailable;
   final VpnState vpnState;
   final String? currentlyConnectedServerId;
   final List<Server> servers;
@@ -16,6 +17,7 @@ final class TrayMenuState {
   final PresentationException? loggingError;
 
   const TrayMenuState({
+    this.updateAvailable = false,
     required this.vpnState,
     required this.currentlyConnectedServerId,
     required this.servers,
