@@ -3,19 +3,9 @@ import FlutterMacOS
 import app_links
 
 private enum LoginItemLaunchEvent {
-  static let scheme = "tt"
-
-  private static let host = "internal-launch"
-  private static let path = "/login-item"
-
-  static var url: URL {
-    URL(string: "\(scheme)://\(host)\(path)")!
-  }
-
-  static func matches(_ url: URL) -> Bool {
-    url.scheme?.caseInsensitiveCompare(scheme) == .orderedSame
-      && url.host?.caseInsensitiveCompare(host) == .orderedSame
-      && url.path == path
+  // LaunchServices sets this parameter when it starts the app as a login item.
+  static func isLaunchedAsLogInItem(_ event: NSAppleEventDescriptor) -> Bool {
+    event.paramDescriptor(forKeyword: keyAELaunchedAsLogInItem)?.booleanValue ?? false
   }
 }
 
@@ -39,12 +29,12 @@ private final class AppLaunchState {
 class AppDelegate: FlutterAppDelegate {
   override init() {
     super.init()
-    registerGetURLHandler()
+    registerAppleEventHandlers()
   }
 
   override func applicationWillFinishLaunching(_ notification: Notification) {
     super.applicationWillFinishLaunching(notification)
-    registerGetURLHandler()
+    registerAppleEventHandlers()
     updateLaunchPresentation()
   }
 
@@ -67,29 +57,42 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   @objc
+  private func handleOpenApplicationEvent(
+    _ event: NSAppleEventDescriptor,
+    with replyEvent: NSAppleEventDescriptor
+  ) {
+    guard LoginItemLaunchEvent.isLaunchedAsLogInItem(event) else {
+      return
+    }
+
+    AppLaunchState.shared.markLoginItemLaunch()
+    updateLaunchPresentation()
+  }
+
+  @objc
   private func handleGetURLEvent(
     _ event: NSAppleEventDescriptor,
     with replyEvent: NSAppleEventDescriptor
   ) {
     guard
-      let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
-      let url = URL(string: urlString)
+      let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue
     else {
       return
     }
 
-    if LoginItemLaunchEvent.matches(url) {
-      AppLaunchState.shared.markLoginItemLaunch()
-      updateLaunchPresentation()
-
-      return
-    }
-
-    AppLinks.shared.handleLink(link: url.absoluteString)
+    AppLinks.shared.handleLink(link: urlString)
   }
 
-  private func registerGetURLHandler() {
-    NSAppleEventManager.shared().setEventHandler(
+  private func registerAppleEventHandlers() {
+    let manager = NSAppleEventManager.shared()
+
+    manager.setEventHandler(
+      self,
+      andSelector: #selector(handleOpenApplicationEvent(_:with:)),
+      forEventClass: AEEventClass(kCoreEventClass),
+      andEventID: AEEventID(kAEOpenApplication)
+    )
+    manager.setEventHandler(
       self,
       andSelector: #selector(handleGetURLEvent(_:with:)),
       forEventClass: AEEventClass(kInternetEventClass),

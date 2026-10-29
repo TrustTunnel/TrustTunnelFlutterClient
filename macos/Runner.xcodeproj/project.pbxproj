@@ -35,8 +35,6 @@
 		A563F13C2EBD12AD005D2ECF /* Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A563F1322EBD12AC005D2ECF /* Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B5C69CC52F7BCE1C0070430A /* TrustTunnel.icon in Resources */ = {isa = PBXBuildFile; fileRef = B5C69CC42F7BCE1C0070430A /* TrustTunnel.icon */; };
 		B60000012F80000100000001 /* LaunchAtLoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000062F80000100000001 /* LaunchAtLoginManager.swift */; };
-		B60000022F80000100000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000082F80000100000001 /* AppDelegate.swift */; };
-		B60000032F80000100000001 /* TrustTunnelLoginHelper.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = B60000072F80000100000001 /* TrustTunnelLoginHelper.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,13 +59,6 @@
 			remoteGlobalIDString = A563F1312EBD12AC005D2ECF;
 			remoteInfo = Extension;
 		};
-		B60000042F80000100000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = B600000D2F80000100000001;
-			remoteInfo = TrustTunnelLoginHelper;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -90,17 +81,6 @@
 				A563F13C2EBD12AD005D2ECF /* Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B60000052F80000100000001 /* Embed Login Items */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Contents/Library/LoginItems;
-			dstSubfolderSpec = 1;
-			files = (
-				B60000032F80000100000001 /* TrustTunnelLoginHelper.app in Embed Login Items */,
-			);
-			name = "Embed Login Items";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -137,10 +117,6 @@
 		AC96B7C61AC5DF6BE36AE59B /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5C69CC42F7BCE1C0070430A /* TrustTunnel.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = TrustTunnel.icon; sourceTree = "<group>"; };
 		B60000062F80000100000001 /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
-		B60000072F80000100000001 /* TrustTunnelLoginHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TrustTunnelLoginHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B60000082F80000100000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		B60000092F80000100000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B600000A2F80000100000001 /* LoginHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LoginHelper.entitlements; sourceTree = "<group>"; };
 		BF84755C78C8B6484B38772E /* Pods-Extension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Extension.debug.xcconfig"; path = "Target Support Files/Pods-Extension/Pods-Extension.debug.xcconfig"; sourceTree = "<group>"; };
 		E3F5FFFF16DF1523E5CEEDD1 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		EA4A5BAA1E391525B8257225 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -198,13 +174,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B600000B2F80000100000001 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -235,7 +204,6 @@
 				33CEB47122A05771004F2AC0 /* Flutter */,
 				331C80D6294CF71000263BE5 /* RunnerTests */,
 				A563F1352EBD12AC005D2ECF /* Extension */,
-				B600000C2F80000100000001 /* LoginHelper */,
 				33CC10EE2044A3C60003C045 /* Products */,
 				D73912EC22F37F3D000D13A0 /* Frameworks */,
 				520FAB0CA8F2096634230CB8 /* Pods */,
@@ -248,7 +216,6 @@
 				33CC10ED2044A3C60003C045 /* TrustTunnel.app */,
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
 				A563F1322EBD12AC005D2ECF /* Extension.appex */,
-				B60000072F80000100000001 /* TrustTunnelLoginHelper.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -306,16 +273,6 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		B600000C2F80000100000001 /* LoginHelper */ = {
-			isa = PBXGroup;
-			children = (
-				B60000082F80000100000001 /* AppDelegate.swift */,
-				B60000092F80000100000001 /* Info.plist */,
-				B600000A2F80000100000001 /* LoginHelper.entitlements */,
-			);
-			path = LoginHelper;
-			sourceTree = "<group>";
-		};
 		D73912EC22F37F3D000D13A0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -361,14 +318,12 @@
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				81D98B32A89EBB873C41882A /* [CP] Embed Pods Frameworks */,
 				A563F13D2EBD12AD005D2ECF /* Embed Foundation Extensions */,
-				B60000052F80000100000001 /* Embed Login Items */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				33CC11202044C79F0003C045 /* PBXTargetDependency */,
 				A563F13B2EBD12AD005D2ECF /* PBXTargetDependency */,
-				B60000102F80000100000001 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -395,23 +350,6 @@
 			productName = Extension;
 			productReference = A563F1322EBD12AC005D2ECF /* Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
-		};
-		B600000D2F80000100000001 /* TrustTunnelLoginHelper */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = B60000142F80000100000001 /* Build configuration list for PBXNativeTarget "TrustTunnelLoginHelper" */;
-			buildPhases = (
-				B600000F2F80000100000001 /* Sources */,
-				B600000B2F80000100000001 /* Frameworks */,
-				B600000E2F80000100000001 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = TrustTunnelLoginHelper;
-			productName = TrustTunnelLoginHelper;
-			productReference = B60000072F80000100000001 /* TrustTunnelLoginHelper.app */;
-			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
@@ -444,14 +382,6 @@
 					A563F1312EBD12AC005D2ECF = {
 						CreatedOnToolsVersion = 16.0;
 					};
-					B600000D2F80000100000001 = {
-						CreatedOnToolsVersion = 16.0;
-						SystemCapabilities = {
-							com.apple.Sandbox = {
-								enabled = 1;
-							};
-						};
-					};
 				};
 			};
 			buildConfigurationList = 33CC10E82044A3C60003C045 /* Build configuration list for PBXProject "Runner" */;
@@ -471,7 +401,6 @@
 				331C80D4294CF70F00263BE5 /* RunnerTests */,
 				33CC111A2044C6BA0003C045 /* Flutter Assemble */,
 				A563F1312EBD12AC005D2ECF /* Extension */,
-				B600000D2F80000100000001 /* TrustTunnelLoginHelper */,
 			);
 		};
 /* End PBXProject section */
@@ -495,13 +424,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A563F1302EBD12AC005D2ECF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B600000E2F80000100000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -662,14 +584,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B600000F2F80000100000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B60000022F80000100000001 /* AppDelegate.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -687,11 +601,6 @@
 			isa = PBXTargetDependency;
 			target = A563F1312EBD12AC005D2ECF /* Extension */;
 			targetProxy = A563F13A2EBD12AD005D2ECF /* PBXContainerItemProxy */;
-		};
-		B60000102F80000100000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = B600000D2F80000100000001 /* TrustTunnelLoginHelper */;
-			targetProxy = B60000042F80000100000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1136,102 +1045,6 @@
 			};
 			name = Profile;
 		};
-		B60000112F80000100000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = LoginHelper/LoginHelper.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = TC3Q7MAJXF;
-				ENABLE_HARDENED_RUNTIME = YES;
-				FRAMEWORK_SEARCH_PATHS = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = LoginHelper/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.adguard.TrustTunnel.LoginHelper;
-				PRODUCT_NAME = TrustTunnelLoginHelper;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		B60000122F80000100000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = LoginHelper/LoginHelper.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = TC3Q7MAJXF;
-				ENABLE_HARDENED_RUNTIME = YES;
-				FRAMEWORK_SEARCH_PATHS = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = LoginHelper/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.adguard.TrustTunnel.LoginHelper;
-				PRODUCT_NAME = TrustTunnelLoginHelper;
-				SKIP_INSTALL = YES;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		B60000132F80000100000001 /* Profile */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = LoginHelper/LoginHelper.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = TC3Q7MAJXF;
-				ENABLE_HARDENED_RUNTIME = YES;
-				FRAMEWORK_SEARCH_PATHS = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = LoginHelper/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.adguard.TrustTunnel.LoginHelper;
-				PRODUCT_NAME = TrustTunnelLoginHelper;
-				SKIP_INSTALL = YES;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Profile;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1281,16 +1094,6 @@
 				A563F13E2EBD12AD005D2ECF /* Debug */,
 				A563F13F2EBD12AD005D2ECF /* Release */,
 				A563F1402EBD12AD005D2ECF /* Profile */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		B60000142F80000100000001 /* Build configuration list for PBXNativeTarget "TrustTunnelLoginHelper" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B60000112F80000100000001 /* Debug */,
-				B60000122F80000100000001 /* Release */,
-				B60000132F80000100000001 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

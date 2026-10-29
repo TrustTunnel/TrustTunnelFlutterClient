@@ -14,6 +14,7 @@ private enum LaunchSplashStyle {
 class MainFlutterWindow: NSWindow {
   private var isPresentationAllowed = false
   private weak var launchSplashView: NSView?
+  private let launchAtLoginManager: LaunchAtLoginManaging = LaunchAtLoginManager()
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -26,6 +27,7 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(windowFrame, display: true)
     installLaunchSplash(in: flutterViewController.view)
 
+    launchAtLoginManager.migrateLegacyLoginItemIfNeeded()
     RegisterGeneratedPlugins(registry: flutterViewController)
     registerMacosExitDialogChannel(flutterViewController: flutterViewController)
     registerMacosMainWindowChannel(flutterViewController: flutterViewController)
@@ -184,13 +186,13 @@ class MainFlutterWindow: NSWindow {
       name: "trusttunnel/launch_at_login",
       binaryMessenger: flutterViewController.engine.binaryMessenger
     )
-    let manager: LaunchAtLoginManaging = LaunchAtLoginManager()
+    let manager = launchAtLoginManager
 
     channel.setMethodCallHandler { call, result in
       do {
         switch call.method {
         case "isEnabled":
-          result(try manager.isEnabled())
+          result(manager.isEnabled)
         case "setEnabled":
           guard
             let arguments = call.arguments as? [String: Any],
