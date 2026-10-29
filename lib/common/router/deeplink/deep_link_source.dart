@@ -31,7 +31,7 @@ class AppLinksSource extends DeepLinkSource {
 
   @override
   void dispose() {
-    _subscription.cancel();
+    unawaited(_subscription.cancel());
     super.dispose();
   }
 
