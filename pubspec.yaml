@@ -43,6 +43,7 @@ dependencies:
     path: plugins/vpn_plugin
   tray_manager:
     path: packages/tray_manager
+  win32_registry: 2.1.0
   window_manager:
     path: packages/window_manager
 

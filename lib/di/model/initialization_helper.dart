@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:adguard_logger/adguard_logger.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trusttunnel/common/constants/app_constants.dart';
 import 'package:trusttunnel/common/controller/controller/controller.dart';
 import 'package:trusttunnel/common/logging/app_logger.dart';
 import 'package:trusttunnel/common/logging/enum/logging_level.dart';
@@ -14,6 +16,9 @@ import 'package:trusttunnel/common/logging/enum/logging_security_type.dart';
 import 'package:trusttunnel/common/logging/observers/logging_controller_observer.dart';
 import 'package:trusttunnel/common/logging/sanitizer/log_sanitizer.dart';
 import 'package:trusttunnel/common/logging/utils/containment_file_util.dart';
+import 'package:trusttunnel/common/platform/windows/protocol_command_builder.dart';
+import 'package:trusttunnel/common/platform/windows/win32_protocol_registration_store.dart';
+import 'package:trusttunnel/common/platform/windows/windows_protocol_handler.dart';
 import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/initialization_result.dart';
@@ -105,6 +110,7 @@ class InitializationHelperIo extends InitializationHelper {
       final appWindowController = dependenciesFactory.appWindowController as WindowsAppWindowController;
       // Setup can request exit even when launched outside the app.
       await appWindowController.initializeInstallerExitHandler();
+      _registerUrlScheme();
     }
 
     FlutterNativeSplash.remove();
@@ -147,6 +153,33 @@ class InitializationHelperIo extends InitializationHelper {
       'Logger configured with level: $loggingLevel and security type: $securityType',
       additionalTags: ['app', 'initialization'],
     );
+  }
+
+  /// Registers the application as the handler of the deep link scheme.
+  /// Use for Windows platform only.
+  void _registerUrlScheme() {
+    assert(defaultTargetPlatform == TargetPlatform.windows, 'URL scheme registration is only supported on Windows');
+
+    try {
+      WindowsProtocolHandler(
+        store: const Win32ProtocolRegistrationStore(),
+        commandBuilder: const ProtocolCommandBuilder(),
+        executable: Platform.resolvedExecutable,
+        description: 'URL:${AppConstants.appName} Protocol',
+      ).register(AppConstants.deepLinkScheme);
+
+      logger.logInfo(
+        'Registered ${AppConstants.deepLinkScheme}:// URL scheme',
+        additionalTags: ['app', 'initialization', 'deep link'],
+      );
+    } catch (error, stackTrace) {
+      logger.logWarning(
+        'Unable to register ${AppConstants.deepLinkScheme}:// URL scheme',
+        error: error,
+        stackTrace: stackTrace,
+        additionalTags: ['app', 'initialization', 'deep link'],
+      );
+    }
   }
 
   Future<void> _updateDeviceOrientation() async {
