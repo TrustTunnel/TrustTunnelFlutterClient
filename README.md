@@ -16,9 +16,10 @@
   · <a href="https://agrd.io/ios_trusttunnel">App Store (iOS)</a>
   · <a href="https://agrd.io/macos_trusttunnel">App Store (macOS)</a>
   · <a href="https://agrd.io/android_trusttunnel">Play Store</a>
+  · <a href="https://github.com/TrustTunnel/TrustTunnelFlutterClient/releases/latest/assets">Windows installer</a>
 </p>
 
-**TrustTunnel Flutter Client** is a VPN client for Android, iOS, and macOS, built with Flutter.
+**TrustTunnel Flutter Client** is a VPN client for Android, iOS, macOS and Windows built with Flutter.
 It provides a clean and focused graphical interface for connecting to **self-hosted TrustTunnel VPN servers**.
 
 The application acts as a thin, user-facing layer on top of the TrustTunnel VPN stack. It does not attempt to hide the underlying architecture or networking model. Instead, it exposes core concepts — servers, endpoints, credentials, and transport protocols — in a clear and predictable form suitable for both beginners and experienced users.
@@ -28,7 +29,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 ### Why TrustTunnel Flutter Client
 
 - **Cross-platform by design**
-  Built with Flutter, the client provides a consistent experience on Android, iOS, and macOS while integrating directly with system VPN APIs on each platform.
+  Built with Flutter, the client provides a consistent experience on Android, iOS, macO and Windows while integrating directly with system VPN APIs on each platform.
 
 - **Clean separation of concerns**
   VPN functionality lives in a dedicated Flutter plugin with native bindings, while the application focuses on user experience and configuration. This architecture keeps the codebase understandable and easy to maintain.
@@ -51,7 +52,8 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
       - [3. Configure GitHub Packages access](#3-configure-github-packages-access)
       - [4. Android: configure signing](#4-android-configure-signing)
       - [5. iOS: install pods and configure signing](#5-ios-install-pods-and-configure-signing)
-      - [6. Build or run the application](#6-build-or-run-the-application)
+      - [6. macOS: install pods and configure signing](#6-macos-install-pods-and-configure-signing)
+      - [7. Build or run the application](#7-build-or-run-the-application)
   - [Usage](#usage)
     - [Quick Start](#quick-start)
     - [Server Configuration](#server-configuration)
@@ -69,7 +71,7 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 Before working with the application, ensure that your environment is ready:
 
 - **Flutter SDK 3.47.8 or newer**
-- Android, iOS, and/or macOS development tooling configured on your system
+- Android, iOS, macOS and/or Windows development tooling configured on your system
 - Basic build utilities, including `make`
 
 Flutter installation instructions are available in the official documentation:
@@ -308,7 +310,7 @@ The project is intentionally split into **two independent layers**.
 
 The **Flutter application** is responsible for user experience and business logic. It handles UI, navigation, server management, configuration input, routing profile selection, and the overall connection lifecycle. This layer focuses on making VPN usage understandable and manageable for the user.
 
-The **VPN plugin**, located in `plugins/vpn_plugin`, is fully dedicated to VPN functionality. It communicates with native platform implementations through Pigeon-generated APIs and integrates directly with Android, iOS, and macOS VPN frameworks. The plugin is completely decoupled from the GUI layer and does not depend on any application-specific logic.
+The **VPN plugin**, located in `plugins/vpn_plugin`, is fully dedicated to VPN functionality. It communicates with native platform implementations through Pigeon-generated APIs and integrates directly with Android, iOS, macOS and Windows VPN frameworks. The plugin is completely decoupled from the GUI layer and does not depend on any application-specific logic.
 
 Because of this separation, the VPN plugin can be reused in other Flutter applications without modification. The GUI application is just one possible consumer of the plugin.
 
@@ -316,7 +318,7 @@ This architecture keeps responsibilities well-defined, simplifies maintenance, a
 
 ### Running & Development
 
-The application supports development and testing on Android, iOS, and macOS platforms.
+The application supports development and testing on Android, iOS, macOS and Windows platforms.
 
 However, **VPN functionality must be tested on physical devices**.
 Emulators and simulators do not fully replicate system VPN behavior and may introduce false positives or platform-specific issues.
