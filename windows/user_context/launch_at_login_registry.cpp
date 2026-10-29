@@ -3,6 +3,7 @@
 // hives use KTM transactions; process-private application hives do not support
 // them. Uninstall preserves other executables' Run entries and the preference.
 
+#include "executable_path.h"
 #include "launch_at_login_registry.h"
 
 #include <ktmw32.h>
@@ -19,7 +20,7 @@ constexpr wchar_t kSettingsKey[] = L"Software\\AdGuard\\TrustTunnel";
 constexpr wchar_t kWindowPreference[] = L"open_main_window_on_login";
 // Run commands are limited to 260 characters, including quotes and arguments.
 constexpr size_t kMaxRunCommandLength = 260;
-constexpr DWORD kExecutablePathCapacity = 32768;
+constexpr DWORD kModulePathCapacity = 32768;
 
 class RegistryKey final {
  public:
@@ -131,13 +132,13 @@ LSTATUS ReadWindowPreferenceInTransaction(HKEY root, bool& enabled,
 }
 
 LSTATUS WriteRunCommand(HKEY root, bool open_window, HANDLE transaction) {
-  std::wstring path(kExecutablePathCapacity, L'\0');
+  std::wstring path(kModulePathCapacity, L'\0');
   const DWORD length =
-      ::GetModuleFileNameW(nullptr, path.data(), kExecutablePathCapacity);
+      ::GetModuleFileNameW(nullptr, path.data(), kModulePathCapacity);
   if (length == 0) {
     return static_cast<LSTATUS>(::GetLastError());
   }
-  if (length >= kExecutablePathCapacity) {
+  if (length >= kModulePathCapacity) {
     return ERROR_FILENAME_EXCED_RANGE;
   }
   path.resize(length);
@@ -235,40 +236,11 @@ LSTATUS SetWindowPreference(HKEY root, bool enabled) {
   return transaction.Commit();
 }
 
-namespace {
-LSTATUS NormalizeExecutable(const std::wstring& input, std::wstring& path) {
-  // Run registrations created by this app always contain an absolute path.
-  if (input.size() < 3 ||
-      !((input[1] == L':' && (input[2] == L'\\' || input[2] == L'/')) ||
-        (input[0] == L'\\' && input[1] == L'\\'))) {
-    return ERROR_BAD_PATHNAME;
-  }
-  std::wstring buffer(kExecutablePathCapacity, L'\0');
-  DWORD size = ::GetFullPathNameW(input.c_str(), kExecutablePathCapacity,
-                                  buffer.data(), nullptr);
-  if (size == 0) {
-    return static_cast<LSTATUS>(::GetLastError());
-  }
-  if (size >= kExecutablePathCapacity) {
-    return ERROR_FILENAME_EXCED_RANGE;
-  }
-  buffer.resize(size);
-  path = buffer;
-  buffer.resize(kExecutablePathCapacity);
-  size =
-      ::GetLongPathNameW(path.c_str(), buffer.data(), kExecutablePathCapacity);
-  if (size > 0 && size < kExecutablePathCapacity) {
-    buffer.resize(size);
-    path = buffer;
-  }
-  return ERROR_SUCCESS;
-}
-}  // namespace
-
 LSTATUS RemoveForExecutable(HKEY root, const std::wstring& executable,
                             windows_user_context::RegistryHiveType hive_type) {
   std::wstring expected;
-  LSTATUS status = NormalizeExecutable(executable, expected);
+  LSTATUS status =
+      windows_user_context::NormalizeExecutablePath(executable, expected);
   if (status != ERROR_SUCCESS) {
     return status;
   }
@@ -311,7 +283,8 @@ LSTATUS RemoveForExecutable(HKEY root, const std::wstring& executable,
   }
   std::wstring registered;
   status = count == 0 ? ERROR_INVALID_DATA
-                      : NormalizeExecutable(arguments[0], registered);
+                      : windows_user_context::NormalizeExecutablePath(
+                            arguments[0], registered);
   ::LocalFree(arguments);
   // An unrecognised command is never permission to delete somebody else's
   // entry.

@@ -12,6 +12,7 @@
 // clang-format off: Windows types must be declared before SDDL/WTS APIs.
 #include <windows.h>
 #include <shellapi.h>
+#include "../user_context/executable_path.h"
 #include "../user_context/user_context.h"
 #include "../user_context/launch_at_login_registry.h"
 // clang-format on
@@ -70,7 +71,6 @@ constexpr wchar_t kVolatileEnvironmentKey[] = L"Volatile Environment";
 constexpr wchar_t kTemporaryExportPrefix[] = L"trusttunnel_windows_logs_";
 constexpr size_t kTemporaryExportPrefixLength =
     sizeof(kTemporaryExportPrefix) / sizeof(wchar_t) - 1;
-constexpr DWORD kExecutablePathCapacity = 32768;
 
 const wchar_t* CleanupStageName(CleanupStage stage) {
   switch (stage) {
@@ -840,43 +840,25 @@ bool ParseOptions(int argument_count, wchar_t* arguments[], Options* options,
   return true;
 }
 
-std::wstring NormalizeExecutablePath(const std::wstring& path) {
-  if (path.empty()) {
-    return path;
-  }
-
-  std::wstring absolute(kExecutablePathCapacity, L'\0');
-  DWORD size = ::GetFullPathNameW(path.c_str(), kExecutablePathCapacity,
-                                  absolute.data(), nullptr);
-  if (size == 0 || size >= kExecutablePathCapacity) {
-    return path;
-  }
-  absolute.resize(size);
-
-  std::wstring long_path(kExecutablePathCapacity, L'\0');
-  size = ::GetLongPathNameW(absolute.c_str(), long_path.data(),
-                            kExecutablePathCapacity);
-  if (size > 0 && size < kExecutablePathCapacity) {
-    long_path.resize(size);
-    return long_path;
-  }
-
-  return absolute;
-}
-
 LSTATUS RemoveUrlSchemeForExecutable(HKEY root, const std::wstring& scheme,
                                      const std::wstring& executable) {
   if (scheme.empty() || executable.empty()) {
     return ERROR_INVALID_PARAMETER;
   }
 
-  const std::wstring expected_executable = NormalizeExecutablePath(executable);
+  std::wstring expected_executable;
+  LSTATUS status = windows_user_context::NormalizeExecutablePath(
+      executable, expected_executable);
+  if (status != ERROR_SUCCESS) {
+    return status;
+  }
+
   const std::wstring scheme_key = L"Software\\Classes\\" + scheme;
   const std::wstring command_key = scheme_key + L"\\shell\\open\\command";
 
   ScopedRegistryKey command;
-  LSTATUS status = ::RegOpenKeyExW(root, command_key.c_str(), 0,
-                                   KEY_QUERY_VALUE, command.receive());
+  status = ::RegOpenKeyExW(root, command_key.c_str(), 0, KEY_QUERY_VALUE,
+                           command.receive());
   if (status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND) {
     return ERROR_SUCCESS;
   }
@@ -910,11 +892,14 @@ LSTATUS RemoveUrlSchemeForExecutable(HKEY root, const std::wstring& scheme,
   if (arguments == nullptr) {
     return static_cast<LSTATUS>(::GetLastError());
   }
-  const std::wstring registered_executable =
-      argument_count > 0 ? NormalizeExecutablePath(arguments[0])
-                         : std::wstring();
+  std::wstring registered_executable;
+  LSTATUS normalize_status = ERROR_BAD_PATHNAME;
+  if (argument_count > 0) {
+    normalize_status = windows_user_context::NormalizeExecutablePath(
+        arguments[0], registered_executable);
+  }
   ::LocalFree(arguments);
-  if (registered_executable.empty() ||
+  if (normalize_status != ERROR_SUCCESS ||
       ::CompareStringOrdinal(registered_executable.c_str(), -1,
                              expected_executable.c_str(), -1,
                              TRUE) != CSTR_EQUAL) {
