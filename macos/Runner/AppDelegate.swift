@@ -35,10 +35,22 @@ class AppDelegate: FlutterAppDelegate {
   override func applicationWillFinishLaunching(_ notification: Notification) {
     super.applicationWillFinishLaunching(notification)
     registerAppleEventHandlers()
-    updateLaunchPresentation()
+
+    // The app lives in the menu bar until the main window is presented. Starting as an
+    // accessory app keeps the Dock icon from appearing before it is known whether the
+    // window will be shown at all.
+    NSApp.setActivationPolicy(.accessory)
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
+    // `keyAELaunchedAsLogInItem` is not reliably delivered for `SMAppService` login items,
+    // so AppKit's own launch reason is used as an additional signal: a launch that is not
+    // user-initiated means macOS started the app as a login item.
+    if let isDefaultLaunch = notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool,
+       !isDefaultLaunch {
+      AppLaunchState.shared.markLoginItemLaunch()
+    }
+
     updateLaunchPresentation()
   }
 
