@@ -10,6 +10,8 @@ protocol LaunchAtLoginManaging {
 }
 
 final class LaunchAtLoginManager: LaunchAtLoginManaging {
+  static let shared = LaunchAtLoginManager()
+
   private static let legacyHelperBundleIdentifier = "com.adguard.TrustTunnel.LoginHelper"
   private static let legacyMigrationKey = "launch_at_login_migrated_to_app_service"
 
@@ -21,11 +23,14 @@ final class LaunchAtLoginManager: LaunchAtLoginManaging {
     let service = SMAppService.mainApp
 
     guard enabled else {
-      guard service.status != .notRegistered else {
-        return
+      // `.notFound` and `.notRegistered` have nothing to unregister, and calling the API
+      // for them throws `kSMErrorJobNotFound`.
+      switch service.status {
+      case .enabled, .requiresApproval:
+        try service.unregister()
+      default:
+        break
       }
-
-      try service.unregister()
 
       return
     }
@@ -45,6 +50,9 @@ final class LaunchAtLoginManager: LaunchAtLoginManaging {
   /// `SMLoginItemSetEnabled`. `SMAppService.mainApp` does not see that registration, so the
   /// user's choice has to be carried over once — otherwise autostart silently stops working
   /// after the update.
+  ///
+  /// The migration is retried on the next launch unless it has definitively completed, so a
+  /// failed registration is never recorded as a successful migration.
   func migrateLegacyLoginItemIfNeeded() {
     let defaults = UserDefaults.standard
 
@@ -52,53 +60,84 @@ final class LaunchAtLoginManager: LaunchAtLoginManaging {
       return
     }
 
-    defaults.set(true, forKey: Self.legacyMigrationKey)
+    guard let legacyWasEnabled = LegacyLoginItem.isEnabled(identifier: Self.legacyHelperBundleIdentifier) else {
+      NSLog("Launch-at-login migration postponed: the legacy login item state is unavailable")
 
-    guard
-      LegacyLoginItem.isEnabled(identifier: Self.legacyHelperBundleIdentifier),
-      SMAppService.mainApp.status == .notRegistered
-    else {
       return
     }
 
-    try? SMAppService.mainApp.register()
+    LegacyLoginItem.disable(identifier: Self.legacyHelperBundleIdentifier)
+
+    guard legacyWasEnabled else {
+      defaults.set(true, forKey: Self.legacyMigrationKey)
+
+      return
+    }
+
+    guard SMAppService.mainApp.status == .notRegistered else {
+      defaults.set(true, forKey: Self.legacyMigrationKey)
+
+      return
+    }
+
+    do {
+      try SMAppService.mainApp.register()
+      defaults.set(true, forKey: Self.legacyMigrationKey)
+    } catch {
+      NSLog("Launch-at-login migration failed: \(error)")
+    }
   }
 }
 
-/// Read-only view of the pre-macOS 13 login item state.
+/// Access to the pre-macOS 13 login item, which `SMAppService` does not track.
 ///
-/// `SMCopyAllJobDictionaries` is the only way to see a legacy login item that `SMAppService`
-/// does not track, and it has no modern replacement. It is deprecated since 10.10, so the
-/// symbol is resolved at runtime to keep the build warning-free.
+/// `SMCopyAllJobDictionaries` has no modern replacement, and both it and `SMLoginItemSetEnabled`
+/// are deprecated, so the symbols are resolved at runtime to keep the build warning-free.
 private enum LegacyLoginItem {
   typealias CopyAllJobDictionariesFunction = @convention(c) (CFString?) -> CFArray?
+  typealias SetEnabledFunction = @convention(c) (CFString, Bool) -> Bool
 
   private static let userLaunchdDomain = "kSMDomainUserLaunchd" as CFString
 
-  static func isEnabled(identifier: String) -> Bool {
-    guard let copyAllJobDictionaries else {
-      return false
+  /// `nil` when the legacy state cannot be read, as opposed to a known disabled item.
+  static func isEnabled(identifier: String) -> Bool? {
+    guard
+      let copyAllJobDictionaries,
+      let rawJobs = copyAllJobDictionaries(userLaunchdDomain),
+      let jobs = rawJobs as? [[String: Any]]
+    else {
+      return nil
     }
 
-    let jobs = copyAllJobDictionaries(userLaunchdDomain) as? [[String: Any]]
-    let job = jobs?.first { $0["Label"] as? String == identifier }
+    let job = jobs.first { $0["Label"] as? String == identifier }
 
     return job?["OnDemand"] as? Bool ?? false
   }
 
-  private static let copyAllJobDictionaries: CopyAllJobDictionariesFunction? = {
+  /// Best effort: the helper bundle is no longer part of the app, so the system may refuse to
+  /// change the registration. A leftover record then has to be removed in System Settings.
+  static func disable(identifier: String) {
+    _ = loginItemSetEnabled?(identifier as CFString, false)
+    try? SMAppService.loginItem(identifier: identifier).unregister()
+  }
+
+  private static let copyAllJobDictionaries: CopyAllJobDictionariesFunction? = resolve("SMCopyAllJobDictionaries")
+
+  private static let loginItemSetEnabled: SetEnabledFunction? = resolve("SMLoginItemSetEnabled")
+
+  private static func resolve<T>(_ symbol: String) -> T? {
     guard
       let handle = dlopen(
         "/System/Library/Frameworks/ServiceManagement.framework/ServiceManagement",
         RTLD_LAZY
       ),
-      let symbol = dlsym(handle, "SMCopyAllJobDictionaries")
+      let pointer = dlsym(handle, symbol)
     else {
       return nil
     }
 
-    return unsafeBitCast(symbol, to: CopyAllJobDictionariesFunction.self)
-  }()
+    return unsafeBitCast(pointer, to: T.self)
+  }
 }
 
 enum LaunchAtLoginError: Error {

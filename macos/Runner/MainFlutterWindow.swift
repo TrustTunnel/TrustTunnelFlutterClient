@@ -14,7 +14,7 @@ private enum LaunchSplashStyle {
 class MainFlutterWindow: NSWindow {
   private var isPresentationAllowed = false
   private weak var launchSplashView: NSView?
-  private let launchAtLoginManager: LaunchAtLoginManaging = LaunchAtLoginManager()
+  private let launchAtLoginManager: LaunchAtLoginManaging = LaunchAtLoginManager.shared
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -27,7 +27,6 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(windowFrame, display: true)
     installLaunchSplash(in: flutterViewController.view)
 
-    launchAtLoginManager.migrateLegacyLoginItemIfNeeded()
     RegisterGeneratedPlugins(registry: flutterViewController)
     registerMacosExitDialogChannel(flutterViewController: flutterViewController)
     registerMacosMainWindowChannel(flutterViewController: flutterViewController)

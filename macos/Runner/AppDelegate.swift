@@ -43,13 +43,17 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
-    // `keyAELaunchedAsLogInItem` is not reliably delivered for `SMAppService` login items,
-    // so AppKit's own launch reason is used as an additional signal: a launch that is not
-    // user-initiated means macOS started the app as a login item.
+    // `keyAELaunchedAsLogInItem` is not reliably delivered for `SMAppService` login items, so
+    // AppKit's own launch reason is used as an additional signal. A launch that is not
+    // user-initiated only counts as a login item when the login item is actually enabled:
+    // launchers, installers and crash reporters also produce non-default launches.
     if let isDefaultLaunch = notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool,
-       !isDefaultLaunch {
+       !isDefaultLaunch,
+       LaunchAtLoginManager.shared.isEnabled {
       AppLaunchState.shared.markLoginItemLaunch()
     }
+
+    LaunchAtLoginManager.shared.migrateLegacyLoginItemIfNeeded()
 
     updateLaunchPresentation()
   }
