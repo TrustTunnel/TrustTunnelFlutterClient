@@ -110,7 +110,7 @@ class InitializationHelperIo extends InitializationHelper {
       final appWindowController = dependenciesFactory.appWindowController as WindowsAppWindowController;
       // Setup can request exit even when launched outside the app.
       await appWindowController.initializeInstallerExitHandler();
-      _registerUrlScheme();
+      await _registerUrlScheme();
     }
 
     FlutterNativeSplash.remove();
@@ -157,11 +157,11 @@ class InitializationHelperIo extends InitializationHelper {
 
   /// Registers the application as the handler of the deep link scheme.
   /// Use for Windows platform only.
-  void _registerUrlScheme() {
+  Future<void> _registerUrlScheme() async {
     assert(defaultTargetPlatform == TargetPlatform.windows, 'URL scheme registration is only supported on Windows');
 
     try {
-      WindowsProtocolHandler(
+      await WindowsProtocolHandler(
         store: const Win32ProtocolRegistrationStore(),
         commandBuilder: const ProtocolCommandBuilder(),
         executable: Platform.resolvedExecutable,
