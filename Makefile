@@ -1,4 +1,4 @@
-.PHONY: gen ln init release-android aux-setup-android-signing \
+.PHONY: gen ln init release-android create-windows-installer aux-setup-android-signing \
         ci-lint-dart ci-test-flutter \
         ci-build-android-apk ci-build-android-aab \
         ci-setup-ruby ci-setup-gpr \
@@ -84,6 +84,25 @@ release-android:
 	@echo "* Building Android release (AAB) *"
 	@flutter build appbundle --release
 	@echo "* Android release build done *"
+
+# Builds the Windows installer end-to-end: Flutter x64 bundle, mixed ARM64
+# bundle, VC++ redistributable and the Inno Setup package.
+# Usage:
+#   make create-windows-installer | Build the Windows installer with default settings.
+#   make create-windows-installer PROJECT_VERSION=1.2.3 BUILD_NUMBER=42 | Specify the app version and build number.
+#   make create-windows-installer CONFIGURATION=Profile | Debug, Profile or Release (default: Release).
+#   make create-windows-installer SKIP_FLUTTER_BUILD=1 | Reuse existing bundles and skip the Flutter build.
+#   make create-windows-installer FORCE_DOWNLOAD=1 | Re-download the VC++ redistributable.
+#
+# Result:
+#   build/windows/installer/TrustTunnelSetup.exe
+create-windows-installer:
+	@echo "* Building Windows installer (version $(or $(PROJECT_VERSION),0.0.0), build $(or $(BUILD_NUMBER),0), $(or $(CONFIGURATION),Release)) *"
+	@powershell.exe -NoProfile -ExecutionPolicy Bypass -File windows/inno/Build-Installer.ps1 \
+		-AppVersion "$(or $(PROJECT_VERSION),0.0.0)" \
+		-BuildNumber "$(or $(BUILD_NUMBER),0)" \
+		-Configuration "$(or $(CONFIGURATION),Release)" $(if $(filter 1,$(SKIP_FLUTTER_BUILD)),-SkipFlutterBuild,) $(if $(filter 1,$(FORCE_DOWNLOAD)),-ForceDownload,)
+	@echo "* Windows installer build done: build/windows/installer/TrustTunnelSetup.exe *"
 
 ci-lint-dart:
 	@echo "* Running flutter analyze *"
