@@ -99,10 +99,10 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: 
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]
-Root: HKLM; Subkey: "Software\Classes\tt"; ValueType: string; ValueData: "URL:TrustTunnel Protocol"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\tt"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
-Root: HKLM; Subkey: "Software\Classes\tt\DefaultIcon"; ValueType: string; ValueData: "{app}\{#AppExeName},0"
-Root: HKLM; Subkey: "Software\Classes\tt\shell\open\command"; ValueType: string; ValueData: """{app}\{#AppExeName}"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\{#DeepLinkScheme}"; ValueType: string; ValueData: "URL:TrustTunnel Protocol"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\{#DeepLinkScheme}"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKLM; Subkey: "Software\Classes\{#DeepLinkScheme}\DefaultIcon"; ValueType: string; ValueData: "{app}\{#AppExeName},0"
+Root: HKLM; Subkey: "Software\Classes\{#DeepLinkScheme}\shell\open\command"; ValueType: string; ValueData: """{app}\{#AppExeName}"" ""%1"""
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{commonappdata}\TrustTunnel\logs"

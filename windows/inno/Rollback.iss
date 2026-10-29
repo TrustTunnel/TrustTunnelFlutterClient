@@ -165,8 +165,8 @@ function SaveInstallationMetadata(var ErrorMessage: String): Boolean;
 begin
   Result := RunRegistryTool('export "HKLM\' + AppUninstallRegistryKey +
     '" "' + RollbackDirectory + '\uninstall.reg" /y');
-  if RegKeyExists(HKLM64, 'Software\Classes\tt') then
-    Result := RunRegistryTool('export "HKLM\Software\Classes\tt" "' +
+  if RegKeyExists(HKLM64, 'Software\Classes\{#DeepLinkScheme}') then
+    Result := RunRegistryTool('export "HKLM\Software\Classes\{#DeepLinkScheme}" "' +
       RollbackDirectory + '\protocol.reg" /y') and Result;
   if not Result then
     ErrorMessage := 'Unable to back up installation registry metadata.';
@@ -180,8 +180,8 @@ begin
     Result := RegDeleteKeyIncludingSubkeys(HKLM64, AppUninstallRegistryKey);
   Result := RunRegistryTool('import "' + RollbackDirectory +
     '\uninstall.reg" /reg:64') and Result;
-  if RegKeyExists(HKLM64, 'Software\Classes\tt') then
-    Result := RegDeleteKeyIncludingSubkeys(HKLM64, 'Software\Classes\tt') and Result;
+  if RegKeyExists(HKLM64, 'Software\Classes\{#DeepLinkScheme}') then
+    Result := RegDeleteKeyIncludingSubkeys(HKLM64, 'Software\Classes\{#DeepLinkScheme}') and Result;
   if FileExists(RollbackDirectory + '\protocol.reg') then
     Result := RunRegistryTool('import "' + RollbackDirectory +
       '\protocol.reg" /reg:64') and Result;
