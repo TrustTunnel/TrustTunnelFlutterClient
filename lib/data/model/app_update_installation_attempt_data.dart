@@ -15,26 +15,4 @@ final class AppUpdateInstallationAttemptData {
     required this.update,
     required this.restoreServerId,
   });
-
-  factory AppUpdateInstallationAttemptData.fromJson(Map<String, dynamic> json) {
-    final String operationId = json['operation'] as String;
-
-    if (!RegExp(r'^[a-f0-9]{32}$').hasMatch(operationId)) {
-      throw const FormatException('Invalid operation ID');
-    }
-
-    return AppUpdateInstallationAttemptData(
-      operationId: operationId,
-      sourceVersion: AppVersion.parse(json['sourceVersion'] as String),
-      update: AvailableAppUpdateData.fromJson(json['update'] as Map<String, dynamic>),
-      restoreServerId: json['restoreServerId'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'operation': operationId,
-    'sourceVersion': sourceVersion.toString(),
-    'update': update.toJson(),
-    'restoreServerId': restoreServerId,
-  };
 }

@@ -11,7 +11,7 @@ final class AppUpdateInstallationResultEncoder
   AppUpdateInstallationResultData convert(AppUpdateInstallationResult value) => AppUpdateInstallationResultData(
     operationId: value.operationId,
     status: value.status,
-    committed: value.committed,
+    installationApplied: value.installationApplied,
     version: value.version,
     previousVersion: value.previousVersion,
     restartRequired: value.restartRequired,
@@ -27,7 +27,7 @@ final class AppUpdateInstallationResultDecoder
   AppUpdateInstallationResult convert(AppUpdateInstallationResultData value) => AppUpdateInstallationResult(
     operationId: value.operationId,
     status: value.status,
-    committed: value.committed,
+    installationApplied: value.installationApplied,
     version: value.version,
     previousVersion: value.previousVersion,
     restartRequired: value.restartRequired,
