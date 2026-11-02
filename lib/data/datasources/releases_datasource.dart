@@ -4,8 +4,9 @@ import 'package:trusttunnel/data/model/available_app_update_data.dart';
 abstract interface class ReleasesDataSource {
   Future<AvailableAppUpdateData?> findAvailableUpdate(AppVersion installedVersion);
 
-  Stream<List<int>> openInstallerBundle({
+  Stream<int> downloadInstallerBundle({
     required int assetId,
-    required Future<void> cancellation,
+    required int expectedSize,
+    required String destinationPath,
   });
 }

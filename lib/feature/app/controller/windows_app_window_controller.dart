@@ -37,8 +37,8 @@ final class WindowsAppWindowController implements AppWindowController {
   // until shutdownCancelled allows a new attempt.
   AsyncMemoizer<void> _installerExit = AsyncMemoizer<void>();
   int _updateExitAttemptIteration = 0;
-  Future<void> Function()? prepareUpdateExit;
-  Future<void> Function()? cancelUpdateExit;
+  Future<void> Function()? onPrepareUpdateExit;
+  Future<void> Function()? onCancelUpdateExit;
 
   @override
   Future<void> showMainWindow() => _mainWindowChannel.invokeMethod<void>('show');
@@ -129,7 +129,7 @@ final class WindowsAppWindowController implements AppWindowController {
   Future<void> _exitForInstaller() async {
     final int updateExitAttemptIteration = ++_updateExitAttemptIteration;
     try {
-      await prepareUpdateExit?.call().timeout(const Duration(seconds: 15));
+      await onPrepareUpdateExit?.call().timeout(const Duration(seconds: 15));
       if (updateExitAttemptIteration != _updateExitAttemptIteration) {
         throw StateError('Update exit was cancelled');
       }
@@ -160,7 +160,7 @@ final class WindowsAppWindowController implements AppWindowController {
 
   Future<void> _cancelUpdatePreparation() async {
     try {
-      await cancelUpdateExit?.call().timeout(const Duration(seconds: 5));
+      await onCancelUpdateExit?.call().timeout(const Duration(seconds: 5));
     } catch (error, stackTrace) {
       logger.logError(
         'Unable to cancel update preparation',

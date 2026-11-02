@@ -6,17 +6,24 @@ import 'package:trusttunnel/data/model/available_app_update_data.dart';
 import 'package:trusttunnel/data/model/downloaded_installer_bundle_data.dart';
 
 abstract interface class AppUpdatesLocalDataSource {
-  Future<File> getInstallerBundleFile(AvailableAppUpdateData update);
+  Future<File> getTemporaryInstallerBundleFile(AvailableAppUpdateData update);
 
   Future<void> prepareInstallerCache(AppVersion installedVersion);
 
   Future<DownloadedInstallerBundleData?> readInstallerBundle();
 
-  Future<void> saveInstallerBundle(AvailableAppUpdateData update);
+  Future<DownloadedInstallerBundleData> cacheInstallerBundle({
+    required AvailableAppUpdateData update,
+    required File temporaryFile,
+  });
+
+  Future<void> removeTemporaryInstallerBundle(File temporaryFile);
 
   Future<void> removeInstallerBundle();
 
   Future<bool> verifyInstallerBundle(DownloadedInstallerBundleData bundle);
+
+  Future<bool> verifyInstallerFile({required String path, required AvailableAppUpdateData update});
 
   Future<AppUpdateInstallationAttemptData?> readInstallationAttempt();
 

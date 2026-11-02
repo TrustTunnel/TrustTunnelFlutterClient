@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
+import 'package:adguard_logger/adguard_logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:trusttunnel/common/models/app_version.dart';
+import 'package:trusttunnel/common/utils/file_utils.dart';
+import 'package:trusttunnel/data/converter/app_update_installation_attempt_metadata_codec.dart';
+import 'package:trusttunnel/data/converter/available_app_update_metadata_codec.dart';
 import 'package:trusttunnel/data/datasources/app_updates_local_datasource.dart';
 import 'package:trusttunnel/data/model/app_update_installation_attempt_data.dart';
 import 'package:trusttunnel/data/model/available_app_update_data.dart';
@@ -16,6 +20,8 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
     required this._repositoryName,
   });
 
+  int _temporaryFileId = 0;
+
   Future<Directory> get _updatesDirectory async {
     final Directory supportDirectory = await getApplicationSupportDirectory();
 
@@ -23,8 +29,11 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
   }
 
   @override
-  Future<File> getInstallerBundleFile(AvailableAppUpdateData update) async =>
-      File('${(await _updatesDirectory).path}/${update.assetId}-${update.sha256}.exe');
+  Future<File> getTemporaryInstallerBundleFile(AvailableAppUpdateData update) async {
+    final File destinationFile = await _getInstallerBundleFile(update);
+
+    return File('${destinationFile.path}.${++_temporaryFileId}.part');
+  }
 
   @override
   Future<void> prepareInstallerCache(AppVersion installedVersion) async {
@@ -53,9 +62,9 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
       return null;
     }
 
-    final AvailableAppUpdateData update = AvailableAppUpdateData.fromJson(json);
+    final AvailableAppUpdateData update = const AvailableAppUpdateMetadataCodec().decode(json);
     _validateUpdateSource(update);
-    final installerBundleFile = await getInstallerBundleFile(update);
+    final File installerBundleFile = await _getInstallerBundleFile(update);
 
     return DownloadedInstallerBundleData(
       update: update,
@@ -64,10 +73,32 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
   }
 
   @override
-  Future<void> saveInstallerBundle(AvailableAppUpdateData update) => _writeMetadata(
-    'bundle.json',
-    update.toJson(),
-  );
+  Future<DownloadedInstallerBundleData> cacheInstallerBundle({
+    required AvailableAppUpdateData update,
+    required File temporaryFile,
+  }) async {
+    final File destinationFile = await _getInstallerBundleFile(update);
+    bool renamed = false;
+
+    try {
+      await temporaryFile.rename(destinationFile.path);
+      renamed = true;
+      await _writeMetadata('bundle.json', const AvailableAppUpdateMetadataCodec().encode(update));
+
+      return DownloadedInstallerBundleData(update: update, path: destinationFile.path);
+    } catch (error, stackTrace) {
+      // A file and its metadata cannot be saved in one filesystem transaction.
+      // Remove this attempt's incomplete cache before another attempt can use it.
+      if (renamed) {
+        await _removeIncompleteInstallerCache(destinationFile);
+      }
+
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  @override
+  Future<void> removeTemporaryInstallerBundle(File temporaryFile) => FileUtils.deleteIfExists(temporaryFile);
 
   @override
   Future<void> removeInstallerBundle() async {
@@ -83,28 +114,24 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
 
   @override
   Future<bool> verifyInstallerBundle(DownloadedInstallerBundleData bundle) async {
-    final File expectedFile = await getInstallerBundleFile(bundle.update);
+    final File expectedFile = await _getInstallerBundleFile(bundle.update);
 
     if (expectedFile.path != bundle.path) {
       return false;
     }
 
-    final bool bundleExists = await expectedFile.exists();
-
-    if (!bundleExists) {
-      return false;
-    }
-
-    final int bundleSize = await expectedFile.length();
-
-    if (bundleSize != bundle.update.size) {
-      return false;
-    }
-
-    final Digest digest = await sha256.bind(expectedFile.openRead()).single;
-
-    return digest.toString() == bundle.update.sha256;
+    return verifyInstallerFile(path: expectedFile.path, update: bundle.update);
   }
+
+  @override
+  Future<bool> verifyInstallerFile({
+    required String path,
+    required AvailableAppUpdateData update,
+  }) => compute(
+    FileUtils.verifyFile,
+    (path: path, size: update.size, sha256: update.sha256),
+    debugLabel: 'verify-installer-bundle',
+  );
 
   @override
   Future<AppUpdateInstallationAttemptData?> readInstallationAttempt() async {
@@ -114,7 +141,8 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
       return null;
     }
 
-    final AppUpdateInstallationAttemptData installationAttempt = AppUpdateInstallationAttemptData.fromJson(json);
+    final AppUpdateInstallationAttemptData installationAttempt = const AppUpdateInstallationAttemptMetadataCodec()
+        .decode(json);
     _validateUpdateSource(installationAttempt.update);
 
     return installationAttempt;
@@ -122,7 +150,7 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
 
   @override
   Future<void> saveInstallationAttempt(AppUpdateInstallationAttemptData attempt) =>
-      _writeMetadata('attempt.json', attempt.toJson());
+      _writeMetadata('attempt.json', const AppUpdateInstallationAttemptMetadataCodec().encode(attempt));
 
   @override
   Future<void> removeInstallationAttempt() async {
@@ -135,9 +163,33 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
     }
   }
 
+  Future<File> _getInstallerBundleFile(AvailableAppUpdateData update) async =>
+      File('${(await _updatesDirectory).path}/${update.assetId}-${update.sha256}.exe');
+
   void _validateUpdateSource(AvailableAppUpdateData update) {
     if (update.source != _repositoryName) {
       throw const FormatException('Invalid update source');
+    }
+  }
+
+  Future<void> _removeIncompleteInstallerCache(File destinationFile) async {
+    final Directory updatesDirectory = destinationFile.parent;
+    final List<File> files = [
+      destinationFile,
+      File('${updatesDirectory.path}/bundle.json'),
+      File('${updatesDirectory.path}/bundle.json.tmp'),
+    ];
+
+    for (final File file in files) {
+      try {
+        await FileUtils.deleteIfExists(file);
+      } catch (error, stackTrace) {
+        logger.logError(
+          'Unable to remove incomplete installer cache',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     }
   }
 

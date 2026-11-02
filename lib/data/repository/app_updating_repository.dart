@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:trusttunnel/common/error/model/file_download_exception.dart';
 import 'package:trusttunnel/common/models/app_version.dart';
+import 'package:trusttunnel/data/converter/app_update_failure_converter.dart';
 import 'package:trusttunnel/data/converter/app_update_installation_attempt_converter.dart';
 import 'package:trusttunnel/data/converter/app_update_installation_result_converter.dart';
 import 'package:trusttunnel/data/converter/available_app_update_converter.dart';
@@ -10,18 +12,14 @@ import 'package:trusttunnel/data/converter/downloaded_installer_bundle_converter
 import 'package:trusttunnel/data/datasources/app_update_installation_datasource.dart';
 import 'package:trusttunnel/data/datasources/app_updates_local_datasource.dart';
 import 'package:trusttunnel/data/datasources/releases_datasource.dart';
+import 'package:trusttunnel/data/model/app_update_failure.dart';
+import 'package:trusttunnel/data/model/available_app_update_data.dart';
+import 'package:trusttunnel/data/model/downloaded_installer_bundle_data.dart';
 import 'package:trusttunnel/feature/settings/app_version_and_updating/models/app_update_installation_attempt.dart';
 import 'package:trusttunnel/feature/settings/app_version_and_updating/models/app_update_installation_result.dart';
 import 'package:trusttunnel/feature/settings/app_version_and_updating/models/available_app_update.dart';
 import 'package:trusttunnel/feature/settings/app_version_and_updating/models/downloaded_installer_bundle.dart';
-
-final class DamagedInstallerBundleException implements Exception {
-  const DamagedInstallerBundleException();
-}
-
-final class InstallerBundleDownloadCancelledException implements Exception {
-  const InstallerBundleDownloadCancelledException();
-}
+import 'package:trusttunnel/feature/settings/app_version_and_updating/models/installer_bundle_preparation_status.dart';
 
 abstract class AppUpdatingRepository {
   Future<AppVersion> get installedVersion;
@@ -33,8 +31,6 @@ abstract class AppUpdatingRepository {
   Future<DownloadedInstallerBundle?> readInstallerBundle();
 
   Future<void> removeInstallerBundle();
-
-  Future<bool> verifyInstallerBundle(DownloadedInstallerBundle bundle);
 
   Future<AppUpdateInstallationAttempt?> readInstallationAttempt();
 
@@ -48,13 +44,9 @@ abstract class AppUpdatingRepository {
 
   Future<void> launchInstaller(DownloadedInstallerBundle bundle, String operationId);
 
-  Future<DownloadedInstallerBundle> downloadInstallerBundle({
+  Stream<InstallerBundlePreparationStatus> prepareInstallerBundle({
     required AvailableAppUpdate update,
-    required Future<void> cancellation,
-    required bool Function() isCancelled,
-    required void Function(double) onProgress,
-    required int attemptId,
-    required void Function() onVerifying,
+    required bool forceDownload,
   });
 }
 
@@ -69,10 +61,12 @@ final class AppUpdatingRepositoryImpl implements AppUpdatingRepository {
     required this._installationDataSourceProvider,
   });
 
-  Future<AppVersion>? _installedVersion;
+  Future<void> _installerCacheQueueFuture = Future<void>.value();
+
+  Future<AppVersion>? _installedVersionFuture;
 
   @override
-  Future<AppVersion> get installedVersion => _installedVersion ??= PackageInfo.fromPlatform().then(
+  Future<AppVersion> get installedVersion => _installedVersionFuture ??= PackageInfo.fromPlatform().then(
     (info) => AppVersion.parse(
       info.version.split('+').first,
     ),
@@ -80,28 +74,28 @@ final class AppUpdatingRepositoryImpl implements AppUpdatingRepository {
 
   @override
   Future<AvailableAppUpdate?> findAvailableUpdate(AppVersion installedVersion) async {
-    final updateData = await _releasesDataSource.findAvailableUpdate(installedVersion);
+    try {
+      final updateData = await _releasesDataSource.findAvailableUpdate(installedVersion);
 
-    return updateData == null ? null : const AvailableAppUpdateDecoder().convert(updateData);
+      return updateData == null ? null : const AvailableAppUpdateDecoder().convert(updateData);
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(AppUpdateCheckFailure(error), stackTrace);
+    }
   }
 
   @override
   Future<void> prepareInstallerCache(AppVersion installedVersion) =>
-      _localDataSource.prepareInstallerCache(installedVersion);
+      _withInstallerCache(() => _localDataSource.prepareInstallerCache(installedVersion));
 
   @override
-  Future<DownloadedInstallerBundle?> readInstallerBundle() async {
+  Future<DownloadedInstallerBundle?> readInstallerBundle() => _withInstallerCache(() async {
     final bundleData = await _localDataSource.readInstallerBundle();
 
     return bundleData == null ? null : const DownloadedInstallerBundleDecoder().convert(bundleData);
-  }
+  });
 
   @override
-  Future<void> removeInstallerBundle() => _localDataSource.removeInstallerBundle();
-
-  @override
-  Future<bool> verifyInstallerBundle(DownloadedInstallerBundle bundle) =>
-      _localDataSource.verifyInstallerBundle(const DownloadedInstallerBundleEncoder().convert(bundle));
+  Future<void> removeInstallerBundle() => _withInstallerCache(_localDataSource.removeInstallerBundle);
 
   @override
   Future<AppUpdateInstallationAttempt?> readInstallationAttempt() async {
@@ -125,97 +119,257 @@ final class AppUpdatingRepositoryImpl implements AppUpdatingRepository {
   }
 
   @override
-  Future<String> createInstallationOperationId() => _installationDataSourceProvider().createOperationId();
+  Future<String> createInstallationOperationId() async {
+    try {
+      return await _installationDataSourceProvider().createOperationId();
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(const InstallerLaunchFailureDecoder().convert(error), stackTrace);
+    }
+  }
 
   @override
-  Future<void> launchInstaller(DownloadedInstallerBundle bundle, String operationId) =>
-      _installationDataSourceProvider().launchInstaller(
+  Future<void> launchInstaller(DownloadedInstallerBundle bundle, String operationId) async {
+    try {
+      await _installationDataSourceProvider().launchInstaller(
         const DownloadedInstallerBundleEncoder().convert(bundle),
         operationId,
       );
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(const InstallerLaunchFailureDecoder().convert(error), stackTrace);
+    }
+  }
 
   @override
-  Future<DownloadedInstallerBundle> downloadInstallerBundle({
+  Stream<InstallerBundlePreparationStatus> prepareInstallerBundle({
     required AvailableAppUpdate update,
-    required Future<void> cancellation,
-    required bool Function() isCancelled,
-    required void Function(double) onProgress,
-    required int attemptId,
-    required void Function() onVerifying,
+    required bool forceDownload,
+  }) => _InstallerPreparationStream(
+    decodeFailure: const InstallerPreparationFailureDecoder().convert,
+    prepare: (preparation) => _withInstallerCache(
+      () => _runInstallerBundlePreparation(
+        preparation: preparation,
+        update: update,
+        forceDownload: forceDownload,
+      ),
+    ),
+  ).stream;
+
+  Future<T> _withInstallerCache<T>(Future<T> Function() operation) {
+    final Future<T> cacheOperationFuture = _installerCacheQueueFuture.then((_) => operation());
+    // A cancelled or failed attempt must release the cache for the next operation.
+    _installerCacheQueueFuture = cacheOperationFuture.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+
+    return cacheOperationFuture;
+  }
+
+  Future<void> _runInstallerBundlePreparation({
+    required _InstallerPreparationStream preparation,
+    required AvailableAppUpdate update,
+    required bool forceDownload,
   }) async {
-    final updateData = const AvailableAppUpdateEncoder().convert(update);
+    preparation.checkCancellation();
+    preparation.setStatus(const InstallerBundlePreparationStatus.preparing());
+    final DownloadedInstallerBundle? cachedBundle = await _reuseOrRemoveCachedBundle(
+      preparation: preparation,
+      update: update,
+      forceDownload: forceDownload,
+    );
+    preparation.checkCancellation();
 
-    final File destinationFile = await _localDataSource.getInstallerBundleFile(updateData);
-    final File temporaryFile = File('${destinationFile.path}.$attemptId.part');
+    if (cachedBundle != null) {
+      preparation.setStatus(InstallerBundlePreparationStatus.ready(cachedBundle));
 
-    RandomAccessFile? bundleWriter;
+      return;
+    }
+
+    final DownloadedInstallerBundle bundle = await _downloadAndVerifyInstaller(preparation, update);
+    preparation.checkCancellation();
+    preparation.setStatus(InstallerBundlePreparationStatus.ready(bundle));
+  }
+
+  Future<DownloadedInstallerBundle?> _reuseOrRemoveCachedBundle({
+    required _InstallerPreparationStream preparation,
+    required AvailableAppUpdate update,
+    required bool forceDownload,
+  }) async {
+    try {
+      if (!forceDownload) {
+        final DownloadedInstallerBundleData? bundleData = await _localDataSource.readInstallerBundle();
+        preparation.checkCancellation();
+        final DownloadedInstallerBundle? cachedBundle = bundleData == null
+            ? null
+            : const DownloadedInstallerBundleDecoder().convert(bundleData);
+        final bool matchesSelectedUpdate = cachedBundle != null && cachedBundle.update.hasSameInstallerBundle(update);
+
+        if (matchesSelectedUpdate) {
+          final bool verified = await _localDataSource.verifyInstallerBundle(bundleData!);
+          preparation.checkCancellation();
+
+          if (verified) {
+            return cachedBundle;
+          }
+        }
+      }
+
+      preparation.checkCancellation();
+      await _localDataSource.removeInstallerBundle();
+
+      return null;
+    } on FileDownloadCancelledException {
+      rethrow;
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(InstallerBundlePreparationException(error), stackTrace);
+    }
+  }
+
+  Future<DownloadedInstallerBundle> _downloadAndVerifyInstaller(
+    _InstallerPreparationStream preparation,
+    AvailableAppUpdate update,
+  ) async {
+    final AvailableAppUpdateData updateData = const AvailableAppUpdateEncoder().convert(update);
+    final File temporaryFile = await _localDataSource.getTemporaryInstallerBundleFile(updateData);
+    Object? failure;
+    late final DownloadedInstallerBundle bundle;
 
     try {
-      _ensureDownloadActive(isCancelled);
-
-      bundleWriter = await temporaryFile.open(mode: FileMode.write);
-      int receivedBytes = 0;
-      int reportedPercentage = -1;
-
-      await for (final List<int> chunk in _releasesDataSource.openInstallerBundle(
-        assetId: update.assetId,
-        cancellation: cancellation,
+      preparation.checkCancellation();
+      preparation.setStatus(InstallerBundlePreparationStatus.downloading(receivedBytes: 0, totalBytes: update.size));
+      await for (final int receivedBytes in preparation.bindDownload(
+        _releasesDataSource.downloadInstallerBundle(
+          assetId: update.assetId,
+          expectedSize: update.size,
+          destinationPath: temporaryFile.path,
+        ),
       )) {
-        _ensureDownloadActive(isCancelled);
-        receivedBytes += chunk.length;
-
-        if (receivedBytes > update.size) {
-          throw const DamagedInstallerBundleException();
-        }
-
-        await bundleWriter.writeFrom(chunk);
-        final int nextPercentage = (receivedBytes * 100 ~/ update.size).clamp(0, 100);
-
-        if (nextPercentage != reportedPercentage) {
-          reportedPercentage = nextPercentage;
-          onProgress((receivedBytes / update.size).clamp(0.0, 1.0));
-        }
+        preparation.setStatus(
+          InstallerBundlePreparationStatus.downloading(receivedBytes: receivedBytes, totalBytes: update.size),
+        );
       }
+      preparation.checkCancellation();
+      preparation.setStatus(const InstallerBundlePreparationStatus.verifying());
+      final bool verified = await _localDataSource.verifyInstallerFile(path: temporaryFile.path, update: updateData);
+      preparation.checkCancellation();
 
-      await bundleWriter.flush();
-      await bundleWriter.close();
-      bundleWriter = null;
-      _ensureDownloadActive(isCancelled);
-
-      if (receivedBytes != update.size) {
+      if (!verified) {
         throw const DamagedInstallerBundleException();
       }
 
-      onVerifying();
-      final String bundleDigest = await _calculateBundleHash(temporaryFile);
-      _ensureDownloadActive(isCancelled);
-
-      if (bundleDigest != update.sha256) {
-        throw const DamagedInstallerBundleException();
-      }
-
-      await temporaryFile.rename(destinationFile.path);
-      await _localDataSource.saveInstallerBundle(updateData);
-
-      return DownloadedInstallerBundle(update: update, path: destinationFile.path);
+      // Once caching starts, finish the file and metadata together. A late cancellation
+      // can keep a valid cache, but cannot publish a result or launch the installer.
+      final DownloadedInstallerBundleData bundleData = await _localDataSource.cacheInstallerBundle(
+        update: updateData,
+        temporaryFile: temporaryFile,
+      );
+      bundle = const DownloadedInstallerBundleDecoder().convert(bundleData);
+    } catch (error) {
+      failure = error;
+      rethrow;
     } finally {
       try {
-        await bundleWriter?.close();
-      } finally {
-        final bool temporaryFileExists = await temporaryFile.exists();
-
-        if (temporaryFileExists) {
-          await temporaryFile.delete();
+        await _localDataSource.removeTemporaryInstallerBundle(temporaryFile);
+      } catch (error, stackTrace) {
+        if (failure == null) {
+          Error.throwWithStackTrace(error, stackTrace);
         }
+      }
+    }
+
+    return bundle;
+  }
+}
+
+/// Owns a preparation subscription and waits for download cleanup on cancellation.
+/// The repository supplies the preparation procedure and all cache decisions.
+final class _InstallerPreparationStream {
+  final Future<void> Function(_InstallerPreparationStream preparation) _prepare;
+  final AppUpdateFailure Function(Object error) _decodeFailure;
+
+  _InstallerPreparationStream({
+    required this._prepare,
+    required this._decodeFailure,
+  });
+
+  late final StreamController<InstallerBundlePreparationStatus> _statuses =
+      StreamController<InstallerBundlePreparationStatus>(
+        onListen: () {
+          _preparationCompletionFuture = _run();
+        },
+        onCancel: _cancel,
+      );
+  late final Future<AsyncError?> _preparationCompletionFuture;
+  StreamIterator<int>? _download;
+  Future<void>? _downloadCancellationFuture;
+
+  Stream<InstallerBundlePreparationStatus> get stream => _statuses.stream;
+
+  void checkCancellation() {
+    if (!_statuses.hasListener) {
+      throw const FileDownloadCancelledException();
+    }
+  }
+
+  void setStatus(InstallerBundlePreparationStatus status) {
+    if (_statuses.hasListener) {
+      _statuses.add(status);
+    }
+  }
+
+  Stream<int> bindDownload(Stream<int> download) async* {
+    checkCancellation();
+    final StreamIterator<int> chunks = StreamIterator<int>(download);
+    _download = chunks;
+
+    try {
+      while (true) {
+        final bool hasNext = await chunks.moveNext();
+        checkCancellation();
+
+        if (!hasNext) {
+          return;
+        }
+
+        yield chunks.current;
+      }
+    } finally {
+      await _stopDownload();
+    }
+  }
+
+  // moveNext can finish before source cleanup. Both paths must await the same future.
+  Future<void> _stopDownload() => _downloadCancellationFuture ??= _download?.cancel() ?? Future<void>.value();
+
+  Future<void> _cancel() async {
+    if (_statuses.isClosed) {
+      return;
+    }
+
+    try {
+      await _stopDownload();
+    } finally {
+      final AsyncError? failure = await _preparationCompletionFuture;
+
+      if (failure != null && failure.error is! AppUpdateCancelledFailure) {
+        Error.throwWithStackTrace(failure.error, failure.stackTrace);
       }
     }
   }
 
-  void _ensureDownloadActive(bool Function() isCancelled) {
-    if (isCancelled()) {
-      throw const InstallerBundleDownloadCancelledException();
+  Future<AsyncError?> _run() async {
+    try {
+      await _prepare(this);
+
+      return null;
+    } catch (error, stackTrace) {
+      final AppUpdateFailure failure = _decodeFailure(error);
+
+      if (_statuses.hasListener) {
+        _statuses.addError(failure, stackTrace);
+      }
+
+      return AsyncError(failure, stackTrace);
+    } finally {
+      // Stream delivery must not keep the cache locked or block cancellation.
+      unawaited(_statuses.close());
     }
   }
-
-  Future<String> _calculateBundleHash(File file) async => (await sha256.bind(file.openRead()).single).toString();
 }

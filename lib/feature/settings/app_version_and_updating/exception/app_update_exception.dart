@@ -1,9 +1,20 @@
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/data/model/app_update_failure.dart';
 
 sealed class AppUpdateException implements PresentationException {
   const AppUpdateException();
+
+  factory AppUpdateException.fromFailure(AppUpdateFailure failure) => switch (failure) {
+    AppUpdateCheckFailure() => const AppUpdateCheckException(),
+    AppUpdateDownloadFailure() => const AppUpdateDownloadException(),
+    AppUpdateDamagedFailure() => const AppUpdateDamagedException(),
+    AppUpdatePermissionFailure() => const AppUpdatePermissionException(),
+    AppUpdateInstallationFailure() => const AppUpdateInstallationException(),
+    // Cancellation has no error message
+    AppUpdateCancelledFailure() => throw ArgumentError.value(failure, 'failure'),
+  };
 
   String? toLocalizedTitle(BuildContext context) => null;
 }

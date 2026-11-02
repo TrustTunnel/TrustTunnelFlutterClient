@@ -5,7 +5,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trusttunnel/common/constants/app_constants.dart';
 import 'package:trusttunnel/common/constants/app_update_constants.dart';
+import 'package:trusttunnel/common/network/models/http_client_configuration.dart';
+import 'package:trusttunnel/common/network/network_client.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
@@ -58,6 +61,10 @@ abstract class DependencyFactory {
 
   ReleasesDataSource get releasesDataSource;
 
+  NetworkClient get releasesHttpClient;
+
+  NetworkClient get fileDownloadClient;
+
   ThemeData get lightThemeData;
 
   VpnPlugin get vpnPlugin;
@@ -92,7 +99,7 @@ abstract class DependencyFactory {
 
   db.AppDatabase get database;
 
-  HttpClient createHttpClient(Duration timeout);
+  Future<void> close();
 }
 
 class DependencyFactoryImpl implements DependencyFactory {
@@ -118,6 +125,10 @@ class DependencyFactoryImpl implements DependencyFactory {
   AppUpdateInstallationDataSource? _appUpdateInstallationDataSource;
 
   ReleasesDataSource? _releasesDataSource;
+
+  NetworkClient? _releasesHttpClient;
+
+  NetworkClient? _fileDownloadClient;
 
   ThemeData? _lightThemeData;
 
@@ -160,10 +171,31 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   @override
   ReleasesDataSource get releasesDataSource => _releasesDataSource ??= ReleasesDataSourceImpl(
-    httpClientFactory: createHttpClient,
-    timeout: AppUpdateConstants.requestTimeout,
+    releasesClient: releasesHttpClient,
+    downloadsClient: fileDownloadClient,
     baseUrl: AppUpdateConstants.releasesUrl,
     repositoryName: AppUpdateConstants.repositoryName,
+  );
+
+  @override
+  NetworkClient get releasesHttpClient => _releasesHttpClient ??= NetworkClient(
+    configuration: HttpClientConfiguration(
+      timeout: AppUpdateConstants.requestTimeout,
+      userAgent: AppConstants.appName,
+      headers: const {
+        HttpHeaders.acceptHeader: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    ),
+  );
+
+  @override
+  NetworkClient get fileDownloadClient => _fileDownloadClient ??= NetworkClient(
+    configuration: HttpClientConfiguration(
+      timeout: AppUpdateConstants.requestTimeout,
+      userAgent: AppConstants.appName,
+      headers: const {HttpHeaders.acceptHeader: 'application/octet-stream'},
+    ),
   );
 
   @override
@@ -254,5 +286,10 @@ class DependencyFactoryImpl implements DependencyFactory {
   db.AppDatabase get database => _database ??= db.AppDatabase();
 
   @override
-  HttpClient createHttpClient(Duration timeout) => HttpClient()..connectionTimeout = timeout;
+  Future<void> close() async {
+    await Future.wait<void>([
+      if (_releasesHttpClient case final client?) client.close(),
+      if (_fileDownloadClient case final client?) client.close(),
+    ]);
+  }
 }
