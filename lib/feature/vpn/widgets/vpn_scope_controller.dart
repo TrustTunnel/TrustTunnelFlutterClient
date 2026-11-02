@@ -16,7 +16,11 @@ abstract interface class VpnScopeController implements Listenable {
 
   /// Attempts a connection regardless of whether the saved configuration changed.
   /// Launch requests yield to manual commands received before or during loading.
-  void connectToServer(String serverId, {bool isFromAutomaticLaunch = false});
+  void connectToServer(
+    String serverId, {
+    bool isFromAutomaticLaunch = false,
+    bool fallIntoRecovery = false,
+  });
 
   /// Saves selection and the launch target before attempting the connection.
   void selectAndConnectToServer(String serverId);

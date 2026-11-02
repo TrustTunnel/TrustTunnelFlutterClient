@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/feature/settings/app_version_and_updating/widgets/scope/app_version_and_updating_scope.dart';
@@ -66,11 +67,16 @@ class _AutoConnectOnLaunchSettingsScopeState extends State<AutoConnectOnLaunchSe
     _launchRequested = true;
     _controller.markConnectOnLaunchHandled();
 
-    final String? serverId =
-        updatesController.restoreServerId ?? (state.error == null && state.enabled ? state.lastServerId : null);
+    final String? restoreServerId = updatesController.restoreServerId;
+    final String? serverId = restoreServerId ?? (state.error == null && state.enabled ? state.lastServerId : null);
     if (serverId != null) {
+      final fallIntoRecovery = defaultTargetPlatform == TargetPlatform.windows && restoreServerId == null;
       // The VPN scope waits for dependencies and gives manual commands priority.
-      VpnScope.vpnControllerOf(context, listen: false).connectToServer(serverId, isFromAutomaticLaunch: true);
+      VpnScope.vpnControllerOf(context, listen: false).connectToServer(
+        serverId,
+        isFromAutomaticLaunch: true,
+        fallIntoRecovery: fallIntoRecovery,
+      );
     }
   }
 

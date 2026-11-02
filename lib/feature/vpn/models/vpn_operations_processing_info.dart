@@ -32,6 +32,8 @@ final class VpnOperationsProcessingInfo {
   /// Native events settle submitted starts independently of repository replies.
   final bool startSubmitted;
 
+  final bool lastStartFallIntoRecovery;
+
   /// A stop was submitted, but native disconnection is not yet confirmed.
   final bool stopSubmitted;
 
@@ -58,6 +60,7 @@ final class VpnOperationsProcessingInfo {
     this.pendingUserCommand,
     this.stopRequired = false,
     this.startSubmitted = false,
+    this.lastStartFallIntoRecovery = false,
     this.stopSubmitted = false,
     this.needsSynchronization = true,
     this.configurationDeleted = false,
@@ -74,6 +77,7 @@ final class VpnOperationsProcessingInfo {
     pendingUserCommand,
     stopRequired,
     startSubmitted,
+    lastStartFallIntoRecovery,
     stopSubmitted,
     needsSynchronization,
     configurationDeleted,
@@ -92,6 +96,7 @@ final class VpnOperationsProcessingInfo {
           pendingUserCommand == other.pendingUserCommand &&
           stopRequired == other.stopRequired &&
           startSubmitted == other.startSubmitted &&
+          lastStartFallIntoRecovery == other.lastStartFallIntoRecovery &&
           stopSubmitted == other.stopSubmitted &&
           needsSynchronization == other.needsSynchronization &&
           configurationDeleted == other.configurationDeleted &&
@@ -113,6 +118,7 @@ final class VpnOperationsProcessingInfo {
     ValueData<VpnUserCommand>? pendingUserCommand,
     bool? stopRequired,
     bool? startSubmitted,
+    bool? lastStartFallIntoRecovery,
     bool? stopSubmitted,
     bool? needsSynchronization,
     bool? configurationDeleted,
@@ -126,6 +132,7 @@ final class VpnOperationsProcessingInfo {
     pendingUserCommand: pendingUserCommand != null ? pendingUserCommand.value : this.pendingUserCommand,
     stopRequired: stopRequired ?? this.stopRequired,
     startSubmitted: startSubmitted ?? this.startSubmitted,
+    lastStartFallIntoRecovery: lastStartFallIntoRecovery ?? this.lastStartFallIntoRecovery,
     stopSubmitted: stopSubmitted ?? this.stopSubmitted,
     needsSynchronization: needsSynchronization ?? this.needsSynchronization,
     configurationDeleted: configurationDeleted ?? this.configurationDeleted,

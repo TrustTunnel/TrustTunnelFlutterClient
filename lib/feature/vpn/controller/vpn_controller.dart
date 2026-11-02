@@ -54,7 +54,11 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
       !previousState.hasSamePublicState(nextState);
 
   /// Explicit connections also retry an unchanged configuration.
-  void connectToServer(String serverId, {bool isFromAutomaticLaunch = false}) => handle(
+  void connectToServer(
+    String serverId, {
+    bool isFromAutomaticLaunch = false,
+    bool fallIntoRecovery = false,
+  }) => handle(
     () {
       final hasConnectionActivity = _vpnOperationsProcessingInfo.requestId != 0 || _isRunning;
       final shouldSkipAutomaticLaunch = isFromAutomaticLaunch && hasConnectionActivity;
@@ -62,7 +66,11 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         return;
       }
 
-      _acceptConnectionUserCommand(serverId, saveSelection: false);
+      _acceptConnectionUserCommand(
+        serverId,
+        saveSelection: false,
+        fallIntoRecovery: fallIntoRecovery,
+      );
       _handlePendingWork();
     },
     errorHandler: _onHandlerError,
@@ -221,7 +229,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     }
   }
 
-  void _acceptConnectionUserCommand(String serverId, {required bool saveSelection}) {
+  void _acceptConnectionUserCommand(String serverId, {required bool saveSelection, bool fallIntoRecovery = false}) {
     final requestId = _vpnOperationsProcessingInfo.requestId + 1;
 
     _updateVpnOperationsProcessingInfo(
@@ -232,6 +240,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
             requestId: requestId,
             serverId: serverId,
             stage: saveSelection ? VpnConnectionStage.savingSelection : VpnConnectionStage.preparing,
+            fallIntoRecovery: fallIntoRecovery,
           ),
         ),
         needsSynchronization: true,
@@ -346,7 +355,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
 
       return;
     }
-    _submitStart(configuration);
+    _submitStart(configuration, request);
   }
 
   void _handleConfigurationSynchronization() {
@@ -396,6 +405,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
               requestId: _vpnOperationsProcessingInfo.requestId,
               serverId: configuration.server.id,
               stage: VpnConnectionStage.preparing,
+              fallIntoRecovery: _vpnOperationsProcessingInfo.lastStartFallIntoRecovery,
             ),
           ),
         ),
@@ -527,7 +537,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     errorHandler: _onHandlerError,
   );
 
-  void _submitStart(VpnConfiguration configuration) {
+  void _submitStart(VpnConfiguration configuration, VpnUserCommand command) {
     final requestId = _vpnOperationsProcessingInfo.requestId;
     _updateState(
       state.copyWith(
@@ -538,6 +548,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
             _vpnOperationsProcessingInfo.pendingUserCommand?.copyWith(stage: VpnConnectionStage.readyToStart),
           ),
           startSubmitted: true,
+          lastStartFallIntoRecovery: command.fallIntoRecovery,
           nativeStateRequest: const ValueData(null),
           needsSynchronization: false,
         ),
@@ -551,6 +562,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         routingProfile: configuration.routingProfile,
         excludedRoutes: configuration.excludedRoutes,
         logLevel: configuration.logLevel,
+        fallIntoRecovery: command.fallIntoRecovery,
       ),
       configuration: configuration,
       onCompleted: () => _onNativeStartOperationCompleted(configuration, requestId),

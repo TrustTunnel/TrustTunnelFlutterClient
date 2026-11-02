@@ -334,8 +334,15 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
   void cancelExit({VpnExitMode mode = VpnExitMode.application}) => _controller.cancelExit(mode: mode);
 
   @override
-  void connectToServer(String serverId, {bool isFromAutomaticLaunch = false}) =>
-      _controller.connectToServer(serverId, isFromAutomaticLaunch: isFromAutomaticLaunch);
+  void connectToServer(
+    String serverId, {
+    bool isFromAutomaticLaunch = false,
+    bool fallIntoRecovery = false,
+  }) => _controller.connectToServer(
+    serverId,
+    isFromAutomaticLaunch: isFromAutomaticLaunch,
+    fallIntoRecovery: fallIntoRecovery,
+  );
 
   @override
   void selectAndConnectToServer(String serverId) => _controller.selectAndConnectToServer(serverId);
