@@ -3,6 +3,9 @@ final class ProtocolCommandBuilder {
   /// The placeholder Windows replaces with the invoked URL.
   static const String _urlPlaceholder = '%1';
 
+  /// Matches backslash runs that precede a quote or end the argument.
+  static final RegExp _backslashesBeforeQuoteOrEnd = RegExp(r'\\+(?="|$)');
+
   /// Creates a command line builder.
   const ProtocolCommandBuilder();
 
@@ -34,5 +37,12 @@ final class ProtocolCommandBuilder {
     return '${_quote(executable)} $quotedArguments';
   }
 
-  String _quote(String value) => '"${value.replaceAll('"', r'\"')}"';
+  /// Quotes [value] following the `CommandLineToArgvW` parsing rules, where
+  /// backslashes are only special when they precede a double quote.
+  String _quote(String value) {
+    // Double backslashes before quotes and at the end so they stay literal.
+    final doubled = value.replaceAllMapped(_backslashesBeforeQuoteOrEnd, (match) => match[0]! * 2);
+
+    return '"${doubled.replaceAll('"', r'\"')}"';
+  }
 }
