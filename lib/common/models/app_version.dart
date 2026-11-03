@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
 @immutable
@@ -78,8 +79,9 @@ final class AppVersion implements Comparable<AppVersion> {
 
     final List<String> identifiers = preRelease.split('.');
     final List<String> otherIdentifiers = otherPreRelease.split('.');
+    final int commonLength = {identifiers.length, otherIdentifiers.length}.min;
 
-    for (int index = 0; index < identifiers.length && index < otherIdentifiers.length; index++) {
+    for (int index = 0; index < commonLength; index++) {
       final String identifier = identifiers[index];
       final String otherIdentifier = otherIdentifiers[index];
       final bool isNumeric = _numericIdentifierPattern.hasMatch(identifier);
