@@ -4,7 +4,6 @@ import 'package:win32_registry/win32_registry.dart' as registry;
 /// A [ProtocolRegistrationStore] backed by the Windows registry.
 final class Win32ProtocolRegistrationStore implements ProtocolRegistrationStore {
   static const String _classesKey = r'Software\Classes';
-
   static const String _commandKey = r'shell\open\command';
   static const String _iconKey = 'DefaultIcon';
   static const String _protocolValue = 'URL Protocol';
