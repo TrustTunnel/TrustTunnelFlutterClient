@@ -63,7 +63,11 @@ final class WindowsProtocolHandler implements ProtocolHandler {
 
   ProtocolRegistration _createRegistration(String scheme) {
     if (scheme.isEmpty) {
-      throw ArgumentError.value(scheme, 'scheme', 'must not be empty');
+      throw ArgumentError.value(
+        scheme,
+        'scheme',
+        'must not be empty',
+      );
     }
 
     return ProtocolRegistration(

@@ -15,7 +15,11 @@ final class ProtocolCommandBuilder {
     List<String> arguments = const [_urlPlaceholder],
   }) {
     if (executable.isEmpty) {
-      throw ArgumentError.value(executable, 'executable', 'must not be empty');
+      throw ArgumentError.value(
+        executable,
+        'executable',
+        'must not be empty',
+      );
     }
     if (!arguments.any((argument) => argument.contains(_urlPlaceholder))) {
       throw ArgumentError.value(
