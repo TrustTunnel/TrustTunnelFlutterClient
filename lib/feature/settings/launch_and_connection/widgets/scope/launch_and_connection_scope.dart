@@ -35,6 +35,10 @@ class _LaunchAndConnectionScopeState extends State<LaunchAndConnectionScope> {
   late final AutoConnectOnLaunchSettingsController _autoConnectOnLaunchSettingsController;
   late final Listenable _controllersMergedListenable;
 
+  /// The login item can be changed in System Settings while the app is running,
+  /// so the actual state is re-read when the app comes back to the foreground.
+  late final AppLifecycleListener _appLifecycleListener;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +65,10 @@ class _LaunchAndConnectionScopeState extends State<LaunchAndConnectionScope> {
     _launchAtLoginController.fetch();
     _openMainWindowOnLoginController.fetch();
     _autoConnectOnLaunchSettingsController.fetch();
+
+    _appLifecycleListener = AppLifecycleListener(
+      onResume: _launchAtLoginController.fetch,
+    );
   }
 
   @override
@@ -131,6 +139,7 @@ class _LaunchAndConnectionScopeState extends State<LaunchAndConnectionScope> {
 
   @override
   void dispose() {
+    _appLifecycleListener.dispose();
     _autoConnectOnLaunchSettingsController.dispose();
     _openMainWindowOnLoginController.dispose();
     _launchAtLoginController.dispose();

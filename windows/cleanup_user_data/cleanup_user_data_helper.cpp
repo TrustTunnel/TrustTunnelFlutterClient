@@ -1,13 +1,18 @@
-// Elevated Inno helper that cleans up uninstall data or matching Run values.
+// Elevated Inno helper that cleans up uninstall data or matching per-user
+// registrations.
 //
 // - Dart application logs and temporary native-log exports — always removed
 //   (the default mode is /DELETEUSERDATA=0).
 // - Drift database and Shared Preferences — removed with /DELETEUSERDATA=1.
 // - Native client/service VPN logs and connection-log ring buffer — always
 //   removed by the Inno uninstaller.
+// - Login startup and URL protocol registrations — removed with
+//   /REMOVEAUTOSTART and /REMOVEURLSCHEME for every user profile.
 
 // clang-format off: Windows types must be declared before SDDL/WTS APIs.
 #include <windows.h>
+#include <shellapi.h>
+#include "../user_context/executable_path.h"
 #include "../user_context/user_context.h"
 #include "../user_context/launch_at_login_registry.h"
 // clang-format on
@@ -49,6 +54,7 @@ enum class CleanupStage {
   kReadAttributes,
   kDeletePath,
   kRemoveAutostart,
+  kRemoveUrlScheme,
 };
 
 struct CleanupError {
@@ -98,6 +104,8 @@ const wchar_t* CleanupStageName(CleanupStage stage) {
       return L"delete_path";
     case CleanupStage::kRemoveAutostart:
       return L"remove_autostart";
+    case CleanupStage::kRemoveUrlScheme:
+      return L"remove_url_scheme";
   }
   return L"unknown";
 }
@@ -116,6 +124,7 @@ CleanupExitCode ExitCodeForError(const CleanupError& error) {
     case CleanupStage::kReadAttributes:
     case CleanupStage::kDeletePath:
     case CleanupStage::kRemoveAutostart:
+    case CleanupStage::kRemoveUrlScheme:
       return CleanupExitCode::kPartialFailure;
     case CleanupStage::kParseOptions:
     case CleanupStage::kReadRoamingAppData:
@@ -781,6 +790,7 @@ void RemoveTemporaryExportLogs(const std::wstring& temporary_directory,
 struct Options {
   std::wstring sid;
   std::wstring autostart_executable;
+  std::wstring url_scheme;
   bool delete_user_data = false;
 };
 
@@ -814,15 +824,97 @@ bool ParseOptions(int argument_count, wchar_t* arguments[], Options* options,
                     &options->autostart_executable)) {
       if (!options->autostart_executable.empty()) continue;
     }
+    if (ParseOption(argument, L"REMOVEURLSCHEME", &options->url_scheme)) {
+      if (!options->url_scheme.empty()) continue;
+    }
     *error = {CleanupStage::kParseOptions, argument, ERROR_INVALID_PARAMETER};
+    return false;
+  }
+  // The scheme registration is only removed when it points at the installed
+  // executable, so the executable must be supplied together with the scheme.
+  if (!options->url_scheme.empty() && options->autostart_executable.empty()) {
+    *error = {CleanupStage::kParseOptions, L"REMOVEURLSCHEME",
+              ERROR_INVALID_PARAMETER};
     return false;
   }
   return true;
 }
 
-CleanupExitCode RemoveAutostart(const Options& options, const Logger& logger) {
-  // Setup is machine-wide, but Run is per user. Enumerate profiles so uninstall
-  // by another administrator also removes the original user's stale command.
+LSTATUS RemoveUrlSchemeForExecutable(HKEY root, const std::wstring& scheme,
+                                     const std::wstring& executable) {
+  if (scheme.empty() || executable.empty()) {
+    return ERROR_INVALID_PARAMETER;
+  }
+
+  std::wstring expected_executable;
+  LSTATUS status = windows_user_context::NormalizeExecutablePath(
+      executable, expected_executable);
+  if (status != ERROR_SUCCESS) {
+    return status;
+  }
+
+  const std::wstring scheme_key = L"Software\\Classes\\" + scheme;
+  const std::wstring command_key = scheme_key + L"\\shell\\open\\command";
+
+  ScopedRegistryKey command;
+  status = ::RegOpenKeyExW(root, command_key.c_str(), 0, KEY_QUERY_VALUE,
+                           command.receive());
+  if (status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND) {
+    return ERROR_SUCCESS;
+  }
+  if (status != ERROR_SUCCESS) {
+    return status;
+  }
+
+  DWORD type = 0;
+  DWORD bytes = 0;
+  status = ::RegGetValueW(command.get(), nullptr, nullptr, RRF_RT_REG_SZ, &type,
+                          nullptr, &bytes);
+  if (status == ERROR_FILE_NOT_FOUND) {
+    return ERROR_SUCCESS;
+  }
+  if (status != ERROR_SUCCESS) {
+    return status;
+  }
+  if (bytes < sizeof(wchar_t) || bytes % sizeof(wchar_t) != 0) {
+    return ERROR_INVALID_DATA;
+  }
+
+  std::wstring registered(bytes / sizeof(wchar_t), L'\0');
+  status = ::RegGetValueW(command.get(), nullptr, nullptr, RRF_RT_REG_SZ, &type,
+                          registered.data(), &bytes);
+  if (status != ERROR_SUCCESS) {
+    return status;
+  }
+
+  int argument_count = 0;
+  LPWSTR* arguments = ::CommandLineToArgvW(registered.c_str(), &argument_count);
+  if (arguments == nullptr) {
+    return static_cast<LSTATUS>(::GetLastError());
+  }
+  std::wstring registered_executable;
+  LSTATUS normalize_status = ERROR_BAD_PATHNAME;
+  if (argument_count > 0) {
+    normalize_status = windows_user_context::NormalizeExecutablePath(
+        arguments[0], registered_executable);
+  }
+  ::LocalFree(arguments);
+  if (normalize_status != ERROR_SUCCESS ||
+      ::CompareStringOrdinal(registered_executable.c_str(), -1,
+                             expected_executable.c_str(), -1,
+                             TRUE) != CSTR_EQUAL) {
+    // Another executable owns the per-user registration; leave it alone.
+    return ERROR_SUCCESS;
+  }
+
+  return ::RegDeleteTreeW(root, scheme_key.c_str());
+}
+
+CleanupExitCode RemovePerUserRegistrations(const Options& options,
+                                           const Logger& logger) {
+  // Setup is machine-wide, but Run values and URL protocol registrations are
+  // per user. Enumerate profiles so uninstall by another administrator also
+  // removes the original user's stale entries.
   std::vector<std::wstring> sids;
   CleanupError error{};
   if (!options.sid.empty()) {
@@ -869,11 +961,9 @@ CleanupExitCode RemoveAutostart(const Options& options, const Logger& logger) {
     std::wstring profile;
     ScopedRegistryKey user;
     windows_user_context::RegistryHiveType hive_type;
-    if (!ReadProfilePath(sid, &profile, &error) ||
-        !OpenUserRegistry(sid, profile, &user, hive_type, &error,
-                          KEY_READ | KEY_WRITE)) {
-      // Deleted profiles cannot retain a Run value. Other lookup/access errors
-      // are reported instead of pretending all registrations were removed.
+    if (!ReadProfilePath(sid, &profile, &error)) {
+      // Deleted profiles cannot retain per-user registrations. Other lookup
+      // errors are reported instead of pretending all entries were removed.
       if (error.win32_error != ERROR_FILE_NOT_FOUND &&
           error.win32_error != ERROR_PATH_NOT_FOUND) {
         errors.push_back(error);
@@ -881,14 +971,48 @@ CleanupExitCode RemoveAutostart(const Options& options, const Logger& logger) {
       }
       continue;
     }
-    status = windows_launch_at_login::RemoveForExecutable(
-        user.get(), options.autostart_executable, hive_type);
-    if (status != ERROR_SUCCESS) {
-      error = {CleanupStage::kRemoveAutostart, sid, static_cast<DWORD>(status)};
-      errors.push_back(error);
-      logger.WriteError(error);
-    } else {
-      logger.Write(L"Autostart cleanup completed for SID: " + sid);
+
+    bool opened = OpenUserRegistry(sid, profile, &user, hive_type, &error,
+                                   KEY_READ | KEY_WRITE | DELETE);
+    if (!opened && error.win32_error == ERROR_ACCESS_DENIED) {
+      // Deleting the URL scheme requires DELETE, but Run cleanup only needs
+      // read/write access. Keep autostart cleanup working on hardened hives;
+      // the scheme deletion reports its own access error below.
+      logger.Write(L"Reduced per-user registry access for SID: " + sid);
+      opened = OpenUserRegistry(sid, profile, &user, hive_type, &error,
+                                KEY_READ | KEY_WRITE);
+    }
+    if (!opened) {
+      if (error.win32_error != ERROR_FILE_NOT_FOUND &&
+          error.win32_error != ERROR_PATH_NOT_FOUND) {
+        errors.push_back(error);
+        logger.WriteError(error);
+      }
+      continue;
+    }
+    if (!options.autostart_executable.empty()) {
+      status = windows_launch_at_login::RemoveForExecutable(
+          user.get(), options.autostart_executable, hive_type);
+      if (status != ERROR_SUCCESS) {
+        error = {CleanupStage::kRemoveAutostart, sid,
+                 static_cast<DWORD>(status)};
+        errors.push_back(error);
+        logger.WriteError(error);
+      } else {
+        logger.Write(L"Autostart cleanup completed for SID: " + sid);
+      }
+    }
+    if (!options.url_scheme.empty()) {
+      status = RemoveUrlSchemeForExecutable(
+          user.get(), options.url_scheme, options.autostart_executable);
+      if (status != ERROR_SUCCESS) {
+        error = {CleanupStage::kRemoveUrlScheme, sid,
+                 static_cast<DWORD>(status)};
+        errors.push_back(error);
+        logger.WriteError(error);
+      } else {
+        logger.Write(L"URL scheme cleanup completed for SID: " + sid);
+      }
     }
   }
   return ExitCodeForErrors(errors);
@@ -904,8 +1028,8 @@ int wmain(int argument_count, wchar_t* arguments[]) {
     logger.WriteError(error);
     return ToProcessExitCode(ExitCodeForError(error));
   }
-  if (!options.autostart_executable.empty()) {
-    return ToProcessExitCode(RemoveAutostart(options, logger));
+  if (!options.autostart_executable.empty() || !options.url_scheme.empty()) {
+    return ToProcessExitCode(RemovePerUserRegistrations(options, logger));
   }
 
   std::wstring sid;

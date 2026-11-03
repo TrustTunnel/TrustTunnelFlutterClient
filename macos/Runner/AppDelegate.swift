@@ -3,19 +3,9 @@ import FlutterMacOS
 import app_links
 
 private enum LoginItemLaunchEvent {
-  static let scheme = "tt"
-
-  private static let host = "internal-launch"
-  private static let path = "/login-item"
-
-  static var url: URL {
-    URL(string: "\(scheme)://\(host)\(path)")!
-  }
-
-  static func matches(_ url: URL) -> Bool {
-    url.scheme?.caseInsensitiveCompare(scheme) == .orderedSame
-      && url.host?.caseInsensitiveCompare(host) == .orderedSame
-      && url.path == path
+  // LaunchServices sets this parameter when it starts the app as a login item.
+  static func isLaunchedAsLogInItem(_ event: NSAppleEventDescriptor) -> Bool {
+    event.paramDescriptor(forKeyword: keyAELaunchedAsLogInItem)?.booleanValue ?? false
   }
 }
 
@@ -39,16 +29,32 @@ private final class AppLaunchState {
 class AppDelegate: FlutterAppDelegate {
   override init() {
     super.init()
-    registerGetURLHandler()
+    registerAppleEventHandlers()
   }
 
   override func applicationWillFinishLaunching(_ notification: Notification) {
     super.applicationWillFinishLaunching(notification)
-    registerGetURLHandler()
-    updateLaunchPresentation()
+    registerAppleEventHandlers()
+
+    // The app lives in the menu bar until the main window is presented. Starting as an
+    // accessory app keeps the Dock icon from appearing before it is known whether the
+    // window will be shown at all.
+    NSApp.setActivationPolicy(.accessory)
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
+    // `keyAELaunchedAsLogInItem` is not reliably delivered for `SMAppService` login items, so
+    // AppKit's own launch reason is used as an additional signal. A launch that is not
+    // user-initiated only counts as a login item when the login item is actually enabled:
+    // launchers, installers and crash reporters also produce non-default launches.
+    if let isDefaultLaunch = notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool,
+       !isDefaultLaunch,
+       LaunchAtLoginManager.shared.isEnabled {
+      AppLaunchState.shared.markLoginItemLaunch()
+    }
+
+    LaunchAtLoginManager.shared.migrateLegacyLoginItemIfNeeded()
+
     updateLaunchPresentation()
   }
 
@@ -67,29 +73,42 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   @objc
+  private func handleOpenApplicationEvent(
+    _ event: NSAppleEventDescriptor,
+    with replyEvent: NSAppleEventDescriptor
+  ) {
+    guard LoginItemLaunchEvent.isLaunchedAsLogInItem(event) else {
+      return
+    }
+
+    AppLaunchState.shared.markLoginItemLaunch()
+    updateLaunchPresentation()
+  }
+
+  @objc
   private func handleGetURLEvent(
     _ event: NSAppleEventDescriptor,
     with replyEvent: NSAppleEventDescriptor
   ) {
     guard
-      let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
-      let url = URL(string: urlString)
+      let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue
     else {
       return
     }
 
-    if LoginItemLaunchEvent.matches(url) {
-      AppLaunchState.shared.markLoginItemLaunch()
-      updateLaunchPresentation()
-
-      return
-    }
-
-    AppLinks.shared.handleLink(link: url.absoluteString)
+    AppLinks.shared.handleLink(link: urlString)
   }
 
-  private func registerGetURLHandler() {
-    NSAppleEventManager.shared().setEventHandler(
+  private func registerAppleEventHandlers() {
+    let manager = NSAppleEventManager.shared()
+
+    manager.setEventHandler(
+      self,
+      andSelector: #selector(handleOpenApplicationEvent(_:with:)),
+      forEventClass: AEEventClass(kCoreEventClass),
+      andEventID: AEEventID(kAEOpenApplication)
+    )
+    manager.setEventHandler(
       self,
       andSelector: #selector(handleGetURLEvent(_:with:)),
       forEventClass: AEEventClass(kInternetEventClass),

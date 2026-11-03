@@ -1,3 +1,4 @@
+import 'package:trusttunnel/common/constants/app_constants.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
@@ -5,8 +6,6 @@ import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/repository/deep_link_repository.dart';
 import 'package:trusttunnel/feature/deep_link/controller/deep_link_state.dart';
-
-const _deepLinkScheme = 'tt';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.
@@ -26,7 +25,7 @@ final class DeepLinkController extends BaseStateController<DeepLinkState> with S
 
       ServerData? parsedDeepLink;
 
-      if (deepLink != null && deepLink.scheme == _deepLinkScheme && deepLink.hasQuery) {
+      if (deepLink != null && deepLink.scheme == AppConstants.deepLinkScheme && deepLink.hasQuery) {
         parsedDeepLink = await _repository.parseDataFromLink(
           deepLink: deepLink.toString(),
         );
