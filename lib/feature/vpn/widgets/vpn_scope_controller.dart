@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show Listenable;
 import 'package:trusttunnel/data/model/vpn_state.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_exit_mode.dart';
 
 /// Synchronous commands and the prepared VPN status exposed to consumers.
 abstract interface class VpnScopeController implements Listenable {
@@ -15,7 +16,11 @@ abstract interface class VpnScopeController implements Listenable {
 
   /// Attempts a connection regardless of whether the saved configuration changed.
   /// Launch requests yield to manual commands received before or during loading.
-  void connectToServer(String serverId, {bool isFromAutomaticLaunch = false});
+  void connectToServer(
+    String serverId, {
+    bool isFromAutomaticLaunch = false,
+    bool fallIntoRecovery = false,
+  });
 
   /// Saves selection and the launch target before attempting the connection.
   void selectAndConnectToServer(String serverId);
@@ -24,4 +29,13 @@ abstract interface class VpnScopeController implements Listenable {
   ///
   /// Native state confirms disconnection; this synchronous call only submits the intention.
   void disconnect();
+
+  /// Installation mode reports the connected server for restoration and lets the installer stop VPN.
+  void stopForExit({
+    VpnExitMode mode = VpnExitMode.application,
+    void Function(String? serverId)? onPrepared,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  });
+
+  void cancelExit({VpnExitMode mode = VpnExitMode.application});
 }

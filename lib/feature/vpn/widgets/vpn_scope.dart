@@ -17,6 +17,7 @@ import 'package:trusttunnel/feature/vpn/controller/vpn_logs_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_aspect.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration_sources.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_exit_mode.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_controller.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope_exit_handling_mixin.dart';
 
@@ -323,8 +324,25 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
   void removeListener(VoidCallback listener) => _controller.removeListener(listener);
 
   @override
-  void connectToServer(String serverId, {bool isFromAutomaticLaunch = false}) =>
-      _controller.connectToServer(serverId, isFromAutomaticLaunch: isFromAutomaticLaunch);
+  void stopForExit({
+    VpnExitMode mode = VpnExitMode.application,
+    void Function(String? serverId)? onPrepared,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) => _controller.stopForExit(mode: mode, onPrepared: onPrepared, onError: onError);
+
+  @override
+  void cancelExit({VpnExitMode mode = VpnExitMode.application}) => _controller.cancelExit(mode: mode);
+
+  @override
+  void connectToServer(
+    String serverId, {
+    bool isFromAutomaticLaunch = false,
+    bool fallIntoRecovery = false,
+  }) => _controller.connectToServer(
+    serverId,
+    isFromAutomaticLaunch: isFromAutomaticLaunch,
+    fallIntoRecovery: fallIntoRecovery,
+  );
 
   @override
   void selectAndConnectToServer(String serverId) => _controller.selectAndConnectToServer(serverId);

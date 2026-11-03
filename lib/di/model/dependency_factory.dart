@@ -1,16 +1,25 @@
+import 'dart:io';
+
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trusttunnel/common/constants/app_constants.dart';
+import 'package:trusttunnel/common/constants/app_update_constants.dart';
+import 'package:trusttunnel/common/network/models/http_client_configuration.dart';
+import 'package:trusttunnel/common/network/network_client.dart';
 import 'package:trusttunnel/common/theme/light_theme.dart';
 import 'package:trusttunnel/common/utils/certificate_encoders.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/app_state_logging_datasource.dart';
+import 'package:trusttunnel/data/datasources/app_update_installation_datasource.dart';
+import 'package:trusttunnel/data/datasources/app_updates_local_datasource.dart';
 import 'package:trusttunnel/data/datasources/auto_connect_on_launch_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
 import 'package:trusttunnel/data/datasources/launch_at_login_datasource.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/app_updates_local_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/auto_connect_on_launch_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
@@ -23,7 +32,10 @@ import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/native_sources/launch_at_login_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/native_sources/open_main_window_on_login_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/native_sources/vpn_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/native_sources/windows_app_update_installation_datasource.dart';
 import 'package:trusttunnel/data/datasources/open_main_window_on_login_datasource.dart';
+import 'package:trusttunnel/data/datasources/releases_datasource.dart';
+import 'package:trusttunnel/data/datasources/remote_sources/releases_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
@@ -42,6 +54,16 @@ abstract class DependencyFactory {
   abstract final FileLogAppender fileLogAppender;
 
   abstract final FileLogStorage logStorage;
+
+  AppUpdatesLocalDataSource get appUpdatesLocalDataSource;
+
+  AppUpdateInstallationDataSource get appUpdateInstallationDataSource;
+
+  ReleasesDataSource get releasesDataSource;
+
+  NetworkClient get releasesHttpClient;
+
+  NetworkClient get fileDownloadClient;
 
   ThemeData get lightThemeData;
 
@@ -76,6 +98,8 @@ abstract class DependencyFactory {
   AppWindowController get appWindowController;
 
   db.AppDatabase get database;
+
+  Future<void> close();
 }
 
 class DependencyFactoryImpl implements DependencyFactory {
@@ -93,6 +117,18 @@ class DependencyFactoryImpl implements DependencyFactory {
     required this.fileLogAppender,
     required this.logStorage,
   });
+
+  final AppUpdatesLocalDataSource _appUpdatesLocalDataSource = AppUpdatesLocalDataSourceImpl(
+    repositoryName: AppUpdateConstants.repositoryName,
+  );
+
+  AppUpdateInstallationDataSource? _appUpdateInstallationDataSource;
+
+  ReleasesDataSource? _releasesDataSource;
+
+  NetworkClient? _releasesHttpClient;
+
+  NetworkClient? _fileDownloadClient;
 
   ThemeData? _lightThemeData;
 
@@ -125,6 +161,42 @@ class DependencyFactoryImpl implements DependencyFactory {
   AppWindowController? _appWindowController;
 
   db.AppDatabase? _database;
+
+  @override
+  AppUpdatesLocalDataSource get appUpdatesLocalDataSource => _appUpdatesLocalDataSource;
+
+  @override
+  AppUpdateInstallationDataSource get appUpdateInstallationDataSource =>
+      _appUpdateInstallationDataSource ??= WindowsAppUpdateInstallationDataSource();
+
+  @override
+  ReleasesDataSource get releasesDataSource => _releasesDataSource ??= ReleasesDataSourceImpl(
+    releasesClient: releasesHttpClient,
+    downloadsClient: fileDownloadClient,
+    baseUrl: AppUpdateConstants.releasesUrl,
+    repositoryName: AppUpdateConstants.repositoryName,
+  );
+
+  @override
+  NetworkClient get releasesHttpClient => _releasesHttpClient ??= NetworkClient(
+    configuration: HttpClientConfiguration(
+      timeout: AppUpdateConstants.requestTimeout,
+      userAgent: AppConstants.appName,
+      headers: const {
+        HttpHeaders.acceptHeader: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    ),
+  );
+
+  @override
+  NetworkClient get fileDownloadClient => _fileDownloadClient ??= NetworkClient(
+    configuration: HttpClientConfiguration(
+      timeout: AppUpdateConstants.requestTimeout,
+      userAgent: AppConstants.appName,
+      headers: const {HttpHeaders.acceptHeader: 'application/octet-stream'},
+    ),
+  );
 
   @override
   ThemeData get lightThemeData => _lightThemeData ??= LightTheme().data;
@@ -212,4 +284,12 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   @override
   db.AppDatabase get database => _database ??= db.AppDatabase();
+
+  @override
+  Future<void> close() async {
+    await Future.wait<void>([
+      if (_releasesHttpClient case final client?) client.close(),
+      if (_fileDownloadClient case final client?) client.close(),
+    ]);
+  }
 }

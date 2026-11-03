@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/repository_factory.dart';
@@ -34,6 +36,12 @@ class _DependencyScopeState extends State<DependencyScope> {
     state: this,
     child: widget.child,
   );
+
+  @override
+  void dispose() {
+    unawaited(widget.dependenciesFactory.close());
+    super.dispose();
+  }
 }
 
 class _InheritedDependencyScope extends InheritedWidget {

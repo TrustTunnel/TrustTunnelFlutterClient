@@ -1,0 +1,4 @@
+enum AppVersionAndUpdatingScopeAspect {
+  status,
+  progress,
+}

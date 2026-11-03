@@ -295,6 +295,8 @@ begin
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  RequiresInteractiveRestart: Boolean;
 begin
   if CurStep = ssInstall then
   begin
@@ -320,7 +322,8 @@ begin
     ReleaseInstallationLock;
     if AutostartConfigurationFailed then
       SuppressibleMsgBox(OperationError, mbCriticalError, MB_OK, IDOK);
-    if InstallationNeedsRestart then
+    RequiresInteractiveRestart := InstallationNeedsRestart and not AppInitiatedUpdate;
+    if RequiresInteractiveRestart then
     begin
       Log('[install] GUI launch skipped: installation requires a Windows restart.');
       if not WizardSilent then
@@ -335,6 +338,7 @@ procedure DeinitializeSetup;
 var
   ErrorMessage: String;
   RollbackSucceeded: Boolean;
+  ShouldLaunchAfterRollback: Boolean;
 begin
   try
     if InstallationCommitted then exit;
@@ -371,9 +375,12 @@ begin
       if SnapshotReady then DeleteRollbackSnapshot;
     end;
     ReleaseInstallationLock;
-    if RollbackSucceeded and UpdateMode and GuiExited and
-       not InstallationNeedsRestart then
+    ShouldLaunchAfterRollback := RollbackSucceeded and UpdateMode and GuiExited and
+      (AppInitiatedUpdate or not InstallationNeedsRestart);
+    if ShouldLaunchAfterRollback then
+    begin
       LaunchInstalledApplication;
+    end;
   finally
     ReleaseApplicationHandles;
     ReleaseInstallationLock;

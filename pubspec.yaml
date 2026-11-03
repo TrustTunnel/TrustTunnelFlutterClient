@@ -22,6 +22,7 @@ dependencies:
   app_links: 7.0.0
   async: 2.13.1
   collection: 1.19.1
+  crypto: 3.0.7
   drift: 2.35.2
   file_picker: 10.3.10
   flutter:

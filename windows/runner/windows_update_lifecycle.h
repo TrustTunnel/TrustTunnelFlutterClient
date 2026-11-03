@@ -5,6 +5,7 @@
 #include <flutter/method_channel.h>
 #include <windows.h>
 
+#include "windows_update_launcher.h"
 #include <memory>
 #include <optional>
 
@@ -20,11 +21,16 @@ public:
                                        LPARAM lparam);
 
 private:
+  std::string operation_;
+  std::shared_ptr<WindowsUpdateLaunch> launch_;
+  std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+      launch_result_;
   HWND window_;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
   HANDLE shutdown_installer_ = nullptr;
   bool dart_ready_ = false;
   bool exit_requested_ = false;
+  bool exit_rejected_ = false;
   bool exit_delivered_ = false;
 };
 

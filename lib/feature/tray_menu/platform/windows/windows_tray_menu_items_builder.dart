@@ -24,6 +24,18 @@ final class WindowsTrayMenuItemsBuilder implements TrayMenuItemsBuilder {
     required TrayMenuCallbacks callbacks,
   }) {
     final items = <TrayItem>[];
+
+    if (data.updateAvailable) {
+      items.add(
+        TrayButton(
+          id: 'updateAvailable',
+          title: data.labels.updateAvailable,
+          onTap: () => unawaited(callbacks.onUpdatePressed()),
+        ),
+      );
+      items.add(const TraySeparator());
+    }
+
     final connectEnabled = data.connectionState == TrayMenuConnectionState.disconnected;
     final disconnectEnabled = !connectEnabled;
 

@@ -13,6 +13,7 @@ enum TrayMenuConnectionState {
 /// Native menu item event handlers supplied by the tray controller.
 /// They translate menu clicks into coordinated application actions.
 final class TrayMenuCallbacks {
+  final AsyncCallback onUpdatePressed;
   final AsyncCallback onAddServerPressed;
   final AsyncCallback onOpenTrustTunnelPressed;
   final AsyncCallback onRoutingPressed;
@@ -28,6 +29,7 @@ final class TrayMenuCallbacks {
   final AsyncCallback onQuitPressed;
 
   const TrayMenuCallbacks({
+    required this.onUpdatePressed,
     required this.onAddServerPressed,
     required this.onOpenTrustTunnelPressed,
     required this.onRoutingPressed,
@@ -45,6 +47,7 @@ final class TrayMenuCallbacks {
 }
 
 final class TrayMenuData {
+  final bool updateAvailable;
   final TrayMenuLabels labels;
   final TrayMenuConnectionState connectionState;
   final String? activeServerId;
@@ -54,6 +57,7 @@ final class TrayMenuData {
   final LoggingSecurityType loggingSecurityType;
 
   const TrayMenuData({
+    this.updateAvailable = false,
     required this.labels,
     required this.connectionState,
     required this.activeServerId,
