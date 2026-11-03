@@ -227,7 +227,7 @@ final class AppUpdatingRepositoryImpl implements AppUpdatingRepository {
     AvailableAppUpdate update,
   ) async {
     final AvailableAppUpdateData updateData = const AvailableAppUpdateEncoder().convert(update);
-    final File temporaryFile = await _localDataSource.getTemporaryInstallerBundleFile(updateData);
+    final File temporaryFile = await _localDataSource.createTemporaryInstallerBundleFile(updateData);
     Object? failure;
     late final DownloadedInstallerBundle bundle;
 

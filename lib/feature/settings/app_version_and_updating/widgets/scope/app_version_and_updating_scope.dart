@@ -158,13 +158,10 @@ class _AppVersionAndUpdatingScopeState extends State<AppVersionAndUpdatingScope>
   void removeListener(VoidCallback listener) => _controllersChanges.removeListener(listener);
 
   @override
-  void checkForUpdates({bool manual = true}) {
-    if (manual && _checkController.canCheck) {
-      _updatingController.resetError();
-    }
-
-    _checkController.checkForUpdates(manual: manual);
-  }
+  void checkForUpdates({bool manual = true}) => _checkController.checkForUpdates(
+    manual: manual,
+    onBeforeManualCheck: _updatingController.resetError,
+  );
 
   @override
   void updateApplication() => _startAppUpdate();

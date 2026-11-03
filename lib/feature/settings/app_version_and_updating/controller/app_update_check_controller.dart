@@ -33,8 +33,6 @@ final class AppUpdateCheckController extends BaseStateController<AppUpdateCheckS
 
   Timer? _checkTimer;
 
-  bool get canCheck => _updatesSupported && state.initialLoadCompleted && state.version != null && _canCheck();
-
   void loadInitialDataAndStartUpdateChecks() => handle(
     _loadInitialData,
     errorHandler: (error, stackTrace) => setState(state.copyWith(initialLoadCompleted: true)),
@@ -47,7 +45,14 @@ final class AppUpdateCheckController extends BaseStateController<AppUpdateCheckS
 
   void checkForUpdates({
     bool manual = true,
-  }) => handle(() => _startUpdateCheck(manual: manual));
+    void Function()? onBeforeManualCheck,
+  }) => handle(() {
+    if (manual && onBeforeManualCheck != null && _canStartUpdateCheck()) {
+      onBeforeManualCheck();
+    }
+
+    _startUpdateCheck(manual: manual);
+  });
 
   void resetManualUpdateCheckResult() => handle(
     () => setState(
@@ -80,8 +85,11 @@ final class AppUpdateCheckController extends BaseStateController<AppUpdateCheckS
     );
   }
 
+  bool _canStartUpdateCheck() =>
+      _updatesSupported && state.initialLoadCompleted && state.version != null && _canCheck();
+
   void _startUpdateCheck({required bool manual}) {
-    if (!canCheck) {
+    if (!_canStartUpdateCheck()) {
       if (!manual) {
         _scheduleUpdateCheck();
       }

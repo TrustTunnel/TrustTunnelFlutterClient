@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
@@ -20,24 +21,26 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
     required this._repositoryName,
   });
 
-  int _temporaryFileId = 0;
-
-  Future<Directory> get _updatesDirectory async {
-    final Directory supportDirectory = await getApplicationSupportDirectory();
-
-    return Directory('${supportDirectory.path}/updates').create(recursive: true);
-  }
-
   @override
-  Future<File> getTemporaryInstallerBundleFile(AvailableAppUpdateData update) async {
+  Future<File> createTemporaryInstallerBundleFile(AvailableAppUpdateData update) async {
     final File destinationFile = await _getInstallerBundleFile(update);
+    final math.Random random = math.Random();
 
-    return File('${destinationFile.path}.${++_temporaryFileId}.part');
+    while (true) {
+      final String suffix = random.nextInt(1 << 32).toRadixString(16);
+      final File temporaryFile = File('${destinationFile.path}.$suffix.part');
+
+      try {
+        return await temporaryFile.create(exclusive: true);
+      } on PathExistsException {
+        continue;
+      }
+    }
   }
 
   @override
   Future<void> prepareInstallerCache(AppVersion installedVersion) async {
-    final Directory updatesDirectory = await _updatesDirectory;
+    final Directory updatesDirectory = await _ensureUpdatesDirectory();
     await for (final FileSystemEntity file in updatesDirectory.list()) {
       final bool isTemporaryFile = (file is File) && (file.path.endsWith('.part') || file.path.endsWith('.tmp'));
 
@@ -102,7 +105,7 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
 
   @override
   Future<void> removeInstallerBundle() async {
-    final Directory updatesDirectory = await _updatesDirectory;
+    final Directory updatesDirectory = await _ensureUpdatesDirectory();
     await for (final FileSystemEntity file in updatesDirectory.list()) {
       final bool isBundleFile = file is File && (file.path.endsWith('.exe') || file.path.endsWith('bundle.json'));
 
@@ -154,7 +157,7 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
 
   @override
   Future<void> removeInstallationAttempt() async {
-    final File file = File('${(await _updatesDirectory).path}/attempt.json');
+    final File file = File('${(await _ensureUpdatesDirectory()).path}/attempt.json');
 
     final bool metadataExists = await file.exists();
 
@@ -163,8 +166,14 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
     }
   }
 
+  Future<Directory> _ensureUpdatesDirectory() async {
+    final Directory supportDirectory = await getApplicationSupportDirectory();
+
+    return Directory('${supportDirectory.path}/updates').create(recursive: true);
+  }
+
   Future<File> _getInstallerBundleFile(AvailableAppUpdateData update) async =>
-      File('${(await _updatesDirectory).path}/${update.assetId}-${update.sha256}.exe');
+      File('${(await _ensureUpdatesDirectory()).path}/${update.assetId}-${update.sha256}.exe');
 
   void _validateUpdateSource(AvailableAppUpdateData update) {
     if (update.source != _repositoryName) {
@@ -194,7 +203,7 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
   }
 
   Future<Map<String, dynamic>?> _readMetadata(String fileName) async {
-    final File file = File('${(await _updatesDirectory).path}/$fileName');
+    final File file = File('${(await _ensureUpdatesDirectory()).path}/$fileName');
 
     final bool metadataExists = await file.exists();
 
@@ -206,7 +215,7 @@ final class AppUpdatesLocalDataSourceImpl implements AppUpdatesLocalDataSource {
   }
 
   Future<void> _writeMetadata(String fileName, Map<String, dynamic> json) async {
-    final String metadataPath = '${(await _updatesDirectory).path}/$fileName';
+    final String metadataPath = '${(await _ensureUpdatesDirectory()).path}/$fileName';
     final File temporaryFile = File('$metadataPath.tmp');
 
     await temporaryFile.writeAsString(jsonEncode(json), flush: true);
