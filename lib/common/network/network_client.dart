@@ -59,16 +59,13 @@ final class NetworkClient {
     }
   }
 
-  Future<void> close() {
-    final Future<void>? clientCloseFuture = _clientCloseFuture;
-
-    if (clientCloseFuture != null) {
-      return clientCloseFuture;
+  Future<void> close() async {
+    if (_clientCloseFuture == null) {
+      _transport?.close();
+      _clientCloseFuture = _fileDownloadSession?.cancel() ?? Future<void>.value();
     }
 
-    _transport?.close();
-
-    return _clientCloseFuture = _fileDownloadSession?.cancel() ?? Future<void>.value();
+    await _clientCloseFuture;
   }
 
   void _checkOpen() {
