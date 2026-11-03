@@ -5,6 +5,7 @@ abstract final class AppRoutes {
   static const AppRoute servers = AppRoute('ServersScreen');
   static const AppRoute routing = AppRoute('RoutingScreen');
   static const AppRoute settings = AppRoute('SettingsScreen');
+  static const AppRoute appVersion = AppRoute('AppVersionScreen');
   static const AppRoute queryLog = AppRoute('QueryLogScreen');
   static const AppRoute unknown = AppRoute('UnknownScreen');
 

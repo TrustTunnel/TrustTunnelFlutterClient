@@ -39,10 +39,11 @@ struct TrayMenuItem {
 
 class TrayManagerPlugin : public flutter::Plugin {
 public:
-  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
+  static void RegisterWithRegistrar(FlutterDesktopPluginRegistrarRef registrar);
 
   TrayManagerPlugin(
       flutter::PluginRegistrarWindows *registrar,
+      FlutterDesktopMessengerRef messenger,
       std::unique_ptr<flutter::BasicMessageChannel<flutter::EncodableValue>>
           callback_channel);
   virtual ~TrayManagerPlugin();
@@ -146,6 +147,8 @@ private:
       error_channel_;
 
   flutter::PluginRegistrarWindows *registrar_;
+  FlutterDesktopMessengerRef messenger_;
+  HWND view_window_ = nullptr;
   int window_proc_id_ = -1;
   UINT taskbar_created_message_ = 0;
   std::vector<

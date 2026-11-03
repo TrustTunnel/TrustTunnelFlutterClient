@@ -8,7 +8,12 @@ FlutterWindow::FlutterWindow(const flutter::DartProject &project,
                              LaunchMode launch_mode)
     : project_(project), launch_mode_(launch_mode) {}
 
-FlutterWindow::~FlutterWindow() {}
+FlutterWindow::~FlutterWindow() {
+  // WM_QUIT can end the message loop before WM_DESTROY. Run OnDestroy while
+  // members are alive so window messages cannot reach a partially destroyed
+  // Flutter controller.
+  Destroy();
+}
 
 bool FlutterWindow::OnCreate() {
   if (IsTrustTunnelInstallationActive()) return false;

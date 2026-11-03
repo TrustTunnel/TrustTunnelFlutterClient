@@ -23,11 +23,13 @@ final class VpnUserCommand {
   final int requestId;
   final String serverId;
   final VpnConnectionStage stage;
+  final bool fallIntoRecovery;
 
   const VpnUserCommand({
     required this.requestId,
     required this.serverId,
     required this.stage,
+    this.fallIntoRecovery = false,
   });
 
   bool get isSavingSelection =>
@@ -38,12 +40,17 @@ final class VpnUserCommand {
     requestId,
     serverId,
     stage,
+    fallIntoRecovery,
   ]);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is VpnUserCommand && requestId == other.requestId && serverId == other.serverId && stage == other.stage;
+      other is VpnUserCommand &&
+          requestId == other.requestId &&
+          serverId == other.serverId &&
+          stage == other.stage &&
+          fallIntoRecovery == other.fallIntoRecovery;
 
   @override
   String toString() => 'VpnUserCommand(id: $requestId, server: $serverId, stage: $stage)';
@@ -64,9 +71,10 @@ final class VpnUserCommand {
     },
   );
 
-  VpnUserCommand copyWith({VpnConnectionStage? stage}) => VpnUserCommand(
+  VpnUserCommand copyWith({VpnConnectionStage? stage, bool? fallIntoRecovery}) => VpnUserCommand(
     requestId: requestId,
     serverId: serverId,
     stage: stage ?? this.stage,
+    fallIntoRecovery: fallIntoRecovery ?? this.fallIntoRecovery,
   );
 }
