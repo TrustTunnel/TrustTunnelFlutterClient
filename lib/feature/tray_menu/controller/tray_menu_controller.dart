@@ -63,6 +63,7 @@ final class TrayMenuController {
          ),
        ) {
     _callbacks = TrayMenuCallbacks(
+      onUpdatePressed: () => _runTrayMenuAction(() => _route(AppRoutes.appVersion)),
       onAddServerPressed: () => _runTrayMenuAction(() => _route(AppRoutes.serverDetails)),
       onOpenTrustTunnelPressed: () => _runTrayMenuAction(_windowController.showMainWindow),
       onRoutingPressed: () => _runTrayMenuAction(() => _route(AppRoutes.routing)),
@@ -258,6 +259,7 @@ final class TrayMenuController {
 
     return TrayMenuData(
       labels: _labels,
+      updateAvailable: state.updateAvailable,
       connectionState: connectionState,
       activeServerId: activeServer?.id,
       activeServerName: activeServer?.serverData.name,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:adguard_logger/adguard_logger.dart';
@@ -35,6 +36,9 @@ final class WindowsAppWindowController implements AppWindowController {
   // Run installer exit once per attempt, retaining success or failure
   // until shutdownCancelled allows a new attempt.
   AsyncMemoizer<void> _installerExit = AsyncMemoizer<void>();
+  int _updateExitAttemptIteration = 0;
+  Future<void> Function()? onPrepareUpdateExit;
+  Future<void> Function()? onCancelUpdateExit;
 
   @override
   Future<void> showMainWindow() => _mainWindowChannel.invokeMethod<void>('show');
@@ -64,7 +68,13 @@ final class WindowsAppWindowController implements AppWindowController {
       final display = await screenRetriever.getPrimaryDisplay();
       final visibleSize = display.visibleSize ?? display.size;
       windowSize = Size(
-        defaultWindowSize.width.clamp(minimumWindowSize.width, math.max(minimumWindowSize.width, visibleSize.width)),
+        defaultWindowSize.width.clamp(
+          minimumWindowSize.width,
+          math.max(
+            minimumWindowSize.width,
+            visibleSize.width,
+          ),
+        ),
         defaultWindowSize.height.clamp(
           minimumWindowSize.height,
           math.max(minimumWindowSize.height, visibleSize.height),
@@ -105,8 +115,10 @@ final class WindowsAppWindowController implements AppWindowController {
         case 'exitForUpdate':
           await _installerExit.runOnce(_exitForInstaller);
         case 'shutdownCancelled':
+          _updateExitAttemptIteration++;
           _installerExit = AsyncMemoizer<void>();
           await _mainWindowChannel.invokeMethod<void>('cancelUpdateExit');
+          await _cancelUpdatePreparation();
         default:
           throw MissingPluginException('Unknown installer exit method: ${call.method}');
       }
@@ -115,13 +127,25 @@ final class WindowsAppWindowController implements AppWindowController {
   }
 
   Future<void> _exitForInstaller() async {
+    final int updateExitAttemptIteration = ++_updateExitAttemptIteration;
     try {
-      FocusManager.instance.primaryFocus?.unfocus();
-      await prepareToExit();
-      await WindowsExitDialog.closeForCorrectInstallerLaunch();
+      await onPrepareUpdateExit?.call().timeout(const Duration(seconds: 15));
+      if (updateExitAttemptIteration != _updateExitAttemptIteration) {
+        throw StateError('Update exit was cancelled');
+      }
 
+      FocusManager.instance.primaryFocus?.unfocus();
+      await prepareToExit().timeout(const Duration(seconds: 5));
+      await WindowsExitDialog.closeForCorrectInstallerLaunch().timeout(const Duration(seconds: 5));
+
+      if (updateExitAttemptIteration != _updateExitAttemptIteration) {
+        throw StateError('Update exit was cancelled');
+      }
       await _installerExitChannel.invokeMethod<void>('completeExit');
     } catch (error, stackTrace) {
+      await _installerExitChannel.invokeMethod<void>('abortExit');
+      await _mainWindowChannel.invokeMethod<void>('cancelUpdateExit');
+      await _cancelUpdatePreparation();
       // Leave the process alive if exit preparation failed. Setup aborts preparation on
       // timeout and releases the launch lock.
       logger.logError(
@@ -131,6 +155,18 @@ final class WindowsAppWindowController implements AppWindowController {
       );
 
       rethrow;
+    }
+  }
+
+  Future<void> _cancelUpdatePreparation() async {
+    try {
+      await onCancelUpdateExit?.call().timeout(const Duration(seconds: 5));
+    } catch (error, stackTrace) {
+      logger.logError(
+        'Unable to cancel update preparation',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 }

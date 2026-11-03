@@ -2,6 +2,7 @@ import 'package:trusttunnel/feature/tray_menu/model/tray_menu_data.dart';
 
 /// Ready-to-display tray text prepared by the UI for its current locale.
 final class TrayMenuLabels {
+  final String updateAvailable;
   final String connect;
   final String disconnect;
   final String connectTo;
@@ -24,6 +25,7 @@ final class TrayMenuLabels {
   final Map<TrayMenuConnectionState, String> statusTitles;
 
   const TrayMenuLabels({
+    required this.updateAvailable,
     required this.connect,
     required this.disconnect,
     required this.connectTo,

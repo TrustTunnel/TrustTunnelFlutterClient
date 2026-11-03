@@ -53,6 +53,7 @@ abstract class VpnDataSource {
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
+    bool fallIntoRecovery = false,
   });
 
   /// {@template vpn_data_source_update_configuration}

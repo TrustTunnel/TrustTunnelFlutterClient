@@ -9,6 +9,7 @@ import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/router/app_route.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
+import 'package:trusttunnel/feature/settings/app_version_and_updating/widgets/scope/app_version_and_updating_scope.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/widgets/scope/logs_manager_scope.dart';
 import 'package:trusttunnel/feature/tray_menu/controller/tray_menu_controller.dart';
 import 'package:trusttunnel/feature/tray_menu/model/tray_menu_data.dart';
@@ -52,7 +53,9 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     final servers = ServersScope.controllerOf(context, listen: false);
     final logging = AppLoggingScope.controllerOf(context, listen: false);
     final logs = LogsManagerScope.controllerOf(context, listen: false);
+    final updates = AppVersionAndUpdatingScope.controllerOf(context: context, listen: false);
     final sources = TrayMenuSources(
+      updatesController: updates,
       vpnScopeController: vpn,
       serversScopeController: servers,
       appLoggingScopeController: logging,
@@ -84,6 +87,7 @@ class _TrayMenuScopeState extends State<TrayMenuScope> {
     final ln = context.ln;
 
     return TrayMenuLabels(
+      updateAvailable: ln.updateAvailable,
       connect: ln.connect,
       disconnect: ln.disconnect,
       connectTo: ln.connectTo,
