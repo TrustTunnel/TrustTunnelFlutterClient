@@ -1,6 +1,7 @@
 add_library(windows_user_context STATIC
   "user_context.cpp"
   "launch_at_login_registry.cpp"
+  "executable_path.cpp"
 )
 apply_standard_settings(windows_user_context)
 target_compile_definitions(windows_user_context PRIVATE

@@ -2,3 +2,6 @@
 ; It is stored in a separate file because it is used in multiple files.
 ; Do not change this value.
 #define AppGuid "1343AF0C-89EB-44AE-AE55-6251A45376C5"
+
+; The URL scheme registered by the installer and removed by the uninstaller.
+#define DeepLinkScheme "tt"

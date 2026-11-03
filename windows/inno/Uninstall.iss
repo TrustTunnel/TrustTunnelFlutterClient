@@ -185,7 +185,7 @@ begin
   end;
 end;
 
-procedure RemoveInstalledAutostart(const UserSid: String);
+procedure RemoveInstalledPerUserRegistrations(const UserSid: String);
 var
   CleanupPath, Parameters: String;
   ResultCode: Integer;
@@ -193,7 +193,8 @@ var
   Succeeded: Boolean;
 begin
   CleanupPath := ExpandConstant('{app}\cleanup_user_data_helper.exe');
-  Parameters := '/REMOVEAUTOSTART="' + ExpandConstant('{app}\{#AppExeName}') + '"';
+  Parameters := '/REMOVEAUTOSTART="' + ExpandConstant('{app}\{#AppExeName}') + '"' +
+    ' /REMOVEURLSCHEME="{#DeepLinkScheme}"';
   if UserSid <> '' then Parameters := Parameters + ' /USERSID="' + UserSid + '"';
   ResultCode := -1;
   Succeeded := False;
@@ -203,13 +204,13 @@ begin
       ResultCode, Output);
     if Succeeded then LogCleanupOutput(Output);
   except
-    Log('[autostart cleanup] ' + GetExceptionMessage);
+    Log('[per-user cleanup] ' + GetExceptionMessage);
   end;
   if not Succeeded or (ResultCode <> 0) then
   begin
-    Log('[autostart cleanup] Failed: ' + IntToStr(ResultCode));
+    Log('[per-user cleanup] Failed: ' + IntToStr(ResultCode));
     SuppressibleMsgBox(
-      'Unable to remove all TrustTunnel login startup registrations. Error code: ' +
+      'Unable to remove all per-user TrustTunnel registrations. Error code: ' +
       IntToStr(ResultCode) + '. The uninstall will continue; see the uninstall log for details.',
       mbError, MB_OK, IDOK);
   end;
@@ -259,7 +260,7 @@ begin
     Abort;
   end;
 
-  RemoveInstalledAutostart(UserSid);
+  RemoveInstalledPerUserRegistrations(UserSid);
   CleanupUninstallData(UserSid, DeleteUserData);
 end;
 
