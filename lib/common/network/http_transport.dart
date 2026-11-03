@@ -14,24 +14,7 @@ final class HttpTransport {
       _client = (HttpClient()..connectionTimeout = configuration.timeout)..userAgent = configuration.userAgent;
 
   Future<HttpClientResponse> open(Uri uri) async {
-    bool expired = false;
-    final Future<HttpClientRequest> requestOpeningFuture = _client.getUrl(uri).then((request) {
-      if (expired) {
-        request.done.ignore();
-        request.abort();
-      }
-
-      return request;
-    });
-    late final HttpClientRequest request;
-
-    try {
-      request = await requestOpeningFuture.timeout(_timeout);
-    } on TimeoutException {
-      expired = true;
-      rethrow;
-    }
-
+    final HttpClientRequest request = await _client.getUrl(uri);
     _headers.forEach(request.headers.set);
 
     return request.close().timeout(
