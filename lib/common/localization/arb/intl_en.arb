@@ -80,7 +80,7 @@
   "about": "About",
   "connectionLog": "Connection log",
   "excludedRoutes": "Excluded routes",
-  "followUsOnGithub": "Follow us on Github",
+  "github": "Github",
   "typeSomething": "Type something",
   "deleteServer": "Delete server",
   "deleteServerDialogTitle": "Delete server?",
@@ -239,5 +239,7 @@
       "name": {"type": "String"},
       "number": {"type": "int"}
     }
-  }
+  },
+  "general": "General",
+  "appVersion": "App version"
 }
