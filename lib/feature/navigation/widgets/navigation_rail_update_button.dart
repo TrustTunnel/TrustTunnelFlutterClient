@@ -49,10 +49,10 @@ class _NavigationRailUpdateButtonState extends State<NavigationRailUpdateButton>
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: TextButton(
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-          minimumSize: const Size(64, 64),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        style: (context.theme.textButtonTheme.style ?? const ButtonStyle()).copyWith(
+          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
+          minimumSize: const WidgetStatePropertyAll(Size(64, 64)),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         onPressed: widget.onPressed,
