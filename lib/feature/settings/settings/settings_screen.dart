@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/router/app_routes.dart';
@@ -31,34 +32,39 @@ class SettingsScreen extends StatelessWidget {
               title: context.ln.connectionLog,
               onTap: () => _pushQueryLogScreen(context),
             ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.appLogging,
-              onTap: () => _pushAppLoggingScreen(context),
+            _SettingsScreenSection(
+              sectionTitle: context.ln.general,
+              children: [
+                if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows)
+                  CustomArrowListTile(
+                    title: context.ln.launchAndConnection,
+                    onTap: () => _pushLaunchAndConnectionScreen(context),
+                  ),
+                CustomArrowListTile(
+                  title: context.ln.excludedRoutes,
+                  onTap: () => _pushExcludedRoutesScreen(context),
+                ),
+                CustomArrowListTile(
+                  title: context.ln.appLogging,
+                  onTap: () => _pushAppLoggingScreen(context),
+                ),
+                const DownloadAppLogsTile(),
+              ],
             ),
-            const Divider(),
-            const DownloadAppLogsTile(),
-            const Divider(),
-            if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) ...[
-              CustomArrowListTile(
-                title: context.ln.launchAndConnection,
-                onTap: () => _pushLaunchAndConnectionScreen(context),
-              ),
-              const Divider(),
-            ],
-            CustomArrowListTile(
-              title: context.ln.excludedRoutes,
-              onTap: () => _pushExcludedRoutesScreen(context),
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.followUsOnGithub,
-              onTap: _openGithubOrganization,
-            ),
-            const Divider(),
-            CustomArrowListTile(
-              title: context.ln.appVersion,
-              onTap: () => _pushAppVersionScreen(context),
+            _SettingsScreenSection(
+              sectionTitle: context.ln.about,
+              children: [
+                CustomArrowListTile(
+                  title: context.ln.appVersion,
+                  onTap: () => _pushAppVersionScreen(context),
+                ),
+                CustomArrowListTile(
+                  title: context.ln.github,
+                  onTap: _openGithubOrganization,
+                  trailingIconColor: context.colors.accent,
+                  trailingIcon: AssetIcons.openInNew,
+                ),
+              ],
             ),
           ],
         ),
@@ -90,4 +96,35 @@ class SettingsScreen extends StatelessWidget {
   );
 
   void _openGithubOrganization() => UrlUtils.openWebPage(UrlUtils.githubTrustTunnelTeam);
+}
+
+/// {@template settings_screen}
+/// _SettingsScreenSection widget.
+/// {@endtemplate}
+class _SettingsScreenSection extends StatelessWidget {
+  final List<Widget> children;
+  final String sectionTitle;
+
+  /// {@macro settings_screen}
+  const _SettingsScreenSection({
+    required this.sectionTitle,
+    this.children = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const Divider(),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 12.0),
+        child: Text(
+          sectionTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+      ),
+      ...children,
+    ],
+  );
 }
