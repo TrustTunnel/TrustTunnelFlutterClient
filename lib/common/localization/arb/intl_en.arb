@@ -239,5 +239,45 @@
       "name": {"type": "String"},
       "number": {"type": "int"}
     }
-  }
+  },
+  "appVersion": "App Version",
+  "checkForUpdates": "Check for updates",
+  "checkingForUpdates": "Checking for updates…",
+  "upToDate": "You’re up to date",
+  "updateVersionAvailable": "Version {version} is available",
+  "@updateVersionAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateConnectionWarning": "TrustTunnel will disconnect from the active server and restart to install the update",
+  "updateAction": "Update",
+  "downloadingUpdate": "Downloading version {version}…",
+  "@downloadingUpdate": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "verifyingUpdate": "Verifying update…",
+  "preparingUpdate": "Preparing to install…",
+  "updateCheckError": "Couldn’t check for updates",
+  "updateDownloadError": "Couldn’t download the update",
+  "updateDownloadErrorDescription": "Check your Internet connection and try again",
+  "updateDamagedError": "The update file is damaged",
+  "updatePermissionError": "Windows needs permission to install the update. Click Yes when asked to allow changes",
+  "updateInstallError": "Couldn’t install the update",
+  "updatedToVersion": "Updated to version {version}",
+  "@updatedToVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateAvailable": "Update available",
+  "tryAgain": "Try again"
 }

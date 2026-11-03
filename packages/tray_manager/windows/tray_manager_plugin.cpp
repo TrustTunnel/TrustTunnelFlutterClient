@@ -74,14 +74,18 @@ LRESULT CALLBACK TrayManagerPlugin::TrayWndProc(HWND hwnd, UINT msg,
 
 // static
 void TrayManagerPlugin::RegisterWithRegistrar(
-    flutter::PluginRegistrarWindows *registrar) {
+    FlutterDesktopPluginRegistrarRef native_registrar) {
+  flutter::PluginRegistrarWindows *registrar =
+      flutter::PluginRegistrarManager::GetInstance()
+          ->GetRegistrar<flutter::PluginRegistrarWindows>(native_registrar);
   auto callback_channel =
       std::make_unique<flutter::BasicMessageChannel<flutter::EncodableValue>>(
           registrar->messenger(), kOnMenuItemClickedChannel,
           &flutter::StandardMessageCodec::GetInstance());
 
   auto plugin = std::make_unique<TrayManagerPlugin>(
-      registrar, std::move(callback_channel));
+      registrar, FlutterDesktopPluginRegistrarGetMessenger(native_registrar),
+      std::move(callback_channel));
 
   auto *plugin_ptr = plugin.get();
 
@@ -191,9 +195,14 @@ void TrayManagerPlugin::RegisterWithRegistrar(
 
 TrayManagerPlugin::TrayManagerPlugin(
     flutter::PluginRegistrarWindows *registrar,
+    FlutterDesktopMessengerRef messenger,
     std::unique_ptr<flutter::BasicMessageChannel<flutter::EncodableValue>>
         callback_channel)
-    : callback_channel_(std::move(callback_channel)), registrar_(registrar) {
+    : callback_channel_(std::move(callback_channel)), registrar_(registrar),
+      messenger_(messenger) {
+  if (flutter::FlutterView *view = registrar_->GetView()) {
+    view_window_ = view->GetNativeWindow();
+  }
   error_channel_ =
       std::make_unique<flutter::BasicMessageChannel<flutter::EncodableValue>>(
           registrar->messenger(), kOnErrorChannel,
@@ -226,8 +235,12 @@ TrayManagerPlugin::TrayManagerPlugin(
 
 TrayManagerPlugin::~TrayManagerPlugin() {
   exiting_ = true;
-  for (auto &channel : channels_)
-    channel->SetMessageHandler(nullptr);
+  // Flutter can invalidate the messenger before it destroys the plugins.
+  // The registrar still owns the handlers and releases them during teardown.
+  if (FlutterDesktopMessengerIsAvailable(messenger_)) {
+    for (auto &channel : channels_)
+      channel->SetMessageHandler(nullptr);
+  }
   registrar_->UnregisterTopLevelWindowProcDelegate(window_proc_id_);
   ReleaseTray();
   if (com_initialized_)
@@ -235,8 +248,9 @@ TrayManagerPlugin::~TrayManagerPlugin() {
 }
 
 HWND TrayManagerPlugin::MainWindow() const {
-  auto *view = registrar_->GetView();
-  return view ? GetAncestor(view->GetNativeWindow(), GA_ROOT) : nullptr;
+  // The native Flutter view can be destroyed before the plugin. Keep only its
+  // HWND and resolve its parent after the runner attaches the view.
+  return IsWindow(view_window_) ? GetAncestor(view_window_, GA_ROOT) : nullptr;
 }
 
 void TrayManagerPlugin::ReleaseTray() {

@@ -9,6 +9,7 @@ import 'package:trusttunnel/data/repository/vpn_repository.dart';
 import 'package:trusttunnel/feature/vpn/controller/vpn_controller_state.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_configuration_sources.dart';
+import 'package:trusttunnel/feature/vpn/models/vpn_exit_mode.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_native_operation.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_operations_processing_info.dart';
 import 'package:trusttunnel/feature/vpn/models/vpn_user_command.dart';
@@ -53,7 +54,11 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
       !previousState.hasSamePublicState(nextState);
 
   /// Explicit connections also retry an unchanged configuration.
-  void connectToServer(String serverId, {bool isFromAutomaticLaunch = false}) => handle(
+  void connectToServer(
+    String serverId, {
+    bool isFromAutomaticLaunch = false,
+    bool fallIntoRecovery = false,
+  }) => handle(
     () {
       final hasConnectionActivity = _vpnOperationsProcessingInfo.requestId != 0 || _isRunning;
       final shouldSkipAutomaticLaunch = isFromAutomaticLaunch && hasConnectionActivity;
@@ -61,7 +66,11 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         return;
       }
 
-      _acceptConnectionUserCommand(serverId, saveSelection: false);
+      _acceptConnectionUserCommand(
+        serverId,
+        saveSelection: false,
+        fallIntoRecovery: fallIntoRecovery,
+      );
       _handlePendingWork();
     },
     errorHandler: _onHandlerError,
@@ -80,6 +89,9 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
 
   void disconnect() => handle(
     () {
+      if (_vpnOperationsProcessingInfo.exitMode == VpnExitMode.installation) {
+        return;
+      }
       _cancelPendingUserCommand();
 
       // Preserve an explicit stop even if another connection is requested next.
@@ -89,9 +101,29 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     errorHandler: _onHandlerError,
   );
 
-  void stopForExit() => handle(
+  /// Installation mode locks commands and leaves VPN shutdown to the installer.
+  void stopForExit({
+    VpnExitMode mode = VpnExitMode.application,
+    ValueChanged<String?>? onPrepared,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) => handle(
     () {
-      if (_vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle) {
+      if (mode == VpnExitMode.installation) {
+        _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(exitMode: mode));
+        _beginExit();
+
+        // We specifically ignore intermediate connection states
+        // for restoration, we are only interested in the fully connected state.
+        final String? serverId = state.vpnState == VpnState.connected ? state.currentlyConnectedServerId : null;
+        onPrepared?.call(serverId);
+
+        return;
+      }
+
+      final bool exitAlreadyStarted =
+          _vpnOperationsProcessingInfo.exitMode == VpnExitMode.installation ||
+          _vpnOperationsProcessingInfo.exitStage != VpnExitStage.idle;
+      if (exitAlreadyStarted) {
         return;
       }
 
@@ -104,20 +136,32 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
       );
       _handlePendingWork();
     },
-    errorHandler: _onHandlerError,
+    errorHandler: onError ?? _onHandlerError,
   );
 
-  void cancelExit() => handle(
+  void cancelExit({VpnExitMode mode = VpnExitMode.application}) => handle(
     () {
+      final bool installerOwnsExit = _vpnOperationsProcessingInfo.exitMode == VpnExitMode.installation;
+      if (installerOwnsExit && mode != VpnExitMode.installation) {
+        return;
+      }
+
       _updateState(
         state.copyWith(
           isExitProcessing: false,
-          vpnOperationsProcessingInfo: _vpnOperationsProcessingInfo.copyWith(exitStage: VpnExitStage.idle),
+          vpnOperationsProcessingInfo: _vpnOperationsProcessingInfo.copyWith(
+            exitMode: VpnExitMode.application,
+            exitStage: mode == VpnExitMode.installation ? _vpnOperationsProcessingInfo.exitStage : VpnExitStage.idle,
+          ),
         ),
       );
+
+      if (mode == VpnExitMode.installation) {
+        _handlePendingWork();
+      }
       // Previously cancelled connections stay cancelled.
     },
-    errorHandler: _onHandlerError,
+    errorHandler: mode == VpnExitMode.application ? _onHandlerError : null,
   );
 
   /// Non-desktop exit cancels preparation without stopping the system VPN.
@@ -185,7 +229,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     }
   }
 
-  void _acceptConnectionUserCommand(String serverId, {required bool saveSelection}) {
+  void _acceptConnectionUserCommand(String serverId, {required bool saveSelection, bool fallIntoRecovery = false}) {
     final requestId = _vpnOperationsProcessingInfo.requestId + 1;
 
     _updateVpnOperationsProcessingInfo(
@@ -196,6 +240,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
             requestId: requestId,
             serverId: serverId,
             stage: saveSelection ? VpnConnectionStage.savingSelection : VpnConnectionStage.preparing,
+            fallIntoRecovery: fallIntoRecovery,
           ),
         ),
         needsSynchronization: true,
@@ -310,7 +355,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
 
       return;
     }
-    _submitStart(configuration);
+    _submitStart(configuration, request);
   }
 
   void _handleConfigurationSynchronization() {
@@ -360,6 +405,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
               requestId: _vpnOperationsProcessingInfo.requestId,
               serverId: configuration.server.id,
               stage: VpnConnectionStage.preparing,
+              fallIntoRecovery: _vpnOperationsProcessingInfo.lastStartFallIntoRecovery,
             ),
           ),
         ),
@@ -491,7 +537,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     errorHandler: _onHandlerError,
   );
 
-  void _submitStart(VpnConfiguration configuration) {
+  void _submitStart(VpnConfiguration configuration, VpnUserCommand command) {
     final requestId = _vpnOperationsProcessingInfo.requestId;
     _updateState(
       state.copyWith(
@@ -502,6 +548,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
             _vpnOperationsProcessingInfo.pendingUserCommand?.copyWith(stage: VpnConnectionStage.readyToStart),
           ),
           startSubmitted: true,
+          lastStartFallIntoRecovery: command.fallIntoRecovery,
           nativeStateRequest: const ValueData(null),
           needsSynchronization: false,
         ),
@@ -515,6 +562,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         routingProfile: configuration.routingProfile,
         excludedRoutes: configuration.excludedRoutes,
         logLevel: configuration.logLevel,
+        fallIntoRecovery: command.fallIntoRecovery,
       ),
       configuration: configuration,
       onCompleted: () => _onNativeStartOperationCompleted(configuration, requestId),
