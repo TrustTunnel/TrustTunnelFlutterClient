@@ -108,7 +108,6 @@ class _SettingsScreenSection extends StatelessWidget {
   /// {@macro settings_screen}
   const _SettingsScreenSection({
     required this.sectionTitle,
-
     this.children = const [],
   });
 
