@@ -1,6 +1,22 @@
 import 'package:trusttunnel/common/platform/windows/protocol_registration.dart';
 import 'package:win32_registry/win32_registry.dart' as registry;
 
+/// Reads and writes URL protocol registrations in the Windows registry.
+abstract interface class ProtocolRegistrationStore {
+  /// Returns the command registered for [scheme] in [root], or `null` when the
+  /// registration does not exist.
+  Future<String?> readCommand(RegistryRoot root, String scheme);
+
+  /// Creates or updates [registration] in the per-user hive.
+  ///
+  /// Machine-wide registrations are owned by the installer and are never
+  /// written by this store.
+  Future<void> write(ProtocolRegistration registration);
+
+  /// Removes the per-user registration for [scheme].
+  Future<void> delete(String scheme);
+}
+
 /// A [ProtocolRegistrationStore] backed by the Windows registry.
 final class Win32ProtocolRegistrationStore implements ProtocolRegistrationStore {
   static const String _classesKey = r'Software\Classes';

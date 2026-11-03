@@ -1,6 +1,7 @@
 import 'package:trusttunnel/common/platform/windows/protocol_command_builder.dart';
 import 'package:trusttunnel/common/platform/windows/protocol_handler.dart';
 import 'package:trusttunnel/common/platform/windows/protocol_registration.dart';
+import 'package:trusttunnel/common/platform/windows/win32_protocol_registration_store.dart';
 
 /// A [ProtocolHandler] for Windows registry-based URL protocol registrations.
 ///

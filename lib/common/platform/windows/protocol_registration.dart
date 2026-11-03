@@ -29,19 +29,3 @@ final class ProtocolRegistration {
     required this.description,
   });
 }
-
-/// Reads and writes URL protocol registrations in the Windows registry.
-abstract interface class ProtocolRegistrationStore {
-  /// Returns the command registered for [scheme] in [root], or `null` when the
-  /// registration does not exist.
-  Future<String?> readCommand(RegistryRoot root, String scheme);
-
-  /// Creates or updates [registration] in the per-user hive.
-  ///
-  /// Machine-wide registrations are owned by the installer and are never
-  /// written by this store.
-  Future<void> write(ProtocolRegistration registration);
-
-  /// Removes the per-user registration for [scheme].
-  Future<void> delete(String scheme);
-}
