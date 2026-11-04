@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,7 @@ class _AppSystemActionsHandlerState extends State<AppSystemActionsHandler> with 
   @override
   void initState() {
     super.initState();
-    if (_platform == TargetPlatform.macOS) {
+    if (_platform == TargetPlatform.macOS || _platform == TargetPlatform.linux) {
       windowManager.addListener(this);
     }
   }
@@ -47,13 +48,29 @@ class _AppSystemActionsHandlerState extends State<AppSystemActionsHandler> with 
   };
 
   @override
-  void onWindowClose() => _hideMainWindow();
+  Future<void> onWindowClose() async {
+    if (_platform == TargetPlatform.macOS) {
+      _hideMainWindow();
+      return;
+    }
+
+    if (_platform == TargetPlatform.linux) {
+      // Asks VpnScope (via AppLifecycleListener.onExitRequested) to run the
+      // exit confirmation and stop the VPN. The window is destroyed only when
+      // the exit is approved.
+      final response = await ServicesBinding.instance.handleRequestAppExit();
+      if (response == AppExitResponse.exit) {
+        await windowManager.destroy();
+      }
+      return;
+    }
+  }
 
   void _hideMainWindow() => unawaited(context.dependencyFactory.appWindowController.hideMainWindow());
 
   @override
   void dispose() {
-    if (_platform == TargetPlatform.macOS) {
+    if (_platform == TargetPlatform.macOS || _platform == TargetPlatform.linux) {
       windowManager.removeListener(this);
     }
     super.dispose();
