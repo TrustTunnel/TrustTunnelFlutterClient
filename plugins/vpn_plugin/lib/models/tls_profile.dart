@@ -14,10 +14,4 @@ enum TlsProfile {
   final String value;
 
   const TlsProfile(this.value);
-
-  /// Deprecated native value of [boringssl].
-  ///
-  /// The native client still accepts it, so configurations that contain it
-  /// must decode to [boringssl].
-  static const String deprecatedBoringsslValue = 'default';
 }

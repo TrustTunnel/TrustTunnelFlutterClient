@@ -405,15 +405,12 @@ final class EndpointDecoder extends ConfigurationSectionConverter<IniDocument, E
       exclusions: exclusions,
       clientRandom: clientRandom,
       clientRandomAuthKey: clientRandomAuthKey,
-      tlsProfile:
-          tlsProfileStr == TlsProfile.deprecatedBoringsslValue
-              ? TlsProfile.boringssl
-              : _enumByValue(
-                TlsProfile.values,
-                tlsProfileStr,
-                (e) => e.value,
-                fallback: TlsProfile.chrome,
-              ),
+      tlsProfile: _enumByValue(
+        TlsProfile.values,
+        tlsProfileStr,
+        (e) => e.value,
+        fallback: TlsProfile.chrome,
+      ),
       skipVerification: skipVerification,
       certificate: certificate,
       antiDpi: antiDpi,
