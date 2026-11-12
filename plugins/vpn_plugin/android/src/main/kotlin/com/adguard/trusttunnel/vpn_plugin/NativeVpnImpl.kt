@@ -8,7 +8,6 @@ import java.util.ArrayDeque
 import java.util.Queue
 import com.adguard.trusttunnel.AppNotifier
 import com.adguard.trusttunnel.Logger
-import com.adguard.trusttunnel.VpnService
 import io.flutter.plugin.common.EventChannel
 import java.io.File
 
@@ -24,29 +23,29 @@ class NativeVpnImpl(
     val queryLogHandler: QueryLogStreamHandler = QueryLogStreamHandler()
 
     init {
-        VpnService.initialize(appContext)
+        TunVpnService.initialize(appContext)
         val queryLogFile = File(appContext.filesDir, "query_log.dat")
-        VpnService.setAppNotifier(queryLogFile, this)
+        TunVpnService.setAppNotifier(queryLogFile, this)
     }
 
-    fun startPrepared(ctx: Context, config: String, fallIntoRecovery: Boolean) {
-        log.info("startPrepared(fallIntoRecovery=$fallIntoRecovery)")
-        VpnService.start(ctx, config, fallIntoRecovery)
+    fun startPrepared(ctx: Context, config: String, fallIntoRecovery: Boolean, disallowedApps: List<String>?) {
+        log.info("startPrepared(fallIntoRecovery=$fallIntoRecovery, disallowedApps=${disallowedApps?.size ?: 0})")
+        TunVpnService.start(ctx, config, fallIntoRecovery, disallowedApps)
     }
 
     fun stop() {
         log.info("stop()")
-        VpnService.stop(appContext)
+        TunVpnService.stop(appContext)
     }
 
     fun exportLogs(): List<String> {
         log.info("exportLogs()")
-        return VpnService.exportLogs(appContext)
+        return TunVpnService.exportLogs(appContext)
     }
 
     fun clearLogs() {
         log.info("clearLogs()")
-        VpnService.clearLogs()
+        TunVpnService.clearLogs()
     }
 
     fun getCurrentState(): VpnManagerState = currentState

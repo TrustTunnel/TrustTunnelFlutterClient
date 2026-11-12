@@ -13,6 +13,7 @@ abstract class VpnRepository {
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
+    List<String> excludedApps = const [],
     bool fallIntoRecovery = false,
   });
 
@@ -47,12 +48,14 @@ class VpnRepositoryImpl implements VpnRepository {
     required List<String> excludedRoutes,
     required RoutingProfile routingProfile,
     required VpnConfigurationLogLevel logLevel,
+    List<String> excludedApps = const [],
     bool fallIntoRecovery = false,
   }) => _vpnDataSource.start(
     server: server.serverData,
     routingProfile: routingProfile.data,
     excludedRoutes: excludedRoutes,
     logLevel: logLevel,
+    excludedApps: excludedApps,
     fallIntoRecovery: fallIntoRecovery,
   );
 

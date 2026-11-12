@@ -8,11 +8,13 @@ import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/feature/server/server_details/widgets/server_details_popup.dart';
 import 'package:trusttunnel/feature/server/server_sharing/widgets/scope/server_sharing_scope.dart';
+import 'package:trusttunnel/feature/server/servers/widget/add_server_by_link_dialog.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_empty_placeholder.dart';
 import 'package:trusttunnel/widgets/buttons/custom_floating_action_button.dart';
+import 'package:trusttunnel/widgets/buttons/custom_icon_button.dart';
 import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
 import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
@@ -75,6 +77,17 @@ class _ServersScreenViewState extends State<ServersScreenView> {
         builder: (context) => Scaffold(
           appBar: CustomAppBar(
             title: context.ln.servers,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: CustomIconButton.square(
+                  icon: Icons.link,
+                  size: 24,
+                  tooltip: context.ln.addServerViaLink,
+                  onPressed: () => _addServerByLink(context),
+                ),
+              ),
+            ],
           ),
           body: _servers.isEmpty
               ? const ServersEmptyPlaceholder()
@@ -148,6 +161,19 @@ class _ServersScreenViewState extends State<ServersScreenView> {
     }
 
     controller.fetchServers();
+  }
+
+  void _addServerByLink(BuildContext context) async {
+    final serverData = await showDialog<ServerData>(
+      context: context,
+      builder: (_) => const AddServerByLinkDialog(),
+    );
+
+    if (serverData == null || !mounted || !context.mounted) {
+      return;
+    }
+
+    _pushServerDetailsScreen(context, preloadedData: serverData);
   }
 
   void _copyServerLink(BuildContext context, Server server) =>

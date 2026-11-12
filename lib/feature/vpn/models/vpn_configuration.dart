@@ -8,12 +8,14 @@ final class VpnConfiguration {
   final Server server;
   final RoutingProfile routingProfile;
   final List<String> excludedRoutes;
+  final List<String> excludedApps;
   final VpnConfigurationLogLevel logLevel;
 
   VpnConfiguration({
     required Server server,
     required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
+    this.excludedApps = const [],
     required this.logLevel,
   }) : server = server.copyWith(
          serverData: server.serverData.copyWith(
@@ -35,6 +37,7 @@ final class VpnConfiguration {
     server,
     routingProfile,
     Object.hashAll(excludedRoutes),
+    Object.hashAll(excludedApps),
     logLevel,
   ]);
 
@@ -45,5 +48,6 @@ final class VpnConfiguration {
           server == other.server &&
           routingProfile == other.routingProfile &&
           listEquals(excludedRoutes, other.excludedRoutes) &&
+          listEquals(excludedApps, other.excludedApps) &&
           logLevel == other.logLevel;
 }

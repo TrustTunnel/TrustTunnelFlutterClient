@@ -44,6 +44,11 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
   late final DeepLinkController _controller;
   final ValueNotifier<ServerData?> _serverData = ValueNotifier(null);
 
+  /// Key of the link currently being processed; guards against duplicate
+  /// deliveries (stream replay of the cold-start link racing with
+  /// [DeepLinkSource.getInitialLink]).
+  String? _pendingLinkKey;
+
   @override
   void initState() {
     super.initState();
@@ -71,18 +76,31 @@ class _DeepLinkScopeState extends State<DeepLinkScope> {
       _serverData.value = _controller.state.parsedData;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _serverData.value = null;
+        _pendingLinkKey = null;
       });
+    } else if (!_controller.state.loading && _controller.state.parsedData == null) {
+      // Parsing finished without data (e.g. invalid link): release the key so
+      // the same link can be retried.
+      _pendingLinkKey = null;
     }
   }
 
   void _onDeepLinkReceived() {
     final link = _deepLinkSource.link;
-    if (link != null) {
-      if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) {
-        unawaited(context.dependencyFactory.appWindowController.showMainWindow());
-      }
-      _controller.onDeepLinkReceived(link);
+    if (link == null) {
+      return;
     }
+
+    final linkKey = link.toString();
+    if (_pendingLinkKey == linkKey) {
+      return;
+    }
+    _pendingLinkKey = linkKey;
+
+    if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) {
+      unawaited(context.dependencyFactory.appWindowController.showMainWindow());
+    }
+    _controller.onDeepLinkReceived(link);
   }
 
   @override

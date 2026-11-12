@@ -27,7 +27,17 @@ class AppLinksSource extends DeepLinkSource {
   Uri? get link => _parseLink(_link);
 
   @override
-  Future<Uri?> getInitialLink() async => _parseLink(await appLinks.getInitialLink());
+  Future<Uri?> getInitialLink() async {
+    final link = _parseLink(await appLinks.getInitialLink());
+    // Keep the cold-start link readable via the [link] getter: on desktop
+    // platforms the stream never replays it, and on Android the replay may
+    // race with this call.
+    if (link != null && _link == null) {
+      _link = link;
+    }
+
+    return link;
+  }
 
   @override
   void dispose() {

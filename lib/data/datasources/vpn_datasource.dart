@@ -53,6 +53,7 @@ abstract class VpnDataSource {
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
+    List<String> excludedApps = const [],
     bool fallIntoRecovery = false,
   });
 

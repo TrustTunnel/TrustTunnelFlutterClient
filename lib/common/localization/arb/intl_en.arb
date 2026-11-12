@@ -281,4 +281,60 @@
   "updateAvailable": "Update available",
   "tryAgain": "Try again",
   "general": "General"
+,
+  "excludedApps": "Excluded apps",
+  "excludedAppsSearchHint": "Search apps",
+  "excludedAppsRecommended": "Recommended Russian apps",
+  "excludedAppsSelectAllRecommended": "Select all",
+  "excludedAppsRecommendedAdded": "{count} apps added to exclusions",
+  "@excludedAppsRecommendedAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "excludedAppsAll": "All apps",
+  "excludedAppsShowSystem": "System",
+  "excludedAppsNothingFound": "No apps found",
+  "excludedAppsUnavailable": "The application list is unavailable on this platform",
+  "ruBypass": "Runet bypass",
+  "ruBypassSubtitle": "Russian websites, services and networks go outside the VPN tunnel",
+  "ruBypassHowItWorksTitle": "How it works",
+  "ruBypassHowItWorks": "When enabled, Russian domains (including all .ru, .su and .рф zones) and the downloaded list of Russian IP ranges are excluded from the VPN tunnel and reach the internet directly. Excluded applications are managed separately in \"Excluded apps\". Changes apply on the next connection.",
+  "ruBypassStatusTitle": "IP ranges list",
+  "ruBypassNeverUpdated": "The list of Russian IP ranges has never been downloaded",
+  "ruBypassLastUpdated": "Last updated: {date}",
+  "@ruBypassLastUpdated": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMd"
+      }
+    }
+  },
+  "ruBypassCidrCount": "{count} IP ranges loaded",
+  "@ruBypassCidrCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ruBypassUpdateNow": "Update now",
+  "ruBypassUpdateSource": "Source: RIPE NCC, Russian address space (updated daily)",
+  "ruBypassUpdated": "Updated: {count} IP ranges loaded",
+  "@ruBypassUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+,
+  "addServerViaLink": "Add via link",
+  "addServerViaLinkLabel": "Server link (tt://...)",
+  "addServerViaLinkInvalid": "Invalid TrustTunnel link"
+,
+  "ruBypassBypassModeWarning": "The routing profile of the selected server runs in Bypass mode: all traffic goes outside the VPN by default, so Runet bypass has no effect and blocked websites (YouTube, Telegram) stay unreachable. Switch the profile to VPN mode to route everything through the VPN except the Runet."
 }

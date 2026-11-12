@@ -562,6 +562,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         routingProfile: configuration.routingProfile,
         excludedRoutes: configuration.excludedRoutes,
         logLevel: configuration.logLevel,
+        excludedApps: configuration.excludedApps,
         fallIntoRecovery: command.fallIntoRecovery,
       ),
       configuration: configuration,

@@ -100,12 +100,14 @@ class VpnDataSourceImpl implements VpnDataSource {
     required RoutingProfileData routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
+    List<String> excludedApps = const [],
     bool fallIntoRecovery = false,
   }) async {
     final endPoint = _createEndpoint(server, routingProfile);
 
     Future<void> command() => _platformApi.start(
       fallIntoRecovery: fallIntoRecovery,
+      disallowedApps: excludedApps.isEmpty ? null : excludedApps,
       configuration: Configuration(
         logLevel: _convertLogLevel(logLevel),
         vpnMode: VpnModeEncoder().convert(

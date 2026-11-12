@@ -17,14 +17,17 @@ import 'package:trusttunnel/data/datasources/app_update_installation_datasource.
 import 'package:trusttunnel/data/datasources/app_updates_local_datasource.dart';
 import 'package:trusttunnel/data/datasources/auto_connect_on_launch_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/certificate_datasource.dart';
+import 'package:trusttunnel/data/datasources/excluded_apps_datasource.dart';
 import 'package:trusttunnel/data/datasources/launch_at_login_datasource.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_state_logging_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/app_updates_local_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/auto_connect_on_launch_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/certificate_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/excluded_apps_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logging_settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/logs_local_source_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/ru_bypass_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
@@ -37,9 +40,11 @@ import 'package:trusttunnel/data/datasources/open_main_window_on_login_datasourc
 import 'package:trusttunnel/data/datasources/releases_datasource.dart';
 import 'package:trusttunnel/data/datasources/remote_sources/releases_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
+import 'package:trusttunnel/data/datasources/ru_bypass_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
+import 'package:trusttunnel/data/presets/ru_bypass_preset.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/macos_app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
@@ -92,6 +97,10 @@ abstract class DependencyFactory {
   OpenMainWindowOnLoginDataSource get openMainWindowOnLoginDataSource;
 
   AutoConnectOnLaunchSettingsDataSource get autoConnectOnLaunchSettingsDataSource;
+
+  ExcludedAppsDataSource get excludedAppsDataSource;
+
+  RuBypassDataSource get ruBypassDataSource;
 
   /// Returns the cached native window controller on macOS and Windows.
   /// Throws on platforms without native window control.
@@ -157,6 +166,10 @@ class DependencyFactoryImpl implements DependencyFactory {
   OpenMainWindowOnLoginDataSource? _openMainWindowOnLoginDataSource;
 
   AutoConnectOnLaunchSettingsDataSource? _autoConnectOnLaunchSettingsDataSource;
+
+  ExcludedAppsDataSource? _excludedAppsDataSource;
+
+  RuBypassDataSource? _ruBypassDataSource;
 
   AppWindowController? _appWindowController;
 
@@ -274,6 +287,18 @@ class DependencyFactoryImpl implements DependencyFactory {
       _autoConnectOnLaunchSettingsDataSource ??= AutoConnectOnLaunchSettingsDataSourceImpl(
         preferences: sharedPreferences,
       );
+
+  @override
+  ExcludedAppsDataSource get excludedAppsDataSource => _excludedAppsDataSource ??= ExcludedAppsDataSourceImpl(
+    database: database,
+    installedAppsProvider: () async => vpnPlugin.getInstalledApps(),
+  );
+
+  @override
+  RuBypassDataSource get ruBypassDataSource => _ruBypassDataSource ??= RuBypassDataSourceImpl(
+    preferences: sharedPreferences,
+    cidrListUrl: RuBypassPreset.cidrListUrl,
+  );
 
   @override
   AppWindowController get appWindowController => switch (defaultTargetPlatform) {

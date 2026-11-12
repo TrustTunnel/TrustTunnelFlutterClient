@@ -5,14 +5,18 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
+    <!-- Required to enumerate installed applications for the per-app exclusion UI. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application>
         <activity
             android:name="com.adguard.trusttunnel.VpnPrepareActivity"
             android:exported="false" />
 
+        <!-- Local VpnService implementation with per-app tunneling exclusions
+             (replaces the prebuilt com.adguard.trusttunnel.VpnService). -->
         <service
-            android:name="com.adguard.trusttunnel.VpnService"
+            android:name="com.adguard.trusttunnel.vpn_plugin.TunVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="systemExempted"
             android:exported="false">

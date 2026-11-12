@@ -75,6 +75,10 @@ abstract class IVpnManager {
   /// - `true`: the engine enters the connection recovery algorithm and
   ///   transitions to [VpnManagerState.waitingForRecovery] instead.
   ///
+  /// [disallowedApps] lists Android package names that must bypass the VPN
+  /// entirely (mapped to `VpnService.Builder.addDisallowedApplications`).
+  /// Ignored on platforms without per-app tunneling support.
+  ///
   /// Failures that happen after a successful connection are always handled by
   /// the recovery algorithm, regardless of this parameter.
   ///
@@ -82,7 +86,17 @@ abstract class IVpnManager {
   /// the platform UI thread.
   /// {@endtemplate}
   @TaskQueue(type: TaskQueueType.serialBackgroundThread)
-  void start({required String config, bool fallIntoRecovery = false});
+  void start({required String config, bool fallIntoRecovery = false, List<String>? disallowedApps});
+
+  /// {@template i_vpn_manager_get_installed_apps}
+  /// Returns applications installed on the device.
+  ///
+  /// Used by the per-app exclusion UI on Android. On platforms without
+  /// per-app tunneling support an empty list is returned.
+  /// {@endtemplate}
+  @TaskQueue(type: TaskQueueType.serialBackgroundThread)
+  @async
+  List<InstalledApp> getInstalledApps();
 
   /// {@template i_vpn_manager_stop}
   /// Stops the VPN engine.
@@ -257,6 +271,35 @@ class PlatformFieldError {
   const PlatformFieldError({
     required this.code,
     required this.fieldName,
+  });
+}
+
+/// {@template installed_app}
+/// An application installed on the device.
+///
+/// Used by the per-app exclusion UI to display selectable entries.
+/// {@endtemplate}
+class InstalledApp {
+  /// {@template installed_app_package_name}
+  /// Android package name (unique identifier), e.g. `ru.max.messenger.makc`.
+  /// {@endtemplate}
+  final String packageName;
+
+  /// {@template installed_app_label}
+  /// User-visible application label.
+  /// {@endtemplate}
+  final String label;
+
+  /// {@template installed_app_is_system}
+  /// Whether this application is a pre-installed system application.
+  /// {@endtemplate}
+  final bool isSystem;
+
+  /// {@macro installed_app}
+  const InstalledApp({
+    required this.packageName,
+    required this.label,
+    required this.isSystem,
   });
 }
 
