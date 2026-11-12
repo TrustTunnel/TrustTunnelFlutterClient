@@ -509,7 +509,7 @@ class TunVpnService : android.net.VpnService(), VpnClientListener {
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
         return NotificationCompat.Builder(context, name)
-            .setContentTitle("TrustTunnel") // Main title of the notification
+            .setContentTitle("TrustTunnel-RU") // Main title of the notification
             .setContentText("VPN is running in foreground") // Content text of the notification
             // Use a small icon that represents your VPN service.
             .setSmallIcon(android.R.drawable.ic_dialog_info) // Placeholder icon (replace with your app's icon)
