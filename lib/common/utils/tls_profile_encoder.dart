@@ -14,7 +14,7 @@ class TlsProfileEncoder extends Converter<TlsFingerprint, TlsProfile> {
     TlsFingerprint.firefox => TlsProfile.firefox,
     TlsFingerprint.okhttp => TlsProfile.okhttp,
     TlsFingerprint.openssl => TlsProfile.openssl,
-    TlsFingerprint.own => TlsProfile.defaultProfile,
+    TlsFingerprint.boringssl => TlsProfile.boringssl,
   };
 }
 
@@ -29,6 +29,6 @@ class TlsProfileDecoder extends Converter<TlsProfile, TlsFingerprint> {
     TlsProfile.firefox => TlsFingerprint.firefox,
     TlsProfile.okhttp => TlsFingerprint.okhttp,
     TlsProfile.openssl => TlsFingerprint.openssl,
-    TlsProfile.defaultProfile => TlsFingerprint.own,
+    TlsProfile.boringssl => TlsFingerprint.boringssl,
   };
 }
