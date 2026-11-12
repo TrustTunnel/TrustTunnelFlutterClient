@@ -40,22 +40,11 @@ permissions:
   id-token: write
 
 jobs:
-  resolve-runner:
-    runs-on: [team-flutter]
-    outputs:
-      image: ${{ steps.kv.outputs.value }}
-    steps:
-      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
-        id: kv
-        with:
-          key: build-images/macos
-
   build:
-    needs: [resolve-runner]
     runs-on:
       - ephemeral
       - ephemeral-mac
-      - ${{ needs.resolve-runner.outputs.image }}
+      - registry.int.agrd.dev/macos/tahoe-github-xcode26.4.1-26.11:@edge
       - ephemeral-limit-memory-7168
       - ephemeral-limit-cpu-4
       - ephemeral-limit-disk-gb-20
