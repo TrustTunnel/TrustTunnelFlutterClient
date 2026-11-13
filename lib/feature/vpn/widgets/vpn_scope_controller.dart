@@ -7,9 +7,9 @@ abstract interface class VpnScopeController implements Listenable {
   /// Prepared VPN status, including the interval before native code acknowledges a submitted start.
   VpnState get state;
 
-  /// Server of the current session or submitted start; null for an unknown native session.
+  /// Server ID for the current session or submitted start, if known.
   /// Use together with [state] to determine whether it is connected.
-  String? get currentlyConnectedServerId;
+  String? get activeServerId;
 
   /// A confirmed exit blocks new starts until exit is cancelled on failure or timeout.
   bool get isExitProcessing;

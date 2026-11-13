@@ -9,8 +9,11 @@ final class VpnControllerState {
   /// Native status with connection transitions smoothed for all consumers.
   final VpnState vpnState;
 
-  /// Server of the current session or submitted start; null for an unknown native session.
-  final String? currentlyConnectedServerId;
+  /// Server ID from a start that this controller submitted, if still tracked.
+  final String? appStartedServerId;
+
+  /// Saved server ID used to display and disconnect a VPN started outside this controller.
+  final String? restoredServerId;
 
   /// Blocks new connections until the platform completes or cancels exit.
   final bool isExitProcessing;
@@ -20,12 +23,16 @@ final class VpnControllerState {
 
   const VpnControllerState({
     this.vpnState = VpnState.disconnected,
-    this.currentlyConnectedServerId,
+    this.appStartedServerId,
+    this.restoredServerId,
     this.isExitProcessing = false,
     this.vpnOperationsProcessingInfo = const VpnOperationsProcessingInfo(),
   });
 
   bool get isRunning => vpnState != VpnState.disconnected || vpnOperationsProcessingInfo.startSubmitted;
+
+  /// Server ID for the current session or submitted start, if known.
+  String? get activeServerId => appStartedServerId ?? restoredServerId;
 
   /// A native operation reply alone does not confirm native disconnection.
   bool get isDisconnectedForExit {
@@ -43,7 +50,8 @@ final class VpnControllerState {
   @override
   int get hashCode => Object.hashAll([
     vpnState,
-    currentlyConnectedServerId,
+    appStartedServerId,
+    restoredServerId,
     isExitProcessing,
     vpnOperationsProcessingInfo,
   ]);
@@ -57,25 +65,26 @@ final class VpnControllerState {
 
   @override
   String toString() =>
-      'VpnControllerState(vpn: $vpnState, server: $currentlyConnectedServerId, '
+      'VpnControllerState(vpn: $vpnState, server: $activeServerId, '
       'exit: $isExitProcessing, vpnOperationsProcessingInfo: $vpnOperationsProcessingInfo)';
 
   /// The controller filters notifications without excluding internal work from state equality.
   bool hasSamePublicState(VpnControllerState other) =>
       vpnState == other.vpnState &&
-      currentlyConnectedServerId == other.currentlyConnectedServerId &&
+      appStartedServerId == other.appStartedServerId &&
+      restoredServerId == other.restoredServerId &&
       isExitProcessing == other.isExitProcessing;
 
   VpnControllerState copyWith({
     VpnState? vpnState,
-    ValueData<String>? currentlyConnectedServerId,
+    ValueData<String>? appStartedServerId,
+    ValueData<String>? restoredServerId,
     bool? isExitProcessing,
     VpnOperationsProcessingInfo? vpnOperationsProcessingInfo,
   }) => VpnControllerState(
     vpnState: vpnState ?? this.vpnState,
-    currentlyConnectedServerId: currentlyConnectedServerId != null
-        ? currentlyConnectedServerId.value
-        : this.currentlyConnectedServerId,
+    appStartedServerId: appStartedServerId != null ? appStartedServerId.value : this.appStartedServerId,
+    restoredServerId: restoredServerId != null ? restoredServerId.value : this.restoredServerId,
     isExitProcessing: isExitProcessing ?? this.isExitProcessing,
     vpnOperationsProcessingInfo: vpnOperationsProcessingInfo ?? this.vpnOperationsProcessingInfo,
   );
