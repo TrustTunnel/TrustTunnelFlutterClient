@@ -54,7 +54,6 @@ class WindowsTitleBar {
   bool regions_ready_ = false;
   double view_width_ = 0;
   bool resizable_ = true;
-  bool windows_11_ = false;
   bool maximized_ = false;
   int hovered_ = HTCLIENT;
   int pressed_ = HTCLIENT;

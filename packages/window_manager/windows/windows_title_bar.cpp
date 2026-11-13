@@ -64,7 +64,6 @@ WindowsTitleBar::WindowsTitleBar(HWND window, HWND view, StateCallback callback)
     : window_(window),
       view_(view),
       callback_(std::move(callback)),
-      windows_11_(IsWindows11OrGreater()),
       maximized_(IsZoomed(window) != FALSE),
       font_family_(ResolveCaptionFont()) {
   SetWindowSubclass(view_, ChildProc, reinterpret_cast<UINT_PTR>(this),
@@ -357,9 +356,8 @@ std::optional<LRESULT> WindowsTitleBar::HandleMessage(UINT message,
         rect->left += FrameMetric(SM_CXSIZEFRAME);
         rect->right -= FrameMetric(SM_CXSIZEFRAME);
         rect->bottom -= FrameMetric(SM_CYSIZEFRAME);
-        // Windows 10 needs one physical pixel for the DWM top border; this
-        // is not a logical size and must not be multiplied by the DPI.
-        rect->top += windows_11_ ? 0 : 1;
+        // Keep the top edge in the client area. On Windows 10, a non-client
+        // inset here makes DWM draw a second set of caption buttons.
       }
       return 0;
     }
