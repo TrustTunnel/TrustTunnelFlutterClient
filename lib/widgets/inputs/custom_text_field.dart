@@ -28,6 +28,9 @@ class CustomTextField extends StatefulWidget {
   final SpellCheckService? spellCheckService;
   final Widget? counter;
 
+  /// Whether the hidden hint still takes up space. Defaults to true.
+  final bool maintainHintSize;
+
   const CustomTextField({
     super.key,
     this.value,
@@ -50,6 +53,7 @@ class CustomTextField extends StatefulWidget {
     this.spellCheckService,
     this.counter,
     this.obscureText = false,
+    this.maintainHintSize = true,
   }) : suffixIcon = null,
        assert(
          (maxLines == null) || (minLines == null) || (maxLines >= minLines),
@@ -61,6 +65,7 @@ class CustomTextField extends StatefulWidget {
     required this.suffixIcon,
     this.value,
     this.hint,
+    this.maintainHintSize = true,
     this.helper,
     this.error,
     this.enabled = true,
@@ -176,6 +181,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           spellCheckConfiguration: spellCheckConfig,
           decoration: InputDecoration(
             hintText: widget.hint,
+            maintainHintSize: widget.maintainHintSize,
             helperText: widget.helper,
             labelText: widget.label,
             errorText: widget.error,

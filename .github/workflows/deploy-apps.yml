@@ -38,7 +38,7 @@ on:
         description: 'Semver tag to deploy'
       slack-channel:
         type: string
-        default: '#build-trusttunnel'
+        default: '#proj-trusttunnel-'
         description: 'Slack channel for build notification'
       deploy-android:
         type: boolean

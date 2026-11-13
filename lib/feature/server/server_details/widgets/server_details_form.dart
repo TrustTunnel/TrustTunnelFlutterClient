@@ -171,9 +171,10 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
               helper: context.ln.enterDnsServerHelper,
               minLines: 1,
               maxLines: 4,
+              maintainHintSize: false,
               onChanged: (dns) => _onDataChanged(
                 context,
-                dnsServers: dns.trim().split('\n'),
+                dnsServers: dns.isEmpty ? const [] : dns.split('\n'),
               ),
               error: ValidationUtils.getErrorString(
                 context,

@@ -16,7 +16,7 @@ on:
       slack-channel:
         description: 'Slack channel for build notification'
         type: string
-        default: '#build-trusttunnel'
+        default: '#proj-trusttunnel-'
       ref:
         description: 'Git ref SHA or branch to tag. If empty, tags the commit from the branch selected in UI.'
         type: string
