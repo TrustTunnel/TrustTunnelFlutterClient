@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
-import 'package:trusttunnel/feature/server/server_sharing/widgets/scope/server_sharing_scope.dart';
 import 'package:trusttunnel/widgets/custom_icon.dart';
 
 enum ServersCardMenuButtonAction {
@@ -30,7 +29,6 @@ class ServersCardMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canShare = onShare != null;
-    final isLoading = ServerSharingScope.controllerOf(context).loading;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -53,7 +51,6 @@ class ServersCardMenuButton extends StatelessWidget {
         itemBuilder: (context) => [
           PopupMenuItem<ServersCardMenuButtonAction>(
             value: canShare ? ServersCardMenuButtonAction.share : ServersCardMenuButtonAction.copyLink,
-            enabled: !isLoading,
             height: 64,
             padding: const EdgeInsets.only(
               left: 12,
