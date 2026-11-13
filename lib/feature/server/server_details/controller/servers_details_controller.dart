@@ -62,6 +62,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             ServerDetailsState.idle(
               data: state.data.copyWith(
                 name: serverName,
+                dnsServers: _normalizeDnsServers(state.data.dnsServers),
               ),
               initialData: state.initialData,
               fieldErrors: state.fieldErrors,
@@ -78,10 +79,14 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
           throw const PresentationNotFoundException();
         }
 
+        final data = server.serverData.copyWith(
+          dnsServers: _normalizeDnsServers(server.serverData.dnsServers),
+        );
+
         setState(
           ServerDetailsState.idle(
-            data: server.serverData,
-            initialData: server.serverData,
+            data: data,
+            initialData: data,
             fieldErrors: state.fieldErrors,
             routingProfiles: profiles,
           ),
@@ -172,7 +177,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             vpnProtocol: protocol ?? state.data.vpnProtocol,
             tlsFingerprint: tlsFingerprint ?? state.data.tlsFingerprint,
             routingProfileId: routingProfileId ?? state.data.routingProfileId,
-            dnsServers: (dnsServers ?? state.data.dnsServers).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+            dnsServers: dnsServers,
             ipv6: enableIpv6 ?? state.data.ipv6,
             tlsPrefix: clientRandom == null ? null : ValueData(clientRandom.value?.trim()),
             tlsAuthenticationType: tlsAuthenticationType,
@@ -196,7 +201,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             domain: state.data.domain.trim(),
             username: state.data.username.trim(),
             password: state.data.password.trim(),
-            dnsServers: state.data.dnsServers.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+            dnsServers: _normalizeDnsServers(state.data.dnsServers),
             ipv6: state.data.ipv6,
             tlsPrefix: ValueData(state.data.tlsPrefix?.trim()),
             clientRandomAuthKey: ValueData(state.data.clientRandomAuthKey?.trim()),
@@ -278,6 +283,9 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     errorHandler: _onError,
     completionHandler: _onCompleted,
   );
+
+  List<String> _normalizeDnsServers(List<String> dnsServers) =>
+      dnsServers.map((address) => address.trim()).where((address) => address.isNotEmpty).toList();
 
   PresentationException _parseException(Object? exception) =>
       ExceptionUtils.toPresentationException(exception: exception);
