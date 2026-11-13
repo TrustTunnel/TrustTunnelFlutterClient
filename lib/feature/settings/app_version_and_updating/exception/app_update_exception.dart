@@ -50,7 +50,10 @@ final class AppUpdatePermissionException extends AppUpdateException {
   const AppUpdatePermissionException();
 
   @override
-  String toLocalizedString(BuildContext context) => context.ln.updatePermissionError;
+  String toLocalizedString(BuildContext context) => context.ln.updatePermissionErrorDescription;
+
+  @override
+  String toLocalizedTitle(BuildContext context) => context.ln.updatePermissionError;
 }
 
 final class AppUpdateInstallationException extends AppUpdateException {
