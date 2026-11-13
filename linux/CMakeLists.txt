@@ -7,7 +7,7 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "vpn")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.adguard.vpn")
+set(APPLICATION_ID "com.adguard.trusttunnel")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -122,6 +122,19 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endforeach(bundled_library)
+
+# install(FILES) above resets permissions to 644, but the bundled trusttunneld
+# daemon must stay executable (the plugin launches it over D-Bus).
+if(TRUSTTUNNEL_CLIENT_DAEMON)
+  install(CODE "
+    file(CHMOD
+      \"${INSTALL_BUNDLE_LIB_DIR}/trusttunneld\"
+      FILE_PERMISSIONS
+        OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE
+        WORLD_READ WORLD_EXECUTE)
+    " COMPONENT Runtime)
+endif()
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")
