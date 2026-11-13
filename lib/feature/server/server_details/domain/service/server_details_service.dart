@@ -23,7 +23,10 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
   PresentationField? validateTlsInputLength(ServerData data) {
     final (value, fieldName) = switch (data.tlsAuthenticationType) {
       TlsAuthenticationType.clientRandom => (data.tlsPrefix, PresentationFieldName.clientRandom),
-      TlsAuthenticationType.clientRandomAuthKey => (data.clientRandomAuthKey, PresentationFieldName.clientRandomAuthKey),
+      TlsAuthenticationType.clientRandomAuthKey => (
+        data.clientRandomAuthKey,
+        PresentationFieldName.clientRandomAuthKey,
+      ),
     };
 
     if (value == null || value.characters.length <= 64) {
