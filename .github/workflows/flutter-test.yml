@@ -20,22 +20,11 @@ permissions:
   contents: read
 
 jobs:
-  resolve-runner:
-    runs-on: [team-flutter]
-    outputs:
-      image: ${{ steps.kv.outputs.value }}
-    steps:
-      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
-        id: kv
-        with:
-          key: build-images/flutter-android-builder
-
   test:
-    needs: [resolve-runner]
     runs-on:
       - ephemeral
       - ephemeral-linux
-      - ${{ needs.resolve-runner.outputs.image }}
+      - registry.int.agrd.dev/linux/flutter-android-builder:@edge
       - ephemeral-limit-memory-${{ inputs.runner-memory-mb }}
       - ephemeral-limit-cpu-${{ inputs.runner-cpu }}
       - ephemeral-limit-disk-gb-20

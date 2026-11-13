@@ -14,7 +14,7 @@ enum TlsFingerprint {
   firefox._(3),
   okhttp._(4),
   openssl._(5),
-  own._(6);
+  boringssl._(6);
 
   /// {@template tls_fingerprint_value}
   /// Stable numeric identifier used for persistence/interop.
