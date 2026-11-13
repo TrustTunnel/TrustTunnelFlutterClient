@@ -37,22 +37,11 @@ permissions:
   id-token: write
 
 jobs:
-  resolve-runner:
-    runs-on: [team-flutter]
-    outputs:
-      image: ${{ steps.kv.outputs.value }}
-    steps:
-      - uses: AdGuardSoftwareLimited/actions/actions/kv-get@master
-        id: kv
-        with:
-          key: build-images/windows2022-flutter
-
   build:
-    needs: [resolve-runner]
     runs-on:
       - ephemeral
       - ephemeral-vmwin
-      - ${{ needs.resolve-runner.outputs.image }}
+      - registry.int.agrd.dev/windows/windows2022-flutter:@edge
       - ephemeral-limit-memory-${{ inputs.runner-memory-mb }}
       - ephemeral-limit-cpu-${{ inputs.runner-cpu }}
       - ephemeral-limit-disk-gb-20
@@ -164,11 +153,11 @@ jobs:
       signed-artifact-name: trusttunnel-windows-bundle-signed-${{ matrix.bundle }}
 
   package-installer:
-    needs: [resolve-runner, sign-binaries]
+    needs: [sign-binaries]
     runs-on:
       - ephemeral
       - ephemeral-vmwin
-      - ${{ needs.resolve-runner.outputs.image }}
+      - registry.int.agrd.dev/windows/windows2022-flutter:@edge
       - ephemeral-limit-memory-${{ inputs.runner-memory-mb }}
       - ephemeral-limit-cpu-${{ inputs.runner-cpu }}
       - ephemeral-limit-disk-gb-20
