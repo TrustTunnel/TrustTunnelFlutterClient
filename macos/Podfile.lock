@@ -13,7 +13,7 @@ PODS:
     - FlutterMacOS
   - tray_manager (0.1.0):
     - FlutterMacOS
-  - TrustTunnelClient (1.3.0-rc.2)
+  - TrustTunnelClient (1.3.0-rc.3)
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
   - vpn_plugin (0.0.1):
