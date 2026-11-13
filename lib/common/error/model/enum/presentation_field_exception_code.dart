@@ -3,4 +3,5 @@ enum PresentationFieldExceptionCode {
   alreadyExists,
   fieldRequired,
   outOfBounds,
+  maxLengthExceeded,
 }

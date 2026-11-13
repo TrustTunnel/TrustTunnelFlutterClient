@@ -44,7 +44,10 @@ abstract class ExceptionUtils {
     PresentationFieldExceptionCode.fieldWrongValue
         when field.fieldName == PresentationFieldName.clientRandomAuthKeyValue =>
       ln.tlsWrongValueError,
-    PresentationFieldExceptionCode.outOfBounds when field.fieldName == PresentationFieldName.clientRandomAuthKey =>
+    PresentationFieldExceptionCode.maxLengthExceeded when field.fieldName == PresentationFieldName.clientRandom =>
+      ln.clientRandomHelper,
+    PresentationFieldExceptionCode.maxLengthExceeded
+        when field.fieldName == PresentationFieldName.clientRandomAuthKey =>
       ln.clientRandomAuthKeyHelper,
     PresentationFieldExceptionCode.fieldRequired
         when field.fieldName == PresentationFieldName.userName ||

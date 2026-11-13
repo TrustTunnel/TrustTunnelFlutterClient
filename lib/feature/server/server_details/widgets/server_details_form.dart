@@ -378,8 +378,6 @@ class _TlsAuthenticationField extends StatelessWidget {
       hint: context.ln.clientRandomHint,
       label: context.ln.clientRandomLabel,
       helper: context.ln.clientRandomHelper,
-      counter: const SizedBox.shrink(),
-      maxLength: 64,
       onChanged: onClientRandomChanged,
       error: _getTlsError(context),
     ),
@@ -389,8 +387,6 @@ class _TlsAuthenticationField extends StatelessWidget {
       hint: context.ln.clientRandomAuthKeyHint,
       label: context.ln.clientRandomAuthKeyLabel,
       helper: context.ln.clientRandomAuthKeyHelper,
-      counter: const SizedBox.shrink(),
-      maxLength: 64,
       onChanged: onClientRandomAuthKeyChanged,
       error: _getTlsError(context),
     ),
@@ -404,8 +400,8 @@ class _TlsAuthenticationField extends StatelessWidget {
         PresentationFieldName.clientRandomValue,
       ],
       TlsAuthenticationType.clientRandomAuthKey => const [
-        PresentationFieldName.clientRandomAuthKeySlash,
         PresentationFieldName.clientRandomAuthKey,
+        PresentationFieldName.clientRandomAuthKeySlash,
         PresentationFieldName.clientRandomAuthKeyValue,
       ],
     };

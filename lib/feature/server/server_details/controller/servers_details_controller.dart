@@ -1,11 +1,13 @@
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
+import 'package:trusttunnel/common/error/model/enum/presentation_field_exception_code.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/models/value_data.dart';
 import 'package:trusttunnel/common/utils/server_name_utils.dart';
+import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 import 'package:trusttunnel/data/model/tls_fingerprint.dart';
 import 'package:trusttunnel/data/model/vpn_protocol.dart';
@@ -40,7 +42,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
           ServerDetailsState.loading(
             data: state.data,
             initialData: state.initialData,
-            fieldErrors: state.fieldErrors,
+            fieldErrors: _getFieldErrorsWithTlsLengthCheck(state.data),
             routingProfiles: state.routingProfiles,
           ),
         );
@@ -87,7 +89,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
           ServerDetailsState.idle(
             data: data,
             initialData: data,
-            fieldErrors: state.fieldErrors,
+            fieldErrors: _getFieldErrorsWithTlsLengthCheck(data),
             routingProfiles: profiles,
           ),
         );
@@ -163,27 +165,30 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     ValueData<String>? customSni,
   }) => handle(
     () {
+      final data = state.data.copyWith(
+        name: serverName ?? state.data.name,
+        ipAddress: (ipAddress ?? state.data.ipAddress).trim(),
+        domain: (domain ?? state.data.domain).trim(),
+        username: (username ?? state.data.username).trim(),
+        password: (password ?? state.data.password).trim(),
+        vpnProtocol: protocol ?? state.data.vpnProtocol,
+        tlsFingerprint: tlsFingerprint ?? state.data.tlsFingerprint,
+        routingProfileId: routingProfileId ?? state.data.routingProfileId,
+        dnsServers: dnsServers,
+        ipv6: enableIpv6 ?? state.data.ipv6,
+        tlsPrefix: clientRandom,
+        tlsAuthenticationType: tlsAuthenticationType,
+        clientRandomAuthKey: clientRandomAuthKey,
+        customSni: customSni == null ? null : ValueData(customSni.value?.trim()),
+      );
+      final tlsChanged = clientRandom != null || clientRandomAuthKey != null || tlsAuthenticationType != null;
+
       setState(
         ServerDetailsState.idle(
-          fieldErrors: state.fieldErrors,
+          fieldErrors: tlsChanged ? _getFieldErrorsWithTlsLengthCheck(data) : state.fieldErrors,
           initialData: state.initialData,
           routingProfiles: state.routingProfiles,
-          data: state.data.copyWith(
-            name: serverName ?? state.data.name,
-            ipAddress: (ipAddress ?? state.data.ipAddress).trim(),
-            domain: (domain ?? state.data.domain).trim(),
-            username: (username ?? state.data.username).trim(),
-            password: (password ?? state.data.password).trim(),
-            vpnProtocol: protocol ?? state.data.vpnProtocol,
-            tlsFingerprint: tlsFingerprint ?? state.data.tlsFingerprint,
-            routingProfileId: routingProfileId ?? state.data.routingProfileId,
-            dnsServers: dnsServers,
-            ipv6: enableIpv6 ?? state.data.ipv6,
-            tlsPrefix: clientRandom == null ? null : ValueData(clientRandom.value?.trim()),
-            tlsAuthenticationType: tlsAuthenticationType,
-            clientRandomAuthKey: clientRandomAuthKey == null ? null : ValueData(clientRandomAuthKey.value?.trim()),
-            customSni: customSni == null ? null : ValueData(customSni.value?.trim()),
-          ),
+          data: data,
         ),
       );
     },
@@ -203,8 +208,6 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
             password: state.data.password.trim(),
             dnsServers: _normalizeDnsServers(state.data.dnsServers),
             ipv6: state.data.ipv6,
-            tlsPrefix: ValueData(state.data.tlsPrefix?.trim()),
-            clientRandomAuthKey: ValueData(state.data.clientRandomAuthKey?.trim()),
             customSni: ValueData(state.data.customSni?.trim()),
           ),
           initialData: state.initialData,
@@ -224,14 +227,19 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
       );
 
       if (filedErrors.isEmpty) {
+        final request = state.data.copyWith(
+          tlsPrefix: ValueData(state.data.tlsPrefix?.trim()),
+          clientRandomAuthKey: ValueData(state.data.clientRandomAuthKey?.trim()),
+        );
+
         if (_serverId != null) {
           await _repository.setNewServer(
             id: _serverId,
-            request: state.data,
+            request: request,
           );
         } else {
           await _repository.addNewServer(
-            request: state.data,
+            request: request,
           );
         }
         onSaved(
@@ -286,6 +294,15 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
 
   List<String> _normalizeDnsServers(List<String> dnsServers) =>
       dnsServers.map((address) => address.trim()).where((address) => address.isNotEmpty).toList();
+
+  List<PresentationField> _getFieldErrorsWithTlsLengthCheck(ServerData data) {
+    final lengthError = _detailsService.validateTlsInputLength(data);
+
+    return [
+      ?lengthError,
+      ...state.fieldErrors.where((error) => error.code != PresentationFieldExceptionCode.maxLengthExceeded),
+    ];
+  }
 
   PresentationException _parseException(Object? exception) =>
       ExceptionUtils.toPresentationException(exception: exception);

@@ -1,3 +1,4 @@
+import 'package:characters/characters.dart';
 import 'package:trusttunnel/common/error/model/enum/presentation_field_exception_code.dart';
 import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
@@ -6,6 +7,11 @@ import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 
 abstract class ServerDetailsService {
+  /// Returns the length error for the active TLS field, or null within the limit.
+  ///
+  /// Counts visible characters in the full input, including spaces and the mask separator.
+  PresentationField? validateTlsInputLength(ServerData data);
+
   List<PresentationField> validateData({
     required ServerData data,
     Set<String> otherServersNames = const {},
@@ -13,6 +19,26 @@ abstract class ServerDetailsService {
 }
 
 class ServerDetailsServiceImpl implements ServerDetailsService {
+  @override
+  PresentationField? validateTlsInputLength(ServerData data) {
+    final (value, fieldName) = switch (data.tlsAuthenticationType) {
+      TlsAuthenticationType.clientRandom => (data.tlsPrefix, PresentationFieldName.clientRandom),
+      TlsAuthenticationType.clientRandomAuthKey => (
+        data.clientRandomAuthKey,
+        PresentationFieldName.clientRandomAuthKey,
+      ),
+    };
+
+    if (value == null || value.characters.length <= 64) {
+      return null;
+    }
+
+    return PresentationField(
+      code: PresentationFieldExceptionCode.maxLengthExceeded,
+      fieldName: fieldName,
+    );
+  }
+
   @override
   List<PresentationField> validateData({
     required ServerData data,
@@ -72,10 +98,11 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
 
     _addIfNotNull(
       fields,
-      switch (data.tlsAuthenticationType) {
-        TlsAuthenticationType.clientRandom => _validateClientRandom(data.tlsPrefix ?? ''),
-        TlsAuthenticationType.clientRandomAuthKey => _validateClientRandomAuthKey(data.clientRandomAuthKey ?? ''),
-      },
+      validateTlsInputLength(data) ??
+          switch (data.tlsAuthenticationType) {
+            TlsAuthenticationType.clientRandom => _validateClientRandom(data.tlsPrefix ?? ''),
+            TlsAuthenticationType.clientRandomAuthKey => _validateClientRandomAuthKey(data.clientRandomAuthKey ?? ''),
+          },
     );
 
     return fields;
@@ -125,24 +152,22 @@ class ServerDetailsServiceImpl implements ServerDetailsService {
   }
 
   PresentationField? _validateClientRandomAuthKey(String value) {
-    if (value.isEmpty) {
+    final input = value.trim();
+
+    if (input.isEmpty) {
       return null;
     }
 
-    if (value.contains('/')) {
+    if (input.contains('/')) {
       return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKeySlash);
     }
 
-    if (RegExp(r'[^0-9a-fA-F]').hasMatch(value)) {
+    if (RegExp(r'[^0-9a-fA-F]').hasMatch(input)) {
       return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKey);
     }
 
-    if (!_isEvenLengthHex(value)) {
+    if (!_isEvenLengthHex(input)) {
       return _getFieldWrongValue(PresentationFieldName.clientRandomAuthKeyValue);
-    }
-
-    if (value.length > 64) {
-      return _getFieldOutOfBounds(PresentationFieldName.clientRandomAuthKey);
     }
 
     return null;
