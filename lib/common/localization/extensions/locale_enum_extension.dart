@@ -34,6 +34,6 @@ extension LocaleTlsFingerprintEnumExtension on TlsFingerprint {
     TlsFingerprint.firefox => context.ln.tlsFingerprintFirefox,
     TlsFingerprint.okhttp => context.ln.tlsFingerprintOkHttp,
     TlsFingerprint.openssl => context.ln.tlsFingerprintOpenSsl,
-    TlsFingerprint.own => context.ln.tlsFingerprintOwn,
+    TlsFingerprint.boringssl => context.ln.tlsFingerprintBoringSsl,
   };
 }
