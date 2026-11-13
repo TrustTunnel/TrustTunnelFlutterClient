@@ -268,7 +268,8 @@
   "updateDownloadError": "Couldn’t download the update",
   "updateDownloadErrorDescription": "Check your Internet connection and try again",
   "updateDamagedError": "The update file is damaged",
-  "updatePermissionError": "Windows needs permission to install the update. Click Yes when asked to allow changes",
+  "updatePermissionError": "Windows needs permission to install the update",
+  "updatePermissionErrorDescription": "Click Yes when asked to allow changes",
   "updateInstallError": "Couldn’t install the update",
   "updatedToVersion": "Updated to version {version}",
   "@updatedToVersion": {
