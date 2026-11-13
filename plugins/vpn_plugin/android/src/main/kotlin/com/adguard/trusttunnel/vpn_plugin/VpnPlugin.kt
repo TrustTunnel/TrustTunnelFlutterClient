@@ -4,6 +4,7 @@ package com.adguard.trusttunnel.vpn_plugin
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.net.VpnService as AndroidVpnService
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -29,13 +30,14 @@ class VpnPlugin :
 
     private var stateChannel: EventChannel? = null
     private var queryLogChannel: EventChannel? = null
-    
+
     private lateinit var vpnImpl: NativeVpnImpl
 
     private lateinit var deepLinkImpl: DeepLinkImpl
 
     private var pendingConfig: String? = null
     private var pendingFallIntoRecovery: Boolean = false
+    private var pendingDisallowedApps: List<String>? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         appContext = binding.applicationContext
@@ -87,32 +89,35 @@ class VpnPlugin :
         if (requestCode == REQ_VPN_PREPARE) {
             val cfg = pendingConfig
             val fallIntoRecovery = pendingFallIntoRecovery
+            val disallowedApps = pendingDisallowedApps
             pendingConfig = null
             pendingFallIntoRecovery = false
+            pendingDisallowedApps = null
             if (cfg != null && resultCode == Activity.RESULT_OK) {
                 val ctx = activity ?: appContext
-                vpnImpl.startPrepared(ctx, cfg, fallIntoRecovery)
+                vpnImpl.startPrepared(ctx, cfg, fallIntoRecovery, disallowedApps)
             }
             return true
         }
         return false
     }
 
-    override fun start(config: String, fallIntoRecovery: Boolean) {
+    override fun start(config: String, fallIntoRecovery: Boolean, disallowedApps: List<String>?) {
         val act = activity
         if (act != null) {
             val prepare = AndroidVpnService.prepare(act)
             if (prepare == null) {
-                vpnImpl.startPrepared(act, config, fallIntoRecovery)
+                vpnImpl.startPrepared(act, config, fallIntoRecovery, disallowedApps)
             } else {
                 pendingConfig = config
                 pendingFallIntoRecovery = fallIntoRecovery
+                pendingDisallowedApps = disallowedApps
                 act.startActivityForResult(prepare, REQ_VPN_PREPARE)
             }
         } else {
             val prepare = AndroidVpnService.prepare(appContext)
             if (prepare == null) {
-                vpnImpl.startPrepared(appContext, config, fallIntoRecovery)
+                vpnImpl.startPrepared(appContext, config, fallIntoRecovery, disallowedApps)
             }
         }
     }
@@ -135,5 +140,25 @@ class VpnPlugin :
 
     override fun clearLogs() {
         vpnImpl.clearLogs()
+    }
+
+    override fun getInstalledApps(callback: (Result<List<InstalledApp>>) -> Unit) {
+        try {
+            val pm = appContext.packageManager
+            val apps = pm.getInstalledApplications(0)
+                .mapNotNull { appInfo ->
+                    val launchable = pm.getLaunchIntentForPackage(appInfo.packageName) != null
+                    if (!launchable) return@mapNotNull null
+                    InstalledApp(
+                        packageName = appInfo.packageName,
+                        label = appInfo.loadLabel(pm).toString(),
+                        isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
+                    )
+                }
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
+            callback(Result.success(apps))
+        } catch (e: Exception) {
+            callback(Result.failure(e))
+        }
     }
 }

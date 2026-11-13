@@ -11,6 +11,8 @@ import 'package:vpn_plugin/models/logs/log_record.dart';
 import 'package:vpn_plugin/models/query_log_row.dart';
 import 'package:vpn_plugin/platform_api.g.dart';
 
+export 'package:vpn_plugin/platform_api.g.dart' show InstalledApp;
+
 /// {@template vpn_plugin}
 /// A plugin that provides VPN functionality across multiple platforms.
 ///
@@ -34,9 +36,24 @@ abstract class VpnPlugin {
   /// Failures that happen after a successful connection are always handled by
   /// the recovery algorithm, regardless of this parameter.
   ///
+  /// [disallowedApps] lists Android package names whose traffic must bypass
+  /// the VPN entirely. Ignored on platforms without per-app tunneling.
+  ///
   /// Throws a [PlatformException] if the VPN service fails to start.
   /// {@endtemplate}
-  Future<void> start({required Configuration configuration, bool fallIntoRecovery = false});
+  Future<void> start({
+    required Configuration configuration,
+    bool fallIntoRecovery = false,
+    List<String>? disallowedApps,
+  });
+
+  /// {@template vpn_plugin_get_installed_apps}
+  /// Returns applications installed on the device.
+  ///
+  /// Used by the per-app exclusion UI. Returns an empty list on platforms
+  /// without per-app tunneling support.
+  /// {@endtemplate}
+  Future<List<InstalledApp>> getInstalledApps();
 
   /// {@template vpn_plugin_stop}
   /// Stops the active VPN connection.
@@ -129,9 +146,29 @@ class VpnPluginImpl implements VpnPlugin {
 
   /// {@macro vpn_plugin_start}
   @override
-  Future<void> start({required Configuration configuration, bool fallIntoRecovery = false}) {
+  Future<void> start({
+    required Configuration configuration,
+    bool fallIntoRecovery = false,
+    List<String>? disallowedApps,
+  }) {
     final config = _codec.encode(configuration);
-    return _api.start(config: config, fallIntoRecovery: fallIntoRecovery);
+    return _api.start(config: config, fallIntoRecovery: fallIntoRecovery, disallowedApps: disallowedApps);
+  }
+
+  /// {@macro vpn_plugin_get_installed_apps}
+  @override
+  Future<List<InstalledApp>> getInstalledApps() async {
+    final apps = await _api.getInstalledApps();
+
+    return apps
+        .map(
+          (app) => InstalledApp(
+            packageName: app.packageName,
+            label: app.label,
+            isSystem: app.isSystem,
+          ),
+        )
+        .toList(growable: false);
   }
 
   /// {@macro vpn_plugin_update_configuration}

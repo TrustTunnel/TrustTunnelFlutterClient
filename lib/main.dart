@@ -16,8 +16,10 @@ import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
 import 'package:trusttunnel/feature/settings/app_version_and_updating/widgets/scope/app_version_and_updating_scope.dart';
+import 'package:trusttunnel/feature/settings/excluded_apps/widgets/scope/excluded_apps_scope.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 import 'package:trusttunnel/feature/settings/launch_and_connection/widgets/auto_connect_on_launch_settings_scope.dart';
+import 'package:trusttunnel/feature/settings/ru_bypass/widgets/scope/ru_bypass_scope.dart';
 import 'package:trusttunnel/feature/vpn/widgets/vpn_scope.dart';
 
 Future<void> main() async {
@@ -47,15 +49,19 @@ Future<void> main() async {
             child: AppLoggingScope(
               child: RoutingScope(
                 child: ExcludedRoutesScope(
-                  child: ServersScope(
-                    child: VpnScope(
+                  child: ExcludedAppsScope(
+                    child: RuBypassScope(
+                      child: ServersScope(
+                        child: VpnScope(
                       appWindowControllerProvider: () => initializationHelper.dependenciesFactory.appWindowController,
                       vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
                       initialState: initializationHelper.initialVpnState,
-                      child: const AppVersionAndUpdatingScope(
-                        child: AutoConnectOnLaunchSettingsScope(
-                          child: DeepLinkScope(
-                            child: App(),
+                          child: const AppVersionAndUpdatingScope(
+                            child: AutoConnectOnLaunchSettingsScope(
+                              child: DeepLinkScope(
+                                child: App(),
+                              ),
+                            ),
                           ),
                         ),
                       ),

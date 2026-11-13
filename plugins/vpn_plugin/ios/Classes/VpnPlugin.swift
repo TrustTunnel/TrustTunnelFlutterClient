@@ -58,7 +58,8 @@ final class IVpnManagerImpl: NSObject, IVpnManager, FlutterStreamHandler {
 
     // MARK: - IVpnManager (Pigeon HostApi)
 
-    func start(config: String, fallIntoRecovery: Bool) throws {
+    func start(config: String, fallIntoRecovery: Bool, disallowedApps: [String]?) throws {
+        // Per-app exclusions are not supported on this platform; disallowedApps is ignored.
         vpnManager?.start(config: config, fallIntoRecovery: fallIntoRecovery)
     }
 
@@ -68,6 +69,11 @@ final class IVpnManagerImpl: NSObject, IVpnManager, FlutterStreamHandler {
 
     func stop() throws {
         vpnManager?.stop()
+    }
+
+    func getInstalledApps(completion: @escaping (Result<[InstalledApp], Error>) -> Void) {
+        // Per-app exclusions are not supported on this platform.
+        completion(.success([]))
     }
 
     func getCurrentState() throws -> VpnManagerState {

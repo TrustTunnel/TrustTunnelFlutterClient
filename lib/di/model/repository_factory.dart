@@ -1,11 +1,13 @@
 import 'package:trusttunnel/data/repository/app_updating_repository.dart';
 import 'package:trusttunnel/data/repository/auto_connect_on_launch_settings_repository.dart';
 import 'package:trusttunnel/data/repository/deep_link_repository.dart';
+import 'package:trusttunnel/data/repository/excluded_apps_repository.dart';
 import 'package:trusttunnel/data/repository/export_logs_repository.dart';
 import 'package:trusttunnel/data/repository/launch_at_login_repository.dart';
 import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/data/repository/open_main_window_on_login_repository.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
+import 'package:trusttunnel/data/repository/ru_bypass_repository.dart';
 import 'package:trusttunnel/data/repository/server_repository.dart';
 import 'package:trusttunnel/data/repository/settings_repository.dart';
 import 'package:trusttunnel/data/repository/vpn_repository.dart';
@@ -33,6 +35,10 @@ abstract class RepositoryFactory {
   OpenMainWindowOnLoginRepository get openMainWindowOnLoginRepository;
 
   AutoConnectOnLaunchSettingsRepository get autoConnectOnLaunchSettingsRepository;
+
+  ExcludedAppsRepository get excludedAppsRepository;
+
+  RuBypassRepository get ruBypassRepository;
 }
 
 class RepositoryFactoryImpl implements RepositoryFactory {
@@ -63,6 +69,10 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   OpenMainWindowOnLoginRepository? _openMainWindowOnLoginRepository;
 
   AutoConnectOnLaunchSettingsRepository? _autoConnectOnLaunchSettingsRepository;
+
+  ExcludedAppsRepository? _excludedAppsRepository;
+
+  RuBypassRepository? _ruBypassRepository;
 
   @override
   AppUpdatingRepository get appUpdatingRepository => _appUpdatingRepository ??= AppUpdatingRepositoryImpl(
@@ -124,4 +134,14 @@ class RepositoryFactoryImpl implements RepositoryFactory {
       _autoConnectOnLaunchSettingsRepository ??= AutoConnectOnLaunchSettingsRepositoryImpl(
         dataSource: _dependencyFactory.autoConnectOnLaunchSettingsDataSource,
       );
+
+  @override
+  ExcludedAppsRepository get excludedAppsRepository => _excludedAppsRepository ??= ExcludedAppsRepositoryImpl(
+    _dependencyFactory.excludedAppsDataSource,
+  );
+
+  @override
+  RuBypassRepository get ruBypassRepository => _ruBypassRepository ??= RuBypassRepositoryImpl(
+    _dependencyFactory.ruBypassDataSource,
+  );
 }

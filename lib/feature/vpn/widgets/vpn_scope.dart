@@ -11,7 +11,9 @@ import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/settings/app_logging/widgets/scope/app_logging_scope.dart';
+import 'package:trusttunnel/feature/settings/excluded_apps/widgets/scope/excluded_apps_scope.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/feature/settings/ru_bypass/widgets/scope/ru_bypass_scope.dart';
 import 'package:trusttunnel/feature/vpn/controller/vpn_controller.dart';
 import 'package:trusttunnel/feature/vpn/controller/vpn_logs_controller.dart';
 import 'package:trusttunnel/feature/vpn/models/log_controller.dart';
@@ -276,6 +278,8 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
       routingScopeController: RoutingScope.controllerOf(context, listen: false),
       appLoggingScopeController: AppLoggingScope.controllerOf(context, listen: false),
       excludedRoutesScopeController: ExcludedRoutesScope.controllerOf(context, listen: false),
+      excludedAppsScopeController: ExcludedAppsScope.maybeControllerOf(context),
+      ruBypassScopeController: RuBypassScope.maybeControllerOf(context),
     );
 
     _configurationSources = sources;

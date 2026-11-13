@@ -39,9 +39,41 @@ Whether you are setting up your first self-hosted VPN or operating your own infr
 - **Transparent and controllable**
   The client exposes key concepts such as endpoints, credentials, protocols, and routing behavior instead of hiding them behind abstractions, giving you full visibility into how your VPN works.
 
+## Features Added in This Fork
+
+This fork extends the upstream client with several Android-focused capabilities:
+
+- **Per-app VPN exclusions (Android)**
+  Applications can be excluded from the VPN tunnel entirely: their traffic bypasses the tunnel at the
+  system level (`VpnService.Builder.addDisallowedApplications`). Managed in **Settings → Excluded apps**:
+  pick installed applications manually (search and a system-apps toggle included), or use the
+  **Recommended Russian apps** preset (MAX, SberBank, T-Bank, VK, Yandex, marketplaces, etc.) with a
+  one-tap *Select all* action. Changes apply automatically on the next (re)connection.
+
+- **Runet bypass**
+  Keeps Russian websites, services and networks outside the VPN tunnel while everything else goes through it:
+  a curated preset of Russian domains (including the whole `.ru` / `.su` / `.рф` zones) plus a downloadable
+  list of Russian IP ranges sourced from the official **RIPE NCC country resource list** (~10 800 aggregated
+  CIDRs, IPv4 + IPv6, refreshed daily). Toggle it in **Settings → Runet bypass** and use *Update now* to
+  refresh the IP ranges list. Requires the server's routing profile to run in **VPN mode** (a warning is
+  shown otherwise). Note: the feature is a denylist complement — the inverse scenario ("route specific
+  blocked sites through the VPN") is what Bypass-mode routing profiles are for.
+
+- **Add servers via `tt://` links**
+  Servers can be shared as compact deep links: use *Copy link* / *Share* on any server card, or open a
+  `tt://` link from another app — the add-server form opens pre-filled. The "Add via link" action
+  (link icon on the Servers screen) accepts a pasted link as text, which also covers cold starts and
+  links received as plain text.
+
+Implementation notes: Android builds use a local `TunVpnService` (in `plugins/vpn_plugin`) that replaces
+the prebuilt library `VpnService` to support per-app exclusions; the database schema is extended to v6
+(`excluded_apps` table); `QUERY_ALL_PACKAGES` is added to the plugin manifest to enumerate applications
+for the exclusions UI.
+
 ## Table of Contents
 - [TrustTunnel Flutter Client](#trusttunnel-flutter-client)
     - [Why TrustTunnel Flutter Client](#why-trusttunnel-flutter-client)
+    - [Features Added in This Fork](#features-added-in-this-fork)
   - [Table of Contents](#table-of-contents)
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
@@ -288,6 +320,32 @@ Typical use cases include excluding local networks, private subnets, or system-r
 
 The input format is intentionally minimal and strict. Only CIDR ranges are supported.
 Each range must be entered on its own line to keep the configuration readable and easy to audit.
+
+
+### Excluded Apps (Android)
+Excluded Apps provide **per-application split tunneling**: traffic of the selected applications
+bypasses the VPN tunnel completely, regardless of routing profiles and routes.
+
+Open **Settings → Excluded apps** and pick applications from the list of installed apps.
+The **Recommended Russian apps** section highlights popular Russian applications (messengers,
+banks, marketplaces) known to misbehave behind VPNs, with a one-tap bulk selection. Search and a
+system-apps toggle help find less obvious entries. Saving the list (re)connects the active VPN
+session automatically so the change takes effect immediately.
+
+
+### Runet bypass
+Runet bypass keeps **Russian destinations outside the VPN tunnel** when the server's routing profile
+runs in **VPN mode**. When enabled, two rule sets are added to the effective exclusions:
+
+- a curated preset of Russian domains (the `.ru`, `.su` and `.рф` zones plus well-known services
+  hosted on foreign TLDs), and
+- a downloadable list of Russian IP ranges from the RIPE NCC country resource list.
+
+Use **Settings → Runet bypass** to toggle the feature and *Update now* to (re)download the IP ranges.
+The screen shows the list status: last update date and the number of loaded ranges.
+If the selected server's routing profile is in Bypass mode, the screen shows a warning — in that mode
+all traffic already bypasses the VPN by default, and the inverse setup (listing specific destinations
+in the profile's *vpn rules*) is the way to route selected sites through the tunnel.
 
 
 ### Query Logs

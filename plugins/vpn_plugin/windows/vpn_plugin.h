@@ -100,7 +100,16 @@ public:
      */
     std::optional<FlutterError> Start(
             const std::string& config,
-            bool fall_into_recovery) override;
+            bool fall_into_recovery,
+            const flutter::EncodableList* disallowed_apps) override;
+
+    /**
+     * List installed applications for the per-app exclusion UI.
+     * Not supported on Windows: always returns an empty list.
+     * @return Empty list.
+     */
+    void GetInstalledApps(
+            std::function<void(ErrorOr<flutter::EncodableList>)> result) override;
 
     /**
      * Stop the VPN service.

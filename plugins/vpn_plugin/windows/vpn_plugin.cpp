@@ -338,8 +338,16 @@ int32_t VpnPlugin::StartService(
     return trusttunnel_service_start(config.c_str(), fall_into_recovery);
 }
 
+void VpnPlugin::GetInstalledApps(
+        std::function<void(ErrorOr<flutter::EncodableList>)> result) {
+    // Per-app exclusions are not supported on Windows.
+    result(ErrorOr<flutter::EncodableList>(flutter::EncodableList()));
+}
+
 std::optional<FlutterError> VpnPlugin::Start(
-        const std::string& config, bool fall_into_recovery) {
+        const std::string& config, bool fall_into_recovery,
+        const flutter::EncodableList* disallowed_apps) {
+    // Per-app exclusions are not supported on Windows; disallowed_apps is ignored.
     if (m_ring_buffer_path.empty()) {
         return RuntimeDataUnavailableError();
     }
