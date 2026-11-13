@@ -65,7 +65,6 @@ class _AppCustomMacOSTitleBarState extends State<AppCustomMacOSTitleBar> with Wi
 
   @override
   void onWindowWillLeaveFullScreen() {
-    unawaited(windowManager.setTitleBarStyle(TitleBarStyle.hidden));
     _setFullScreen(false);
   }
 

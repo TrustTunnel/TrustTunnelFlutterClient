@@ -614,6 +614,7 @@ public class WindowManager: NSObject, NSWindowDelegate {
         if(_hideTitleBarOnExitFullScreen){
             mainWindow.titleVisibility = .hidden
             mainWindow.titlebarAppearsTransparent = true
+            mainWindow.styleMask.insert(.fullSizeContentView)
         }
         _emitEvent("will-exit-full-screen");
     }
