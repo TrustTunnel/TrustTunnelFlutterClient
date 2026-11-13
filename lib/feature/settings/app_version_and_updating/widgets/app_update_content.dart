@@ -240,9 +240,13 @@ class _AppUpdateSecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => OutlinedButton(
-    style: OutlinedButton.styleFrom(
-      side: BorderSide(color: onPressed == null ? context.colors.neutralLight : context.colors.neutralBlack),
-    ),
+    style:
+        OutlinedButton.styleFrom(
+          overlayColor: context.colors.transparent,
+          side: BorderSide(color: onPressed == null ? context.colors.neutralLight : context.colors.neutralBlack),
+        ).copyWith(
+          backgroundColor: context.theme.outlinedButtonTheme.style?.overlayColor,
+        ),
     onPressed: onPressed,
     child: Text(text),
   );
