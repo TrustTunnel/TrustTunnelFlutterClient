@@ -25,7 +25,7 @@
   "tlsFingerprintFirefox": "Firefox",
   "tlsFingerprintOkHttp": "OkHttp",
   "tlsFingerprintOpenSsl": "OpenSSL",
-  "tlsFingerprintOwn": "Own fingerprint",
+  "tlsFingerprintBoringSsl": "BoringSSL",
   "routingProfile": "Routing profile",
   "enterDnsServerLabel": "DNS server addresses, one per line",
   "enterDnsServerHint": "IP address, tls://, https://, quic://, h3://, or sdns://",
