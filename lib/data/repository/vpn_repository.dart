@@ -18,8 +18,7 @@ abstract class VpnRepository {
 
   /// Saves [serverId] for later restoration of the VPN display.
   ///
-  /// Call this when a connection started by the app reports `Connected` and
-  /// after an update that replaces the server of the saved system profile.
+  /// Call this when a connection started by the app reports `Connected`.
   /// Skips the write on platforms without profile restoration and logs storage errors.
   Future<void> saveVpnProfileServerId(String serverId);
 
@@ -33,6 +32,12 @@ abstract class VpnRepository {
 
   Future<Stream<VpnState>> listenToStates();
 
+  /// Applies [server] and the given settings to the saved system profile.
+  ///
+  /// On iOS and macOS the profile keeps its own server, so this also keeps the
+  /// saved server ID in sync: an ID that differs from [server] is cleared before
+  /// the native call, and [server]'s ID is stored after the call succeeds. A
+  /// connection that the system starts from the profile can then restore its server.
   Future<void> updateConfiguration({
     required Server server,
     required RoutingProfile routingProfile,
