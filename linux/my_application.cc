@@ -15,6 +15,13 @@ struct _MyApplication {
 // Registered in my_application_activate; kept alive for the whole app lifetime.
 static FlMethodChannel* g_exit_dialog_channel = nullptr;
 
+// gtk_dialog_run() spins a nested main loop, so a second "show" request (e.g.
+// another window close while the first dialog is up) re-enters this handler
+// and would stack a second modal dialog. Treat an already-open dialog as
+// "stay open" — mirroring the Dart-side contract
+// (lib/common/platform/linux_exit_dialog.dart).
+static gboolean g_exit_dialog_open = FALSE;
+
 // Shows the native exit confirmation dialog (GtkMessageDialog) and responds
 // with true when the user chose Quit, false otherwise.
 static void exit_dialog_method_call_cb(FlMethodChannel* /*channel*/,
@@ -23,6 +30,12 @@ static void exit_dialog_method_call_cb(FlMethodChannel* /*channel*/,
   const gchar* method = fl_method_call_get_name(method_call);
   if (g_strcmp0(method, "show") != 0) {
     fl_method_call_respond_not_implemented(method_call, nullptr);
+    return;
+  }
+
+  if (g_exit_dialog_open) {
+    g_autoptr(FlValue) result = fl_value_new_bool(FALSE);
+    fl_method_call_respond_success(method_call, result, nullptr);
     return;
   }
 
@@ -63,7 +76,9 @@ static void exit_dialog_method_call_cb(FlMethodChannel* /*channel*/,
 
   // Runs a nested main loop: the rest of the UI stays alive while the dialog
   // is open, mirroring the Windows runner behavior.
+  g_exit_dialog_open = TRUE;
   const gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+  g_exit_dialog_open = FALSE;
   gtk_widget_destroy(dialog);
 
   g_autoptr(FlValue) result = fl_value_new_bool(response == GTK_RESPONSE_ACCEPT);
@@ -87,7 +102,12 @@ static void my_application_activate(GApplication* application) {
   // re-activation), raise it instead of creating a new Flutter view.
   GList* windows = gtk_application_get_windows(GTK_APPLICATION(application));
   if (windows) {
-    gtk_window_present(GTK_WINDOW(windows->data));
+    // The main window stays hidden until Flutter renders its first frame;
+    // presenting a hidden window would force-show a blank, unlaid-out tree
+    // and defeat the hidden-at-launch mechanism.
+    if (gtk_widget_get_visible(GTK_WIDGET(windows->data))) {
+      gtk_window_present(GTK_WINDOW(windows->data));
+    }
     return;
   }
 
@@ -121,7 +141,10 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "vpn");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  // Matches lib/di/model/initialization_helper.dart: defaultWindowSize is
+  // (1024, 768); the Dart side also enforces minimumWindowSize (905, 680)
+  // through window_manager.
+  gtk_window_set_default_size(window, 1024, 768);
   // Keep the window realized but hidden until the first frame is rendered.
   gtk_widget_realize(GTK_WIDGET(window));
 
