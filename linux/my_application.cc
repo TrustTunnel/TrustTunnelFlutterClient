@@ -207,6 +207,10 @@ static gboolean my_application_local_command_line(GApplication* application, gch
   }
 
   // Primary instance: keep the arguments for the Dart entrypoint and run.
+  // Clear any previously stored arguments first: local_command_line runs once
+  // per process today, but the defensive free keeps this leak-proof if a
+  // re-invocation path is ever added.
+  g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
   self->dart_entrypoint_arguments = g_strdupv(*arguments + 1);
 
   g_application_activate(application);
