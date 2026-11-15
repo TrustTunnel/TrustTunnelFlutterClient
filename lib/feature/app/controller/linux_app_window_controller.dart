@@ -29,10 +29,16 @@ final class LinuxAppWindowController implements AppWindowController {
     required Size defaultWindowSize,
     required bool isDebugMode,
   }) async {
-    // The window geometry is set natively in linux/my_application.cc; here we
-    // only make the window_manager plugin intercept the close request so the
-    // exit confirmation flow can run before the window is destroyed.
     await windowManager.ensureInitialized();
+    // The default geometry (defaultWindowSize) is set natively in
+    // linux/my_application.cc; the minimum size is enforced here through
+    // window_manager, mirroring the Windows controller (which also skips it
+    // in debug mode to keep unresized debug windows free to move/shrink).
+    if (!isDebugMode) {
+      await windowManager.setMinimumSize(minimumWindowSize);
+    }
+    // Intercept the close request so the exit confirmation flow can run
+    // before the window is destroyed.
     await setPreventClose(true);
   }
 }
