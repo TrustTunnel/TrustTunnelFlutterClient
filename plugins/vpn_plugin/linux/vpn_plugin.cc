@@ -45,23 +45,22 @@ G_DEFINE_TYPE(VpnPlugin, vpn_plugin, g_object_get_type())
 
 // -------- VPN state (EventChannel "vpn_plugin_event_channel") --------
 
-static void emit_vpn_state(VpnPlugin* self) {
-  if (self->engine == nullptr || self->state_event_channel == NULL ||
-      !self->state_listening) {
+static void emit_vpn_state(VpnPlugin* self, int state) {
+  if (self->state_event_channel == NULL || !self->state_listening) {
     return;
   }
-  g_autoptr(FlValue) event = fl_value_new_int(self->engine->GetCurrentState());
+  g_autoptr(FlValue) event = fl_value_new_int(state);
   fl_event_channel_send(self->state_event_channel, event, NULL, NULL);
 }
 
-static gboolean emit_state_idle(gpointer user_data) {
-  emit_vpn_state(VPN_PLUGIN(user_data));
-  return G_SOURCE_REMOVE;
-}
-
-static void on_engine_state(void* user_data, int /*state*/) {
-  g_idle_add_full(G_PRIORITY_DEFAULT, emit_state_idle, g_object_ref(user_data),
-                  g_object_unref);
+static void on_engine_state(void* user_data, int state) {
+  // The engine fires its callbacks on the main GLib context (both the daemon
+  // signal path and the Pigeon method handlers), so the exact reported state
+  // can be published directly. Do not re-read it via GetCurrentState(): that
+  // would block on a synchronous GetState round-trip and could already
+  // observe a later transition than the one being reported (e.g. publishing
+  // DISCONNECTED twice and losing the CONNECTING step after a rollback).
+  emit_vpn_state(VPN_PLUGIN(user_data), state);
 }
 
 // -------- Connection telemetry (EventChannel "vpn_plugin_event_channel_query_log") --------
@@ -185,7 +184,7 @@ static FlMethodErrorResponse* state_listen_cb(FlEventChannel* /*channel*/,
                                               gpointer user_data) {
   VpnPlugin* self = VPN_PLUGIN(user_data);
   self->state_listening = TRUE;
-  emit_vpn_state(self);
+  emit_vpn_state(self, self->engine->GetCurrentState());
   return NULL;
 }
 
@@ -219,10 +218,13 @@ static void vpn_plugin_dispose(GObject* object) {
 
   // GObject may invoke dispose more than once; null the pointers out so the
   // second pass is a no-op.
-  delete self->engine;
-  self->engine = nullptr;
+  // Order matters: destroying the transport first disconnects the GDBus proxy
+  // (and with it every signal handler whose lambdas capture the engine), so
+  // no handler can observe a destroyed engine afterwards.
   delete self->transport;
   self->transport = nullptr;
+  delete self->engine;
+  self->engine = nullptr;
   delete self->connection_info_buffer;
   self->connection_info_buffer = nullptr;
 
