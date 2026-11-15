@@ -251,7 +251,7 @@ final class TrayMenuController {
     final selectedServer = state.selectedServer;
     final connectionState = _mapConnectionStateForTray(vpnState);
     final activeServer = _resolveActiveServer(
-      currentlyConnectedServerId: state.currentlyConnectedServerId,
+      activeServerId: state.activeServerId,
       servers: servers,
       selectedServer: selectedServer,
       vpnState: vpnState,
@@ -277,7 +277,7 @@ final class TrayMenuController {
 
   /// Resolves the server shown by the tray, preserving the active server across states.
   Server? _resolveActiveServer({
-    required String? currentlyConnectedServerId,
+    required String? activeServerId,
     required List<Server> servers,
     required Server? selectedServer,
     required VpnState vpnState,
@@ -287,9 +287,9 @@ final class TrayMenuController {
     }
 
     final fallbackServer = selectedServer ?? servers.first;
-    final connectionServer = currentlyConnectedServerId == null
+    final connectionServer = activeServerId == null
         ? null
-        : servers.firstWhereOrNull((server) => server.id == currentlyConnectedServerId);
+        : servers.firstWhereOrNull((server) => server.id == activeServerId);
 
     return vpnState == VpnState.disconnected ? fallbackServer : connectionServer;
   }

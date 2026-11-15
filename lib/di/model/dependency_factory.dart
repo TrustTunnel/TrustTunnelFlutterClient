@@ -27,6 +27,7 @@ import 'package:trusttunnel/data/datasources/local_sources/logs_local_source_imp
 import 'package:trusttunnel/data/datasources/local_sources/routing_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/local_sources/settings_datasource_impl.dart';
+import 'package:trusttunnel/data/datasources/local_sources/vpn_profile_server_datasource_impl.dart';
 import 'package:trusttunnel/data/datasources/logging_settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/logs_local_source.dart';
 import 'package:trusttunnel/data/datasources/native_sources/launch_at_login_datasource_impl.dart';
@@ -40,6 +41,7 @@ import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/datasources/server_datasource.dart';
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
+import 'package:trusttunnel/data/datasources/vpn_profile_server_datasource.dart';
 import 'package:trusttunnel/feature/app/controller/app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/macos_app_window_controller.dart';
 import 'package:trusttunnel/feature/app/controller/windows_app_window_controller.dart';
@@ -78,6 +80,8 @@ abstract class DependencyFactory {
   RoutingDataSource get routingDataSource;
 
   VpnDataSource get vpnDataSource;
+
+  VpnProfileServerDataSource get vpnProfileServerDataSource;
 
   CertificateDataSource get certificateDataSource;
 
@@ -160,6 +164,8 @@ class DependencyFactoryImpl implements DependencyFactory {
 
   AppWindowController? _appWindowController;
 
+  VpnProfileServerDataSource? _vpnProfileServerDataSource;
+
   db.AppDatabase? _database;
 
   @override
@@ -229,6 +235,12 @@ class DependencyFactoryImpl implements DependencyFactory {
   VpnDataSource get vpnDataSource => _vpnDataSource ??= VpnDataSourceImpl(
     vpnPlugin: vpnPlugin,
   );
+
+  @override
+  VpnProfileServerDataSource get vpnProfileServerDataSource =>
+      _vpnProfileServerDataSource ??= VpnProfileServerDataSourceImpl(
+        preferences: sharedPreferences,
+      );
 
   @override
   CertificateDataSource get certificateDataSource => _certificateDataSource ??= CertificateDataSourceImpl(

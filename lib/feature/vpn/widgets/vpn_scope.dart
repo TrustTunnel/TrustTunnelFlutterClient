@@ -102,6 +102,11 @@ class VpnScope extends StatefulWidget {
   /// Defaults to [VpnState.disconnected].
   final VpnState initialState;
 
+  /// Server of the saved system profile, restored when a session started outside the app.
+  ///
+  /// Shown only if [initialState] is [VpnState.connected]; later connections re-read it.
+  final String? savedVpnProfileServerId;
+
   /// Widget subtree that receives access to the scope.
   final Widget child;
 
@@ -111,6 +116,7 @@ class VpnScope extends StatefulWidget {
     required this.child,
     required this.vpnRepository,
     this.initialState = VpnState.disconnected,
+    this.savedVpnProfileServerId,
     super.key,
   });
 
@@ -239,7 +245,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
   VpnState get state => _controller.state.vpnState;
 
   @override
-  String? get currentlyConnectedServerId => _controller.state.currentlyConnectedServerId;
+  String? get activeServerId => _controller.state.activeServerId;
 
   @override
   bool get isExitProcessing => _controller.state.isExitProcessing;
@@ -286,6 +292,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
       notifyOperationError: _onOperationError,
       onExitStopped: completeVpnExitStop,
       initialState: widget.initialState,
+      savedVpnProfileServerId: widget.savedVpnProfileServerId,
     );
     _vpnChangesListenable = Listenable.merge([_controller, _logsController]);
 
@@ -309,7 +316,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
       controller: this,
       logs: _logsController.logs,
       state: state,
-      currentlyConnectedServerId: currentlyConnectedServerId,
+      activeServerId: activeServerId,
       isExitProcessing: isExitProcessing,
       operationErrors: _operationErrorNotifier,
       child: child!,
@@ -446,14 +453,14 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements LogControl
   final List<VpnLog> logs;
 
   final VpnState state;
-  final String? currentlyConnectedServerId;
+  final String? activeServerId;
   final bool isExitProcessing;
   final Listenable operationErrors;
 
   const _InheritedVpnScope({
     required this.controller,
     required this.state,
-    required this.currentlyConnectedServerId,
+    required this.activeServerId,
     required this.isExitProcessing,
     required this.logs,
     required this.operationErrors,
@@ -480,8 +487,7 @@ class _InheritedVpnScope extends InheritedModel<VpnAspect> implements LogControl
   }
 
   bool _shouldNotifyVpnController(_InheritedVpnScope oldWidget) {
-    final hasConnectionChanged =
-        oldWidget.state != state || oldWidget.currentlyConnectedServerId != currentlyConnectedServerId;
+    final hasConnectionChanged = oldWidget.state != state || oldWidget.activeServerId != activeServerId;
 
     return hasConnectionChanged || oldWidget.isExitProcessing != isExitProcessing;
   }

@@ -24,12 +24,14 @@ final class VpnUserCommand {
   final String serverId;
   final VpnConnectionStage stage;
   final bool fallIntoRecovery;
+  final bool isFromAutomaticLaunch;
 
   const VpnUserCommand({
     required this.requestId,
     required this.serverId,
     required this.stage,
     this.fallIntoRecovery = false,
+    this.isFromAutomaticLaunch = false,
   });
 
   bool get isSavingSelection =>
@@ -41,6 +43,7 @@ final class VpnUserCommand {
     serverId,
     stage,
     fallIntoRecovery,
+    isFromAutomaticLaunch,
   ]);
 
   @override
@@ -50,7 +53,8 @@ final class VpnUserCommand {
           requestId == other.requestId &&
           serverId == other.serverId &&
           stage == other.stage &&
-          fallIntoRecovery == other.fallIntoRecovery;
+          fallIntoRecovery == other.fallIntoRecovery &&
+          isFromAutomaticLaunch == other.isFromAutomaticLaunch;
 
   @override
   String toString() => 'VpnUserCommand(id: $requestId, server: $serverId, stage: $stage)';
@@ -76,5 +80,6 @@ final class VpnUserCommand {
     serverId: serverId,
     stage: stage ?? this.stage,
     fallIntoRecovery: fallIntoRecovery ?? this.fallIntoRecovery,
+    isFromAutomaticLaunch: isFromAutomaticLaunch,
   );
 }

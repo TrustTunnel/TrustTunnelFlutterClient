@@ -19,6 +19,7 @@ import 'package:trusttunnel/common/logging/utils/containment_file_util.dart';
 import 'package:trusttunnel/common/platform/windows/protocol_command_builder.dart';
 import 'package:trusttunnel/common/platform/windows/win32_protocol_registration_store.dart';
 import 'package:trusttunnel/common/platform/windows/windows_protocol_handler.dart';
+import 'package:trusttunnel/data/model/vpn_state.dart';
 import 'package:trusttunnel/data/repository/logging_settings_repository.dart';
 import 'package:trusttunnel/di/model/dependency_factory.dart';
 import 'package:trusttunnel/di/model/initialization_result.dart';
@@ -105,6 +106,9 @@ class InitializationHelperIo extends InitializationHelper {
     }
 
     final initialVpnState = await repositoryFactory.vpnRepository.requestState();
+    final savedVpnProfileServerId = initialVpnState == VpnState.connected
+        ? await repositoryFactory.vpnRepository.getSavedVpnProfileServerId()
+        : null;
 
     if (defaultTargetPlatform == TargetPlatform.windows) {
       final appWindowController = dependenciesFactory.appWindowController as WindowsAppWindowController;
@@ -124,6 +128,7 @@ class InitializationHelperIo extends InitializationHelper {
       dependenciesFactory: dependenciesFactory,
       repositoryFactory: repositoryFactory,
       initialVpnState: initialVpnState,
+      savedVpnProfileServerId: savedVpnProfileServerId,
     );
   }
 

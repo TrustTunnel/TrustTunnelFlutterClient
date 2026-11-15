@@ -90,6 +90,7 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   @override
   VpnRepository get vpnRepository => _vpnRepository ??= VpnRepositoryImpl(
     vpnDataSource: _dependencyFactory.vpnDataSource,
+    vpnProfileServerDataSource: _dependencyFactory.vpnProfileServerDataSource,
   );
 
   @override
