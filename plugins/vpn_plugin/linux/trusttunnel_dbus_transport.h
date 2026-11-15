@@ -12,12 +12,16 @@ namespace vpn_plugin {
 //
 // Method calls are synchronous and run on the Flutter platform thread (the
 // GObject Pigeon generator does not implement @TaskQueue), so each call uses
-// an explicit bounded timeout. Daemon signals and name-owner changes are
-// delivered on the default GLib main context (the UI thread): signals are
-// subscribed through the GDBusProxy (which tracks the daemon's name owner,
-// so the subscription survives a daemon restart), and losing the name owner
-// is reported as the disconnected state, since a restarted daemon cannot
-// keep the previous VPN session alive.
+// an explicit bounded timeout. Start() is issued without NO_AUTO_START so a
+// daemon that is installed but not yet running can be activated over D-Bus;
+// status probes (GetState/Stop/ClearLogs) keep NO_AUTO_START so they never
+// wake the daemon up. The daemon itself still has to be provisioned as a
+// system service (systemd unit + D-Bus policy): bundling alone does nothing.
+// Daemon signals and name-owner changes are delivered on the default GLib
+// main context (the UI thread): signals are subscribed through the GDBusProxy
+// (which tracks the daemon's name owner, so the subscription survives a
+// daemon restart), and losing the name owner is reported as the disconnected
+// state, since a restarted daemon cannot keep the previous VPN session alive.
 class TrustTunnelDBusTransport : public TrustTunnelTransport {
  public:
   TrustTunnelDBusTransport() = default;

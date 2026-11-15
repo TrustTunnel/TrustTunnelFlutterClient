@@ -31,15 +31,18 @@ void LogDBusError(const char* operation, const GError* error) {
 
 // Synchronous D-Bus call with an explicit timeout. Errors are logged and
 // swallowed; the caller owns the returned variant (nullptr on failure).
+// `flags` lets callers distinguish methods that must not wake the daemon up
+// (status probes) from the ones allowed to trigger D-Bus activation.
 GVariant* CallMethod(GDBusProxy* proxy,
                      const gchar* method,
                      GVariant* parameters,
+                     GDBusCallFlags flags,
                      gint timeout_ms) {
   GError* error = nullptr;
   GVariant* reply = g_dbus_proxy_call_sync(proxy,
                                            method,
                                            parameters,
-                                           G_DBUS_CALL_FLAGS_NO_AUTO_START,
+                                           flags,
                                            timeout_ms,
                                            NULL,  // cancellable
                                            &error);
@@ -179,7 +182,7 @@ TransportCallResult TrustTunnelDBusTransport::Start(const std::string& config) {
     return TransportCallResult::kInvalidConfig;
   }
   GVariant* reply = CallMethod(proxy_, "Start", g_variant_new("(s)", config.c_str()),
-                               kStartTimeoutMs);
+                               G_DBUS_CALL_FLAGS_NONE, kStartTimeoutMs);
   if (reply == nullptr) {
     return TransportCallResult::kUnavailable;
   }
@@ -203,7 +206,8 @@ TransportCallResult TrustTunnelDBusTransport::Stop() {
   if (proxy_ == nullptr) {
     return TransportCallResult::kUnavailable;
   }
-  GVariant* reply = CallMethod(proxy_, "Stop", NULL, kStopTimeoutMs);
+  GVariant* reply = CallMethod(proxy_, "Stop", NULL, G_DBUS_CALL_FLAGS_NO_AUTO_START,
+                               kStopTimeoutMs);
   if (reply == nullptr) {
     return TransportCallResult::kUnavailable;
   }
@@ -221,7 +225,8 @@ int TrustTunnelDBusTransport::GetState() {
   if (proxy_ == nullptr) {
     return -1;
   }
-  GVariant* reply = CallMethod(proxy_, "GetState", NULL, kGetStateTimeoutMs);
+  GVariant* reply = CallMethod(proxy_, "GetState", NULL, G_DBUS_CALL_FLAGS_NO_AUTO_START,
+                               kGetStateTimeoutMs);
   if (reply == nullptr) {
     return -1;
   }
@@ -239,7 +244,8 @@ void TrustTunnelDBusTransport::ClearLogs() {
   if (proxy_ == nullptr) {
     return;
   }
-  GVariant* reply = CallMethod(proxy_, "ClearLogs", NULL, kClearLogsTimeoutMs);
+  GVariant* reply = CallMethod(proxy_, "ClearLogs", NULL, G_DBUS_CALL_FLAGS_NO_AUTO_START,
+                               kClearLogsTimeoutMs);
   g_clear_pointer(&reply, g_variant_unref);
 }
 
