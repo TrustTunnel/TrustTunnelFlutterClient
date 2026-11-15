@@ -72,7 +72,7 @@ bool LinuxVpnEngine::WaitForDaemonDisconnected(int timeout_ms) {
 }
 
 void LinuxVpnEngine::ApplyDaemonStateIfUnchanged(uint64_t generation) {
-  if (state_generation_ != generation) {
+  if (state_generation_.load(std::memory_order_relaxed) != generation) {
     // A newer daemon event (e.g. the CONNECTING/CONNECTED signal delivered
     // while the synchronous call was in flight) has already been applied.
     return;
@@ -107,24 +107,30 @@ bool LinuxVpnEngine::Start(const std::string& config, std::string* error_message
   const uint64_t generation = state_generation_;
   TransportCallResult result = transport_->Start(config);
   if (result == TransportCallResult::kAlreadyRunning) {
-    const int daemon_state = transport_->GetState();
-    if (daemon_state == kEngineStateDisconnected) {
-      // The daemon has just finished a stop: the reply raced with the teardown
-      // of the previous session. Wait for it to complete and retry once.
-      if (WaitForDaemonDisconnected(already_running_wait_timeout_ms_)) {
-        result = transport_->Start(config);
-      } else {
+    // An explicit Start(config) must replace the existing session: adopting a
+    // live one would silently keep the old configuration in effect while the
+    // UI reports the new one. Stop the session first (harmless when it is
+    // already being torn down), wait out the daemon-side stop, and retry the
+    // start once. Adopting a running session is reserved for the state
+    // synchronization in GetCurrentState().
+    if (transport_->Stop() != TransportCallResult::kSuccess) {
+      result = TransportCallResult::kUnavailable;
+    } else if (!WaitForDaemonDisconnected(already_running_wait_timeout_ms_)) {
+      if (error_message != nullptr) {
+        *error_message = "a previous VPN session is still stopping; try again shortly";
+      }
+      RollBackToDisconnected();
+      return false;
+    } else {
+      result = transport_->Start(config);
+      if (result == TransportCallResult::kAlreadyRunning) {
         if (error_message != nullptr) {
-          *error_message = "a previous VPN session is still stopping; try again shortly";
+          *error_message = "the previous VPN session did not stop in time; try again shortly";
         }
         RollBackToDisconnected();
         return false;
       }
-    } else if (daemon_state < 0) {
-      result = TransportCallResult::kUnavailable;
     }
-    // daemon_state > 0: a live session is running (e.g. started by a previous
-    // app run); adopt it in the success path below.
   }
 
   switch (result) {

@@ -46,9 +46,10 @@ class LinuxVpnEngine {
   LinuxVpnEngine& operator=(const LinuxVpnEngine&) = delete;
 
   // Starts a VPN session. On failure returns false and fills the error message.
-  // An ALREADY_RUNNING reply is resolved against the daemon state: a live
-  // session is adopted; a session that is still being torn down is waited for
-  // (bounded) and the start is retried once.
+  // An explicit Start(config) replaces an already running session: the daemon
+  // is asked to stop it, the teardown is waited out (bounded), and the start
+  // is retried once. An ALREADY_RUNNING reply is never resolved by adopting
+  // the existing session — that is reserved for GetCurrentState().
   bool Start(const std::string& config, std::string* error_message);
   // Requests the daemon to stop the session. Returns false when the daemon is
   // unreachable; in that case the cached state is left unchanged and the
@@ -85,8 +86,10 @@ class LinuxVpnEngine {
 
   std::atomic<int> state_;
   // Bumped on every accepted daemon state event (signals and GetState
-  // refreshes alike). Single-threaded: only the main GLib context touches it.
-  uint64_t state_generation_ = 0;
+  // refreshes alike). Atomic: the guards that compare against a snapshot
+  // (ApplyDaemonStateIfUnchanged) must observe a consistent generation even
+  // if a future refactor moves parts of the flow off the main GLib context.
+  std::atomic<uint64_t> state_generation_{0};
   // Upper bound for waiting out a daemon-side stop in Start(); injectable so
   // unit tests stay fast.
   int already_running_wait_timeout_ms_;

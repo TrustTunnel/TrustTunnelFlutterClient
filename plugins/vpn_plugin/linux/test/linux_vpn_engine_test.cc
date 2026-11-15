@@ -65,10 +65,8 @@ class MockTransport : public TrustTunnelTransport {
     if (!stop_results.empty()) {
       const TransportCallResult result = stop_results.front();
       stop_results.pop_front();
-      if (result == TransportCallResult::kSuccess) {
-        // The daemon reports the disconnected state after a stop request.
-        get_state_result = static_cast<int>(kEngineStateDisconnected);
-      }
+      // Scripted stops do not touch the daemon state: a test that scripts a
+      // stop result controls get_state_result explicitly.
       return result;
     }
     const TransportCallResult result = stop_result;
@@ -175,47 +173,49 @@ TEST(LinuxVpnEngineTest, StartInvalidConfigFailsAndRollsBack) {
   EXPECT_TRUE(rec.Has(kEngineStateDisconnected));
 }
 
-TEST(LinuxVpnEngineTest, AlreadyRunningAdoptsExistingSession) {
+TEST(LinuxVpnEngineTest, AlreadyRunningStopsOldSessionAndRestarts) {
   MockTransport transport;
-  transport.start_result = TransportCallResult::kAlreadyRunning;
-  // The daemon was already connected when the session was adopted.
+  // A live session from a previous app run (or another client) is running;
+  // the new Start(config) must replace it, not adopt it.
+  transport.start_results = {TransportCallResult::kAlreadyRunning, TransportCallResult::kSuccess};
   transport.get_state_result = static_cast<int>(kEngineStateConnected);
   StateRecorder rec;
   LinuxVpnEngine engine(&transport, StateRecorder::OnState, &rec, kTestWaitTimeoutMs);
 
   std::string unused_error;
   EXPECT_TRUE(engine.Start("config", &unused_error));
-  // One GetState to classify the ALREADY_RUNNING reply, one to sync the state.
-  EXPECT_EQ(transport.get_state_calls, 2);
+  // The old session was stopped, then the new config was started.
+  EXPECT_EQ(transport.start_calls, 2);
+  EXPECT_EQ(transport.stop_calls, 1);
+  EXPECT_EQ(transport.last_config, "config");
+  EXPECT_EQ(engine.GetCurrentState(), kEngineStateConnecting);
+}
+
+TEST(LinuxVpnEngineTest, GetCurrentStateAdoptsExistingSession) {
+  MockTransport transport;
+  // State synchronization (initial requestState / refreshes) is the only
+  // legitimate adoption path: the session was started outside this client.
+  transport.get_state_result = static_cast<int>(kEngineStateConnected);
+  StateRecorder rec;
+  LinuxVpnEngine engine(&transport, StateRecorder::OnState, &rec, kTestWaitTimeoutMs);
+
+  std::string unused_error;
   EXPECT_EQ(engine.GetCurrentState(), kEngineStateConnected);
+  // No start request was issued behind the user's back.
+  EXPECT_EQ(transport.start_calls, 0);
 
   // A subsequent daemon signal keeps the engine in sync.
   transport.EmulateDaemonState(kEngineStateDisconnected);
   EXPECT_EQ(engine.GetCurrentState(), kEngineStateDisconnected);
 }
 
-TEST(LinuxVpnEngineTest, AlreadyRunningAfterStopWaitsAndRetries) {
-  MockTransport transport;
-  // The first Start races with the teardown of the previous session...
-  transport.start_results = {TransportCallResult::kAlreadyRunning, TransportCallResult::kSuccess};
-  // ...which the daemon reports as disconnected on the first state probe.
-  transport.get_state_results = {static_cast<int>(kEngineStateDisconnected),
-                                 static_cast<int>(kEngineStateDisconnected)};
-  StateRecorder rec;
-  LinuxVpnEngine engine(&transport, StateRecorder::OnState, &rec, kTestWaitTimeoutMs);
-
-  std::string unused_error;
-  EXPECT_TRUE(engine.Start("config", &unused_error));
-  EXPECT_EQ(transport.start_calls, 2);
-  EXPECT_EQ(engine.GetCurrentState(), kEngineStateConnecting);
-}
-
 TEST(LinuxVpnEngineTest, AlreadyRunningStillStoppingTimesOut) {
   MockTransport transport;
   transport.start_results = {TransportCallResult::kAlreadyRunning};
-  // Classified as disconnected, but the teardown never finishes in time.
-  transport.get_state_results = {static_cast<int>(kEngineStateDisconnected)};
-  transport.get_state_result = static_cast<int>(kEngineStateConnecting);
+  // The stop request is accepted, but the daemon keeps reporting a live
+  // session: the teardown never completes within the timeout.
+  transport.stop_results = {TransportCallResult::kSuccess};
+  transport.get_state_result = static_cast<int>(kEngineStateConnected);
   StateRecorder rec;
   LinuxVpnEngine engine(&transport, StateRecorder::OnState, &rec, kTestWaitTimeoutMs);
 
@@ -224,8 +224,25 @@ TEST(LinuxVpnEngineTest, AlreadyRunningStillStoppingTimesOut) {
   EXPECT_NE(error.find("still stopping"), std::string::npos);
   // The timed-out start must not be retried unboundedly.
   EXPECT_EQ(transport.start_calls, 1);
+  EXPECT_EQ(transport.stop_calls, 1);
   // The rollback published the disconnected state before the engine fell back.
   EXPECT_TRUE(rec.Has(kEngineStateConnecting));
+  EXPECT_EQ(rec.states.back(), kEngineStateDisconnected);
+}
+
+TEST(LinuxVpnEngineTest, AlreadyRunningRetryStillRunningFails) {
+  MockTransport transport;
+  // The old session stops as requested, but the retry hits ALREADY_RUNNING
+  // again (e.g. another client grabbed the daemon): fail instead of looping.
+  transport.start_results = {TransportCallResult::kAlreadyRunning, TransportCallResult::kAlreadyRunning};
+  transport.get_state_result = static_cast<int>(kEngineStateDisconnected);
+  StateRecorder rec;
+  LinuxVpnEngine engine(&transport, StateRecorder::OnState, &rec, kTestWaitTimeoutMs);
+
+  std::string error;
+  EXPECT_FALSE(engine.Start("config", &error));
+  EXPECT_EQ(transport.start_calls, 2);
+  EXPECT_EQ(transport.stop_calls, 1);
   EXPECT_EQ(rec.states.back(), kEngineStateDisconnected);
 }
 
