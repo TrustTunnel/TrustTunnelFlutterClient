@@ -41,7 +41,7 @@ class _ServersCardState extends State<ServersCard> {
   @override
   Widget build(BuildContext context) {
     final vpnConnectionState = _vpnController.state;
-    final vpnManagerState = _vpnController.currentlyConnectedServerId == widget.server.id
+    final vpnManagerState = _vpnController.activeServerId == widget.server.id
         ? vpnConnectionState
         : VpnState.disconnected;
 
@@ -59,7 +59,7 @@ class _ServersCardState extends State<ServersCard> {
         vpnManagerState: vpnManagerState,
         onPressed: () {
           final isCurrentlyConnecting = _vpnController.state != VpnState.disconnected;
-          if (_vpnController.currentlyConnectedServerId == widget.server.id && isCurrentlyConnecting) {
+          if (_vpnController.activeServerId == widget.server.id && isCurrentlyConnecting) {
             _vpnController.disconnect();
           } else {
             _vpnController.selectAndConnectToServer(widget.server.id);

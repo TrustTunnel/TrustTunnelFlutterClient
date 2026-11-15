@@ -30,7 +30,7 @@ final class TrayMenuSources implements ValueListenable<TrayMenuState> {
   TrayMenuState get value => TrayMenuState(
     updateAvailable: _updatesController.updatesSupported && _updatesController.showUpdateIndicator,
     vpnState: _vpnScopeController.state,
-    currentlyConnectedServerId: _vpnScopeController.currentlyConnectedServerId,
+    activeServerId: _vpnScopeController.activeServerId,
     servers: _serversScopeController.servers,
     selectedServer: _serversScopeController.selectedServer,
     loggingLevel: _appLoggingScopeController.loggingLevel,

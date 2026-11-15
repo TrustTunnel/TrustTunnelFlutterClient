@@ -32,6 +32,17 @@ final class VpnOperationsProcessingInfo {
   /// Native events settle submitted starts independently of repository replies.
   final bool startSubmitted;
 
+  /// Target server ID for a tracked Windows auto-start, or null.
+  ///
+  /// The plugin queues `Start` and can reply before the service starts connecting.
+  /// The controller clears [pendingUserCommand] on that reply. This field keeps
+  /// the target ID across an initial `Disconnected` event and counts the pending
+  /// start as running work.
+  ///
+  /// It is cleared when a native stop is submitted, when another connection
+  /// command is accepted, or when the service reports a non-`disconnected` state.
+  final String? windowsAutoStartServerId;
+
   final bool lastStartFallIntoRecovery;
 
   /// A stop was submitted, but native disconnection is not yet confirmed.
@@ -60,6 +71,7 @@ final class VpnOperationsProcessingInfo {
     this.pendingUserCommand,
     this.stopRequired = false,
     this.startSubmitted = false,
+    this.windowsAutoStartServerId,
     this.lastStartFallIntoRecovery = false,
     this.stopSubmitted = false,
     this.needsSynchronization = true,
@@ -77,6 +89,7 @@ final class VpnOperationsProcessingInfo {
     pendingUserCommand,
     stopRequired,
     startSubmitted,
+    windowsAutoStartServerId,
     lastStartFallIntoRecovery,
     stopSubmitted,
     needsSynchronization,
@@ -96,6 +109,7 @@ final class VpnOperationsProcessingInfo {
           pendingUserCommand == other.pendingUserCommand &&
           stopRequired == other.stopRequired &&
           startSubmitted == other.startSubmitted &&
+          windowsAutoStartServerId == other.windowsAutoStartServerId &&
           lastStartFallIntoRecovery == other.lastStartFallIntoRecovery &&
           stopSubmitted == other.stopSubmitted &&
           needsSynchronization == other.needsSynchronization &&
@@ -118,6 +132,7 @@ final class VpnOperationsProcessingInfo {
     ValueData<VpnUserCommand>? pendingUserCommand,
     bool? stopRequired,
     bool? startSubmitted,
+    ValueData<String>? windowsAutoStartServerId,
     bool? lastStartFallIntoRecovery,
     bool? stopSubmitted,
     bool? needsSynchronization,
@@ -132,6 +147,9 @@ final class VpnOperationsProcessingInfo {
     pendingUserCommand: pendingUserCommand != null ? pendingUserCommand.value : this.pendingUserCommand,
     stopRequired: stopRequired ?? this.stopRequired,
     startSubmitted: startSubmitted ?? this.startSubmitted,
+    windowsAutoStartServerId: windowsAutoStartServerId != null
+        ? windowsAutoStartServerId.value
+        : this.windowsAutoStartServerId,
     lastStartFallIntoRecovery: lastStartFallIntoRecovery ?? this.lastStartFallIntoRecovery,
     stopSubmitted: stopSubmitted ?? this.stopSubmitted,
     needsSynchronization: needsSynchronization ?? this.needsSynchronization,

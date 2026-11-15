@@ -52,6 +52,7 @@ Future<void> main() async {
                       appWindowControllerProvider: () => initializationHelper.dependenciesFactory.appWindowController,
                       vpnRepository: initializationHelper.repositoryFactory.vpnRepository,
                       initialState: initializationHelper.initialVpnState,
+                      savedVpnProfileServerId: initializationHelper.savedVpnProfileServerId,
                       child: const AppVersionAndUpdatingScope(
                         child: AutoConnectOnLaunchSettingsScope(
                           child: DeepLinkScope(

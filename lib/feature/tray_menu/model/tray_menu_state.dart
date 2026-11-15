@@ -8,7 +8,7 @@ import 'package:trusttunnel/data/model/vpn_state.dart';
 final class TrayMenuState {
   final bool updateAvailable;
   final VpnState vpnState;
-  final String? currentlyConnectedServerId;
+  final String? activeServerId;
   final List<Server> servers;
   final Server? selectedServer;
   final LoggingLevel loggingLevel;
@@ -19,7 +19,7 @@ final class TrayMenuState {
   const TrayMenuState({
     this.updateAvailable = false,
     required this.vpnState,
-    required this.currentlyConnectedServerId,
+    required this.activeServerId,
     required this.servers,
     required this.selectedServer,
     required this.loggingLevel,
