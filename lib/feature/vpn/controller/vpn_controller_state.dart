@@ -29,7 +29,12 @@ final class VpnControllerState {
     this.vpnOperationsProcessingInfo = const VpnOperationsProcessingInfo(),
   });
 
-  bool get isRunning => vpnState != VpnState.disconnected || vpnOperationsProcessingInfo.startSubmitted;
+  /// Whether a session runs, a start is submitted, or a Windows auto-start is
+  /// queued in the service and not yet stopped.
+  bool get isRunning =>
+      vpnState != VpnState.disconnected ||
+      vpnOperationsProcessingInfo.startSubmitted ||
+      vpnOperationsProcessingInfo.windowsAutoStartServerId != null;
 
   /// Server ID for the current session or submitted start, if known.
   String? get activeServerId => appStartedServerId ?? restoredServerId;

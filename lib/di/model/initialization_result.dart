@@ -9,7 +9,8 @@ import 'package:trusttunnel/di/model/repository_factory.dart';
 /// startup that are required to run the application:
 /// - resolved dependency graph ([dependenciesFactory]),
 /// - repository layer ([repositoryFactory]),
-/// - the initial VPN engine state ([initialVpnState]).
+/// - the initial VPN engine state ([initialVpnState]),
+/// - the server of the saved system profile ([savedVpnProfileServerId]).
 ///
 /// This object is typically created once during app startup and then passed
 /// to the root of the application tree.
@@ -26,11 +27,17 @@ class InitializationResult {
   /// VPN state observed at the end of initialization.
   final VpnState initialVpnState;
 
+  /// Server of the saved system profile, or `null` if the profile server is unknown.
+  ///
+  /// Lets a session started outside the app restore its server on the first frame.
+  final String? savedVpnProfileServerId;
+
   /// Creates a new initialization result.
   const InitializationResult({
     required this.dependenciesFactory,
     required this.repositoryFactory,
     required this.initialVpnState,
+    this.savedVpnProfileServerId,
   });
 
   @override
@@ -38,6 +45,7 @@ class InitializationResult {
     dependenciesFactory,
     repositoryFactory,
     initialVpnState,
+    savedVpnProfileServerId,
   );
 
   @override
@@ -45,7 +53,8 @@ class InitializationResult {
       'InitializationResult('
       'dependenciesFactory: $dependenciesFactory, '
       'repositoryFactory: $repositoryFactory, '
-      'initialVpnState: $initialVpnState'
+      'initialVpnState: $initialVpnState, '
+      'savedVpnProfileServerId: $savedVpnProfileServerId'
       ')';
 
   @override
@@ -55,7 +64,8 @@ class InitializationResult {
     return other is InitializationResult &&
         other.dependenciesFactory == dependenciesFactory &&
         other.repositoryFactory == repositoryFactory &&
-        other.initialVpnState == initialVpnState;
+        other.initialVpnState == initialVpnState &&
+        other.savedVpnProfileServerId == savedVpnProfileServerId;
   }
 
   /// Creates a copy of this result with the given fields replaced.
@@ -65,9 +75,11 @@ class InitializationResult {
     DependencyFactory? dependenciesFactory,
     RepositoryFactory? repositoryFactory,
     VpnState? initialVpnState,
+    String? savedVpnProfileServerId,
   }) => InitializationResult(
     dependenciesFactory: dependenciesFactory ?? this.dependenciesFactory,
     repositoryFactory: repositoryFactory ?? this.repositoryFactory,
     initialVpnState: initialVpnState ?? this.initialVpnState,
+    savedVpnProfileServerId: savedVpnProfileServerId ?? this.savedVpnProfileServerId,
   );
 }

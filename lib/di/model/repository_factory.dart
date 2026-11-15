@@ -1,4 +1,3 @@
-import 'package:trusttunnel/data/datasources/local_sources/vpn_profile_server_data_source.dart';
 import 'package:trusttunnel/data/repository/app_updating_repository.dart';
 import 'package:trusttunnel/data/repository/auto_connect_on_launch_settings_repository.dart';
 import 'package:trusttunnel/data/repository/deep_link_repository.dart';
@@ -91,7 +90,7 @@ class RepositoryFactoryImpl implements RepositoryFactory {
   @override
   VpnRepository get vpnRepository => _vpnRepository ??= VpnRepositoryImpl(
     vpnDataSource: _dependencyFactory.vpnDataSource,
-    vpnProfileServerDataSource: VpnProfileServerDataSourceImpl(preferences: _dependencyFactory.sharedPreferences),
+    vpnProfileServerDataSource: _dependencyFactory.vpnProfileServerDataSource,
   );
 
   @override

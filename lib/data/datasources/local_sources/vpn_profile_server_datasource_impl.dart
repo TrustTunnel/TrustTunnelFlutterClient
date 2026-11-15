@@ -1,10 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-
-abstract interface class VpnProfileServerDataSource {
-  String? get serverId;
-
-  Future<bool> setServerId(String? serverId);
-}
+import 'package:trusttunnel/data/datasources/vpn_profile_server_datasource.dart';
 
 final class VpnProfileServerDataSourceImpl implements VpnProfileServerDataSource {
   static const _serverIdKey = 'vpn_confirmed_profile_server_id';
@@ -14,7 +9,7 @@ final class VpnProfileServerDataSourceImpl implements VpnProfileServerDataSource
   VpnProfileServerDataSourceImpl({required this._preferences});
 
   @override
-  String? get serverId => _preferences.getString(_serverIdKey);
+  Future<String?> getServerId() async => _preferences.getString(_serverIdKey);
 
   @override
   Future<bool> setServerId(String? serverId) =>

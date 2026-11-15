@@ -102,6 +102,11 @@ class VpnScope extends StatefulWidget {
   /// Defaults to [VpnState.disconnected].
   final VpnState initialState;
 
+  /// Server of the saved system profile, restored when a session started outside the app.
+  ///
+  /// Shown only if [initialState] is [VpnState.connected]; later connections re-read it.
+  final String? savedVpnProfileServerId;
+
   /// Widget subtree that receives access to the scope.
   final Widget child;
 
@@ -111,6 +116,7 @@ class VpnScope extends StatefulWidget {
     required this.child,
     required this.vpnRepository,
     this.initialState = VpnState.disconnected,
+    this.savedVpnProfileServerId,
     super.key,
   });
 
@@ -286,6 +292,7 @@ class _VpnScopeState extends State<VpnScope> with VpnScopeExitHandlingMixin<VpnS
       notifyOperationError: _onOperationError,
       onExitStopped: completeVpnExitStop,
       initialState: widget.initialState,
+      savedVpnProfileServerId: widget.savedVpnProfileServerId,
     );
     _vpnChangesListenable = Listenable.merge([_controller, _logsController]);
 

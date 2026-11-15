@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:adguard_logger/adguard_logger.dart';
 import 'package:flutter/foundation.dart';
-import 'package:trusttunnel/data/datasources/local_sources/vpn_profile_server_data_source.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
+import 'package:trusttunnel/data/datasources/vpn_profile_server_datasource.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
@@ -12,11 +12,14 @@ import 'package:trusttunnel/data/model/vpn_state.dart';
 
 abstract class VpnRepository {
   /// The saved server ID for restoring the VPN display, or `null` if unavailable.
-  String? get savedVpnProfileServerId;
+  ///
+  /// Reads the server of the system profile, which can start the VPN without the app.
+  Future<String?> getSavedVpnProfileServerId();
 
   /// Saves [serverId] for later restoration of the VPN display.
   ///
-  /// Call this when a connection started by the app reports `Connected`.
+  /// Call this when a connection started by the app reports `Connected` and
+  /// after an update that replaces the server of the saved system profile.
   /// Skips the write on platforms without profile restoration and logs storage errors.
   Future<void> saveVpnProfileServerId(String serverId);
 
@@ -70,11 +73,17 @@ class VpnRepositoryImpl implements VpnRepository {
   };
 
   @override
-  String? get savedVpnProfileServerId => _supportsVpnProfileRestoration ? _vpnProfileServerDataSource.serverId : null;
+  Future<String?> getSavedVpnProfileServerId() async {
+    if (!_supportsVpnProfileRestoration) {
+      return null;
+    }
+
+    return _vpnProfileServerDataSource.getServerId();
+  }
 
   @override
   Future<void> saveVpnProfileServerId(String serverId) async {
-    if (_supportsVpnProfileRestoration && (savedVpnProfileServerId != serverId)) {
+    if (_supportsVpnProfileRestoration && (await getSavedVpnProfileServerId() != serverId)) {
       await _writeVpnProfileServerId(serverId);
     }
   }
@@ -129,12 +138,18 @@ class VpnRepositoryImpl implements VpnRepository {
       await _clearSavedVpnProfileServerIdIfChanged(server.id);
     }
 
-    return _vpnDataSource.updateConfiguration(
+    await _vpnDataSource.updateConfiguration(
       server: server.serverData,
       routingProfile: routingProfile.data,
       excludedRoutes: excludedRoutes,
       logLevel: logLevel,
     );
+
+    // The system profile now starts this server, so it can restore the server ID
+    // even though the app did not start the connection.
+    if (_supportsVpnProfileUpdates) {
+      await saveVpnProfileServerId(server.id);
+    }
   }
 
   @override
@@ -147,7 +162,7 @@ class VpnRepositoryImpl implements VpnRepository {
   }
 
   Future<void> _clearSavedVpnProfileServerIdIfChanged(String? nextServerId) async {
-    final savedServerId = savedVpnProfileServerId;
+    final savedServerId = await getSavedVpnProfileServerId();
     if (savedServerId != null && savedServerId != nextServerId) {
       // The plugin can return before the profile changes. Clear the old ID first.
       await _writeVpnProfileServerId(null);

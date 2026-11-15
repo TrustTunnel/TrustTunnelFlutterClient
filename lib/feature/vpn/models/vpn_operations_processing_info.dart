@@ -36,7 +36,8 @@ final class VpnOperationsProcessingInfo {
   ///
   /// The plugin queues `Start` and can reply before the service starts connecting.
   /// The controller clears [pendingUserCommand] on that reply. This field keeps
-  /// the target ID across an initial `Disconnected` event.
+  /// the target ID across an initial `Disconnected` event and keeps the pending
+  /// start counted as running work until a native stop is submitted.
   final String? windowsAutoStartServerId;
 
   final bool lastStartFallIntoRecovery;

@@ -35,10 +35,11 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     required this._notifyOperationError,
     required this._onExitStopped,
     required VpnState initialState,
+    String? savedVpnProfileServerId,
   }) : super(
          initialState: VpnControllerState(
            vpnState: initialState,
-           restoredServerId: initialState == VpnState.connected ? _repository.savedVpnProfileServerId : null,
+           restoredServerId: initialState == VpnState.connected ? savedVpnProfileServerId : null,
          ),
        );
 
@@ -51,7 +52,7 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
   bool get _isRunning => state.isRunning;
 
   String? get _configurationTargetId => _isRunning
-      ? state.appStartedServerId
+      ? state.activeServerId
       : (_sources.selectedServer?.id ?? _vpnOperationsProcessingInfo.configuration?.server.id);
 
   @override
@@ -272,11 +273,12 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
   }
 
   /// Cancels preparation; a native operation already submitted must still finish.
+  /// A tracked Windows auto-start is kept until a native stop is submitted, so
+  /// the pending start is still reported as running work.
   void _cancelPendingUserCommand() => _updateVpnOperationsProcessingInfo(
     _vpnOperationsProcessingInfo.copyWith(
       requestId: _vpnOperationsProcessingInfo.requestId + 1,
       pendingUserCommand: const ValueData(null),
-      windowsAutoStartServerId: const ValueData(null),
     ),
   );
 
@@ -398,13 +400,13 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
       return;
     }
 
-    final connectedId = state.appStartedServerId;
-    if (_isRunning && connectedId == null) {
-      // Persisted selection cannot identify a session restored from native code.
+    final activeServerId = state.activeServerId;
+    if (_isRunning && activeServerId == null) {
+      // A session whose server cannot be identified is left with its native configuration.
       return;
     }
 
-    final isConnectedServerRemoved = _isRunning && !_sources.servers.any((server) => server.id == connectedId);
+    final isConnectedServerRemoved = _isRunning && !_sources.servers.any((server) => server.id == activeServerId);
     if (isConnectedServerRemoved) {
       _updateVpnOperationsProcessingInfo(_vpnOperationsProcessingInfo.copyWith(needsSynchronization: false));
       _submitStop();
@@ -420,6 +422,19 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     }
 
     if (_isRunning) {
+      if (state.restoredServerId != null && _vpnOperationsProcessingInfo.configuration == null) {
+        // The saved system profile already runs these settings. Adopt them instead of
+        // restarting a session that was started outside the app; later changes still apply.
+        _updateVpnOperationsProcessingInfo(
+          _vpnOperationsProcessingInfo.copyWith(
+            configuration: ValueData(configuration),
+            needsSynchronization: false,
+          ),
+        );
+
+        return;
+      }
+
       _updateVpnOperationsProcessingInfo(
         _vpnOperationsProcessingInfo.copyWith(
           pendingUserCommand: ValueData(
@@ -613,14 +628,11 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
   }
 
   void _submitStop() {
-    _updateVpnOperationsProcessingInfo(
-      _vpnOperationsProcessingInfo.copyWith(stopRequired: false, windowsAutoStartServerId: const ValueData(null)),
-    );
-
     final isAlreadyStopped = !_isRunning && !_vpnOperationsProcessingInfo.stopSubmitted;
     if (isAlreadyStopped) {
       _updateVpnOperationsProcessingInfo(
         _vpnOperationsProcessingInfo.copyWith(
+          stopRequired: false,
           pendingUserCommand: ValueData(_vpnOperationsProcessingInfo.pendingUserCommand?.onStopCompleted()),
         ),
       );
@@ -631,7 +643,10 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
 
     _updateVpnOperationsProcessingInfo(
       _vpnOperationsProcessingInfo.copyWith(
+        stopRequired: false,
         stopSubmitted: true,
+        // The submitted stop also cancels a start queued by the Windows service.
+        windowsAutoStartServerId: const ValueData(null),
         exitStage: _vpnOperationsProcessingInfo.exitStage == VpnExitStage.stopRequested
             ? VpnExitStage.waitingForDisconnection
             : _vpnOperationsProcessingInfo.exitStage,
@@ -737,9 +752,10 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         (nativeState != VpnState.disconnected ||
             !_vpnOperationsProcessingInfo.startSubmitted ||
             _vpnOperationsProcessingInfo.stopSubmitted);
+    // The service can reach any running state without reporting Connecting first.
     final shouldUseWindowsAutoStartServerId =
         !isFromStateRequest &&
-        nativeState == VpnState.connecting &&
+        nativeState != VpnState.disconnected &&
         state.appStartedServerId == null &&
         windowsAutoStartServerId != null;
     final ValueData<String>? connectedServerId;
@@ -753,9 +769,6 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
     }
 
     final restoredServerId = switch (vpnState) {
-      VpnState.connected when state.appStartedServerId == null => ValueData(
-        _repository.savedVpnProfileServerId,
-      ),
       VpnState.disconnected || VpnState.connecting => const ValueData<String>(null),
       _ => null,
     };
@@ -774,7 +787,30 @@ final class VpnController extends BaseStateController<VpnControllerState> with S
         ),
       ),
     );
+
+    // A connected session without a submitted start was started outside the app.
+    if (vpnState == VpnState.connected && state.appStartedServerId == null) {
+      _refreshRestoredServerId();
+    }
   }
+
+  /// Reads the saved profile server ID for a session this controller did not start.
+  ///
+  /// Reading is asynchronous, so the state receives the ID once the repository replies.
+  /// Settings synchronization waits for it: an unknown server cannot be reconfigured.
+  void _refreshRestoredServerId() => handle(
+    () async {
+      final serverId = await _repository.getSavedVpnProfileServerId();
+      final shouldApply = !isDisposed && state.vpnState == VpnState.connected && state.appStartedServerId == null;
+      if (!shouldApply) {
+        return;
+      }
+
+      _updateState(state.copyWith(restoredServerId: ValueData(serverId)));
+      _handlePendingWork();
+    },
+    errorHandler: _onHandlerError,
+  );
 
   /// Applies a one-shot status reply on resume only if no newer update has superseded it.
   void _onNativeStateRequestCompleted({
