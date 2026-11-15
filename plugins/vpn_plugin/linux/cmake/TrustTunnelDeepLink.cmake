@@ -8,8 +8,9 @@
 #      b. <project root>/build/downloads/trusttunnel-client-linux-<version>-<arch>.zip
 #         (the shared project-wide download cache; survives debug/release
 #         switches);
-#      c. <build dir>/downloads/trusttunnel-client-linux-<version>-<arch>.zip;
-#      d. GitHub Packages Maven repository via GPR_KEY (downloaded to c.).
+#      c. <build dir>/downloads/trusttunnel-client-linux-<version>-<arch>.zip.
+#      NOTE: no network download is implemented (unlike the Windows plugin);
+#      the archive must be provided via a) or b).
 #      The archive is extracted and both the deeplink static library and the
 #      `trusttunneld` daemon are taken from it (see TRUSTTUNNEL_CLIENT_DAEMON).
 #   2. TRUSTTUNNEL_DEEPLINK_STATIC_LIB — path to a prebuilt
@@ -172,8 +173,8 @@ else ()
     message(FATAL_ERROR
       "trusttunnel_deeplink_ffi is not available. Put the release archive "
       "trusttunnel-client-linux-${TRUSTTUNNEL_CLIENT_VERSION}-<arch>.zip into "
-      "${_tt_project_downloads_dir} (or set TRUSTTUNNEL_CLIENT_ARCHIVE_PATH, "
-      "or GPR_KEY to download it), or set TRUSTTUNNEL_DEEPLINK_STATIC_LIB, "
+      "${_tt_project_downloads_dir} (or set TRUSTTUNNEL_CLIENT_ARCHIVE_PATH), "
+      "or set TRUSTTUNNEL_DEEPLINK_STATIC_LIB, "
       "or set TRUSTTUNNEL_CLIENT_SOURCE_DIR to a TrustTunnelClient checkout.")
   endif ()
 

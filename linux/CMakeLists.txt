@@ -124,7 +124,8 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
 endforeach(bundled_library)
 
 # install(FILES) above resets permissions to 644, but the bundled trusttunneld
-# daemon must stay executable (the plugin launches it over D-Bus).
+# daemon must stay executable (it is meant to be installed as a system service
+# and reached over D-Bus; bundling alone does not launch or install it).
 if(TRUSTTUNNEL_CLIENT_DAEMON)
   install(CODE "
     file(CHMOD

@@ -108,8 +108,9 @@ set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
 # external build triggered from this build file.
 #
 # When the TrustTunnel Client release archive was resolved, its `trusttunneld`
-# daemon is bundled too: the plugin talks to it over D-Bus, so the application
-# is self-contained.
+# daemon is bundled too for convenience. Note: bundling does not install or
+# start the daemon — it still must be provisioned as a system service (systemd
+# unit + D-Bus policy) before the plugin's D-Bus calls can reach it.
 set(vpn_plugin_bundled_libraries "")
 if (TRUSTTUNNEL_CLIENT_DAEMON)
   list(APPEND vpn_plugin_bundled_libraries "${TRUSTTUNNEL_CLIENT_DAEMON}")
