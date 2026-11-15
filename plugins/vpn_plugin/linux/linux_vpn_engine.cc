@@ -104,7 +104,7 @@ bool LinuxVpnEngine::Start(const std::string& config, std::string* error_message
     callback_(user_data_, kEngineStateConnecting);
   }
 
-  const uint64_t generation = state_generation_;
+  uint64_t generation = state_generation_.load(std::memory_order_relaxed);
   TransportCallResult result = transport_->Start(config);
   if (result == TransportCallResult::kAlreadyRunning) {
     // An explicit Start(config) must replace the existing session: adopting a
@@ -122,6 +122,10 @@ bool LinuxVpnEngine::Start(const std::string& config, std::string* error_message
       RollBackToDisconnected();
       return false;
     } else {
+      // Re-snapshot the generation: a daemon state event may have been
+      // applied while waiting out the stop, and the stale guard would skip
+      // the synchronization after a successful retry.
+      generation = state_generation_.load(std::memory_order_relaxed);
       result = transport_->Start(config);
       if (result == TransportCallResult::kAlreadyRunning) {
         if (error_message != nullptr) {
@@ -134,11 +138,9 @@ bool LinuxVpnEngine::Start(const std::string& config, std::string* error_message
   }
 
   switch (result) {
-    case TransportCallResult::kSuccess:
-    case TransportCallResult::kAlreadyRunning: {
-      // A session started (or an existing one was adopted): synchronize with
-      // the daemon-reported state, since a transition may have happened while
-      // this request was in flight.
+    case TransportCallResult::kSuccess: {
+      // A session started: synchronize with the daemon-reported state, since
+      // a transition may have happened while this request was in flight.
       ApplyDaemonStateIfUnchanged(generation);
       return true;
     }
