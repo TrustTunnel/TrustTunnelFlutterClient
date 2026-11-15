@@ -12,6 +12,32 @@
 #define VPN_PLUGIN(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), vpn_plugin_get_type(), VpnPlugin))
 
+// Compile-time guard: vpn_plugin.cc is the only seam where the engine header
+// meets the Pigeon-generated one. The engine works with raw integers
+// validated against the 0..5 range (OnDaemonState), so any reordering of the
+// Pigeon enum must break this build instead of silently corrupting the
+// Dart-side state. Kept out of linux_vpn_engine.h and the unit tests on
+// purpose: platform_api.g.h pulls in the Flutter Linux SDK, and the engine /
+// test target must stay free of both Pigeon and GObject.
+static_assert(static_cast<int>(VPN_PLUGIN_VPN_MANAGER_STATE_DISCONNECTED) ==
+                  static_cast<int>(vpn_plugin::kEngineStateDisconnected),
+              "Pigeon VpnManagerState drifted from vpn_plugin::VpnEngineState");
+static_assert(static_cast<int>(VPN_PLUGIN_VPN_MANAGER_STATE_CONNECTING) ==
+                  static_cast<int>(vpn_plugin::kEngineStateConnecting),
+              "Pigeon VpnManagerState drifted from vpn_plugin::VpnEngineState");
+static_assert(static_cast<int>(VPN_PLUGIN_VPN_MANAGER_STATE_CONNECTED) ==
+                  static_cast<int>(vpn_plugin::kEngineStateConnected),
+              "Pigeon VpnManagerState drifted from vpn_plugin::VpnEngineState");
+static_assert(static_cast<int>(VPN_PLUGIN_VPN_MANAGER_STATE_WAITING_FOR_RECOVERY) ==
+                  static_cast<int>(vpn_plugin::kEngineStateWaitingForRecovery),
+              "Pigeon VpnManagerState drifted from vpn_plugin::VpnEngineState");
+static_assert(static_cast<int>(VPN_PLUGIN_VPN_MANAGER_STATE_RECOVERING) ==
+                  static_cast<int>(vpn_plugin::kEngineStateRecovering),
+              "Pigeon VpnManagerState drifted from vpn_plugin::VpnEngineState");
+static_assert(static_cast<int>(VPN_PLUGIN_VPN_MANAGER_STATE_WAITING_FOR_NETWORK) ==
+                  static_cast<int>(vpn_plugin::kEngineStateWaitingForNetwork),
+              "Pigeon VpnManagerState drifted from vpn_plugin::VpnEngineState");
+
 static const char kStateEventChannelName[] = "vpn_plugin_event_channel";
 static const char kQueryLogEventChannelName[] = "vpn_plugin_event_channel_query_log";
 
