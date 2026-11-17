@@ -298,6 +298,7 @@ jobs:
       team: flutter
       artifact-name: trusttunnel-android-testing
       platform: android
+      skip-decompress: false
       note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
       environment: ${{ needs.meta.outputs.release-channel }}-appetize-android
 
@@ -323,6 +324,7 @@ jobs:
       team: flutter
       artifact-name: trusttunnel-ios-simulator
       platform: ios
+      skip-decompress: false
       note: 'Channel: ${{ needs.meta.outputs.release-channel }} | Version: ${{ needs.meta.outputs.version-title }} | Tag: ${{ inputs.tag }}'
       environment: ${{ needs.meta.outputs.release-channel }}-appetize-ios
 
