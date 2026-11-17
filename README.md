@@ -16,6 +16,7 @@
   · <a href="https://agrd.io/ios_trusttunnel">App Store (iOS)</a>
   · <a href="https://agrd.io/macos_trusttunnel">App Store (macOS)</a>
   · <a href="https://agrd.io/android_trusttunnel">Play Store</a>
+  · <a href="https://github.com/TrustTunnel/TrustTunnelClient/releases/latest">Windows</a>
 </p>
 
 **TrustTunnel Flutter Client** is a VPN client for Android, iOS, macOS, and Windows, built with Flutter.
