@@ -12,15 +12,15 @@
 
 <p align="center">
   <b>Download:</b>
-  <a href="https://agrd.io/ios_trusttunnel">iOS</a>
+  <a href="https://agrd.io/android_trusttunnel">Android</a>
+  · <a href="https://agrd.io/ios_trusttunnel">iOS</a>
   · <a href="https://agrd.io/macos_trusttunnel">macOS</a>
-  · <a href="https://agrd.io/android_trusttunnel">Android</a>
   · <a href="https://agrd.io/trusttunnel_windows">Windows</a>
   <br>
-  <small>
+  <sub>
     <a href="https://github.com/TrustTunnel/TrustTunnel">TrustTunnel Server</a>
     · <a href="https://github.com/TrustTunnel/TrustTunnelClient">TrustTunnel CLI Client</a>
-  </small>
+  </sub>
 </p>
 
 **TrustTunnel Flutter Client** is a VPN client for Android, iOS, macOS, and Windows, built with Flutter.
@@ -79,8 +79,8 @@ A TrustTunnel setup includes two components: a server and a client application.
    into a `tt://?…` link: the server address, your credentials, and the connection settings.
    See the [server documentation](https://github.com/TrustTunnel/TrustTunnel#export-client-configuration)
    for how to generate it.
-3. **Install the client app.** Download a ready-made build for [iOS](https://agrd.io/ios_trusttunnel),
-   [macOS](https://agrd.io/macos_trusttunnel), [Android](https://agrd.io/android_trusttunnel),
+3. **Install the client app.** Download a ready-made build for [Android](https://agrd.io/android_trusttunnel),
+   [iOS](https://agrd.io/ios_trusttunnel), [macOS](https://agrd.io/macos_trusttunnel),
    or [Windows](https://agrd.io/trusttunnel_windows), or [build it from source](#building-from-source).
 4. **Add the server to the app.** Paste the link at [trusttunnel.org/qr.html](https://trusttunnel.org/qr.html),
    then tap **Open in TrustTunnel App** or scan the QR code with your phone's camera.
