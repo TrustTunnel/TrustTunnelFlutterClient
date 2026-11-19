@@ -1,3 +1,5 @@
+&nbsp;
+
 <p align="center">
   <a href="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg#gh-light-mode-only">
     <img src="https://cdn.adguardcdn.com/website/github.com/TrustTunnel/logo_light.svg#gh-light-mode-only" width="300" alt="TrustTunnel" />
@@ -22,6 +24,8 @@
     · <a href="https://github.com/TrustTunnel/TrustTunnelClient">TrustTunnel CLI Client</a>
   </sub>
 </p>
+
+&nbsp;
 
 **TrustTunnel Flutter Client** is a VPN client for Android, iOS, macOS, and Windows, built with Flutter.
 It provides a clean and focused graphical interface for connecting to **self-hosted TrustTunnel VPN servers**.
