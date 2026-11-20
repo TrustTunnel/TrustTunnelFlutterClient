@@ -94,6 +94,7 @@ A TrustTunnel setup includes two components: a server and a client application.
 > [!NOTE]
 > Alternatively, you can add a server manually instead of using the `tt://` link: open **Servers**, tap **Add server**,
 > and fill in the fields from the TOML configuration [exported from your server](https://github.com/TrustTunnel/TrustTunnel#toml-format-for-cli-client).
+> If the configuration contains a self-signed certificate, save it to a `.pem` file and import it in the app.
 
 ## Features
 
