@@ -9,6 +9,7 @@ import 'package:pigeon/pigeon.dart';
 /// - Android (Kotlin)
 /// - iOS/macOS (Swift)
 /// - Windows (C++)
+/// - Linux (GObject)
 ///
 /// The generated code is the actual runtime implementation. This schema is
 /// the single source of truth for method signatures, data types, and error
@@ -30,6 +31,8 @@ import 'package:pigeon/pigeon.dart';
     cppOptions: CppOptions(namespace: 'vpn_plugin'),
     cppHeaderOut: 'windows/runner/platform_api.g.h',
     cppSourceOut: 'windows/runner/platform_api.g.cpp',
+    gobjectHeaderOut: 'linux/platform_api.g.h',
+    gobjectSourceOut: 'linux/platform_api.g.cc',
     kotlinOut: 'android/src/main/kotlin/com/adguard/trusttunnel/vpn_plugin/PlatformApi.g.kt',
     kotlinOptions: KotlinOptions(
       package: 'com.adguard.trusttunnel.vpn_plugin',

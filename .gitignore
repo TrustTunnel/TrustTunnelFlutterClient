@@ -65,6 +65,7 @@ lib/common/localization/generated/
 **.g.swift
 **.g.kt
 **.g.cpp
+**.g.cc
 **.g.h
 
 
