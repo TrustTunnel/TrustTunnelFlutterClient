@@ -74,19 +74,22 @@ class _QueryLogListView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => ListView.separated(
+  Widget build(BuildContext context) => Scrollbar(
     controller: controller,
-    reverse: true,
-    shrinkWrap: logs.length < 50,
-    itemBuilder: (context, index) {
-      final log = logs[index];
+    child: ListView.separated(
+      controller: controller,
+      reverse: true,
+      shrinkWrap: logs.length < 50,
+      itemBuilder: (context, index) {
+        final log = logs[index];
 
-      return QueryLogCard(
-        key: ValueKey(log.timeStamp.microsecondsSinceEpoch),
-        log: log,
-      );
-    },
-    separatorBuilder: (_, _) => const Divider(),
-    itemCount: logs.length,
+        return QueryLogCard(
+          key: ValueKey(log.timeStamp.microsecondsSinceEpoch),
+          log: log,
+        );
+      },
+      separatorBuilder: (_, _) => const Divider(),
+      itemCount: logs.length,
+    ),
   );
 }

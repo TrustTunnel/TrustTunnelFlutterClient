@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trusttunnel/common/assets/asset_icons.dart';
@@ -114,8 +115,11 @@ class LightTheme {
     systemStatusBarContrastEnforced: false,
   );
 
+  bool get _isMobile => defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+
   late final _scrollbarTheme = ScrollbarThemeData(
-    thumbVisibility: WidgetStateProperty.all<bool>(true),
+    thumbVisibility: WidgetStateProperty.all<bool>(!_isMobile),
+    interactive: !_isMobile,
     thumbColor: WidgetStateProperty.all<Color>(
       _neutralLight.withValues(
         alpha: 0.5,
