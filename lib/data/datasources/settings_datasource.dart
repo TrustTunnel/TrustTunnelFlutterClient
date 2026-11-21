@@ -17,4 +17,9 @@ abstract class SettingsDataSource {
   /// Loads the currently stored excluded routes list.
   /// {@endtemplate}
   Future<List<String>> getExcludedRoutes();
+
+  /// {@template settings_data_source_get_default_excluded_routes}
+  /// Loads the factory-default excluded routes list.
+  /// {@endtemplate}
+  Future<List<String>> getDefaultExcludedRoutes();
 }

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/settings_datasource.dart';
+import 'package:trusttunnel/data/model/excluded_routes_defaults.dart';
 
 /// {@template settings_data_source_impl}
 /// Drift-backed implementation of [SettingsDataSource].
@@ -38,4 +39,8 @@ class SettingsDataSourceImpl implements SettingsDataSource {
       ),
     );
   }
+
+  /// {@macro settings_data_source_get_default_excluded_routes}
+  @override
+  Future<List<String>> getDefaultExcludedRoutes() async => defaultExcludedRoutes;
 }

@@ -40,6 +40,9 @@ class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> implements Ex
   List<String> get initialExcludedRoutes => List<String>.unmodifiable(_controller.state.initialExcludedRoutes);
 
   @override
+  List<String> get defaultExcludedRoutes => List<String>.unmodifiable(_controller.state.defaultExcludedRoutes);
+
+  @override
   bool get hasInvalidRoutes => _controller.state.hasInvalidRoutes;
 
   @override
@@ -47,6 +50,9 @@ class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> implements Ex
 
   @override
   bool get canSave => hasChanges && (!hasInvalidRoutes || excludedRoutes.isEmpty);
+
+  @override
+  bool get canReset => !loading && !listEquals(excludedRoutes, defaultExcludedRoutes);
 
   @override
   bool get loading => _controller.state.loading;
@@ -59,6 +65,9 @@ class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> implements Ex
 
   @override
   ExcludedRoutesDataChangedCallback get changeData => _changeData;
+
+  @override
+  void Function() get resetToDefault => _controller.resetToDefault;
 
   @override
   void Function(VoidCallback onSaved) get submit => _controller.submit;
@@ -121,6 +130,8 @@ class _InheritedExcludedRoutesScope extends InheritedModel<ExcludedRoutesAspect>
 
   List<String> get initialExcludedRoutes => List<String>.unmodifiable(_state.initialExcludedRoutes);
 
+  List<String> get defaultExcludedRoutes => List<String>.unmodifiable(_state.defaultExcludedRoutes);
+
   bool get hasInvalidRoutes => _state.hasInvalidRoutes;
 
   PresentationException? get error => _state.error;
@@ -130,6 +141,8 @@ class _InheritedExcludedRoutesScope extends InheritedModel<ExcludedRoutesAspect>
   bool get hasChanges => !listEquals(excludedRoutes, initialExcludedRoutes);
 
   bool get canSave => hasChanges && (!hasInvalidRoutes || excludedRoutes.isEmpty);
+
+  bool get canReset => !loading && !listEquals(excludedRoutes, defaultExcludedRoutes);
 
   @override
   bool updateShouldNotify(_InheritedExcludedRoutesScope oldWidget) => _state != oldWidget._state;
@@ -159,6 +172,7 @@ class _InheritedExcludedRoutesScope extends InheritedModel<ExcludedRoutesAspect>
         ExcludedRoutesAspect.data =>
           !listEquals(_state.excludedRoutes, oldWidget._state.excludedRoutes) ||
               !listEquals(_state.initialExcludedRoutes, oldWidget._state.initialExcludedRoutes) ||
+              !listEquals(_state.defaultExcludedRoutes, oldWidget._state.defaultExcludedRoutes) ||
               hasInvalidRoutes != oldWidget.hasInvalidRoutes ||
               error != oldWidget.error,
       };

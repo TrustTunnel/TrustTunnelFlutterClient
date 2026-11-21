@@ -6,6 +6,8 @@ abstract class SettingsRepository {
   Future<void> setExcludedRoutes(List<String> routes);
 
   Future<List<String>> getExcludedRoutes();
+
+  Future<List<String>> getDefaultExcludedRoutes();
 }
 
 class SettingsRepositoryImpl implements SettingsRepository {
@@ -17,6 +19,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
   @override
   Future<List<String>> getExcludedRoutes() => _settingsDataSource.getExcludedRoutes();
+
+  @override
+  Future<List<String>> getDefaultExcludedRoutes() => _settingsDataSource.getDefaultExcludedRoutes();
 
   @override
   Future<void> setExcludedRoutes(List<String> routes) => _settingsDataSource.setExcludedRoutes(routes);

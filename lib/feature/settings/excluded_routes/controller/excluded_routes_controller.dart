@@ -28,15 +28,18 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
             excludedRoutes: state.excludedRoutes,
             hasInvalidRoutes: state.hasInvalidRoutes,
             initialExcludedRoutes: state.initialExcludedRoutes,
+            defaultExcludedRoutes: state.defaultExcludedRoutes,
           ),
         );
 
         final initialExcludedRoutes = await _repository.getExcludedRoutes();
+        final defaultExcludedRoutes = await _repository.getDefaultExcludedRoutes();
 
         setState(
           ExcludedRoutesState.idle(
             excludedRoutes: initialExcludedRoutes,
             initialExcludedRoutes: initialExcludedRoutes,
+            defaultExcludedRoutes: defaultExcludedRoutes,
             hasInvalidRoutes: false,
           ),
         );
@@ -56,12 +59,21 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
         ExcludedRoutesState.idle(
           excludedRoutes: excludedRoutes ?? state.excludedRoutes,
           initialExcludedRoutes: initialExcludedRoutes ?? state.initialExcludedRoutes,
+          defaultExcludedRoutes: state.defaultExcludedRoutes,
           hasInvalidRoutes: hasInvalidRules ?? state.hasInvalidRoutes,
         ),
       );
     },
     errorHandler: _onError,
     completionHandler: _onCompleted,
+  );
+
+  /// Replaces the current routes with the factory defaults.
+  ///
+  /// Only updates the form state; the changes are persisted on [submit].
+  void resetToDefault() => dataChanged(
+    excludedRoutes: state.defaultExcludedRoutes,
+    hasInvalidRules: false,
   );
 
   void submit(VoidCallback onSaved) => handle(
@@ -71,6 +83,7 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
           excludedRoutes: state.excludedRoutes,
           hasInvalidRoutes: state.hasInvalidRoutes,
           initialExcludedRoutes: state.initialExcludedRoutes,
+          defaultExcludedRoutes: state.defaultExcludedRoutes,
         ),
       );
 
@@ -80,6 +93,7 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
         ExcludedRoutesState.idle(
           excludedRoutes: state.excludedRoutes,
           initialExcludedRoutes: state.excludedRoutes,
+          defaultExcludedRoutes: state.defaultExcludedRoutes,
           hasInvalidRoutes: false,
         ),
       );
@@ -102,6 +116,7 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
         excludedRoutes: state.excludedRoutes,
         hasInvalidRoutes: state.hasInvalidRoutes,
         initialExcludedRoutes: state.initialExcludedRoutes,
+        defaultExcludedRoutes: state.defaultExcludedRoutes,
       ),
     );
   }
@@ -111,6 +126,7 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
       excludedRoutes: state.excludedRoutes,
       hasInvalidRoutes: state.hasInvalidRoutes,
       initialExcludedRoutes: state.initialExcludedRoutes,
+      defaultExcludedRoutes: state.defaultExcludedRoutes,
     ),
   );
 }

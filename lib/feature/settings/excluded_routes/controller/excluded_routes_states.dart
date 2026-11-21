@@ -6,11 +6,13 @@ import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 sealed class ExcludedRoutesState {
   final List<String> excludedRoutes;
   final List<String> initialExcludedRoutes;
+  final List<String> defaultExcludedRoutes;
   final bool hasInvalidRoutes;
 
   const ExcludedRoutesState._({
     required this.excludedRoutes,
     required this.initialExcludedRoutes,
+    required this.defaultExcludedRoutes,
     required this.hasInvalidRoutes,
   });
 
@@ -20,6 +22,7 @@ sealed class ExcludedRoutesState {
   const factory ExcludedRoutesState.idle({
     required List<String> excludedRoutes,
     required List<String> initialExcludedRoutes,
+    required List<String> defaultExcludedRoutes,
     required bool hasInvalidRoutes,
   }) = _IdleExcludedRoutesState;
 
@@ -27,6 +30,7 @@ sealed class ExcludedRoutesState {
   const factory ExcludedRoutesState.loading({
     required List<String> excludedRoutes,
     required List<String> initialExcludedRoutes,
+    required List<String> defaultExcludedRoutes,
     required bool hasInvalidRoutes,
   }) = _LoadingExcludedRoutesState;
 
@@ -34,6 +38,7 @@ sealed class ExcludedRoutesState {
   const factory ExcludedRoutesState.exception({
     required List<String> excludedRoutes,
     required List<String> initialExcludedRoutes,
+    required List<String> defaultExcludedRoutes,
     required bool hasInvalidRoutes,
     required PresentationException exception,
   }) = _ErrorExcludedRoutesState;
@@ -47,6 +52,7 @@ sealed class ExcludedRoutesState {
   String toString() =>
       'ExcludedRoutesState(type: $runtimeType, '
       'excludedRoutes: $excludedRoutes, initialExcludedRoutes: $initialExcludedRoutes, '
+      'defaultExcludedRoutes: $defaultExcludedRoutes, '
       'hasInvalidRoutes: $hasInvalidRoutes, loading: $loading)';
 }
 
@@ -54,6 +60,7 @@ final class _IdleExcludedRoutesState extends ExcludedRoutesState {
   const _IdleExcludedRoutesState({
     required super.excludedRoutes,
     required super.initialExcludedRoutes,
+    required super.defaultExcludedRoutes,
     required super.hasInvalidRoutes,
   }) : super._();
 }
@@ -63,6 +70,7 @@ final class _InitialExcludedRoutesState extends _IdleExcludedRoutesState {
     : super(
         excludedRoutes: const [],
         initialExcludedRoutes: const [],
+        defaultExcludedRoutes: const [],
         hasInvalidRoutes: false,
       );
 }
@@ -71,6 +79,7 @@ final class _LoadingExcludedRoutesState extends ExcludedRoutesState {
   const _LoadingExcludedRoutesState({
     required super.excludedRoutes,
     required super.initialExcludedRoutes,
+    required super.defaultExcludedRoutes,
     required super.hasInvalidRoutes,
   }) : super._();
 }
@@ -81,6 +90,7 @@ final class _ErrorExcludedRoutesState extends ExcludedRoutesState {
   const _ErrorExcludedRoutesState({
     required super.excludedRoutes,
     required super.initialExcludedRoutes,
+    required super.defaultExcludedRoutes,
     required super.hasInvalidRoutes,
     required this.exception,
   }) : super._();
