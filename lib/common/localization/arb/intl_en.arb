@@ -240,6 +240,14 @@
       "number": {"type": "int"}
     }
   },
+  "profileDuplicated": "Profile duplicated",
+  "profileCopyNumberedName": "{name} {number, plural, =0{(copy)} other{(copy {number})}}",
+  "@profileCopyNumberedName": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "number": {"type": "int"}
+    }
+  },
   "appVersion": "App Version",
   "checkForUpdates": "Check for updates",
   "checkingForUpdates": "Checking for updates…",

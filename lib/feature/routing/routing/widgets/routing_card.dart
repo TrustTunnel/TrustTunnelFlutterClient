@@ -46,6 +46,22 @@ class RoutingCard extends StatelessWidget {
             ],
           ),
         ),
+        PopupMenuItem<String>(
+          onTap: () => _onDuplicateProfile(context),
+          child: Row(
+            children: [
+              const CustomIcon(
+                icon: AssetIcons.duplicate,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                context.ln.duplicate,
+                style: context.textTheme.bodyLarge,
+              ),
+            ],
+          ),
+        ),
         if (!RoutingProfileUtils.isDefaultRoutingProfile(profile: routingProfile))
           PopupMenuItem<String>(
             onTap: () => _onDeleteProfile(context),
@@ -90,6 +106,41 @@ class RoutingCard extends StatelessWidget {
     );
   }
 
+  void _onDuplicateProfile(BuildContext context) {
+    RoutingScope.controllerOf(context, listen: false).duplicateProfile(
+      profileId: routingProfile.id,
+      numberedName: context.ln.profileCopyNumberedName,
+      onDuplicated: (duplicate) {
+        if (!context.mounted) {
+          return;
+        }
+
+        context.showInfoSnackBar(
+          message: context.ln.profileDuplicated,
+          trailingActions: [
+            TextButton(
+              onPressed: () {
+                if (!context.mounted) {
+                  return;
+                }
+
+                context.closeCurrentSnackBar();
+                _pushDetailsScreen(context, profileId: duplicate.id);
+              },
+              child: Text(
+                context.ln.edit,
+                style: context.textTheme.labelLarge?.copyWith(
+                  color: context.colors.specialStaticWhite,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      onError: () => _showOperationError(context),
+    );
+  }
+
   void _onDeleteProfile(BuildContext context) async {
     final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
 
@@ -108,15 +159,26 @@ class RoutingCard extends StatelessWidget {
     );
   }
 
-  void _pushDetailsScreen(BuildContext context) async {
+  void _pushDetailsScreen(
+    BuildContext context, {
+    String? profileId,
+  }) async {
     await context.push(
       RoutingDetailsScreen(
-        routingId: routingProfile.id,
+        routingId: profileId ?? routingProfile.id,
       ),
     );
 
     if (context.mounted) {
       RoutingScope.controllerOf(context, listen: false).fetchProfiles();
     }
+  }
+
+  void _showOperationError(BuildContext context) {
+    if (!context.mounted) {
+      return;
+    }
+
+    context.showInfoSnackBar(message: context.ln.somethingWentWrongSnackbar);
   }
 }

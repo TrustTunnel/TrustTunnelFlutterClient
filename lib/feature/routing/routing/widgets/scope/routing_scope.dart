@@ -67,6 +67,15 @@ class _RoutingScopeState extends State<RoutingScope> implements RoutingScopeCont
   get changeName => _controller.editName;
 
   @override
+  void Function({
+    required String profileId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<RoutingProfile>? onDuplicated,
+    VoidCallback? onError,
+  })
+  get duplicateProfile => _controller.duplicateProfile;
+
+  @override
   void Function(String routingProfileId, VoidCallback onDeleted) get deleteProfile => _controller.deleteProfile;
 
   @override

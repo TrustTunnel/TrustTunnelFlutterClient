@@ -1,12 +1,13 @@
-import 'dart:ui';
-
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/utils/server_name_utils.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
 import 'package:trusttunnel/feature/routing/routing/domain/service/routing_service.dart';
@@ -114,6 +115,54 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       onSaved.call();
     },
     errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
+
+  void duplicateProfile({
+    required String profileId,
+    required String Function(String name, int number) numberedName,
+    ValueChanged<RoutingProfile>? onDuplicated,
+    VoidCallback? onError,
+  }) => handle(
+    () async {
+      setState(
+        RoutingState.loading(
+          fieldErrors: state.fieldErrors,
+          routingList: state.routingList,
+        ),
+      );
+
+      final currentProfiles = await _repository.getAllProfiles();
+      final originalProfile = currentProfiles.firstWhere(
+        (profile) => profile.id == profileId,
+        orElse: () => throw const PresentationNotFoundException(),
+      );
+
+      final duplicateName = ServerNameUtils.findAvailable(
+        baseName: originalProfile.data.name,
+        otherNames: currentProfiles.map((profile) => profile.data.name),
+        preferredName: numberedName(originalProfile.data.name.trim(), 0),
+        numberedName: numberedName,
+      );
+
+      final duplicate = await _repository.addNewProfile(
+        originalProfile.data.copyWith(name: duplicateName),
+      );
+
+      final profiles = await _repository.getAllProfiles();
+      setState(
+        RoutingState.idle(
+          fieldErrors: state.fieldErrors,
+          routingList: profiles,
+        ),
+      );
+
+      if (!isDisposed) onDuplicated?.call(duplicate);
+    },
+    errorHandler: (error, stackTrace) {
+      _onError(error, stackTrace);
+      onError?.call();
+    },
     completionHandler: _onCompleted,
   );
 
