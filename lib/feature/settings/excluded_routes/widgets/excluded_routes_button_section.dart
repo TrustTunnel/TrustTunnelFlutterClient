@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/reset_excluded_routes_dialog.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_aspect.dart';
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
+import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 
 class ExcludedRoutesButtonSection extends StatefulWidget {
   const ExcludedRoutesButtonSection({
@@ -78,7 +79,10 @@ class _ExcludedRoutesButtonSectionState extends State<ExcludedRoutesButtonSectio
   Future<void> _resetToDefault(BuildContext context) async {
     final action = await showDialog<ResetExcludedRoutesDialogAction>(
       context: context,
-      builder: (_) => const ResetExcludedRoutesDialog(),
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: ScaffoldMessenger.maybeOf(context) ?? ScaffoldMessenger.of(innerContext),
+        child: const ResetExcludedRoutesDialog(),
+      ),
     );
 
     if (!context.mounted || action != ResetExcludedRoutesDialogAction.resetConfirmed) {

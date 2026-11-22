@@ -71,10 +71,22 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
   /// Replaces the current routes with the factory defaults.
   ///
   /// Only updates the form state; the changes are persisted on [submit].
-  void resetToDefault() => dataChanged(
-    excludedRoutes: state.defaultExcludedRoutes,
-    hasInvalidRules: false,
-  );
+  void resetToDefault() {
+    handle(
+      () {
+        setState(
+          ExcludedRoutesState.idle(
+            excludedRoutes: state.defaultExcludedRoutes,
+            initialExcludedRoutes: state.initialExcludedRoutes,
+            defaultExcludedRoutes: state.defaultExcludedRoutes,
+            hasInvalidRoutes: false,
+          ),
+        );
+      },
+      errorHandler: _onError,
+      completionHandler: _onCompleted,
+    );
+  }
 
   void submit(VoidCallback onSaved) => handle(
     () async {
