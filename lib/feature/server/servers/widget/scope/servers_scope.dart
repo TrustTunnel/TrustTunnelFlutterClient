@@ -87,6 +87,17 @@ class _ServersScopeState extends State<ServersScope> implements ServersScopeCont
   );
 
   @override
+  void deleteServers({
+    required List<String> serverIds,
+    VoidCallback? onDeleted,
+    VoidCallback? onError,
+  }) => _controller.deleteServers(
+    serverIds: serverIds,
+    onDeleted: onDeleted,
+    onError: onError,
+  );
+
+  @override
   void selectServer(
     String? serverId, {
     VoidCallback? onSelected,

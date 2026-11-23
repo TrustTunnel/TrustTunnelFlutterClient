@@ -21,6 +21,8 @@ abstract class RoutingRepository {
   Future<RoutingProfile?> getProfileById({required String id});
 
   Future<void> deleteProfile({required String id});
+
+  Future<void> deleteProfiles({required List<String> ids});
 }
 
 class RoutingRepositoryImpl implements RoutingRepository {
@@ -67,4 +69,7 @@ class RoutingRepositoryImpl implements RoutingRepository {
 
   @override
   Future<void> deleteProfile({required String id}) => _routingDataSource.deleteProfile(id: id);
+
+  @override
+  Future<void> deleteProfiles({required List<String> ids}) => _routingDataSource.deleteProfiles(ids: ids);
 }

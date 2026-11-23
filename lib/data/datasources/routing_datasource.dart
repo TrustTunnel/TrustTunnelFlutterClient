@@ -73,4 +73,12 @@ abstract class RoutingDataSource {
   /// other entities refer to this profile (e.g. servers bound to a profile).
   /// {@endtemplate}
   Future<void> deleteProfile({required String id});
+
+  /// {@template routing_data_source_delete_profiles}
+  /// Deletes several routing profiles by their identifiers in a single operation.
+  ///
+  /// Implementations must reassign servers that reference any of the deleted
+  /// profiles to one of the remaining profiles before removing them.
+  /// {@endtemplate}
+  Future<void> deleteProfiles({required List<String> ids});
 }

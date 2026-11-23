@@ -125,6 +125,48 @@ final class ServersController extends BaseStateController<ServersState> with Seq
     completionHandler: _onCompleted,
   );
 
+  /// Removes several servers and clears the launch target if a selected server was deleted.
+  void deleteServers({
+    required List<String> serverIds,
+    VoidCallback? onDeleted,
+    VoidCallback? onError,
+  }) => handle(
+    () async {
+      setState(
+        ServersState.loading(
+          servers: state.servers,
+          pendingSelections: state.pendingSelections,
+        ),
+      );
+
+      final deletedIds = serverIds.toSet();
+      final removedSelectedServer = state.servers.any(
+        (server) => deletedIds.contains(server.id) && server.serverData.selected,
+      );
+
+      await _repository.removeServers(serverIds: serverIds);
+
+      final servers = await _repository.getAllServers();
+      setState(ServersState.idle(servers: servers, pendingSelections: state.pendingSelections));
+
+      // Best-effort cleanup: the deletion itself has already succeeded.
+      if (removedSelectedServer) {
+        try {
+          await _autoConnectOnLaunchSettingsRepository.setLastServerId(null);
+        } catch (_) {
+          // The launch target is only a hint and must not roll back the deletion.
+        }
+      }
+
+      if (!isDisposed) onDeleted?.call();
+    },
+    errorHandler: (error, stackTrace) {
+      _onError(error, stackTrace);
+      onError?.call();
+    },
+    completionHandler: _onCompleted,
+  );
+
   PresentationException _parseException(
     Object? exception,
   ) => ExceptionUtils.toPresentationException(

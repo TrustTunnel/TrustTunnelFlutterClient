@@ -10,9 +10,12 @@ import 'package:trusttunnel/feature/server/server_details/widgets/server_details
 import 'package:trusttunnel/feature/server/server_sharing/widgets/scope/server_sharing_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope.dart';
 import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_aspect.dart';
+import 'package:trusttunnel/feature/server/servers/widget/scope/servers_scope_controller.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_card.dart';
 import 'package:trusttunnel/feature/server/servers/widget/servers_empty_placeholder.dart';
 import 'package:trusttunnel/widgets/buttons/custom_floating_action_button.dart';
+import 'package:trusttunnel/widgets/buttons/custom_icon_button.dart';
+import 'package:trusttunnel/widgets/common/delete_selected_dialog.dart';
 import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
 import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
@@ -32,6 +35,9 @@ class ServersScreenView extends StatefulWidget {
 class _ServersScreenViewState extends State<ServersScreenView> {
   late List<Server> _servers;
   late final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey;
+
+  bool _selectionMode = false;
+  final Set<String> _selectedServerIds = {};
 
   bool get canShareServers =>
       defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
@@ -65,6 +71,15 @@ class _ServersScreenViewState extends State<ServersScreenView> {
       context,
       aspect: ServersScopeAspect.servers,
     ).servers;
+
+    if (_selectedServerIds.isNotEmpty) {
+      final availableIds = _servers.map((server) => server.id).toSet();
+      _selectedServerIds.removeWhere((id) => !availableIds.contains(id));
+
+      if (_selectedServerIds.isEmpty) {
+        _selectionMode = false;
+      }
+    }
   }
 
   @override
@@ -72,52 +87,171 @@ class _ServersScreenViewState extends State<ServersScreenView> {
     child: ScaffoldMessenger(
       key: _scaffoldMessengerKey,
       child: Builder(
-        builder: (context) => Scaffold(
-          appBar: CustomAppBar(
-            title: context.ln.servers,
-          ),
-          body: _servers.isEmpty
-              ? const ServersEmptyPlaceholder()
-              : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 80),
-                  itemCount: _servers.length,
-                  findChildIndexCallback: (key) {
-                    final index = _servers.indexWhere((server) => ValueKey(server.id) == key);
-
-                    return index < 0 ? null : index;
-                  },
-                  itemBuilder: (_, index) {
-                    final server = _servers[index];
-
-                    return Column(
-                      key: ValueKey(server.id),
-                      children: [
-                        ServersCard(
-                          server: server,
-                          onEdit: () => _pushServerDetailsScreen(context, serverId: server.id),
-                          onShare: canShareServers ? () => _shareServer(context, server) : null,
-                          onCopyLink: () => _copyServerLink(context, server),
-                          onDuplicate: () => _duplicateServer(context, server),
-                        ),
-
-                        if (index != _servers.length - 1) const Divider(),
-                      ],
-                    );
-                  },
-                ),
-          floatingActionButton: _servers.isEmpty
-              ? null
-              : Builder(
-                  builder: (context) => CustomFloatingActionButton.extended(
-                    icon: AssetIcons.add,
-                    onPressed: () => _pushServerDetailsScreen(context),
-                    label: context.ln.addServer,
+        builder: (context) => PopScope(
+          canPop: !_selectionMode,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && _selectionMode) {
+              _exitSelectionMode();
+            }
+          },
+          child: Scaffold(
+            appBar: _selectionMode
+                ? _buildSelectionAppBar(context)
+                : CustomAppBar(
+                    title: context.ln.servers,
                   ),
-                ),
+            body: _servers.isEmpty
+                ? const ServersEmptyPlaceholder()
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 80),
+                    itemCount: _servers.length,
+                    findChildIndexCallback: (key) {
+                      final index = _servers.indexWhere((server) => ValueKey(server.id) == key);
+
+                      return index < 0 ? null : index;
+                    },
+                    itemBuilder: (_, index) {
+                      final server = _servers[index];
+
+                      return Column(
+                        key: ValueKey(server.id),
+                        children: [
+                          ServersCard(
+                            server: server,
+                            onEdit: () => _pushServerDetailsScreen(context, serverId: server.id),
+                            onShare: canShareServers ? () => _shareServer(context, server) : null,
+                            onCopyLink: () => _copyServerLink(context, server),
+                            onDuplicate: () => _duplicateServer(context, server),
+                            selectionMode: _selectionMode,
+                            selected: _selectedServerIds.contains(server.id),
+                            onSelectionToggle: (selected) => _toggleServerSelection(server.id, selected),
+                            onLongPress: () => _enterSelectionMode(server.id),
+                          ),
+
+                          if (index != _servers.length - 1) const Divider(),
+                        ],
+                      );
+                    },
+                  ),
+            floatingActionButton: !_selectionMode && _servers.isNotEmpty
+                ? Builder(
+                    builder: (context) => CustomFloatingActionButton.extended(
+                      icon: AssetIcons.add,
+                      onPressed: () => _pushServerDetailsScreen(context),
+                      label: context.ln.addServer,
+                    ),
+                  )
+                : null,
+          ),
         ),
       ),
     ),
   );
+
+  CustomAppBar _buildSelectionAppBar(BuildContext context) => CustomAppBar(
+    title: context.ln.selectedItemsCount(_selectedServerIds.length),
+    leadingIconType: AppBarLeadingIconType.close,
+    onBackPressed: _exitSelectionMode,
+    actions: [
+      TextButton(
+        onPressed: _toggleSelectAllServers,
+        child: Text(_allServersSelected ? context.ln.deselectAll : context.ln.selectAll),
+      ),
+      CustomIconButton(
+        icon: AssetIcons.delete,
+        color: context.colors.error,
+        onPressed: _selectedServerIds.isEmpty ? null : _deleteSelectedServers,
+      ),
+    ],
+  );
+
+  void _enterSelectionMode(String serverId) {
+    if (_selectionMode && _selectedServerIds.contains(serverId)) {
+      return;
+    }
+
+    setState(() {
+      _selectionMode = true;
+      _selectedServerIds.add(serverId);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedServerIds.clear();
+    });
+  }
+
+  void _toggleServerSelection(String serverId, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedServerIds.add(serverId);
+      } else {
+        _selectedServerIds.remove(serverId);
+      }
+
+      if (_selectedServerIds.isEmpty) {
+        _selectionMode = false;
+      }
+    });
+  }
+
+  bool get _allServersSelected => _servers.isNotEmpty && _selectedServerIds.length == _servers.length;
+
+  void _toggleSelectAllServers() {
+    setState(() {
+      if (_allServersSelected) {
+        _selectedServerIds.clear();
+        _selectionMode = false;
+      } else {
+        _selectedServerIds
+          ..clear()
+          ..addAll(_servers.map((server) => server.id));
+      }
+    });
+  }
+
+  Future<void> _deleteSelectedServers() async {
+    final controller = ServersScope.controllerOf(context, listen: false);
+    final count = _selectedServerIds.length;
+    final title = context.ln.deleteSelectedServersDialogTitle;
+    final description = context.ln.deleteSelectedServersDialogDescription(count);
+    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
+    await showDialog(
+      context: context,
+      builder: (innerContext) => ScaffoldMessengerProvider(
+        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
+        child: DeleteSelectedDialog(
+          title: title,
+          description: description,
+          onDeletePressed: () => _confirmDeleteServers(controller, count),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteServers(ServersScopeController controller, int count) {
+    final serverIds = _selectedServerIds.toList();
+
+    controller.deleteServers(
+      serverIds: serverIds,
+      onDeleted: () {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _selectionMode = false;
+          _selectedServerIds.clear();
+        });
+
+        context.showInfoSnackBar(message: context.ln.serversDeletedSnackbar(count));
+      },
+      onError: () => _showOperationError(context),
+    );
+  }
 
   void _pushServerDetailsScreen(
     BuildContext context, {

@@ -18,6 +18,13 @@ abstract class ServersScopeController implements Listenable {
 
   abstract final void Function() fetchServers;
 
+  /// Deletes several servers at once; [onDeleted] runs after the list is refreshed.
+  void deleteServers({
+    required List<String> serverIds,
+    VoidCallback? onDeleted,
+    VoidCallback? onError,
+  });
+
   /// Saves selection only; callers cancel obsolete VPN preparation before changing it.
   /// [onSelected] runs after both the selection and launch target have been saved.
   /// [onError] completes the caller's pending work; the error is also published by this scope.

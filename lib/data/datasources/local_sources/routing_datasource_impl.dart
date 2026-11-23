@@ -221,6 +221,48 @@ class RoutingDataSourceImpl implements RoutingDataSource {
     await deleteStatement.go();
   }
 
+  /// {@macro routing_data_source_delete_profiles}
+  ///
+  /// Servers referencing any of the deleted profiles are reassigned to the
+  /// first remaining profile. Profile rules are removed by the database
+  /// cascade. All changes are applied in a single batch.
+  @override
+  Future<void> deleteProfiles({required List<String> ids}) async {
+    final parsedIds = ids.map(int.parse).toSet();
+    if (parsedIds.isEmpty) {
+      return;
+    }
+
+    final replacementProfile =
+        await (_database.select(
+                _database.routingProfiles,
+              )
+              ..where((p) => p.id.isNotIn(parsedIds))
+              ..limit(1))
+            .getSingle();
+
+    final affectedServers = await (_database.select(
+      _database.servers,
+    )..where((s) => s.routingProfileId.isIn(parsedIds))).get();
+
+    await _database.batch((batch) {
+      if (affectedServers.isNotEmpty) {
+        batch.update(
+          _database.servers,
+          db.ServersCompanion(
+            routingProfileId: Value(replacementProfile.id),
+          ),
+          where: (s) => s.id.isIn(affectedServers.map((s) => s.id)),
+        );
+      }
+
+      batch.deleteWhere(
+        _database.routingProfiles,
+        (p) => p.id.isIn(parsedIds),
+      );
+    });
+  }
+
   /// Loads all rule rows for the given profile ids.
   ///
   /// Rules are returned in insertion order (ascending by row id).

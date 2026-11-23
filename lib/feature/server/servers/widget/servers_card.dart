@@ -14,6 +14,10 @@ class ServersCard extends StatefulWidget {
   final VoidCallback onCopyLink;
   final VoidCallback onDuplicate;
   final VoidCallback onEdit;
+  final bool selectionMode;
+  final bool selected;
+  final ValueChanged<bool>? onSelectionToggle;
+  final VoidCallback? onLongPress;
 
   const ServersCard({
     super.key,
@@ -22,6 +26,10 @@ class ServersCard extends StatefulWidget {
     required this.onDuplicate,
     required this.onEdit,
     this.onShare,
+    this.selectionMode = false,
+    this.selected = false,
+    this.onSelectionToggle,
+    this.onLongPress,
   });
 
   @override
@@ -49,23 +57,43 @@ class _ServersCardState extends State<ServersCard> {
       title: widget.server.serverData.name,
       titleStyle: context.textTheme.titleSmall,
       subtitle: widget.server.serverData.ipAddress,
-      onTileTap: widget.onEdit,
-      actionBeforeDivider: ServersCardMenuButton(
-        onShare: widget.onShare,
-        onCopyLink: widget.onCopyLink,
-        onDuplicate: widget.onDuplicate,
-      ),
-      trailing: ServersCardConnectionButton(
-        vpnManagerState: vpnManagerState,
-        onPressed: () {
-          final isCurrentlyConnecting = _vpnController.state != VpnState.disconnected;
-          if (_vpnController.activeServerId == widget.server.id && isCurrentlyConnecting) {
-            _vpnController.disconnect();
-          } else {
-            _vpnController.selectAndConnectToServer(widget.server.id);
-          }
-        },
-      ),
+      onTileTap: widget.selectionMode ? _toggleSelection : widget.onEdit,
+      onLongPress: widget.onLongPress,
+      leading: widget.selectionMode ? _buildSelectionControl() : null,
+      showVerticalDivider: !widget.selectionMode,
+      actionBeforeDivider: widget.selectionMode
+          ? null
+          : ServersCardMenuButton(
+              onShare: widget.onShare,
+              onCopyLink: widget.onCopyLink,
+              onDuplicate: widget.onDuplicate,
+            ),
+      trailing: widget.selectionMode
+          ? null
+          : ServersCardConnectionButton(
+              vpnManagerState: vpnManagerState,
+              onPressed: () {
+                final isCurrentlyConnecting = _vpnController.state != VpnState.disconnected;
+                if (_vpnController.activeServerId == widget.server.id && isCurrentlyConnecting) {
+                  _vpnController.disconnect();
+                } else {
+                  _vpnController.selectAndConnectToServer(widget.server.id);
+                }
+              },
+            ),
     );
   }
+
+  Widget _buildSelectionControl() => SizedBox(
+    width: 40,
+    height: 48,
+    child: Center(
+      child: Checkbox(
+        value: widget.selected,
+        onChanged: (_) => _toggleSelection(),
+      ),
+    ),
+  );
+
+  void _toggleSelection() => widget.onSelectionToggle?.call(!widget.selected);
 }

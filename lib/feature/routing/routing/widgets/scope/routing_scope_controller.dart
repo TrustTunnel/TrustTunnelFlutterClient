@@ -19,5 +19,7 @@ abstract class RoutingScopeController implements Listenable {
 
   abstract final void Function(String routingProfileId, VoidCallback onDeleted) deleteProfile;
 
+  abstract final void Function(List<String> profileIds, VoidCallback? onDeleted, VoidCallback? onError) deleteProfiles;
+
   abstract final void Function() pickProfileToChangeName;
 }

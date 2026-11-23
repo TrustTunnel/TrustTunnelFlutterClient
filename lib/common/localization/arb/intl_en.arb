@@ -281,5 +281,50 @@
   },
   "updateAvailable": "Update available",
   "tryAgain": "Try again",
-  "general": "General"
+  "general": "General",
+  "selectAll": "Select all",
+  "deselectAll": "Deselect all",
+  "defaultProfileCannotBeDeleted": "Default profile cannot be deleted",
+  "selectedItemsCount": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@selectedItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteSelectedServersDialogTitle": "Delete servers?",
+  "deleteSelectedServersDialogDescription": "{count, plural, =1{1 server will be deleted} other{{count} servers will be deleted}}",
+  "@deleteSelectedServersDialogDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteSelectedProfilesDialogTitle": "Delete profiles?",
+  "deleteSelectedProfilesDialogDescription": "{count, plural, =1{1 profile will be deleted} other{{count} profiles will be deleted}}",
+  "@deleteSelectedProfilesDialogDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serversDeletedSnackbar": "{count, plural, =1{1 server deleted} other{{count} servers deleted}}",
+  "@serversDeletedSnackbar": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profilesDeletedSnackbar": "{count, plural, =1{1 profile deleted} other{{count} profiles deleted}}",
+  "@profilesDeletedSnackbar": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

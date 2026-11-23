@@ -7,6 +7,7 @@ import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
 import 'package:trusttunnel/feature/routing/routing/domain/service/routing_service.dart';
@@ -130,6 +131,43 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       onDeleted();
     },
     errorHandler: _onError,
+    completionHandler: _onCompleted,
+  );
+
+  /// Deletes several profiles, skipping the default one which cannot be removed.
+  Future<void> deleteProfiles(
+    List<String> profileIds, [
+    VoidCallback? onDeleted,
+    VoidCallback? onError,
+  ]) => handle(
+    () async {
+      final idsToDelete = profileIds.where((id) => id != RoutingProfileUtils.defaultRoutingProfileId).toList();
+
+      setState(
+        RoutingState.loading(
+          fieldErrors: state.fieldErrors,
+          routingList: state.routingList,
+        ),
+      );
+
+      if (idsToDelete.isNotEmpty) {
+        await _repository.deleteProfiles(ids: idsToDelete);
+      }
+
+      final routingList = await _repository.getAllProfiles();
+      setState(
+        RoutingState.idle(
+          fieldErrors: state.fieldErrors,
+          routingList: routingList,
+        ),
+      );
+
+      onDeleted?.call();
+    },
+    errorHandler: (error, stackTrace) {
+      _onError(error, stackTrace);
+      onError?.call();
+    },
     completionHandler: _onCompleted,
   );
 

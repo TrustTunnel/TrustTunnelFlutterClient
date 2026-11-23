@@ -70,6 +70,10 @@ class _RoutingScopeState extends State<RoutingScope> implements RoutingScopeCont
   void Function(String routingProfileId, VoidCallback onDeleted) get deleteProfile => _controller.deleteProfile;
 
   @override
+  void Function(List<String> profileIds, VoidCallback? onDeleted, VoidCallback? onError) get deleteProfiles =>
+      _controller.deleteProfiles;
+
+  @override
   void Function() get pickProfileToChangeName => _pickProfileToChangeName;
 
   @override

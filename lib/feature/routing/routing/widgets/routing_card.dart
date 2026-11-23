@@ -14,60 +14,100 @@ import 'package:trusttunnel/widgets/custom_icon.dart';
 
 class RoutingCard extends StatelessWidget {
   final RoutingProfile routingProfile;
+  final bool selectionMode;
+  final bool selected;
+  final ValueChanged<bool>? onSelectionToggle;
+  final VoidCallback? onLongPress;
 
   const RoutingCard({
     super.key,
     required this.routingProfile,
+    this.selectionMode = false,
+    this.selected = false,
+    this.onSelectionToggle,
+    this.onLongPress,
   });
+
+  bool get _isDefault => RoutingProfileUtils.isDefaultRoutingProfile(profile: routingProfile);
 
   @override
   Widget build(BuildContext context) => CustomListTileSeparated(
     title: routingProfile.data.name,
-    onTileTap: () => _pushDetailsScreen(context),
-    trailing: PopupMenuButton(
-      icon: const CustomIcon(
-        icon: AssetIcons.moreVert,
-        size: 24,
-      ),
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        PopupMenuItem<String>(
-          onTap: () => _onEditName(context),
-          child: Row(
-            children: [
-              const CustomIcon(
-                icon: AssetIcons.modeEdit,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                context.ln.editProfileName,
-                style: context.textTheme.bodyLarge,
-              ),
-            ],
-          ),
-        ),
-        if (!RoutingProfileUtils.isDefaultRoutingProfile(profile: routingProfile))
-          PopupMenuItem<String>(
-            onTap: () => _onDeleteProfile(context),
-            child: Row(
-              children: [
-                CustomIcon.medium(
-                  icon: AssetIcons.delete,
-                  color: context.colors.error,
+    onTileTap: () => _onTileTap(context),
+    onLongPress: onLongPress,
+    leading: selectionMode && !_isDefault ? _buildSelectionControl() : null,
+    showVerticalDivider: !selectionMode,
+    trailing: selectionMode
+        ? null
+        : PopupMenuButton(
+            icon: const CustomIcon(
+              icon: AssetIcons.moreVert,
+              size: 24,
+            ),
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                onTap: () => _onEditName(context),
+                child: Row(
+                  children: [
+                    const CustomIcon(
+                      icon: AssetIcons.modeEdit,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      context.ln.editProfileName,
+                      style: context.textTheme.bodyLarge,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  context.ln.deleteProfile,
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    color: context.colors.error,
+              ),
+              if (!_isDefault)
+                PopupMenuItem<String>(
+                  onTap: () => _onDeleteProfile(context),
+                  child: Row(
+                    children: [
+                      CustomIcon.medium(
+                        icon: AssetIcons.delete,
+                        color: context.colors.error,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        context.ln.deleteProfile,
+                        style: context.textTheme.bodyLarge?.copyWith(
+                          color: context.colors.error,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-      ],
+  );
+
+  Widget _buildSelectionControl() => SizedBox(
+    width: 40,
+    height: 48,
+    child: Center(
+      child: Checkbox(
+        value: selected,
+        onChanged: (_) => _toggleSelection(),
+      ),
     ),
   );
+
+  void _onTileTap(BuildContext context) {
+    if (selectionMode) {
+      if (!_isDefault) {
+        _toggleSelection();
+      }
+
+      return;
+    }
+
+    _pushDetailsScreen(context);
+  }
+
+  void _toggleSelection() => onSelectionToggle?.call(!selected);
 
   void _onEditName(BuildContext context) {
     final controller = RoutingScope.controllerOf(context, listen: false);

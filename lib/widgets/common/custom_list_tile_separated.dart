@@ -6,7 +6,9 @@ class CustomListTileSeparated extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final Widget? actionBeforeDivider;
+  final Widget? leading;
   final VoidCallback? onTileTap;
+  final VoidCallback? onLongPress;
   final bool showVerticalDivider;
   final TextStyle? titleStyle;
   final TextStyle? subtitleStyle;
@@ -15,8 +17,10 @@ class CustomListTileSeparated extends StatelessWidget {
     super.key,
     required this.title,
     this.onTileTap,
+    this.onLongPress,
     this.trailing,
     this.actionBeforeDivider,
+    this.leading,
     this.showVerticalDivider = true,
     this.titleStyle,
     this.subtitle,
@@ -27,10 +31,16 @@ class CustomListTileSeparated extends StatelessWidget {
   Widget build(BuildContext context) => IntrinsicHeight(
     child: Row(
       children: [
+        if (leading != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: leading!,
+          ),
         Flexible(
           fit: FlexFit.tight,
           child: InkWell(
             onTap: onTileTap,
+            onLongPress: onLongPress,
             child: Ink(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),

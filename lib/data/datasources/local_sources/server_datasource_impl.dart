@@ -180,6 +180,20 @@ class ServerDataSourceImpl implements ServerDataSource {
     ),
   );
 
+  /// {@macro server_data_source_remove_servers}
+  @override
+  Future<void> removeServers({required List<String> serverIds}) async {
+    if (serverIds.isEmpty) {
+      return;
+    }
+
+    await database.servers.deleteWhere(
+      (e) => e.id.isIn(
+        serverIds.map(int.parse),
+      ),
+    );
+  }
+
   /// {@macro server_data_source_set_new_server}
   ///
   /// DNS entries are fully replaced: existing rows are deleted and then the new

@@ -50,6 +50,11 @@ abstract class ServerDataSource {
   /// {@endtemplate}
   Future<void> removeServer({required String serverId});
 
+  /// {@template server_data_source_remove_servers}
+  /// Removes several server records by their identifiers in a single operation.
+  /// {@endtemplate}
+  Future<void> removeServers({required List<String> serverIds});
+
   /// {@template server_data_source_set_new_server}
   /// Replaces the stored values of an existing server with the provided request.
   ///

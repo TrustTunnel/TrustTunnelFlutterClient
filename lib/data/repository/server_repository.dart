@@ -20,6 +20,8 @@ abstract class ServerRepository {
   Future<Certificate?> pickCertificate();
 
   Future<void> removeServer({required String serverId});
+
+  Future<void> removeServers({required List<String> serverIds});
 }
 
 class ServerRepositoryImpl implements ServerRepository {
@@ -56,6 +58,10 @@ class ServerRepositoryImpl implements ServerRepository {
 
   @override
   Future<void> removeServer({required String serverId}) => _serverDataSource.removeServer(serverId: serverId);
+
+  @override
+  Future<void> removeServers({required List<String> serverIds}) =>
+      _serverDataSource.removeServers(serverIds: serverIds);
 
   @override
   Future<Server?> getServerById({required String id}) => _serverDataSource.getServerById(id: id);
