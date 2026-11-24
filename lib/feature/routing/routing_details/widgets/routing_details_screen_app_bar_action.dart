@@ -16,54 +16,65 @@ class RoutingDetailsScreenAppBarAction extends StatelessWidget {
   final String profileName;
   final RoutingMode pickedRoutingMode;
 
+  /// Returns whether the menu can open.
+  final bool Function() canOpenMenu;
+
   const RoutingDetailsScreenAppBarAction({
     required this.onClearRulesPressed,
     required this.onDefaultModePicked,
     required this.profileName,
     required this.pickedRoutingMode,
+    required this.canOpenMenu,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) => PopupMenuButton(
+    enabled: canOpenMenu(),
     icon: CustomIcon.medium(
       icon: AssetIcons.moreVert,
     ),
-    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-      PopupMenuItem<String>(
-        onTap: () => _onChangeDefaultRoutingMode(context),
-        child: Row(
-          children: [
-            CustomIcon.medium(
-              icon: AssetIcons.update,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              context.ln.changeDefaultRoutingMode,
-              style: context.textTheme.bodyLarge,
-            ),
-          ],
+    itemBuilder: (BuildContext context) {
+      if (!canOpenMenu()) {
+        return [];
+      }
+
+      return <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          onTap: () => _onChangeDefaultRoutingMode(context),
+          child: Row(
+            children: [
+              CustomIcon.medium(
+                icon: AssetIcons.update,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                context.ln.changeDefaultRoutingMode,
+                style: context.textTheme.bodyLarge,
+              ),
+            ],
+          ),
         ),
-      ),
-      PopupMenuItem<String>(
-        onTap: () => _onClearRulesPressed(context),
-        child: Row(
-          children: [
-            CustomIcon.medium(
-              icon: AssetIcons.delete,
-              color: context.colors.error,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              context.ln.deleteAllRules,
-              style: context.textTheme.bodyLarge?.copyWith(
+        PopupMenuItem<String>(
+          onTap: () => _onClearRulesPressed(context),
+          child: Row(
+            children: [
+              CustomIcon.medium(
+                icon: AssetIcons.delete,
                 color: context.colors.error,
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Text(
+                context.ln.deleteAllRules,
+                style: context.textTheme.bodyLarge?.copyWith(
+                  color: context.colors.error,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    ],
+      ];
+    },
   );
 
   void _onClearRulesPressed(BuildContext context) {

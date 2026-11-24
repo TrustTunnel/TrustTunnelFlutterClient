@@ -91,7 +91,13 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     completionHandler: _onCompleted,
   );
 
-  void submit(VoidCallback onSaved) => handle(
+  /// Saves the profile and calls [onSaved] on success.
+  ///
+  /// Calls [onFinished] after the operation or error handling if the controller is still active.
+  void submit({
+    required VoidCallback onSaved,
+    required VoidCallback onFinished,
+  }) => handle(
     () async {
       var profileId = _profileId;
       if (profileId == null) {
@@ -119,12 +125,16 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       onSaved();
     },
     errorHandler: _onError,
-    completionHandler: _onCompleted,
+    completionHandler: () => _onCompleted(onFinished: onFinished),
   );
 
-  void clearRules(
-    VoidCallback onCleared,
-  ) => handle(
+  /// Deletes all rules for the profile and calls [onCleared] on success.
+  ///
+  /// Calls [onFinished] after the attempt if the controller is still active.
+  void clearRules({
+    required VoidCallback onCleared,
+    required VoidCallback onFinished,
+  }) => handle(
     () async {
       setState(
         RoutingDetailsState.loading(
@@ -164,10 +174,17 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       onCleared();
     },
     errorHandler: _onError,
-    completionHandler: _onCompleted,
+    completionHandler: () => _onCompleted(onFinished: onFinished),
   );
 
-  void changeDefaultRoutingMode(RoutingMode mode, VoidCallback onChanged) => handle(
+  /// Saves [mode] as the profile's default and calls [onChanged] on success.
+  ///
+  /// Calls [onFinished] after the attempt if the controller is still active.
+  void changeDefaultRoutingMode({
+    required RoutingMode mode,
+    required VoidCallback onChanged,
+    required VoidCallback onFinished,
+  }) => handle(
     () async {
       setState(
         RoutingDetailsState.loading(
@@ -190,7 +207,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       onChanged();
     },
     errorHandler: _onError,
-    completionHandler: _onCompleted,
+    completionHandler: () => _onCompleted(onFinished: onFinished),
   );
 
   PresentationException _parseException(Object? exception) =>
@@ -209,11 +226,14 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     );
   }
 
-  Future<void> _onCompleted() async => setState(
-    RoutingDetailsState.idle(
-      data: state.data,
-      initialData: state.initialData,
-      hasInvalidRules: state.hasInvalidRules,
-    ),
-  );
+  Future<void> _onCompleted({VoidCallback? onFinished}) async {
+    setState(
+      RoutingDetailsState.idle(
+        data: state.data,
+        initialData: state.initialData,
+        hasInvalidRules: state.hasInvalidRules,
+      ),
+    );
+    onFinished?.call();
+  }
 }

@@ -45,9 +45,17 @@ abstract class ServerDetailsScopeController {
 
   abstract final DataChangedCallback changeData;
 
-  abstract final void Function(ValueChanged<String> onSaved) submit;
+  abstract final void Function({
+    required ValueChanged<String> onSaved,
+    required VoidCallback onFinished,
+  })
+  submit;
 
-  abstract final void Function(ValueChanged<String> onSaved) delete;
+  abstract final void Function({
+    required ValueChanged<String> onDeleted,
+    required VoidCallback onFinished,
+  })
+  delete;
 
   abstract final void Function() pickPemCertificate;
 

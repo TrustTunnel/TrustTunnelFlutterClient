@@ -26,13 +26,22 @@ abstract class RoutingDetailsScopeController {
   abstract final void Function() fetchProfile;
   abstract final RoutingDataChangedCallback changeData;
 
-  abstract final void Function(VoidCallback onSaved) submit;
+  abstract final void Function({
+    required VoidCallback onSaved,
+    required VoidCallback onFinished,
+  })
+  submit;
 
-  abstract final void Function(VoidCallback onCleared) clearRules;
+  abstract final void Function({
+    required VoidCallback onCleared,
+    required VoidCallback onFinished,
+  })
+  clearRules;
 
-  abstract final void Function(
-    RoutingMode mode,
-    VoidCallback onChanged,
-  )
+  abstract final void Function({
+    required RoutingMode mode,
+    required VoidCallback onChanged,
+    required VoidCallback onFinished,
+  })
   changeDefaultRoutingMode;
 }

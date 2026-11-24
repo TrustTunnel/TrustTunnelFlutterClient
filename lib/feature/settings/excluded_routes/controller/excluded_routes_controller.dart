@@ -64,7 +64,13 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
     completionHandler: _onCompleted,
   );
 
-  void submit(VoidCallback onSaved) => handle(
+  /// Saves the excluded routes and calls [onSaved] after a successful write.
+  ///
+  /// Calls [onFinished] after the operation or error handling if the controller is still active.
+  void submit({
+    required VoidCallback onSaved,
+    required VoidCallback onFinished,
+  }) => handle(
     () async {
       setState(
         ExcludedRoutesState.loading(
@@ -87,7 +93,10 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
       onSaved();
     },
     errorHandler: _onError,
-    completionHandler: _onCompleted,
+    completionHandler: () async {
+      await _onCompleted();
+      onFinished();
+    },
   );
 
   PresentationException _parseException(Object? exception) =>

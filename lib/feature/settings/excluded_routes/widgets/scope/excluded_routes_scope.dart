@@ -61,7 +61,11 @@ class _ExcludedRoutesScopeState extends State<ExcludedRoutesScope> implements Ex
   ExcludedRoutesDataChangedCallback get changeData => _changeData;
 
   @override
-  void Function(VoidCallback onSaved) get submit => _controller.submit;
+  void Function({
+    required VoidCallback onSaved,
+    required VoidCallback onFinished,
+  })
+  get submit => _controller.submit;
 
   @override
   void initState() {

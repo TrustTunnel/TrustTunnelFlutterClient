@@ -112,13 +112,26 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   final void Function() fetchProfile;
 
   @override
-  final void Function(VoidCallback onCleared) clearRules;
+  final void Function({
+    required VoidCallback onCleared,
+    required VoidCallback onFinished,
+  })
+  clearRules;
 
   @override
-  final void Function(VoidCallback onSaved) submit;
+  final void Function({
+    required VoidCallback onSaved,
+    required VoidCallback onFinished,
+  })
+  submit;
 
   @override
-  final void Function(RoutingMode mode, VoidCallback onChanged) changeDefaultRoutingMode;
+  final void Function({
+    required RoutingMode mode,
+    required VoidCallback onChanged,
+    required VoidCallback onFinished,
+  })
+  changeDefaultRoutingMode;
 
   @override
   RoutingProfileData get data => _state.data;

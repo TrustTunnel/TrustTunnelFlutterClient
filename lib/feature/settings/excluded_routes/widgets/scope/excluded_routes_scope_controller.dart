@@ -20,5 +20,9 @@ abstract class ExcludedRoutesScopeController implements Listenable {
   abstract final void Function() fetchExcludedRoutes;
   abstract final ExcludedRoutesDataChangedCallback changeData;
 
-  abstract final void Function(VoidCallback onSaved) submit;
+  abstract final void Function({
+    required VoidCallback onSaved,
+    required VoidCallback onFinished,
+  })
+  submit;
 }

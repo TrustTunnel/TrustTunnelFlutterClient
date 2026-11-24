@@ -5,7 +5,10 @@ import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/exclu
 import 'package:trusttunnel/feature/settings/excluded_routes/widgets/scope/excluded_routes_scope.dart';
 
 class ExcludedRoutesButtonSection extends StatefulWidget {
+  final VoidCallback? onSavePressed;
+
   const ExcludedRoutesButtonSection({
+    required this.onSavePressed,
     super.key,
   });
 
@@ -37,19 +40,10 @@ class _ExcludedRoutesButtonSectionState extends State<ExcludedRoutesButtonSectio
       Padding(
         padding: const EdgeInsets.all(16),
         child: FilledButton(
-          onPressed: _canSave ? () => _saveExcludedRoutes(context) : null,
+          onPressed: _canSave ? widget.onSavePressed : null,
           child: Text(context.ln.save),
         ),
       ),
     ],
   );
-
-  void _saveExcludedRoutes(BuildContext context) =>
-      ExcludedRoutesScope.controllerOf(context, listen: false).submit(() => _onExcludedRoutesSaved(context));
-
-  void _onExcludedRoutesSaved(BuildContext context) {
-    if (Navigator.canPop(context)) {
-      context.pop();
-    }
-  }
 }

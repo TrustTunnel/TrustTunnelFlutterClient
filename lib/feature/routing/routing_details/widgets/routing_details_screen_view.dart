@@ -1,15 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/extensions/locale_enum_extension.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
+import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope_controller.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_form.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_screen_app_bar_action.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_submit_button_section.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_aspect.dart';
+import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_controller.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/scope/routing_details_scope.dart';
-import 'package:trusttunnel/widgets/common/scaffold_messenger_provider.dart';
 import 'package:trusttunnel/widgets/custom_app_bar.dart';
 import 'package:trusttunnel/widgets/discard_changes_dialog.dart';
 import 'package:trusttunnel/widgets/scaffold_wrapper.dart';
@@ -22,34 +25,38 @@ class RoutingDetailsScreenView extends StatefulWidget {
 }
 
 class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
+  late RoutingScopeController _routingController;
+  late RoutingDetailsScopeController _detailsController;
   late bool _hasChanges;
   late bool _hasErrors;
   late bool _isEditing;
   late bool _loading;
   late String _name;
   late RoutingMode _mode;
+  // Keep the form open until a write and its completion callback finish.
+  bool _isWriteInProgress = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final newData = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.data);
+    _routingController = RoutingScope.controllerOf(context, listen: false);
+    _detailsController = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.data);
 
-    _hasErrors = newData.hasInvalidRules;
-    _hasChanges = newData.hasChanges;
-    _name = newData.name;
-    _isEditing = newData.editing;
-    _loading = newData.loading;
-    _mode = newData.data.defaultMode;
+    _hasErrors = _detailsController.hasInvalidRules;
+    _hasChanges = _detailsController.hasChanges;
+    _name = _detailsController.name;
+    _isEditing = _detailsController.editing;
+    _mode = _detailsController.data.defaultMode;
 
     _loading = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.loading).loading;
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_hasChanges,
+    canPop: !_isWriteInProgress && !_hasChanges,
     onPopInvokedWithResult: (didPop, _) {
-      if (!didPop) {
-        _showNotSavedChangesWarning(context);
+      if (!didPop && !_isWriteInProgress) {
+        unawaited(DiscardChangesDialog.show(context));
       }
     },
     child: ScaffoldWrapper(
@@ -66,8 +73,9 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
                 RoutingDetailsScreenAppBarAction(
                   profileName: _name,
                   pickedRoutingMode: _mode,
-                  onDefaultModePicked: (context, mode) => _onDefaultModePicked(context, mode),
-                  onClearRulesPressed: (context) => _onClearRulesPressed(context),
+                  canOpenMenu: () => !_isWriteInProgress,
+                  onDefaultModePicked: _onDefaultModePicked,
+                  onClearRulesPressed: _onClearRulesPressed,
                 ),
               ],
               bottomHeight: context.isMobileBreakpoint ? 48 : 0,
@@ -94,7 +102,7 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
                       ),
                       RoutingDetailsSubmitButtonSection(
                         editing: _isEditing,
-                        onPressed: !_hasErrors && _hasChanges ? () => _onSubmitPressed(context) : null,
+                        onPressed: !_isWriteInProgress && !_hasErrors && _hasChanges ? _onSubmitPressed : null,
                       ),
                     ],
                   ),
@@ -105,50 +113,79 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
   );
 
   void _onDefaultModePicked(BuildContext context, RoutingMode mode) {
-    final routingDetailsController = RoutingDetailsScope.controllerOf(context, listen: false);
-    routingDetailsController.changeDefaultRoutingMode(
-      mode,
-      () => _onDefaultModeChanged(
-        context,
-        mode,
-      ),
+    if (!context.mounted || !_beginWrite()) {
+      return;
+    }
+
+    final fetchProfiles = _routingController.fetchProfiles;
+    _detailsController.changeDefaultRoutingMode(
+      mode: mode,
+      onChanged: () {
+        fetchProfiles();
+
+        if (context.mounted) {
+          context.showInfoSnackBar(message: context.ln.changesSavedSnackbar);
+        }
+      },
+      onFinished: _finishWrite,
     );
   }
 
-  void _onDefaultModeChanged(
-    BuildContext context,
-    RoutingMode mode,
-  ) {
-    RoutingScope.controllerOf(context, listen: false).fetchProfiles();
-
-    if (!context.mounted) {
+  void _onClearRulesPressed(BuildContext context) {
+    if (!context.mounted || !_beginWrite()) {
       return;
     }
-    context.showInfoSnackBar(message: context.ln.changesSavedSnackbar);
+
+    final fetchProfiles = _routingController.fetchProfiles;
+    _detailsController.clearRules(
+      onCleared: () {
+        fetchProfiles();
+
+        if (context.mounted) {
+          context.showInfoSnackBar(message: context.ln.allRulesDeleted);
+        }
+      },
+      onFinished: _finishWrite,
+    );
   }
 
-  void _onClearRulesPressed(BuildContext context) =>
-      RoutingDetailsScope.controllerOf(context, listen: false).clearRules(
-        () => _onClearedRules(context),
-      );
+  void _onSubmitPressed() {
+    if (!_beginWrite()) {
+      return;
+    }
 
-  void _onClearedRules(BuildContext context) {
-    RoutingScope.controllerOf(context, listen: false).fetchProfiles();
+    final fetchProfiles = _routingController.fetchProfiles;
+    final formRoute = ModalRoute.of(context);
 
-    context.showInfoSnackBar(message: context.ln.allRulesDeleted);
+    _detailsController.submit(
+      onSaved: () {
+        fetchProfiles();
+
+        if (mounted && formRoute?.isCurrent == true) {
+          _onSubmitted(context);
+        }
+      },
+      onFinished: _finishWrite,
+    );
   }
 
-  void _onSubmitPressed(BuildContext context) => RoutingDetailsScope.controllerOf(context, listen: false).submit(
-    () => _onSubmitted(context),
-  );
+  bool _beginWrite() {
+    if (!mounted || _isWriteInProgress) {
+      return false;
+    }
+
+    setState(() => _isWriteInProgress = true);
+
+    return true;
+  }
+
+  void _finishWrite() {
+    if (mounted) {
+      setState(() => _isWriteInProgress = false);
+    }
+  }
 
   void _onSubmitted(BuildContext context) {
-    RoutingScope.controllerOf(context, listen: false).fetchProfiles();
-
-    if (!context.mounted) {
-      return;
-    }
-
     if (Navigator.of(context).canPop()) {
       context.pop();
     }
@@ -160,19 +197,5 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
     }
 
     context.showInfoSnackBar(message: context.ln.changesSavedSnackbar);
-  }
-
-  void _showNotSavedChangesWarning(BuildContext context) {
-    final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-
-    showDialog(
-      context: context,
-      builder: (innerContext) => ScaffoldMessengerProvider(
-        value: parentScaffoldMessenger ?? ScaffoldMessenger.of(innerContext),
-        child: DiscardChangesDialog(
-          onDiscardPressed: context.pop,
-        ),
-      ),
-    );
   }
 }

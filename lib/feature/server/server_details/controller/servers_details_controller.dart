@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/controller/concurrency/sequential_controller_handler.dart';
 import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
@@ -196,7 +197,14 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     completionHandler: _onCompleted,
   );
 
-  void submit(void Function(String name) onSaved) => handle(
+  /// Saves the server and passes its name to [onSaved] after a successful write.
+  ///
+  /// Calls [onFinished] after the operation or error handling if the controller is still active.
+  /// This includes attempts that fail validation.
+  void submit({
+    required ValueChanged<String> onSaved,
+    required VoidCallback onFinished,
+  }) => handle(
     () async {
       setState(
         ServerDetailsState.loading(
@@ -257,12 +265,16 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
       );
     },
     errorHandler: _onError,
-    completionHandler: _onCompleted,
+    completionHandler: () => _onCompleted(onFinished: onFinished),
   );
 
-  void delete(
-    void Function(String name) onDeleted,
-  ) => handle(
+  /// Deletes the server and passes its name to [onDeleted] after a successful write.
+  ///
+  /// Calls [onFinished] after the attempt if the controller is still active.
+  void delete({
+    required ValueChanged<String> onDeleted,
+    required VoidCallback onFinished,
+  }) => handle(
     () async {
       setState(
         ServerDetailsState.loading(
@@ -289,7 +301,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
       );
     },
     errorHandler: _onError,
-    completionHandler: _onCompleted,
+    completionHandler: () => _onCompleted(onFinished: onFinished),
   );
 
   List<String> _normalizeDnsServers(List<String> dnsServers) =>
@@ -321,12 +333,15 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     );
   }
 
-  Future<void> _onCompleted() async => setState(
-    ServerDetailsState.idle(
-      data: state.data,
-      initialData: state.initialData,
-      fieldErrors: state.fieldErrors,
-      routingProfiles: state.routingProfiles,
-    ),
-  );
+  Future<void> _onCompleted({VoidCallback? onFinished}) async {
+    setState(
+      ServerDetailsState.idle(
+        data: state.data,
+        initialData: state.initialData,
+        fieldErrors: state.fieldErrors,
+        routingProfiles: state.routingProfiles,
+      ),
+    );
+    onFinished?.call();
+  }
 }
