@@ -283,13 +283,17 @@ class _NavigationScreenState extends State<NavigationScreen> {
     ServerData? deepLinkData,
     bool force = false,
   }) async {
-    final shouldNavigate = force || _selectedTabNotifier.value != selectedIndex || deepLinkData != null;
-    if (!shouldNavigate) {
+    final NavigatorState? navigatorState = _navigatorKey.currentState;
+    if (navigatorState == null) {
       return;
     }
 
-    final navigatorState = _navigatorKey.currentState;
-    if (navigatorState == null) {
+    final bool shouldReplaceRootRoute = force || _selectedTabNotifier.value != selectedIndex || deepLinkData != null;
+    if (!shouldReplaceRootRoute) {
+      if (navigatorState.canPop()) {
+        await navigatorState.maybePop();
+      }
+
       return;
     }
 
