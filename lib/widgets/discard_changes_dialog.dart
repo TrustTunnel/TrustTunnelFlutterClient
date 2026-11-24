@@ -25,7 +25,8 @@ abstract final class DiscardChangesDialog {
         from: context,
         to: dialogNavigator.context,
       ),
-      barrierColor: DialogTheme.of(context).barrierColor ?? Theme.of(context).dialogTheme.barrierColor,
+      barrierColor:
+          DialogTheme.of(context).barrierColor ?? Theme.of(context).dialogTheme.barrierColor ?? Colors.black54,
       traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
       builder: (dialogContext) => ScaffoldMessengerProvider(
         value: parentScaffoldMessenger ?? ScaffoldMessenger.of(dialogContext),
