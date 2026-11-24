@@ -93,10 +93,7 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
       onSaved();
     },
     errorHandler: _onError,
-    completionHandler: () async {
-      await _onCompleted();
-      onFinished();
-    },
+    completionHandler: () => _onCompleted(onFinished: onFinished),
   );
 
   PresentationException _parseException(Object? exception) =>
@@ -115,11 +112,14 @@ final class ExcludedRoutesController extends BaseStateController<ExcludedRoutesS
     );
   }
 
-  Future<void> _onCompleted() async => setState(
-    ExcludedRoutesState.idle(
-      excludedRoutes: state.excludedRoutes,
-      hasInvalidRoutes: state.hasInvalidRoutes,
-      initialExcludedRoutes: state.initialExcludedRoutes,
-    ),
-  );
+  Future<void> _onCompleted({VoidCallback? onFinished}) async {
+    setState(
+      ExcludedRoutesState.idle(
+        excludedRoutes: state.excludedRoutes,
+        hasInvalidRoutes: state.hasInvalidRoutes,
+        initialExcludedRoutes: state.initialExcludedRoutes,
+      ),
+    );
+    onFinished?.call();
+  }
 }
