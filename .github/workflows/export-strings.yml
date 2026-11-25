@@ -1,0 +1,19 @@
+name: Export strings
+
+on:
+  push:
+    branches: [master, 'release/**']
+    paths:
+      - 'lib/common/localization/arb/intl_en.arb'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.repository == 'AdGuardSoftwareLimited/trusttunnel-flutter-client'
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/twosky-export.yml@master
+    with:
+      team: flutter
+      projects: trusttunnel
