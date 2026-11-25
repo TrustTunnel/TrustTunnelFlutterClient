@@ -1,0 +1,85 @@
+[
+  {
+    "project_id": "trusttunnel",
+    "base_locale": "en",
+    "localizable_files": [
+      "lib/common/localization/arb/intl_en.arb"
+    ],
+    "languages": {
+      "en": "English",
+      "ru": "Русский",
+      "tr": "Türkçe",
+      "de": "Deutsch",
+      "fr": "Français",
+      "zh_CN": "简体中文",
+      "zh_TW": "繁體中文",
+      "ja": "日本語",
+      "es": "Español"
+    },
+    "custom_localizations_info": {
+      "en": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_en.arb"
+        }
+      ],
+      "ru": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_ru.arb"
+        }
+      ],
+      "tr": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_tr.arb"
+        }
+      ],
+      "de": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_de.arb"
+        }
+      ],
+      "fr": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_fr.arb"
+        }
+      ],
+      "zh_CN": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_zh_Hans_CN.arb"
+        }
+      ],
+      "zh_TW": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_zh_Hant_TW.arb"
+        }
+      ],
+      "ja": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_ja.arb"
+        }
+      ],
+      "es": [
+        {
+          "format": "arb",
+          "crowdin_path": "intl.arb",
+          "local_path": "lib/common/localization/arb/intl_es.arb"
+        }
+      ]
+    }
+  }
+]
