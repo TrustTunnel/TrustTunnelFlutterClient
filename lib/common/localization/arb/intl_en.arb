@@ -36,6 +36,15 @@
   "enterDomainLabel": "Domain name from server certificate",
   "enterDomainHint": "Domain or IP address",
   "defaultProfile": "Default profile",
+  "newRoutingProfileName": "{number, plural, =0{Profile} other{Profile {number}}}",
+  "@newRoutingProfileName": {
+    "description": "Suggested name for a new routing profile. Zero uses the unnumbered name. Include the number in all numbered names.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "serversEmptyTitle": "Create your first server",
   "serversEmptyDescription": "Create a server for secure and anonymous data transfer",
   "create": "Create",
