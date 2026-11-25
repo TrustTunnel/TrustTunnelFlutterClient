@@ -1,4 +1,4 @@
-.PHONY: gen ln init release-android create-windows-installer aux-setup-android-signing \
+.PHONY: gen ln ln-pull init release-android create-windows-installer aux-setup-android-signing \
         ci-lint-dart ci-test-flutter \
         ci-build-android-apk ci-build-android-aab \
         ci-setup-ruby ci-setup-gpr \
@@ -15,6 +15,11 @@ gen:
 ln:
 	@echo "* Generating localizations *"
 	@dart run intl_utils:generate
+
+# Download approved translations from TwoSky and generate Dart localization.
+ln-pull:
+	@dart run scripts/pull_localizations.dart
+	@$(MAKE) ln
 
 init:
 	@echo "* Running flutter clean *"
