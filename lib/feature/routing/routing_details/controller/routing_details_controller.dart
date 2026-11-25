@@ -5,6 +5,7 @@ import 'package:trusttunnel/common/controller/controller/state_controller.dart';
 import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
@@ -27,8 +28,14 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     super.initialState = const RoutingDetailsState.initial(),
   });
 
-  /// Make a purchase for the given product ID
-  void fetch() {
+  /// Loads the profile or generates a name for a new profile.
+  ///
+  /// [defaultProfileName] is the localized name of the built-in profile.
+  /// [formatNewProfileName] formats a candidate name for a given index.
+  void fetch({
+    required String defaultProfileName,
+    required String Function(int number) formatNewProfileName,
+  }) {
     handle(
       () async {
         setState(
@@ -41,10 +48,20 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
 
         if (_profileId == null) {
           final profiles = await _repository.getAllProfiles();
+          final occupiedNames = profiles.map(
+            (profile) => RoutingProfileUtils.displayName(
+              id: profile.id,
+              name: profile.data.name,
+              defaultProfileName: defaultProfileName,
+            ),
+          );
           setState(
             RoutingDetailsState.idle(
               data: state.data.copyWith(
-                name: _detailsService.getNewProfileName(profiles.map((p) => p.data.name).toSet()),
+                name: _detailsService.getNewProfileName(
+                  occupiedNames: occupiedNames,
+                  formatName: formatNewProfileName,
+                ),
               ),
               initialData: state.initialData,
               hasInvalidRules: state.hasInvalidRules,

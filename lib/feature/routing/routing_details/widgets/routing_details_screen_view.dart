@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/extensions/locale_enum_extension.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/feature/routing/routing/widgets/scope/routing_scope.dart';
 import 'package:trusttunnel/feature/routing/routing_details/widgets/routing_details_form.dart';
@@ -36,7 +37,11 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
 
     _hasErrors = newData.hasInvalidRules;
     _hasChanges = newData.hasChanges;
-    _name = newData.name;
+    _name = RoutingProfileUtils.displayName(
+      id: newData.id,
+      name: newData.name,
+      defaultProfileName: context.ln.defaultProfile,
+    );
     _isEditing = newData.editing;
     _loading = newData.loading;
     _mode = newData.data.defaultMode;

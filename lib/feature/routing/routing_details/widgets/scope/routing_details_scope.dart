@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
@@ -38,6 +39,7 @@ class RoutingDetailsScope extends StatefulWidget {
 
 class _RoutingDetailsScopeState extends State<RoutingDetailsScope> {
   late final RoutingDetailsController _controller;
+  bool _profileRequested = false;
 
   @override
   void initState() {
@@ -49,8 +51,17 @@ class _RoutingDetailsScopeState extends State<RoutingDetailsScope> {
       detailsService: RoutingDetailsServiceImpl(),
       profileId: widget.profileId,
     );
+  }
 
-    _controller.fetch();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_profileRequested) {
+      return;
+    }
+
+    _profileRequested = true;
+    _fetchProfile();
   }
 
   @override
@@ -68,13 +79,21 @@ class _RoutingDetailsScopeState extends State<RoutingDetailsScope> {
           ),
       id: widget.profileId,
       clearRules: _controller.clearRules,
-      fetchProfile: _controller.fetch,
+      fetchProfile: _fetchProfile,
       submit: _controller.submit,
       changeDefaultRoutingMode: _controller.changeDefaultRoutingMode,
       editing: widget.profileId != null,
       child: widget.child,
     ),
   );
+
+  void _fetchProfile() {
+    final ln = context.ln;
+    _controller.fetch(
+      defaultProfileName: ln.defaultProfile,
+      formatNewProfileName: ln.newRoutingProfileName,
+    );
+  }
 
   @override
   void dispose() {

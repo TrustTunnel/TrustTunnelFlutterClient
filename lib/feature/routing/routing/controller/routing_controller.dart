@@ -7,6 +7,7 @@ import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
 import 'package:trusttunnel/feature/routing/routing/domain/service/routing_service.dart';
@@ -61,9 +62,13 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
     completionHandler: _onCompleted,
   );
 
+  /// Saves [name] if it is valid and unique among the other profile names.
+  ///
+  /// [defaultProfileName] is the current localized name of the built-in profile.
   Future<void> editName({
     required String id,
     required String name,
+    required String defaultProfileName,
     required VoidCallback onSaved,
   }) => handle(
     () async {
@@ -71,12 +76,17 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       if (routingProfile == null) {
         throw const PresentationNotFoundException();
       }
-      final otherProfiles = state.routingList
+      final otherNames = state.routingList
           .where((element) => element.id != id)
-          .map((element) => element.data)
-          .toSet();
+          .map(
+            (profile) => RoutingProfileUtils.displayName(
+              id: profile.id,
+              name: profile.data.name,
+              defaultProfileName: defaultProfileName,
+            ),
+          );
 
-      final fieldErrors = RoutingService.validateRoutingProfileName(otherProfiles, name);
+      final fieldErrors = RoutingService.validateRoutingProfileName(otherNames, name);
 
       if (fieldErrors.isNotEmpty) {
         setState(
@@ -89,10 +99,19 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
         return;
       }
 
-      await _repository.setProfileName(
+      final currentName = RoutingProfileUtils.displayName(
         id: id,
-        name: name,
+        name: routingProfile.data.name,
+        defaultProfileName: defaultProfileName,
       );
+      if (name == currentName) {
+        // Keep the built-in name automatic when the user saves it without edits.
+        onSaved();
+
+        return;
+      }
+
+      await _repository.setProfileName(id: id, name: name);
 
       final updatedRoutingList = state.routingList.map(
         (element) => element.id == id

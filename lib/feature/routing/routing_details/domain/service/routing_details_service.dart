@@ -1,23 +1,27 @@
-import 'dart:math' as math;
-
 abstract class RoutingDetailsService {
-  String getNewProfileName(Set<String> occupiedNames);
+  /// Returns the first free name from [formatName], starting with index zero.
+  ///
+  /// The formatter must return a distinct name for each index.
+  String getNewProfileName({
+    required Iterable<String> occupiedNames,
+    required String Function(int number) formatName,
+  });
 }
 
 class RoutingDetailsServiceImpl implements RoutingDetailsService {
   @override
-  String getNewProfileName(Set<String> occupiedNames) {
-    final profileNames = occupiedNames.where((name) => name.startsWith('Profile')).map((name) {
-      final profileNumber = name.split('Profile ').elementAtOrNull(1);
-      if (profileNumber == null) return null;
+  String getNewProfileName({
+    required Iterable<String> occupiedNames,
+    required String Function(int number) formatName,
+  }) {
+    final normalizedNames = occupiedNames.map((name) => name.trim().toLowerCase()).toSet();
+    for (int number = 0; number <= normalizedNames.length; number++) {
+      final name = formatName(number);
+      if (!normalizedNames.contains(name.trim().toLowerCase())) {
+        return name;
+      }
+    }
 
-      return int.tryParse(profileNumber);
-    });
-
-    final generatedNames = profileNames.whereType<int>();
-    if (generatedNames.isEmpty && !occupiedNames.contains('Profile')) return 'Profile';
-    final maxProfileNumber = generatedNames.fold(0, math.max) + 1;
-
-    return 'Profile $maxProfileNumber';
+    throw StateError('The profile name formatter did not produce a free name.');
   }
 }
