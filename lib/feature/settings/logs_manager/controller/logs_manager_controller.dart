@@ -12,9 +12,11 @@ import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_arch
 final class LogsManagerController extends BaseStateController<LogsManagerState> with SequentialControllerHandler {
   final ExportLogsRepository _repository;
   final ShareClient _shareClient;
+  final ValueGetter<String> _exportDialogTitle;
 
   LogsManagerController({
     required this._repository,
+    required this._exportDialogTitle,
     this._shareClient = const AdgShare(),
     super.initialState = const LogsManagerState.initial(),
   });
@@ -32,7 +34,7 @@ final class LogsManagerController extends BaseStateController<LogsManagerState> 
       final archive = await _repository.createArchive();
 
       final result = await _repository.pickFilePath(
-        dialogTitle: 'Export app logs and system info',
+        dialogTitle: _exportDialogTitle(),
         fileName: archive.name,
         type: ExportFileType.custom,
         allowedExtensions: ['zip'],
