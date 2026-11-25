@@ -4,8 +4,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:intl_utils/src/parser/icu_parser.dart';
+import 'package:intl_utils/src/parser/message_format.dart';
+
 const _defaultTwoSkyUri = 'https://twosky.int.agrd.dev/api/v1';
 const _downloadTimeout = Duration(seconds: 60);
+final _messageParser = IcuParser();
+final _icuBraces = RegExp(r"''|'\{'|'\}'|[{}]");
 
 Future<void> main() async {
   final client = HttpClient()..findProxy = HttpClient.findProxyFromEnvironment;
@@ -71,8 +76,19 @@ Future<void> _pullLocalizations(HttpClient client) async {
       throw FormatException('$locale: The ARB file has no messages.');
     }
     for (final key in messageKeys) {
-      if (!sourceArb.containsKey(key) || arb[key] is! String) {
+      final message = arb[key];
+      if (sourceArb[key] is! String || message is! String) {
         throw FormatException('$locale: Invalid message "$key". Check the source strings in Crowdin.');
+      }
+
+      final placeholders = switch (sourceArb['@$key']) {
+        {'placeholders': final Map<String, Object?> metadata} => metadata.keys.toSet(),
+        _ => const <String>{},
+      };
+      try {
+        _validateMessage(key, message, placeholders);
+      } on FormatException catch (exception) {
+        throw FormatException('$locale: Invalid message "$key". ${exception.message}');
       }
     }
 
@@ -95,6 +111,81 @@ Future<void> _pullLocalizations(HttpClient client) async {
     }
     stdout.writeln('Saved ${entry.key}');
   }
+}
+
+void _validateMessage(String key, String message, Set<String> expectedPlaceholders) {
+  final elements = _messageParser.parse(message.trim());
+  if (elements == null) {
+    throw const FormatException('Invalid ICU syntax.');
+  }
+
+  final placeholders = <String>{};
+  final bracePairs = _collectPlaceholders(elements, placeholders);
+  // The parser can accept a prefix or read malformed syntax as text.
+  // Check that every brace outside quoted text belongs to the parsed structure.
+  final braces = _icuBraces.allMatches(message).map((match) => match[0]).toList();
+  if (braces.where((brace) => brace == '{').length != bracePairs ||
+      braces.where((brace) => brace == '}').length != bracePairs) {
+    throw const FormatException('Invalid ICU syntax.');
+  }
+
+  final missing = expectedPlaceholders.difference(placeholders);
+  final unexpected = placeholders.difference(expectedPlaceholders);
+  if (missing.isNotEmpty || unexpected.isNotEmpty) {
+    throw FormatException('Missing placeholders: $missing. Unexpected placeholders: $unexpected.');
+  }
+
+  if (key == 'newRoutingProfileName') {
+    _validateRoutingProfileName(elements);
+  }
+}
+
+int _collectPlaceholders(List<BaseElement> elements, Set<String> placeholders) {
+  int bracePairs = 0;
+  for (final element in elements) {
+    if (element is LiteralElement) {
+      continue;
+    }
+
+    bracePairs++;
+    placeholders.add(element.value);
+    final options = switch (element) {
+      PluralElement(:final options) || GenderElement(:final options) || SelectElement(:final options) => options,
+      _ => null,
+    };
+    if (options == null) {
+      continue;
+    }
+    if (!options.any((option) => option.name == 'other')) {
+      throw FormatException('Missing the "other" branch for "${element.value}".');
+    }
+    for (final option in options) {
+      bracePairs += 1 + _collectPlaceholders(option.value, placeholders);
+    }
+  }
+
+  return bracePairs;
+}
+
+void _validateRoutingProfileName(List<BaseElement> elements) {
+  if (elements case [PluralElement(value: 'number', :final options)]) {
+    bool isZero(Option option) => option.name == '=0' || option.name == 'zero';
+    if (options.any(isZero)) {
+      for (final option in options) {
+        final printsNumber = option.value.any((element) => element is ArgumentElement && element.value == 'number');
+        if (isZero(option) && printsNumber) {
+          throw FormatException('Remove {number} from the "${option.name}" branch.');
+        }
+        if (!isZero(option) && !printsNumber) {
+          throw FormatException('Include {number} in the "${option.name}" branch.');
+        }
+      }
+
+      return;
+    }
+  }
+
+  throw const FormatException('Expected a plural message for "number" with an unnumbered zero branch.');
 }
 
 ({String localPath, String crowdinPath}) _findArbFile(Map<String, Object?> localizations, String locale) =>
