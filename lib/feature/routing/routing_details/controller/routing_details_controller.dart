@@ -31,14 +31,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
   void fetch() {
     handle(
       () async {
-        setState(
-          RoutingDetailsState.loading(
-            data: state.data,
-            initialData: state.initialData,
-            hasInvalidRules: state.hasInvalidRules,
-            writing: false,
-          ),
-        );
+        _startLoading(updatingPartOfProfile: false);
 
         if (_profileId == null) {
           final profiles = await _repository.getAllProfiles();
@@ -95,7 +88,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
   /// Saves the profile and calls [onSaved] on success.
   void submit(VoidCallback onSaved) => handle(
     () async {
-      _startWriting();
+      _startLoading(updatingPartOfProfile: false);
 
       final profileId = _profileId;
       if (profileId == null) {
@@ -127,7 +120,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
   /// Deletes all rules for the profile and calls [onCleared] on success.
   void clearRules(VoidCallback onCleared) => handle(
     () async {
-      _startWriting();
+      _startLoading(updatingPartOfProfile: true);
 
       await Future.wait([
         _repository.setRules(
@@ -168,7 +161,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     required VoidCallback onChanged,
   }) => handle(
     () async {
-      _startWriting();
+      _startLoading(updatingPartOfProfile: true);
 
       await _repository.setDefaultRoutingMode(id: _profileId!, mode: mode);
 
@@ -186,12 +179,12 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     completionHandler: _onCompleted,
   );
 
-  void _startWriting() => setState(
+  void _startLoading({required bool updatingPartOfProfile}) => setState(
     RoutingDetailsState.loading(
       data: state.data,
       initialData: state.initialData,
       hasInvalidRules: state.hasInvalidRules,
-      writing: true,
+      updatingPartOfProfile: updatingPartOfProfile,
     ),
   );
 

@@ -26,12 +26,12 @@ sealed class RoutingDetailsState {
 
   /// Loading state
   ///
-  /// An operation in progress. Set [writing] when it changes stored data.
+  /// Set [updatingPartOfProfile] when clearing rules or changing the default mode.
   const factory RoutingDetailsState.loading({
     required RoutingProfileData data,
     required RoutingProfileData initialData,
     required bool hasInvalidRules,
-    required bool writing,
+    required bool updatingPartOfProfile,
   }) = _LoadingRoutingDetailState;
 
   /// Error state
@@ -47,8 +47,8 @@ sealed class RoutingDetailsState {
 
   bool get loading => this is _LoadingRoutingDetailState;
 
-  /// Whether an operation that changes stored data is in progress.
-  bool get writing => false;
+  /// Whether the controller is clearing rules or changing the default mode.
+  bool get updatingPartOfProfile => false;
 
   @override
   int get hashCode => Object.hashAll([
@@ -57,7 +57,7 @@ sealed class RoutingDetailsState {
     initialData,
     error,
     loading,
-    writing,
+    updatingPartOfProfile,
     hasInvalidRules,
   ]);
 
@@ -65,7 +65,7 @@ sealed class RoutingDetailsState {
   String toString() =>
       'RoutingDetailsState(type: $runtimeType, '
       'data: $data, initialData: $initialData, hasInvalidRules: $hasInvalidRules, '
-      'loading: $loading, writing: $writing)';
+      'loading: $loading, updatingPartOfProfile: $updatingPartOfProfile)';
 
   @override
   bool operator ==(Object other) =>
@@ -77,7 +77,7 @@ sealed class RoutingDetailsState {
           error == other.error &&
           hasInvalidRules == other.hasInvalidRules &&
           loading == other.loading &&
-          writing == other.writing;
+          updatingPartOfProfile == other.updatingPartOfProfile;
 }
 
 final class _IdleRoutingDetailsState extends RoutingDetailsState {
@@ -99,13 +99,13 @@ final class _InitialRoutingDetailsState extends _IdleRoutingDetailsState {
 
 final class _LoadingRoutingDetailState extends RoutingDetailsState {
   @override
-  final bool writing;
+  final bool updatingPartOfProfile;
 
   const _LoadingRoutingDetailState({
     required super.data,
     required super.initialData,
     required super.hasInvalidRules,
-    required this.writing,
+    required this.updatingPartOfProfile,
   }) : super._();
 }
 

@@ -143,7 +143,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   bool get loading => _state.loading;
 
   @override
-  bool get writing => _state.writing;
+  bool get updatingPartOfProfile => _state.updatingPartOfProfile;
 
   @override
   bool get hasChanges => data != initialData || id == null;
@@ -168,7 +168,8 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
 
     for (final aspect in dependencies) {
       hasAnyChanges |= switch (aspect) {
-        RoutingDetailsScopeAspect.loading => loading != oldWidget.loading || writing != oldWidget.writing,
+        RoutingDetailsScopeAspect.loading =>
+          loading != oldWidget.loading || updatingPartOfProfile != oldWidget.updatingPartOfProfile,
         RoutingDetailsScopeAspect.exception => error != oldWidget.error,
         RoutingDetailsScopeAspect.data =>
           hasInvalidRules != oldWidget.hasInvalidRules ||

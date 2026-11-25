@@ -16,7 +16,9 @@ abstract class RoutingDetailsScopeController {
 
   abstract final bool loading;
 
-  abstract final bool writing;
+  /// Whether the controller is clearing rules or changing the default mode.
+  abstract final bool updatingPartOfProfile;
+
   abstract final bool editing;
   abstract final bool hasChanges;
 

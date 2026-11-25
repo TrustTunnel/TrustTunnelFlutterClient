@@ -29,7 +29,7 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
   late bool _hasErrors;
   late bool _isEditing;
   late bool _loading;
-  late bool _writing;
+  late bool _updatingPartOfProfile;
   late String _name;
   late RoutingMode _mode;
 
@@ -47,14 +47,14 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
 
     final loadingUpdate = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.loading);
     _loading = loadingUpdate.loading;
-    _writing = loadingUpdate.writing;
+    _updatingPartOfProfile = loadingUpdate.updatingPartOfProfile;
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_writing && (!_hasChanges || _loading),
+    canPop: !_hasChanges || (_loading && !_updatingPartOfProfile),
     onPopInvokedWithResult: (didPop, _) {
-      if (!didPop && !_writing) {
+      if (!didPop) {
         showDiscardChangesDialog(context);
       }
     },
