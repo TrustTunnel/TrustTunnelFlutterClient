@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/common/logging/observers/logging_navigator_observer.dart';
@@ -317,8 +316,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
         (_) => false,
       ),
     );
-
-    await SchedulerBinding.instance.endOfFrame;
   }
 
   Future<T?> _pushOnInnerNavigator<T extends Object?>({
