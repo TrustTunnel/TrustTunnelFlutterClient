@@ -1,5 +1,6 @@
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/common/utils/tls_profile_encoder.dart';
-import 'package:trusttunnel/data/model/routing_profile_data.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/tls_authentication_type.dart';
 
@@ -14,9 +15,10 @@ final class VpnLoggingPayload {
     required this.excludedRoutes,
   });
 
+  /// Creates a diagnostic payload with the routing profile's stored data and ID.
   factory VpnLoggingPayload.fromModels({
     required ServerData server,
-    required RoutingProfileData routingProfile,
+    required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
   }) => VpnLoggingPayload(
     serverPayload: VpnLoggingServerPayload.fromModel(server),
@@ -125,27 +127,35 @@ final class VpnLoggingClientRandomAuthKey extends VpnLoggingTlsAuthentication {
 }
 
 final class VpnLoggingRoutingProfilePayload {
+  /// The stored ID of the routing profile.
+  final String id;
   final String name;
   final String mode;
   final List<String> bypassRules;
   final List<String> vpnRules;
 
+  /// Creates a diagnostic record for the profile with the specified [id].
   const VpnLoggingRoutingProfilePayload({
+    required this.id,
     required this.name,
     required this.mode,
     required this.bypassRules,
     required this.vpnRules,
   });
 
-  factory VpnLoggingRoutingProfilePayload.fromModel(RoutingProfileData routingProfile) =>
-      VpnLoggingRoutingProfilePayload(
-        name: routingProfile.name,
-        mode: routingProfile.defaultMode.name,
-        bypassRules: List.unmodifiable(routingProfile.bypassRules),
-        vpnRules: List.unmodifiable(routingProfile.vpnRules),
-      );
+  /// Copies the profile ID, stored name, mode, and rules into a diagnostic record.
+  factory VpnLoggingRoutingProfilePayload.fromModel(RoutingProfile routingProfile) => VpnLoggingRoutingProfilePayload(
+    id: routingProfile.id,
+    name: routingProfile.data.name,
+    mode: routingProfile.data.defaultMode.name,
+    bypassRules: List.unmodifiable(routingProfile.data.bypassRules),
+    vpnRules: List.unmodifiable(routingProfile.data.vpnRules),
+  );
 
+  /// Serializes the record with `isDefault` set for the built-in profile ID.
   Map<String, Object?> toJson() => {
+    'id': id,
+    'isDefault': id == RoutingProfileUtils.defaultRoutingProfileId,
     'name': name,
     'mode': mode,
     'bypassRules': bypassRules,

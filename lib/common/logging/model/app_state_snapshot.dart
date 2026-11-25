@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/common/logging/model/logging_settings.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/model/certificate.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
@@ -341,8 +342,10 @@ final class RoutingProfileSnapshot {
     vpnRules: includeRules ? profile.data.vpnRules : null,
   );
 
+  /// Serializes the snapshot with `isDefault` set for the built-in profile ID.
   JsonMap toJson() => {
     'id': id,
+    'isDefault': id == RoutingProfileUtils.defaultRoutingProfileId,
     'name': name,
     'mode': mode,
     'bypassRulesCount': bypassRulesCount,
