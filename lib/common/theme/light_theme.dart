@@ -725,6 +725,10 @@ class LightTheme {
     linearMinHeight: 4,
   );
 
+  /// The style of text fields and dropdown fields.
+  ///
+  /// Flutter paints floating labels at 75% of their configured size ([InputDecoration.floatingLabelStyle]).
+  /// This theme compensates for that scale so the labels match `bodySmall` (in custom floatingLabelStyle).
   late final _inputDecorationTheme = InputDecorationTheme(
     filled: true,
     disabledBorder: OutlineInputBorder(
@@ -761,15 +765,22 @@ class LightTheme {
     ),
     floatingLabelStyle: WidgetStateTextStyle.resolveWith(
       (states) {
+        const floatingLabelScale = 0.75;
+        final bodySmallTextStyle = _textTheme.bodySmall!;
+        final textStyle = bodySmallTextStyle.copyWith(
+          fontSize: bodySmallTextStyle.fontSize! / floatingLabelScale,
+          letterSpacing: bodySmallTextStyle.letterSpacing! / floatingLabelScale,
+        );
+
         if (states.contains(WidgetState.disabled)) {
-          return _textTheme.bodySmall!.copyWith(color: _neutralBlackDisabled.withValues(alpha: 0.4));
+          return textStyle.copyWith(color: _neutralBlackDisabled.withValues(alpha: 0.4));
         }
 
         if (states.contains(WidgetState.error)) {
-          return _textTheme.bodySmall!.copyWith(color: _error);
+          return textStyle.copyWith(color: _error);
         }
 
-        return _textTheme.bodySmall!;
+        return textStyle;
       },
     ),
     labelStyle: WidgetStateTextStyle.resolveWith(

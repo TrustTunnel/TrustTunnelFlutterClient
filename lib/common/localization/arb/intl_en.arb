@@ -80,7 +80,7 @@
   "about": "About",
   "connectionLog": "Connection log",
   "excludedRoutes": "Excluded routes",
-  "github": "Github",
+  "github": "GitHub",
   "typeSomething": "Type something",
   "deleteServer": "Delete server",
   "deleteServerDialogTitle": "Delete server?",
@@ -240,7 +240,7 @@
       "number": {"type": "int"}
     }
   },
-  "appVersion": "App Version",
+  "appVersion": "App version",
   "checkForUpdates": "Check for updates",
   "checkingForUpdates": "Checking for updates…",
   "upToDate": "You’re up to date",
