@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   export:
-    if: github.repository == 'AdGuardSoftwareLimited/trusttunnel-flutter-client'
     uses: AdGuardSoftwareLimited/actions/.github/workflows/twosky-export.yml@master
     with:
       team: flutter
