@@ -62,9 +62,10 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
     completionHandler: _onCompleted,
   );
 
-  /// Saves [name] if it is valid and unique among the other profile names.
+  /// Stores a changed [name] if it is valid and unique among profile names.
   ///
   /// [defaultProfileName] is the current localized name of the built-in profile.
+  /// Calls [onSaved] after a successful write or when the display name is unchanged.
   Future<void> editName({
     required String id,
     required String name,
@@ -76,6 +77,19 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       if (routingProfile == null) {
         throw const PresentationNotFoundException();
       }
+
+      final currentName = RoutingProfileUtils.displayName(
+        id: id,
+        name: routingProfile.data.name,
+        defaultProfileName: defaultProfileName,
+      );
+      if (name == currentName) {
+        // Keep the built-in name automatic when the user saves it without edits.
+        onSaved();
+
+        return;
+      }
+
       final otherNames = state.routingList
           .where((element) => element.id != id)
           .map(
@@ -95,18 +109,6 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
             routingList: state.routingList,
           ),
         );
-
-        return;
-      }
-
-      final currentName = RoutingProfileUtils.displayName(
-        id: id,
-        name: routingProfile.data.name,
-        defaultProfileName: defaultProfileName,
-      );
-      if (name == currentName) {
-        // Keep the built-in name automatic when the user saves it without edits.
-        onSaved();
 
         return;
       }
