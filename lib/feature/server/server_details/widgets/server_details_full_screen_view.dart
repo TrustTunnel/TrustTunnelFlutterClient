@@ -40,9 +40,6 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
   late ServerData _data;
   late bool _loading;
 
-  // Keep the form open for writes whose success handler needs it.
-  bool _isWriteInProgress = false;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -68,10 +65,10 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_isWriteInProgress && !_hasChanges,
+    canPop: !_hasChanges || _loading,
     onPopInvokedWithResult: (didPop, _) {
-      if (!didPop && !_isWriteInProgress) {
-        unawaited(DiscardChangesDialog.show(context));
+      if (!didPop) {
+        showDiscardChangesDialog(context);
       }
     },
     child: Scaffold(
@@ -84,7 +81,7 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
                 icon: AssetIcons.delete,
                 color: context.colors.error,
                 size: 24,
-                onPressed: _isWriteInProgress ? null : _showDeleteDialog,
+                onPressed: _loading ? null : _showDeleteDialog,
               ),
             ),
         ],
@@ -103,7 +100,7 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
           Padding(
             padding: const EdgeInsets.all(16),
             child: FilledButton(
-              onPressed: !_isWriteInProgress && _hasChanges ? _submit : null,
+              onPressed: !_loading && _hasChanges ? _submit : null,
               child: Text(
                 _editing ? context.ln.save : context.ln.add,
               ),
@@ -115,30 +112,19 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
   );
 
   void _submit() {
-    if (!_beginWrite()) {
-      return;
-    }
-
     final fetchServers = _serversController.fetchServers;
     final formRoute = ModalRoute.of(context);
 
-    _detailsController.submit(
-      onSaved: (name) {
-        fetchServers();
+    _detailsController.submit((name) {
+      fetchServers();
 
-        if (mounted && formRoute?.isCurrent == true) {
-          _onSubmitted(name);
-        }
-      },
-      onFinished: _finishWrite,
-    );
+      if (mounted && formRoute?.isCurrent == true) {
+        _onSubmitted(name);
+      }
+    });
   }
 
   void _showDeleteDialog() {
-    if (_isWriteInProgress) {
-      return;
-    }
-
     final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
 
     unawaited(
@@ -156,30 +142,11 @@ class _ServerDetailsFullScreenViewState extends State<ServerDetailsFullScreenVie
   }
 
   void _delete() {
-    if (!_beginWrite()) {
+    if (!mounted || _loading) {
       return;
     }
 
-    _detailsController.delete(
-      onDeleted: _onDeleted,
-      onFinished: _finishWrite,
-    );
-  }
-
-  bool _beginWrite() {
-    if (!mounted || _isWriteInProgress) {
-      return false;
-    }
-
-    setState(() => _isWriteInProgress = true);
-
-    return true;
-  }
-
-  void _finishWrite() {
-    if (mounted) {
-      setState(() => _isWriteInProgress = false);
-    }
+    _detailsController.delete(_onDeleted);
   }
 
   void _onDeleted(String name) {

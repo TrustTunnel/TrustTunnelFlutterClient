@@ -36,6 +36,7 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
             data: state.data,
             initialData: state.initialData,
             hasInvalidRules: state.hasInvalidRules,
+            writing: false,
           ),
         );
 
@@ -92,18 +93,13 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
   );
 
   /// Saves the profile and calls [onSaved] on success.
-  ///
-  /// Calls [onFinished] after the operation or error handling if the controller is still active.
-  void submit({
-    required VoidCallback onSaved,
-    required VoidCallback onFinished,
-  }) => handle(
+  void submit(VoidCallback onSaved) => handle(
     () async {
-      var profileId = _profileId;
+      _startWriting();
+
+      final profileId = _profileId;
       if (profileId == null) {
-        profileId = (await _repository.addNewProfile(
-          state.data,
-        )).id;
+        await _repository.addNewProfile(state.data);
       } else {
         await Future.wait([
           _repository.setDefaultRoutingMode(id: profileId, mode: state.data.defaultMode),
@@ -125,24 +121,13 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       onSaved();
     },
     errorHandler: _onError,
-    completionHandler: () => _onCompleted(onFinished: onFinished),
+    completionHandler: _onCompleted,
   );
 
   /// Deletes all rules for the profile and calls [onCleared] on success.
-  ///
-  /// Calls [onFinished] after the attempt if the controller is still active.
-  void clearRules({
-    required VoidCallback onCleared,
-    required VoidCallback onFinished,
-  }) => handle(
+  void clearRules(VoidCallback onCleared) => handle(
     () async {
-      setState(
-        RoutingDetailsState.loading(
-          data: state.data,
-          initialData: state.initialData,
-          hasInvalidRules: state.hasInvalidRules,
-        ),
-      );
+      _startWriting();
 
       await Future.wait([
         _repository.setRules(
@@ -174,25 +159,16 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       onCleared();
     },
     errorHandler: _onError,
-    completionHandler: () => _onCompleted(onFinished: onFinished),
+    completionHandler: _onCompleted,
   );
 
   /// Saves [mode] as the profile's default and calls [onChanged] on success.
-  ///
-  /// Calls [onFinished] after the attempt if the controller is still active.
   void changeDefaultRoutingMode({
     required RoutingMode mode,
     required VoidCallback onChanged,
-    required VoidCallback onFinished,
   }) => handle(
     () async {
-      setState(
-        RoutingDetailsState.loading(
-          data: state.data,
-          initialData: state.initialData,
-          hasInvalidRules: state.hasInvalidRules,
-        ),
-      );
+      _startWriting();
 
       await _repository.setDefaultRoutingMode(id: _profileId!, mode: mode);
 
@@ -207,7 +183,16 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
       onChanged();
     },
     errorHandler: _onError,
-    completionHandler: () => _onCompleted(onFinished: onFinished),
+    completionHandler: _onCompleted,
+  );
+
+  void _startWriting() => setState(
+    RoutingDetailsState.loading(
+      data: state.data,
+      initialData: state.initialData,
+      hasInvalidRules: state.hasInvalidRules,
+      writing: true,
+    ),
   );
 
   PresentationException _parseException(Object? exception) =>
@@ -226,14 +211,11 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     );
   }
 
-  Future<void> _onCompleted({VoidCallback? onFinished}) async {
-    setState(
-      RoutingDetailsState.idle(
-        data: state.data,
-        initialData: state.initialData,
-        hasInvalidRules: state.hasInvalidRules,
-      ),
-    );
-    onFinished?.call();
-  }
+  Future<void> _onCompleted() async => setState(
+    RoutingDetailsState.idle(
+      data: state.data,
+      initialData: state.initialData,
+      hasInvalidRules: state.hasInvalidRules,
+    ),
+  );
 }

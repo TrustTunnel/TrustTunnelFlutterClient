@@ -198,13 +198,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
   );
 
   /// Saves the server and passes its name to [onSaved] after a successful write.
-  ///
-  /// Calls [onFinished] after the operation or error handling if the controller is still active.
-  /// This includes attempts that fail validation.
-  void submit({
-    required ValueChanged<String> onSaved,
-    required VoidCallback onFinished,
-  }) => handle(
+  void submit(ValueChanged<String> onSaved) => handle(
     () async {
       setState(
         ServerDetailsState.loading(
@@ -265,16 +259,11 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
       );
     },
     errorHandler: _onError,
-    completionHandler: () => _onCompleted(onFinished: onFinished),
+    completionHandler: _onCompleted,
   );
 
   /// Deletes the server and passes its name to [onDeleted] after a successful write.
-  ///
-  /// Calls [onFinished] after the attempt if the controller is still active.
-  void delete({
-    required ValueChanged<String> onDeleted,
-    required VoidCallback onFinished,
-  }) => handle(
+  void delete(ValueChanged<String> onDeleted) => handle(
     () async {
       setState(
         ServerDetailsState.loading(
@@ -301,7 +290,7 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
       );
     },
     errorHandler: _onError,
-    completionHandler: () => _onCompleted(onFinished: onFinished),
+    completionHandler: _onCompleted,
   );
 
   List<String> _normalizeDnsServers(List<String> dnsServers) =>
@@ -333,15 +322,12 @@ final class ServerDetailsController extends BaseStateController<ServerDetailsSta
     );
   }
 
-  Future<void> _onCompleted({VoidCallback? onFinished}) async {
-    setState(
-      ServerDetailsState.idle(
-        data: state.data,
-        initialData: state.initialData,
-        fieldErrors: state.fieldErrors,
-        routingProfiles: state.routingProfiles,
-      ),
-    );
-    onFinished?.call();
-  }
+  Future<void> _onCompleted() async => setState(
+    ServerDetailsState.idle(
+      data: state.data,
+      initialData: state.initialData,
+      fieldErrors: state.fieldErrors,
+      routingProfiles: state.routingProfiles,
+    ),
+  );
 }

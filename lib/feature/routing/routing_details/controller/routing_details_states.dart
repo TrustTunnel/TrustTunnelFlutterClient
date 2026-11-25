@@ -25,10 +25,13 @@ sealed class RoutingDetailsState {
   }) = _IdleRoutingDetailsState;
 
   /// Loading state
+  ///
+  /// An operation in progress. Set [writing] when it changes stored data.
   const factory RoutingDetailsState.loading({
     required RoutingProfileData data,
     required RoutingProfileData initialData,
     required bool hasInvalidRules,
+    required bool writing,
   }) = _LoadingRoutingDetailState;
 
   /// Error state
@@ -44,6 +47,9 @@ sealed class RoutingDetailsState {
 
   bool get loading => this is _LoadingRoutingDetailState;
 
+  /// Whether an operation that changes stored data is in progress.
+  bool get writing => false;
+
   @override
   int get hashCode => Object.hashAll([
     runtimeType,
@@ -51,6 +57,7 @@ sealed class RoutingDetailsState {
     initialData,
     error,
     loading,
+    writing,
     hasInvalidRules,
   ]);
 
@@ -58,7 +65,7 @@ sealed class RoutingDetailsState {
   String toString() =>
       'RoutingDetailsState(type: $runtimeType, '
       'data: $data, initialData: $initialData, hasInvalidRules: $hasInvalidRules, '
-      'loading: $loading)';
+      'loading: $loading, writing: $writing)';
 
   @override
   bool operator ==(Object other) =>
@@ -69,7 +76,8 @@ sealed class RoutingDetailsState {
           initialData == other.initialData &&
           error == other.error &&
           hasInvalidRules == other.hasInvalidRules &&
-          loading == other.loading;
+          loading == other.loading &&
+          writing == other.writing;
 }
 
 final class _IdleRoutingDetailsState extends RoutingDetailsState {
@@ -90,10 +98,14 @@ final class _InitialRoutingDetailsState extends _IdleRoutingDetailsState {
 }
 
 final class _LoadingRoutingDetailState extends RoutingDetailsState {
+  @override
+  final bool writing;
+
   const _LoadingRoutingDetailState({
     required super.data,
     required super.initialData,
     required super.hasInvalidRules,
+    required this.writing,
   }) : super._();
 }
 

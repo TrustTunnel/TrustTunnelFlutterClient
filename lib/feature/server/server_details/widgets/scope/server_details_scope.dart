@@ -109,18 +109,10 @@ class _InheritedServerDetailsScope extends InheritedModel<ServerDetailsScopeAspe
   final void Function() clearPemCertificate;
 
   @override
-  final void Function({
-    required ValueChanged<String> onDeleted,
-    required VoidCallback onFinished,
-  })
-  delete;
+  final void Function(ValueChanged<String> onDeleted) delete;
 
   @override
-  final void Function({
-    required ValueChanged<String> onSaved,
-    required VoidCallback onFinished,
-  })
-  submit;
+  final void Function(ValueChanged<String> onSaved) submit;
 
   final ServerDetailsState _state;
 

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
@@ -24,7 +22,7 @@ class ExcludedRoutesScreenView extends StatefulWidget {
 class _ExcludedRoutesScreenViewState extends State<ExcludedRoutesScreenView> {
   late ExcludedRoutesScopeController _controller;
   late bool _hasChanges;
-  bool _isFormSaving = false;
+  late bool _loading;
 
   @override
   void didChangeDependencies() {
@@ -34,14 +32,15 @@ class _ExcludedRoutesScreenViewState extends State<ExcludedRoutesScreenView> {
       aspect: ExcludedRoutesAspect.data,
     );
     _hasChanges = _controller.hasChanges;
+    _loading = ExcludedRoutesScope.controllerOf(context, aspect: ExcludedRoutesAspect.loading).loading;
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_isFormSaving && !_hasChanges,
+    canPop: !_hasChanges || _loading,
     onPopInvokedWithResult: (didPop, _) {
-      if (!didPop && !_isFormSaving) {
-        unawaited(DiscardChangesDialog.show(context));
+      if (!didPop) {
+        showDiscardChangesDialog(context);
       }
     },
     child: ScaffoldWrapper(
@@ -54,7 +53,7 @@ class _ExcludedRoutesScreenViewState extends State<ExcludedRoutesScreenView> {
             const Expanded(
               child: ExcludedRoutesForm(),
             ),
-            ExcludedRoutesButtonSection(onSavePressed: _isFormSaving ? null : _saveExcludedRoutes),
+            ExcludedRoutesButtonSection(onSavePressed: _loading ? null : _saveExcludedRoutes),
           ],
         ),
       ),
@@ -62,24 +61,12 @@ class _ExcludedRoutesScreenViewState extends State<ExcludedRoutesScreenView> {
   );
 
   void _saveExcludedRoutes() {
-    if (_isFormSaving) {
-      return;
-    }
-
     final formRoute = ModalRoute.of(context);
-    setState(() => _isFormSaving = true);
 
-    _controller.submit(
-      onSaved: () {
-        if (mounted && formRoute?.isCurrent == true && Navigator.canPop(context)) {
-          context.pop();
-        }
-      },
-      onFinished: () {
-        if (mounted) {
-          setState(() => _isFormSaving = false);
-        }
-      },
-    );
+    _controller.submit(() {
+      if (mounted && formRoute?.isCurrent == true && Navigator.canPop(context)) {
+        context.pop();
+      }
+    });
   }
 }

@@ -112,24 +112,15 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   final void Function() fetchProfile;
 
   @override
-  final void Function({
-    required VoidCallback onCleared,
-    required VoidCallback onFinished,
-  })
-  clearRules;
+  final void Function(VoidCallback onCleared) clearRules;
 
   @override
-  final void Function({
-    required VoidCallback onSaved,
-    required VoidCallback onFinished,
-  })
-  submit;
+  final void Function(VoidCallback onSaved) submit;
 
   @override
   final void Function({
     required RoutingMode mode,
     required VoidCallback onChanged,
-    required VoidCallback onFinished,
   })
   changeDefaultRoutingMode;
 
@@ -150,6 +141,9 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
 
   @override
   bool get loading => _state.loading;
+
+  @override
+  bool get writing => _state.writing;
 
   @override
   bool get hasChanges => data != initialData || id == null;
@@ -174,7 +168,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
 
     for (final aspect in dependencies) {
       hasAnyChanges |= switch (aspect) {
-        RoutingDetailsScopeAspect.loading => loading != oldWidget.loading,
+        RoutingDetailsScopeAspect.loading => loading != oldWidget.loading || writing != oldWidget.writing,
         RoutingDetailsScopeAspect.exception => error != oldWidget.error,
         RoutingDetailsScopeAspect.data =>
           hasInvalidRules != oldWidget.hasInvalidRules ||

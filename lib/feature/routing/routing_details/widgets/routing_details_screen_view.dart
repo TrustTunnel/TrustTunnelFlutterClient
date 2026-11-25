@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/extensions/locale_enum_extension.dart';
@@ -31,10 +29,9 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
   late bool _hasErrors;
   late bool _isEditing;
   late bool _loading;
+  late bool _writing;
   late String _name;
   late RoutingMode _mode;
-  // Keep the form open until a write and its completion callback finish.
-  bool _isWriteInProgress = false;
 
   @override
   void didChangeDependencies() {
@@ -48,15 +45,17 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
     _isEditing = _detailsController.editing;
     _mode = _detailsController.data.defaultMode;
 
-    _loading = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.loading).loading;
+    final loadingUpdate = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.loading);
+    _loading = loadingUpdate.loading;
+    _writing = loadingUpdate.writing;
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_isWriteInProgress && !_hasChanges,
+    canPop: !_writing && (!_hasChanges || _loading),
     onPopInvokedWithResult: (didPop, _) {
-      if (!didPop && !_isWriteInProgress) {
-        unawaited(DiscardChangesDialog.show(context));
+      if (!didPop && !_writing) {
+        showDiscardChangesDialog(context);
       }
     },
     child: ScaffoldWrapper(
@@ -73,7 +72,7 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
                 RoutingDetailsScreenAppBarAction(
                   profileName: _name,
                   pickedRoutingMode: _mode,
-                  canOpenMenu: () => !_isWriteInProgress,
+                  enabled: !_loading,
                   onDefaultModePicked: _onDefaultModePicked,
                   onClearRulesPressed: _onClearRulesPressed,
                 ),
@@ -102,7 +101,7 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
                       ),
                       RoutingDetailsSubmitButtonSection(
                         editing: _isEditing,
-                        onPressed: !_isWriteInProgress && !_hasErrors && _hasChanges ? _onSubmitPressed : null,
+                        onPressed: !_hasErrors && _hasChanges ? _onSubmitPressed : null,
                       ),
                     ],
                   ),
@@ -113,7 +112,7 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
   );
 
   void _onDefaultModePicked(BuildContext context, RoutingMode mode) {
-    if (!context.mounted || !_beginWrite()) {
+    if (!context.mounted || _loading) {
       return;
     }
 
@@ -127,62 +126,35 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
           context.showInfoSnackBar(message: context.ln.changesSavedSnackbar);
         }
       },
-      onFinished: _finishWrite,
     );
   }
 
   void _onClearRulesPressed(BuildContext context) {
-    if (!context.mounted || !_beginWrite()) {
+    if (!context.mounted || _loading) {
       return;
     }
 
     final fetchProfiles = _routingController.fetchProfiles;
-    _detailsController.clearRules(
-      onCleared: () {
-        fetchProfiles();
+    _detailsController.clearRules(() {
+      fetchProfiles();
 
-        if (context.mounted) {
-          context.showInfoSnackBar(message: context.ln.allRulesDeleted);
-        }
-      },
-      onFinished: _finishWrite,
-    );
+      if (context.mounted) {
+        context.showInfoSnackBar(message: context.ln.allRulesDeleted);
+      }
+    });
   }
 
   void _onSubmitPressed() {
-    if (!_beginWrite()) {
-      return;
-    }
-
     final fetchProfiles = _routingController.fetchProfiles;
     final formRoute = ModalRoute.of(context);
 
-    _detailsController.submit(
-      onSaved: () {
-        fetchProfiles();
+    _detailsController.submit(() {
+      fetchProfiles();
 
-        if (mounted && formRoute?.isCurrent == true) {
-          _onSubmitted(context);
-        }
-      },
-      onFinished: _finishWrite,
-    );
-  }
-
-  bool _beginWrite() {
-    if (!mounted || _isWriteInProgress) {
-      return false;
-    }
-
-    setState(() => _isWriteInProgress = true);
-
-    return true;
-  }
-
-  void _finishWrite() {
-    if (mounted) {
-      setState(() => _isWriteInProgress = false);
-    }
+      if (mounted && formRoute?.isCurrent == true) {
+        _onSubmitted(context);
+      }
+    });
   }
 
   void _onSubmitted(BuildContext context) {
