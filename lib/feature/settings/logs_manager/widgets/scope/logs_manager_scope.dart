@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_controller.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/controller/logs_manager_state.dart';
 import 'package:trusttunnel/feature/settings/logs_manager/model/export_logs_archive.dart';
@@ -32,13 +33,21 @@ class LogsManagerScope extends StatefulWidget {
 
 class _LogsManagerScopeState extends State<LogsManagerScope> {
   late final LogsManagerController _controller;
+  late String _exportDialogTitle;
 
   @override
   void initState() {
     super.initState();
     _controller = LogsManagerController(
       repository: context.repositoryFactory.exportLogsRepository,
+      exportDialogTitle: () => _exportDialogTitle,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _exportDialogTitle = context.ln.downloadAppLogs;
   }
 
   @override

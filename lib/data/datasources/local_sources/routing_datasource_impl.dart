@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/database/app_database.dart' as db;
 import 'package:trusttunnel/data/datasources/routing_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_profile_name.dart';
 
 /// {@template routing_data_source_impl}
 /// Drift-backed implementation of [RoutingDataSource].
@@ -30,9 +32,13 @@ class RoutingDataSourceImpl implements RoutingDataSource {
   /// {@macro routing_data_source_add_new_profile}
   @override
   Future<RoutingProfile> addNewProfile(RoutingProfileData request) async {
+    if (request.name.isDefault) {
+      throw ArgumentError.value(request.name.value, 'request.name', 'New profiles must have a custom name');
+    }
+
     final resultId = await _database.routingProfiles.insertOnConflictUpdate(
       db.RoutingProfilesCompanion.insert(
-        name: request.name,
+        name: request.name.value,
         defaultMode: request.defaultMode.value,
       ),
     );
@@ -100,7 +106,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
       return RoutingProfile(
         id: p.id.toString(),
         data: RoutingProfileData(
-          name: p.name,
+          name: _readProfileName(id: p.id, value: p.name),
           defaultMode: defaultMode,
           bypassRules: bypassByProfile[p.id] ?? const [],
           vpnRules: vpnByProfile[p.id] ?? const [],
@@ -121,12 +127,21 @@ class RoutingDataSourceImpl implements RoutingDataSource {
 
   /// {@macro routing_data_source_set_profile_name}
   @override
-  Future<void> setProfileName({required String id, required String name}) async {
+  Future<void> setProfileName({required String id, required RoutingProfileName name}) async {
+    final profileId = int.parse(id);
+    if (name.isDefault && profileId.toString() != RoutingProfileUtils.defaultRoutingProfileId) {
+      throw ArgumentError.value(
+        id,
+        'id',
+        'Only the built-in profile can use the default name',
+      );
+    }
+
     final updateStatement = _database.update(
       _database.routingProfiles,
     );
-    updateStatement.where((p) => p.id.equals(int.parse(id)));
-    await updateStatement.write(db.RoutingProfilesCompanion(name: Value(name)));
+    updateStatement.where((p) => p.id.equals(profileId));
+    await updateStatement.write(db.RoutingProfilesCompanion(name: Value(name.value)));
   }
 
   /// {@macro routing_data_source_set_rules}
@@ -178,7 +193,7 @@ class RoutingDataSourceImpl implements RoutingDataSource {
     return RoutingProfile(
       id: profile.id.toString(),
       data: RoutingProfileData(
-        name: profile.name,
+        name: _readProfileName(id: profile.id, value: profile.name),
         defaultMode: RoutingMode.values.firstWhere((m) => m.value == profile.defaultMode),
         bypassRules: bypassRules,
         vpnRules: vpnRules,
@@ -220,6 +235,11 @@ class RoutingDataSourceImpl implements RoutingDataSource {
     deleteStatement.where((p) => p.id.equals(int.parse(id)));
     await deleteStatement.go();
   }
+
+  RoutingProfileName _readProfileName({required int id, required String value}) =>
+      id.toString() == RoutingProfileUtils.defaultRoutingProfileId && value.isEmpty
+      ? const RoutingProfileName.defaultProfile()
+      : RoutingProfileName.custom(value);
 
   /// Loads all rule rows for the given profile ids.
   ///

@@ -4,6 +4,7 @@ import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
 import 'package:trusttunnel/common/extensions/context_extensions.dart';
+import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_controller.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
@@ -64,7 +65,7 @@ class _RoutingScopeState extends State<RoutingScope> implements RoutingScopeCont
     required String name,
     required VoidCallback onSaved,
   })
-  get changeName => _controller.editName;
+  get changeName => _changeName;
 
   @override
   void Function(String routingProfileId, VoidCallback onDeleted) get deleteProfile => _controller.deleteProfile;
@@ -95,6 +96,17 @@ class _RoutingScopeState extends State<RoutingScope> implements RoutingScopeCont
   void removeListener(VoidCallback listener) => _controller.removeListener(listener);
 
   void _pickProfileToChangeName() => _controller.dataChanged(fieldErrors: []);
+
+  Future<void> _changeName({
+    required String id,
+    required String name,
+    required VoidCallback onSaved,
+  }) => _controller.editName(
+    id: id,
+    name: name,
+    defaultProfileName: context.ln.defaultProfile,
+    onSaved: onSaved,
+  );
 
   @override
   void dispose() {

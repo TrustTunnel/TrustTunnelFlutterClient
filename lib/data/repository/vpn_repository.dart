@@ -105,7 +105,7 @@ class VpnRepositoryImpl implements VpnRepository {
 
     return _vpnDataSource.start(
       server: server.serverData,
-      routingProfile: routingProfile.data,
+      routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
       logLevel: logLevel,
       fallIntoRecovery: fallIntoRecovery,
@@ -145,7 +145,7 @@ class VpnRepositoryImpl implements VpnRepository {
 
     await _vpnDataSource.updateConfiguration(
       server: server.serverData,
-      routingProfile: routingProfile.data,
+      routingProfile: routingProfile,
       excludedRoutes: excludedRoutes,
       logLevel: logLevel,
     );

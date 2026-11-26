@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_profile_name.dart';
 
 /// {@template routing_profile}
 /// A named set of routing rules and a default routing mode.
@@ -17,8 +18,8 @@ import 'package:trusttunnel/data/model/routing_mode.dart';
 /// {@endtemplate}
 @immutable
 class RoutingProfileData {
-  /// User-visible profile name.
-  final String name;
+  /// The custom name or the localized default name.
+  final RoutingProfileName name;
 
   /// Default routing mode used when interpreting the rule sets.
   final RoutingMode defaultMode;
@@ -41,13 +42,6 @@ class RoutingProfileData {
     required this.vpnRules,
   });
 
-  const RoutingProfileData.empty({
-    this.name = '',
-    this.defaultMode = RoutingMode.vpn,
-    this.bypassRules = const [],
-    this.vpnRules = const [],
-  });
-
   @override
   int get hashCode => Object.hash(
     name,
@@ -59,7 +53,7 @@ class RoutingProfileData {
   @override
   String toString() =>
       'RoutingProfile('
-      'name: $name, '
+      'name: ${name.value}, '
       'defaultMode: $defaultMode, '
       'bypassRules: $bypassRules, '
       'vpnRules: $vpnRules'
@@ -80,7 +74,7 @@ class RoutingProfileData {
   ///
   /// Fields that are not provided retain their original values.
   RoutingProfileData copyWith({
-    String? name,
+    RoutingProfileName? name,
     RoutingMode? defaultMode,
     List<String>? bypassRules,
     List<String>? vpnRules,

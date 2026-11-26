@@ -7,9 +7,11 @@ import 'package:trusttunnel/common/error/exception_utils.dart';
 import 'package:trusttunnel/common/error/model/presentation_code_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
+import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
 import 'package:trusttunnel/feature/routing/routing/domain/service/routing_service.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_profile_name.dart';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.
@@ -61,9 +63,14 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
     completionHandler: _onCompleted,
   );
 
+  /// Stores a changed [name] if it is valid and unique among profile names.
+  ///
+  /// [defaultProfileName] is the current localized name of the built-in profile.
+  /// Calls [onSaved] after a successful write or when the display name is unchanged.
   Future<void> editName({
     required String id,
     required String name,
+    required String defaultProfileName,
     required VoidCallback onSaved,
   }) => handle(
     () async {
@@ -71,12 +78,28 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       if (routingProfile == null) {
         throw const PresentationNotFoundException();
       }
-      final otherProfiles = state.routingList
-          .where((element) => element.id != id)
-          .map((element) => element.data)
-          .toSet();
 
-      final fieldErrors = RoutingService.validateRoutingProfileName(otherProfiles, name);
+      final currentName = RoutingProfileUtils.displayName(
+        name: routingProfile.data.name,
+        defaultProfileName: defaultProfileName,
+      );
+      if (name == currentName) {
+        // Keep the built-in name automatic when the user saves it without edits.
+        onSaved();
+
+        return;
+      }
+
+      final otherNames = state.routingList
+          .where((element) => element.id != id)
+          .map(
+            (profile) => RoutingProfileUtils.displayName(
+              name: profile.data.name,
+              defaultProfileName: defaultProfileName,
+            ),
+          );
+
+      final fieldErrors = RoutingService.validateRoutingProfileName(otherNames, name);
 
       if (fieldErrors.isNotEmpty) {
         setState(
@@ -89,16 +112,14 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
         return;
       }
 
-      await _repository.setProfileName(
-        id: id,
-        name: name,
-      );
+      final customName = RoutingProfileName.custom(name);
+      await _repository.setProfileName(id: id, name: customName);
 
       final updatedRoutingList = state.routingList.map(
         (element) => element.id == id
             ? element.copyWith(
                 data: element.data.copyWith(
-                  name: name,
+                  name: customName,
                 ),
               )
             : element,

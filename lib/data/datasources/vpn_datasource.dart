@@ -1,4 +1,4 @@
-import 'package:trusttunnel/data/model/routing_profile_data.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
 import 'package:trusttunnel/data/model/vpn_log.dart';
@@ -40,6 +40,8 @@ abstract class VpnDataSource {
   /// {@template vpn_data_source_start}
   /// Starts the VPN session using the provided configuration inputs.
   ///
+  /// Diagnostics include the ID of [routingProfile].
+  ///
   /// Implementations are responsible for:
   /// - translating domain models into backend-specific configuration,
   /// - initiating the VPN engine/service on the platform,
@@ -50,7 +52,7 @@ abstract class VpnDataSource {
   /// {@endtemplate}
   Future<void> start({
     required ServerData server,
-    required RoutingProfileData routingProfile,
+    required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
     bool fallIntoRecovery = false,
@@ -58,6 +60,8 @@ abstract class VpnDataSource {
 
   /// {@template vpn_data_source_update_configuration}
   /// Updates the VPN configuration of an existing system VPN profile.
+  ///
+  /// Diagnostics include the ID of [routingProfile].
   ///
   /// This method has effect **only on iOS/macOS**. On other platforms it is
   /// expected to be a no-op.
@@ -73,7 +77,7 @@ abstract class VpnDataSource {
   /// {@endtemplate}
   Future<void> updateConfiguration({
     required ServerData server,
-    required RoutingProfileData routingProfile,
+    required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
   });

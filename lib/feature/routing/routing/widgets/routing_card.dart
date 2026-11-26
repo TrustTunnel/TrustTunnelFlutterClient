@@ -22,7 +22,7 @@ class RoutingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CustomListTileSeparated(
-    title: routingProfile.data.name,
+    title: _displayName(context),
     onTileTap: () => _pushDetailsScreen(context),
     trailing: PopupMenuButton(
       icon: const CustomIcon(
@@ -82,13 +82,18 @@ class RoutingCard extends StatelessWidget {
         child: RoutingScopeValue.fromContext(
           context: context,
           child: RoutingEditNameDialog(
-            currentRoutingName: routingProfile.data.name,
+            currentRoutingName: _displayName(innerContext),
             id: routingProfile.id,
           ),
         ),
       ),
     );
   }
+
+  String _displayName(BuildContext context) => RoutingProfileUtils.displayName(
+    name: routingProfile.data.name,
+    defaultProfileName: context.ln.defaultProfile,
+  );
 
   void _onDeleteProfile(BuildContext context) async {
     final parentScaffoldMessenger = ScaffoldMessenger.maybeOf(context);
@@ -100,7 +105,7 @@ class RoutingCard extends StatelessWidget {
         child: RoutingScopeValue.fromContext(
           context: context,
           child: RoutingDeleteProfileDialog(
-            profileName: routingProfile.data.name,
+            profileName: _displayName(innerContext),
             profileId: routingProfile.id,
           ),
         ),

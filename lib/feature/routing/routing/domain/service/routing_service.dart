@@ -1,11 +1,11 @@
 import 'package:trusttunnel/common/error/model/enum/presentation_field_exception_code.dart';
 import 'package:trusttunnel/common/error/model/enum/presentation_field_name.dart';
 import 'package:trusttunnel/common/error/model/presentation_field.dart';
-import 'package:trusttunnel/data/model/routing_profile_data.dart';
 
 abstract class RoutingService {
-  static List<PresentationField> validateRoutingProfileName(Set<RoutingProfileData> profiles, String name) {
-    final profileName = _validateProfileName(name, profiles.map((e) => e.name).toSet());
+  /// Validates [name] against the display names of the other profiles.
+  static List<PresentationField> validateRoutingProfileName(Iterable<String> otherNames, String name) {
+    final profileName = _validateProfileName(name, otherNames);
     if (profileName != null) {
       return [profileName];
     }
@@ -13,12 +13,13 @@ abstract class RoutingService {
     return [];
   }
 
-  static PresentationField? _validateProfileName(String serverName, Set<String> otherServerNames) {
+  static PresentationField? _validateProfileName(String name, Iterable<String> otherNames) {
     final fieldName = PresentationFieldName.profileName;
-    if (serverName.trim().isEmpty) {
+    final normalizedName = name.trim().toLowerCase();
+    if (normalizedName.isEmpty) {
       return _getRequiredField(fieldName);
     }
-    if (otherServerNames.map((e) => e.trim().toLowerCase()).contains(serverName.trim().toLowerCase())) {
+    if (otherNames.any((otherName) => otherName.trim().toLowerCase() == normalizedName)) {
       return _getAlreadyExistsField(fieldName);
     }
 

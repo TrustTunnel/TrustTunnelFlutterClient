@@ -10,16 +10,15 @@ typedef RoutingDataChangedCallback = void Function({
 
 abstract class RoutingDetailsScopeController {
   abstract final String? id;
-  abstract final RoutingProfileData data;
 
-  abstract final RoutingProfileData initialData;
+  /// The current profile data, if available.
+  abstract final RoutingProfileData? data;
 
   abstract final bool loading;
   abstract final bool editing;
   abstract final bool hasChanges;
 
   abstract final bool hasInvalidRules;
-  abstract final String name;
 
   abstract final PresentationException? error;
 

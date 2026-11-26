@@ -155,7 +155,10 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
           CustomDropdownMenu<RoutingProfile>.expanded(
             value: _pickedRoutingProfile,
             values: _routingProfiles,
-            toText: (value) => value.data.name,
+            toText: (value) => RoutingProfileUtils.displayName(
+              name: value.data.name,
+              defaultProfileName: context.ln.defaultProfile,
+            ),
             labelText: context.ln.routingProfile,
             onChanged: (profile) => _onDataChanged(
               context,

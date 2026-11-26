@@ -1,0 +1,25 @@
+name: Export strings
+
+on:
+  push:
+    branches: [master, 'release/**']
+    paths:
+      - 'lib/common/localization/arb/intl_en.arb'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Show which file would be uploaded without sending it'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    uses: AdGuardSoftwareLimited/actions/.github/workflows/twosky-export.yml@master
+    with:
+      team: flutter
+      projects: trusttunnel
+      dry-run: ${{ inputs.dry-run == true }}
+      export-branch: ${{ inputs.dry-run == true && github.ref_name || '' }}

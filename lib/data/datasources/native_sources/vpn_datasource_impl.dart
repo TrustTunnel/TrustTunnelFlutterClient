@@ -8,6 +8,7 @@ import 'package:trusttunnel/common/utils/validation_utils.dart';
 import 'package:trusttunnel/common/utils/vpn_mode_encoder.dart';
 import 'package:trusttunnel/data/datasources/vpn_datasource.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
+import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/model/server_data.dart';
 import 'package:trusttunnel/data/model/vpn_configuration_log_level.dart';
@@ -97,19 +98,19 @@ class VpnDataSourceImpl implements VpnDataSource {
   @override
   Future<void> start({
     required ServerData server,
-    required RoutingProfileData routingProfile,
+    required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
     bool fallIntoRecovery = false,
   }) async {
-    final endPoint = _createEndpoint(server, routingProfile);
+    final endPoint = _createEndpoint(server, routingProfile.data);
 
     Future<void> command() => _platformApi.start(
       fallIntoRecovery: fallIntoRecovery,
       configuration: Configuration(
         logLevel: _convertLogLevel(logLevel),
         vpnMode: VpnModeEncoder().convert(
-          routingProfile.defaultMode,
+          routingProfile.data.defaultMode,
         ),
         endpoint: endPoint,
         tun: Tun(
@@ -154,20 +155,21 @@ class VpnDataSourceImpl implements VpnDataSource {
     return _loggingVpnObserver?.runCommandWithResult('requestState', command) ?? command();
   }
 
+  /// {@macro vpn_data_source_update_configuration}
   @override
   Future<void> updateConfiguration({
     required ServerData server,
-    required RoutingProfileData routingProfile,
+    required RoutingProfile routingProfile,
     required List<String> excludedRoutes,
     required VpnConfigurationLogLevel logLevel,
   }) async {
-    final endPoint = _createEndpoint(server, routingProfile);
+    final endPoint = _createEndpoint(server, routingProfile.data);
 
     Future<void> command() => _platformApi.updateConfiguration(
       configuration: Configuration(
         logLevel: _convertLogLevel(logLevel),
         vpnMode: VpnModeEncoder().convert(
-          routingProfile.defaultMode,
+          routingProfile.data.defaultMode,
         ),
         endpoint: endPoint,
         tun: Tun(
