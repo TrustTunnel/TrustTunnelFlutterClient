@@ -6,6 +6,7 @@ import 'package:trusttunnel/data/database/migrations/migrations_v3.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v4.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v5.dart';
 import 'package:trusttunnel/data/database/migrations/migrations_v6.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_profile_name.dart';
 
 import 'connection.dart' as impl;
 
@@ -105,7 +106,7 @@ class AppDatabase extends _$AppDatabase {
       if (await routingProfiles.count().getSingle() == 0) {
         await into(routingProfiles).insert(
           RoutingProfilesCompanion.insert(
-            name: '',
+            name: const RoutingProfileName.defaultProfile().value,
             defaultMode: 2,
             id: Value(
               int.parse(

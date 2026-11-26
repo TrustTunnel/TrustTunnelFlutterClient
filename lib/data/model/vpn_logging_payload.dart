@@ -146,7 +146,7 @@ final class VpnLoggingRoutingProfilePayload {
   /// Copies the profile ID, stored name, mode, and rules into a diagnostic record.
   factory VpnLoggingRoutingProfilePayload.fromModel(RoutingProfile routingProfile) => VpnLoggingRoutingProfilePayload(
     id: routingProfile.id,
-    name: routingProfile.data.name,
+    name: routingProfile.data.name.value,
     mode: routingProfile.data.defaultMode.name,
     bypassRules: List.unmodifiable(routingProfile.data.bypassRules),
     vpnRules: List.unmodifiable(routingProfile.data.vpnRules),

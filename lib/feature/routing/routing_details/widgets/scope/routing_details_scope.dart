@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trusttunnel/common/controller/widget/state_consumer.dart';
 import 'package:trusttunnel/common/error/model/presentation_exception.dart';
@@ -6,7 +5,6 @@ import 'package:trusttunnel/common/extensions/context_extensions.dart';
 import 'package:trusttunnel/common/localization/localization.dart';
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
-
 import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_controller.dart';
 import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_states.dart';
 import 'package:trusttunnel/feature/routing/routing_details/domain/service/routing_details_service.dart';
@@ -140,16 +138,10 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   final void Function(RoutingMode mode, VoidCallback onChanged) changeDefaultRoutingMode;
 
   @override
-  RoutingProfileData get data => _state.data;
-
-  @override
-  RoutingProfileData get initialData => _state.initialData;
+  RoutingProfileData? get data => _state.data;
 
   @override
   bool get hasInvalidRules => _state.hasInvalidRules;
-
-  @override
-  String get name => _state.data.name;
 
   @override
   PresentationException? get error => _state.error;
@@ -158,7 +150,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
   bool get loading => _state.loading;
 
   @override
-  bool get hasChanges => data != initialData || id == null;
+  bool get hasChanges => data != null && (id == null || data != _state.initialData);
 
   @override
   bool updateShouldNotify(_InheritedRoutingDetailsScope oldWidget) => _state != oldWidget._state;
@@ -183,11 +175,7 @@ class _InheritedRoutingDetailsScope extends InheritedModel<RoutingDetailsScopeAs
         RoutingDetailsScopeAspect.loading => loading != oldWidget.loading,
         RoutingDetailsScopeAspect.exception => error != oldWidget.error,
         RoutingDetailsScopeAspect.data =>
-          hasInvalidRules != oldWidget.hasInvalidRules ||
-              name != oldWidget.name ||
-              !listEquals(data.bypassRules, oldWidget.data.bypassRules) ||
-              !listEquals(data.vpnRules, oldWidget.data.vpnRules) ||
-              data.defaultMode != oldWidget.data.defaultMode,
+          hasInvalidRules != oldWidget.hasInvalidRules || data != oldWidget.data || hasChanges != oldWidget.hasChanges,
       };
 
       if (hasAnyChanges) return true;

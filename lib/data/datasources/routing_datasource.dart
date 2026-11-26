@@ -1,6 +1,7 @@
 import 'package:trusttunnel/data/model/routing_mode.dart';
 import 'package:trusttunnel/data/model/routing_profile.dart';
 import 'package:trusttunnel/data/model/routing_profile_data.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_profile_name.dart';
 
 /// {@template routing_data_source}
 /// Persistence interface for routing profiles and their rules.
@@ -24,6 +25,7 @@ abstract class RoutingDataSource {
   ///
   /// Returns a fully populated [RoutingProfile] including the database-generated
   /// identifier and the persisted rule lists.
+  /// Throws [ArgumentError] if [request] uses the localized default name.
   /// {@endtemplate}
   Future<RoutingProfile> addNewProfile(RoutingProfileData request);
 
@@ -48,8 +50,11 @@ abstract class RoutingDataSource {
 
   /// {@template routing_data_source_set_profile_name}
   /// Updates the user-visible name of a profile.
+  ///
+  /// Throws [ArgumentError] if [name] is the localized default name and [id]
+  /// does not identify the built-in profile.
   /// {@endtemplate}
-  Future<void> setProfileName({required String id, required String name});
+  Future<void> setProfileName({required String id, required RoutingProfileName name});
 
   /// {@template routing_data_source_set_rules}
   /// Replaces the rule set for a specific [mode] in a profile.

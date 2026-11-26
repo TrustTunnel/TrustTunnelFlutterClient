@@ -156,7 +156,6 @@ class _ServerDetailsFormState extends State<ServerDetailsForm> {
             value: _pickedRoutingProfile,
             values: _routingProfiles,
             toText: (value) => RoutingProfileUtils.displayName(
-              id: value.id,
               name: value.data.name,
               defaultProfileName: context.ln.defaultProfile,
             ),

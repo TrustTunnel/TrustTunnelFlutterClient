@@ -50,8 +50,8 @@ class _RoutingDetailsFormState extends State<RoutingDetailsForm> {
 
     final controller = RoutingDetailsScope.controllerOf(context, listen: false);
 
-    _bypassRules = controller.data.bypassRules;
-    _vpnRules = controller.data.vpnRules;
+    _bypassRules = controller.data?.bypassRules ?? const [];
+    _vpnRules = controller.data?.vpnRules ?? const [];
   }
 
   @override
@@ -63,8 +63,8 @@ class _RoutingDetailsFormState extends State<RoutingDetailsForm> {
       aspect: RoutingDetailsScopeAspect.data,
     );
 
-    _bypassRules = controller.data.bypassRules;
-    _vpnRules = controller.data.vpnRules;
+    _bypassRules = controller.data?.bypassRules ?? const [];
+    _vpnRules = controller.data?.vpnRules ?? const [];
   }
 
   @override
@@ -147,11 +147,15 @@ class _RoutingDetailsFormState extends State<RoutingDetailsForm> {
       _vpnValid = spellValid ?? (_vpnValid || vpnRules?.isEmpty == true);
     }
     final actualController = RoutingDetailsScope.controllerOf(context, listen: false);
+    final data = actualController.data;
+    if (data == null) {
+      return;
+    }
 
     actualController.changeData(
-      data: actualController.data.copyWith(
-        vpnRules: vpnRules ?? actualController.data.vpnRules,
-        bypassRules: bypassRules ?? actualController.data.bypassRules,
+      data: data.copyWith(
+        vpnRules: vpnRules,
+        bypassRules: bypassRules,
       ),
       hasInvalidRules: !_bypassValid || !_vpnValid,
     );

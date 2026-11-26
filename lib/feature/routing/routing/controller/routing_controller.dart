@@ -11,6 +11,7 @@ import 'package:trusttunnel/common/utils/routing_profile_utils.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing/controller/routing_states.dart';
 import 'package:trusttunnel/feature/routing/routing/domain/service/routing_service.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_profile_name.dart';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.
@@ -79,7 +80,6 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
       }
 
       final currentName = RoutingProfileUtils.displayName(
-        id: id,
         name: routingProfile.data.name,
         defaultProfileName: defaultProfileName,
       );
@@ -94,7 +94,6 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
           .where((element) => element.id != id)
           .map(
             (profile) => RoutingProfileUtils.displayName(
-              id: profile.id,
               name: profile.data.name,
               defaultProfileName: defaultProfileName,
             ),
@@ -113,13 +112,14 @@ final class RoutingController extends BaseStateController<RoutingState> with Seq
         return;
       }
 
-      await _repository.setProfileName(id: id, name: name);
+      final customName = RoutingProfileName.custom(name);
+      await _repository.setProfileName(id: id, name: customName);
 
       final updatedRoutingList = state.routingList.map(
         (element) => element.id == id
             ? element.copyWith(
                 data: element.data.copyWith(
-                  name: name,
+                  name: customName,
                 ),
               )
             : element,

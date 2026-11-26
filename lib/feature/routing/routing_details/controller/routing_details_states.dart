@@ -5,8 +5,11 @@ import 'package:trusttunnel/data/model/routing_profile_data.dart';
 /// State representation for Routings-related operations.
 /// {@endtemplate}
 sealed class RoutingDetailsState {
-  final RoutingProfileData data;
-  final RoutingProfileData initialData;
+  /// The current profile data, if available.
+  final RoutingProfileData? data;
+
+  /// The profile data at load time, if available.
+  final RoutingProfileData? initialData;
   final bool hasInvalidRules;
 
   const RoutingDetailsState._({
@@ -19,22 +22,22 @@ sealed class RoutingDetailsState {
 
   /// Initial / idle state
   const factory RoutingDetailsState.idle({
-    required RoutingProfileData data,
-    required RoutingProfileData initialData,
+    required RoutingProfileData? data,
+    required RoutingProfileData? initialData,
     required bool hasInvalidRules,
   }) = _IdleRoutingDetailsState;
 
   /// Loading state
   const factory RoutingDetailsState.loading({
-    required RoutingProfileData data,
-    required RoutingProfileData initialData,
+    required RoutingProfileData? data,
+    required RoutingProfileData? initialData,
     required bool hasInvalidRules,
   }) = _LoadingRoutingDetailState;
 
   /// Error state
   const factory RoutingDetailsState.exception({
-    required RoutingProfileData data,
-    required RoutingProfileData initialData,
+    required RoutingProfileData? data,
+    required RoutingProfileData? initialData,
     required bool hasInvalidRules,
     required PresentationException exception,
   }) = _ErrorRoutingDetailState;
@@ -83,8 +86,8 @@ final class _IdleRoutingDetailsState extends RoutingDetailsState {
 final class _InitialRoutingDetailsState extends _IdleRoutingDetailsState {
   const _InitialRoutingDetailsState()
     : super(
-        data: const RoutingProfileData.empty(),
-        initialData: const RoutingProfileData.empty(),
+        data: null,
+        initialData: null,
         hasInvalidRules: false,
       );
 }

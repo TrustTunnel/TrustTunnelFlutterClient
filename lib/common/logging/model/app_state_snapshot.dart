@@ -334,7 +334,7 @@ final class RoutingProfileSnapshot {
     required bool includeRules,
   }) => RoutingProfileSnapshot(
     id: profile.id,
-    name: profile.data.name,
+    name: profile.data.name.value,
     mode: profile.data.defaultMode.name,
     bypassRulesCount: profile.data.bypassRules.length,
     vpnRulesCount: profile.data.vpnRules.length,

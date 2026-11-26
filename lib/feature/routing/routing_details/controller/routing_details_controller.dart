@@ -11,6 +11,7 @@ import 'package:trusttunnel/data/model/routing_profile_data.dart';
 import 'package:trusttunnel/data/repository/routing_repository.dart';
 import 'package:trusttunnel/feature/routing/routing_details/controller/routing_details_states.dart';
 import 'package:trusttunnel/feature/routing/routing_details/domain/service/routing_details_service.dart';
+import 'package:trusttunnel/feature/routing/routing_details/model/routing_profile_name.dart';
 
 /// {@template products_controller}
 /// Controller for managing products and purchase operations.
@@ -50,19 +51,27 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
           final profiles = await _repository.getAllProfiles();
           final occupiedNames = profiles.map(
             (profile) => RoutingProfileUtils.displayName(
-              id: profile.id,
               name: profile.data.name,
               defaultProfileName: defaultProfileName,
             ),
           );
+          final name = RoutingProfileName.custom(
+            _detailsService.getNewProfileName(
+              occupiedNames: occupiedNames,
+              formatName: formatNewProfileName,
+            ),
+          );
+          final data =
+              state.data?.copyWith(name: name) ??
+              RoutingProfileData(
+                name: name,
+                defaultMode: RoutingMode.vpn,
+                bypassRules: const [],
+                vpnRules: const [],
+              );
           setState(
             RoutingDetailsState.idle(
-              data: state.data.copyWith(
-                name: _detailsService.getNewProfileName(
-                  occupiedNames: occupiedNames,
-                  formatName: formatNewProfileName,
-                ),
-              ),
+              data: data,
               initialData: state.initialData,
               hasInvalidRules: state.hasInvalidRules,
             ),
@@ -110,25 +119,28 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
 
   void submit(VoidCallback onSaved) => handle(
     () async {
-      var profileId = _profileId;
+      final data = state.data;
+      if (data == null) {
+        return;
+      }
+
+      final profileId = _profileId;
       if (profileId == null) {
-        profileId = (await _repository.addNewProfile(
-          state.data,
-        )).id;
+        await _repository.addNewProfile(data);
       } else {
         await Future.wait([
-          _repository.setDefaultRoutingMode(id: profileId, mode: state.data.defaultMode),
+          _repository.setDefaultRoutingMode(id: profileId, mode: data.defaultMode),
 
           _repository.setRules(
             id: profileId,
             mode: RoutingMode.bypass,
-            rules: state.data.bypassRules,
+            rules: data.bypassRules,
           ),
 
           _repository.setRules(
             id: profileId,
             mode: RoutingMode.vpn,
-            rules: state.data.vpnRules,
+            rules: data.vpnRules,
           ),
         ]);
       }
@@ -143,6 +155,12 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
     VoidCallback onCleared,
   ) => handle(
     () async {
+      final data = state.data;
+      final profileId = _profileId;
+      if (data == null || profileId == null) {
+        return;
+      }
+
       setState(
         RoutingDetailsState.loading(
           data: state.data,
@@ -153,12 +171,12 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
 
       await Future.wait([
         _repository.setRules(
-          id: _profileId!,
+          id: profileId,
           mode: RoutingMode.vpn,
           rules: [],
         ),
         _repository.setRules(
-          id: _profileId,
+          id: profileId,
           mode: RoutingMode.bypass,
           rules: [],
         ),
@@ -166,11 +184,11 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
 
       setState(
         RoutingDetailsState.idle(
-          data: state.data.copyWith(
+          data: data.copyWith(
             vpnRules: [],
             bypassRules: [],
           ),
-          initialData: state.initialData.copyWith(
+          initialData: state.initialData?.copyWith(
             vpnRules: [],
             bypassRules: [],
           ),
@@ -186,6 +204,12 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
 
   void changeDefaultRoutingMode(RoutingMode mode, VoidCallback onChanged) => handle(
     () async {
+      final data = state.data;
+      final profileId = _profileId;
+      if (data == null || profileId == null) {
+        return;
+      }
+
       setState(
         RoutingDetailsState.loading(
           data: state.data,
@@ -194,12 +218,12 @@ final class RoutingDetailsController extends BaseStateController<RoutingDetailsS
         ),
       );
 
-      await _repository.setDefaultRoutingMode(id: _profileId!, mode: mode);
+      await _repository.setDefaultRoutingMode(id: profileId, mode: mode);
 
       setState(
         RoutingDetailsState.idle(
-          data: state.data.copyWith(defaultMode: mode),
-          initialData: state.initialData.copyWith(defaultMode: mode),
+          data: data.copyWith(defaultMode: mode),
+          initialData: state.initialData?.copyWith(defaultMode: mode),
           hasInvalidRules: state.hasInvalidRules,
         ),
       );

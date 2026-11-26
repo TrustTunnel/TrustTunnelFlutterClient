@@ -91,7 +91,6 @@ class RoutingCard extends StatelessWidget {
   }
 
   String _displayName(BuildContext context) => RoutingProfileUtils.displayName(
-    id: routingProfile.id,
     name: routingProfile.data.name,
     defaultProfileName: context.ln.defaultProfile,
   );

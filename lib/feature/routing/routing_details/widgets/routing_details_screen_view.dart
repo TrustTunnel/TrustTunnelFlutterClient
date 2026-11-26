@@ -34,19 +34,21 @@ class _RoutingDetailsScreenViewState extends State<RoutingDetailsScreenView> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final newData = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.data);
+    final profileData = newData.data;
 
     _hasErrors = newData.hasInvalidRules;
     _hasChanges = newData.hasChanges;
-    _name = RoutingProfileUtils.displayName(
-      id: newData.id,
-      name: newData.name,
-      defaultProfileName: context.ln.defaultProfile,
-    );
+    _name = profileData == null
+        ? ''
+        : RoutingProfileUtils.displayName(
+            name: profileData.name,
+            defaultProfileName: context.ln.defaultProfile,
+          );
     _isEditing = newData.editing;
-    _loading = newData.loading;
-    _mode = newData.data.defaultMode;
-
-    _loading = RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.loading).loading;
+    _mode = profileData?.defaultMode ?? RoutingMode.vpn;
+    _loading =
+        RoutingDetailsScope.controllerOf(context, aspect: RoutingDetailsScopeAspect.loading).loading ||
+        profileData == null;
   }
 
   @override
