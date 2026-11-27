@@ -42,33 +42,50 @@ class CustomDropdownMenu<T> extends StatelessWidget {
   }) : expanded = true;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: padding,
-    child: Theme(
-      data: context.theme.copyWith(
-        dropdownMenuTheme: enabled
-            ? context.theme.extension<CustomDropdownMenuTheme>()!.enabled
-            : context.theme.extension<CustomDropdownMenuTheme>()!.disabled,
+  Widget build(BuildContext context) {
+    final theme = context.theme;
+    final customTheme = theme.extension<CustomDropdownMenuTheme>()!;
+    final menuTheme = enabled ? customTheme.enabled : customTheme.disabled;
+    final menuOverlayColor = MenuButtonTheme.of(context).style?.overlayColor;
+
+    return Padding(
+      padding: padding,
+      // The popup captures this theme and uses InkWell instead of MenuItemButton.
+      child: Theme(
+        data: theme.copyWith(
+          hoverColor: menuOverlayColor?.resolve({WidgetState.hovered}) ?? theme.hoverColor,
+          focusColor: menuOverlayColor?.resolve({WidgetState.focused}) ?? theme.focusColor,
+        ),
+        // The popup route handles Back before the enclosing form or dialog.
+        child: DropdownButtonFormField<T>(
+          initialValue: values.contains(value) ? value : null,
+          isExpanded: expanded,
+          onChanged: enabled ? onChanged : null,
+          style: menuTheme.textStyle,
+          dropdownColor: menuTheme.menuStyle?.backgroundColor?.resolve({}),
+          iconEnabledColor: theme.iconTheme.color,
+          iconDisabledColor: menuTheme.textStyle?.color,
+          hint: Text(labelText),
+          decoration: InputDecoration(
+            labelText: labelText,
+            errorText: errorText,
+            enabled: enabled,
+          ).applyDefaults(menuTheme.inputDecorationTheme ?? theme.inputDecorationTheme),
+          selectedItemBuilder: (_) => values
+              .map(
+                (item) => Text(toText(item), style: menuTheme.textStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+              )
+              .toList(),
+          items: values
+              .map(
+                (item) => DropdownMenuItem<T>(
+                  value: item,
+                  child: toWidget?.call(item) ?? Text(toText(item)),
+                ),
+              )
+              .toList(),
+        ),
       ),
-      child: DropdownMenu<T>(
-        initialSelection: value,
-        label: Text(labelText),
-        enabled: enabled,
-        expandedInsets: expanded ? EdgeInsets.zero : null,
-        onSelected: onChanged,
-        errorText: errorText,
-        hintText: labelText,
-        requestFocusOnTap: false,
-        dropdownMenuEntries: values
-            .map(
-              (e) => DropdownMenuEntry<T>(
-                value: e,
-                label: toText(e),
-                labelWidget: toWidget?.call(e),
-              ),
-            )
-            .toList(),
-      ),
-    ),
-  );
+    );
+  }
 }
