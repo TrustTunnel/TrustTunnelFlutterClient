@@ -1,0 +1,178 @@
+{
+  "@@locale": "tr",
+  "windowMinimize": "Küçült",
+  "windowMaximize": "Büyüt",
+  "windowRestore": "Geri yükle",
+  "windowClose": "Kapat",
+  "appTitle": "VPN",
+  "servers": "Sunucular",
+  "routing": "Yönlendirme",
+  "settings": "Ayarlar",
+  "addServer": "Sunucu ekle",
+  "add": "Ekle",
+  "editServer": "Sunucuyu düzenle",
+  "serverName": "Sunucu adı",
+  "username": "Kullanıcı adı",
+  "enterUsername": "Kullanıcı adı girin",
+  "password": "Parola",
+  "enterPassword": "Parolayı girin",
+  "protocol": "Protokol",
+  "advanced": "Gelişmiş",
+  "tlsFingerprint": "TLS parmak izi",
+  "tlsFingerprintChrome": "Chrome",
+  "tlsFingerprintChromeCanary": "Chrome Canary",
+  "tlsFingerprintSafari": "Safari",
+  "tlsFingerprintFirefox": "Firefox",
+  "tlsFingerprintOkHttp": "OkHttp",
+  "tlsFingerprintOpenSsl": "OpenSSL",
+  "tlsFingerprintBoringSsl": "BoringSSL",
+  "routingProfile": "Yönlendirme profili",
+  "enterDnsServerLabel": "DNS sunucu adresleri, her satıra bir tane",
+  "enterDnsServerHint": "IP adresi, tls://, https://, quic://, h3:// veya sdns://",
+  "enterIpAddressLabel": "Adres",
+  "enterIpAddressHint": "IPv4/IPv6 veya alan adı",
+  "enterDomainLabel": "Sunucu sertifikasından alınan alan adı",
+  "enterDomainHint": "Alan adı veya IP adresi",
+  "defaultProfile": "Varsayılan profil",
+  "serversEmptyTitle": "İlk sunucunu oluştur",
+  "serversEmptyDescription": "Güvenli ve anonim veri aktarımı için bir sunucu oluşturun",
+  "create": "Oluştur",
+  "save": "Kaydet",
+  "unknownError": "Bilinmeyen hata",
+  "nameAlreadyExistError": "Bu ad zaten kullanılıyor",
+  "ipAddressWrongFieldError": "x.x.x.x veya x:x:x:x:x:x:x:x biçimini kullanın",
+  "domainWrongFieldError": "Alan adı veya IP adresi kullanın",
+  "dnsServersWrongFieldError": "IP adresleri, tls://, https://, quic://, h3:// veya sdns:// kullanın",
+  "urlWrongFieldError": "Lütfen URL'yi kontrol edin: hatalı görünüyor",
+  "pleaseFillField": "Lütfen bu alanı doldurun",
+  "editProfileName": "Adı düzenle",
+  "deleteProfile": "Profili sil",
+  "deleteProfileDialogTitle": "Profil silinsin mi?",
+  "addProfile": "Profil ekle",
+  "changeDefaultRoutingMode": "Varsayılan yönlendirmeyi değiştir",
+  "deleteAllRules": "Tüm kuralları sil",
+  "deleteAllRulesDialogTitle": "Tüm kurallar silinsin mi?",
+  "cancel": "İptal",
+  "delete": "Sil",
+  "deleteAllRulesDialogDescription": "{profileName} profilinden tüm kurallar silinecektir",
+  "@deleteAllRulesDialogDescription": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteProfileDescription": "{profileName} profili silinecektir",
+  "@deleteProfileDescription": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "discardChanges": "Değişiklikleri yoksay",
+  "discardChangesDialogTitle": "Değişiklikler iptal edilsin mi?",
+  "discardChangesDialogDescription": "Tüm değişiklikleri iptal etmek istediğinizden emin misiniz?",
+  "about": "Hakkında",
+  "connectionLog": "Bağlantı günlüğü",
+  "github": "GitHub",
+  "typeSomething": "Bir şey yazın",
+  "deleteServer": "Sunucuyu sil",
+  "deleteServerDialogTitle": "Sunucu silinsin mi?",
+  "changesSavedSnackbar": "Değişiklikler kaydedildi",
+  "allRulesDeleted": "Tüm kurallar silindi",
+  "quic": "QUIC",
+  "http2": "HTTP/2",
+  "bypass": "Atla",
+  "vpn": "VPN",
+  "profileNameLabel": "Profil adı",
+  "customSniLabel": "Özel SNI",
+  "customSniHint": "example.com",
+  "customSniWrongFieldError": "example.com biçimini kullanın",
+  "tlsAuthenticationType": "TLS kimlik doğrulama türü",
+  "importHint": "İçe aktar",
+  "loggingLevel": "Günlük kayıt düzeyi",
+  "loggingLevelBasic": "Varsayılan",
+  "loggingLevelDetailed": "Hata ayıklama",
+  "confirm": "Doğrula",
+  "share": "Paylaş",
+  "exportingLogs": "Günlükler dışa aktarılıyor…",
+  "quit": "Çıkış",
+  "trayStatus": "Durum: {status}",
+  "@trayStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "trayStatusConnected": "Bağlandı",
+  "trayStatusConnecting": "Bağlanıyor…",
+  "trayStatusDisconnected": "Bağlantı kesildi",
+  "connect": "Bağlan",
+  "disconnect": "Bağlantıyı kes",
+  "connectTo": "Bağlan",
+  "logging": "Günlük kayıt",
+  "otherServers": "Diğer sunucular",
+  "launchAndConnection": "Başlatma ve bağlantı",
+  "launch": "Başlat",
+  "launchAppAtSystemLogin": "Sistem oturum açılışında uygulamayı başlat",
+  "openHomeScreenAutomatically": "Ana ekranı otomatik olarak aç",
+  "connection": "Bağlantı",
+  "autoConnectOnAppLaunch": "Uygulama başlatıldığında otomatik bağlan",
+  "autoConnectNoServersAdded": "Hiçbir sunucu eklenmedi. Ayarı uygulamak için bir sunucu ekleyin",
+  "copyLink": "Bağlantıyı kopyala",
+  "serverLinkCopied": "Sunucu bağlantısı kopyalandı",
+  "edit": "Düzenle",
+  "serverNumberedName": "{name} {number}",
+  "@serverNumberedName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "appVersion": "Uygulama sürümü",
+  "checkForUpdates": "Güncellemeleri denetle",
+  "checkingForUpdates": "Güncellemeler denetleniyor…",
+  "upToDate": "Güncelsiniz",
+  "updateVersionAvailable": "{version} sürümü mevcut",
+  "@updateVersionAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateAction": "Güncelle",
+  "downloadingUpdate": "{version} sürümü indiriliyor…",
+  "@downloadingUpdate": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "verifyingUpdate": "Güncelleme doğrulanıyor…",
+  "updateCheckError": "Güncellemeler denetlenemedi",
+  "updateDownloadError": "Güncelleme indirilemedi",
+  "updateDownloadErrorDescription": "İnternet bağlantınızı kontrol edin ve tekrar deneyin",
+  "updateDamagedError": "Güncelleme dosyası hasarlı",
+  "updatePermissionError": "Windows'un güncellemeyi yüklemek için izne ihtiyacı var",
+  "updatePermissionErrorDescription": "Değişiklik yapılmasına izin verilmesi istendiğinde Evet'e tıklayın",
+  "updateInstallError": "Güncelleme yüklenemedi",
+  "updatedToVersion": "{version} sürümüne güncellendi",
+  "@updatedToVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateAvailable": "Güncelleme mevcut",
+  "tryAgain": "Tekrar dene",
+  "general": "Genel"
+}

@@ -56,14 +56,14 @@
         {
           "format": "arb",
           "crowdin_path": "intl.arb",
-          "local_path": "lib/common/localization/arb/intl_zh_Hans_CN.arb"
+          "local_path": "lib/common/localization/arb/intl_zh_CN.arb"
         }
       ],
       "zh_TW": [
         {
           "format": "arb",
           "crowdin_path": "intl.arb",
-          "local_path": "lib/common/localization/arb/intl_zh_Hant_TW.arb"
+          "local_path": "lib/common/localization/arb/intl_zh_TW.arb"
         }
       ],
       "ja": [
